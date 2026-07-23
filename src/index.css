@@ -1,0 +1,113 @@
+:root {
+  color-scheme: dark;
+
+  --bg: #12081f;
+  --bg-glow-1: #3a0f7a;
+  --bg-glow-2: #0f1f5e;
+  --bg-elevated: #1b0f31;
+  --card: #221336;
+  --card-2: #2a1743;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  --purple: #9b4dff;
+  --purple-bright: #b983ff;
+  --blue: #47bfff;
+  --green: #34e0a1;
+  --red: #ff5c7a;
+  --gold: #ffce54;
+
+  --text: #f3efff;
+  --text-dim: #b9aede;
+  --text-faint: #8577a8;
+
+  --gradient-primary: linear-gradient(135deg, #8a2be2 0%, #6c3bff 45%, #47bfff 100%);
+  --gradient-gold: linear-gradient(135deg, #ffce54 0%, #ff9f4a 100%);
+  --shadow-glow: 0 8px 30px rgba(139, 61, 255, 0.35);
+
+  --font-heading: 'Baloo 2', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  font-family: var(--font-body);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100svh;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(58, 15, 122, 0.55), transparent 55%),
+    radial-gradient(circle at 85% 20%, rgba(15, 31, 94, 0.55), transparent 50%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  margin: 0;
+  color: var(--text);
+}
+
+p {
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+}
+
+input {
+  font-family: inherit;
+}
+
+::selection {
+  background: var(--purple);
+  color: white;
+}
+
+/* Splash screen — shown pre-mount (index.html) and while App.jsx's initial
+   auth check is in flight, so there's no flash between the two. */
+.app-splash {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-splash-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 32px;
+}
+
+.app-splash-bolt {
+  filter: drop-shadow(0 0 14px rgba(155, 77, 255, 0.6));
+}
+
+.app-splash-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

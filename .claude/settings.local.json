@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Skill(claude-in-chrome)",
+      "Bash(npx oxlint *)",
+      "Bash(echo \"EXIT:$?\")",
+      "PowerShell($conn = Get-NetTCPConnection -LocalPort 5174 -ErrorAction SilentlyContinue; if \\($conn\\) { Stop-Process -Id $conn.OwningProcess -Force -ErrorAction SilentlyContinue; \"stopped\" } else { \"no process found\" })"
+    ]
+  }
+}

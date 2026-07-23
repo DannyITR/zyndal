@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#7c3aed" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Zyndal — Offline</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        min-height: 100svh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        color: #f3efff;
+        background:
+          radial-gradient(circle at 15% 0%, rgba(58, 15, 122, 0.55), transparent 55%),
+          radial-gradient(circle at 85% 20%, rgba(15, 31, 94, 0.55), transparent 50%),
+          #1a0a2e;
+        background-attachment: fixed;
+        text-align: center;
+      }
+      .card {
+        max-width: 360px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: 'Baloo 2', system-ui, sans-serif;
+        font-weight: 800;
+        font-size: 30px;
+      }
+      .logo-bolt {
+        filter: drop-shadow(0 0 12px rgba(155, 77, 255, 0.6));
+      }
+      .logo-text {
+        background: linear-gradient(135deg, #8a2be2 0%, #6c3bff 45%, #47bfff 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .message {
+        font-size: 16px;
+        color: #b9aede;
+        line-height: 1.5;
+        margin: 0;
+      }
+      .streak-pill {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #221336;
+        border: 1.5px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 14px 22px;
+        font-family: 'Baloo 2', system-ui, sans-serif;
+      }
+      .streak-pill[hidden] {
+        display: none;
+      }
+      .streak-flame {
+        font-size: 22px;
+      }
+      .streak-value {
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .streak-label {
+        font-size: 12px;
+        color: #8577a8;
+        display: block;
+      }
+      .retry-btn {
+        font-family: 'Baloo 2', system-ui, sans-serif;
+        font-weight: 700;
+        font-size: 15px;
+        color: #f3efff;
+        background: linear-gradient(135deg, #8a2be2 0%, #6c3bff 45%, #47bfff 100%);
+        border: none;
+        border-radius: 14px;
+        padding: 13px 24px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="logo">
+        <span class="logo-bolt">⚡</span>
+        <span class="logo-text">Zyndal</span>
+      </div>
+      <p class="message">You're offline — connect to keep your streak alive</p>
+      <div class="streak-pill" id="streak-pill" hidden>
+        <span class="streak-flame">🔥</span>
+        <span>
+          <span class="streak-value" id="streak-value">0</span>
+          <span class="streak-label">day streak</span>
+        </span>
+      </div>
+      <button type="button" class="retry-btn" onclick="location.reload()">Try Again</button>
+    </div>
+    <script>
+      const cached = localStorage.getItem('zyndal_last_streak')
+      if (cached !== null) {
+        document.getElementById('streak-value').textContent = cached
+        document.getElementById('streak-pill').hidden = false
+      }
+    </script>
+  </body>
+</html>
