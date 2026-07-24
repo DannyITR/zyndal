@@ -142,10 +142,8 @@ export default function ShareStreakScreen({ user, streak, xp, onBack, onLogout, 
                 <span className="share-friend-avatar">{friend.avatar || '👤'}</span>
                 <div className="share-friend-info">
                   <p className="share-friend-name">@{friend.username}</p>
-                  <p className="share-friend-detail">
-                    🔥 {friend.streak} day streak
-                    {shareStreak > 0 && ` · 🔥 ${shareStreak} day share streak`}
-                  </p>
+                  <p className="share-friend-stat share-friend-stat--answer">🔥 {friend.streak} day answer streak</p>
+                  <p className="share-friend-stat share-friend-stat--share">↔️ {shareStreak} day share streak</p>
                 </div>
                 <span className={`share-flame ${sharedToday ? 'share-flame--shared' : 'share-flame--pending'}`}>
                   🔥

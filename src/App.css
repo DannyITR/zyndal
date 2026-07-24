@@ -2950,10 +2950,17 @@ div.zyndal-logo {
   font-size: 14px;
 }
 
-.share-friend-detail {
+.share-friend-stat {
   font-size: 12px;
-  color: var(--text-faint);
   margin-top: 2px;
+}
+
+.share-friend-stat--answer {
+  color: var(--text-faint);
+}
+
+.share-friend-stat--share {
+  color: var(--blue);
 }
 
 .share-flame {
