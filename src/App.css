@@ -519,6 +519,7 @@ div.zyndal-logo {
 
 .streak-pill,
 .stat-pill {
+  position: relative;
   flex: 1;
   background: var(--card);
   border: 1px solid var(--border);
@@ -1042,6 +1043,21 @@ div.zyndal-logo {
   margin-top: 4px;
 }
 
+.info-modal {
+  text-align: center;
+  align-items: center;
+}
+
+.info-modal-icon {
+  font-size: 34px;
+}
+
+.info-modal-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
 .preset-row {
   display: flex;
   gap: 8px;
@@ -1294,6 +1310,53 @@ div.zyndal-logo {
 .home-actions .btn {
   flex: 1;
   min-width: 120px;
+}
+
+/* A plain wrapper (not a button) around a home-action button so its "?" info
+   badge is a real sibling button rather than nested inside another button,
+   which the HTML parser would otherwise silently break apart. */
+.home-action-wrap {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 120px;
+}
+
+.home-action-wrap .btn {
+  flex: 1;
+  min-width: 0;
+}
+
+.info-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 999px;
+  background: var(--card-2);
+  border: 1px solid var(--border-strong);
+  color: var(--text-dim);
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.info-badge:hover {
+  border-color: var(--purple);
+  color: var(--text);
+}
+
+.info-badge--left {
+  right: auto;
+  left: -6px;
 }
 
 /* ---------- Leaderboard ---------- */

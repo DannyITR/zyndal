@@ -18,6 +18,7 @@ import SettingsScreen from '../shared/SettingsScreen'
 import ShareStreakScreen from './share/ShareStreakScreen'
 import StreakFlame from './StreakFlame'
 import StatPill from './StatPill'
+import InfoModal from './InfoModal'
 import FriendsScreen from './friends/FriendsScreen'
 import FriendRequestBanner from './friends/FriendRequestBanner'
 import TestPrepSetupScreen from './testprep/TestPrepSetupScreen'
@@ -27,12 +28,43 @@ import UploadsFlow from './uploads/UploadsFlow'
 import PracticeFlow from './practice/PracticeFlow'
 import GradesScreen from './grades/GradesScreen'
 
+// Explanations shown by the "?" info badges on the home screen's stats and
+// action buttons — keyed to match the setInfoModalKey() calls below.
+const INFO_CONTENT = {
+  streak: {
+    icon: '🔥',
+    title: 'Day Streak',
+    text: "Your streak counts how many days in a row you've answered at least one question correctly. Miss a day and it resets to zero. Keep it alive to earn bonus coins at 7, 14 and 30 days!",
+  },
+  xp: {
+    icon: '⚡',
+    title: 'XP',
+    text: "XP (Experience Points) are your permanent score. They never reset and show how much you've learned. Climb the leaderboard by earning more XP than your friends.",
+  },
+  coins: {
+    icon: '🪙',
+    title: 'Coins',
+    text: 'Coins are your earnings. You earn coins for every correct first attempt. Your parent can convert coins into real money — ask them to set up your reward wallet!',
+  },
+  leaderboard: {
+    icon: '🏆',
+    title: 'Leaderboard',
+    text: 'The leaderboard ranks all Zyndal students by XP. See how you stack up against friends and students across Canada. A Friends tab shows only your added friends.',
+  },
+  share: {
+    icon: '📤',
+    title: 'Share My Streak',
+    text: 'Share your daily answer streak with friends on Zyndal or post it to Snapchat, Instagram or Discord. Build a share streak by sharing with the same friend every day — just like Snapchat!',
+  },
+}
+
 export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const today = todayStr()
   const [progress, setProgress] = useState(null)
   const [pickedSubjectId, setPickedSubjectId] = useState(null)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [infoModalKey, setInfoModalKey] = useState(null)
   const [showShareScreen, setShowShareScreen] = useState(false)
   const [showFriends, setShowFriends] = useState(false)
   const [pendingFriendRequests, setPendingFriendRequests] = useState(null)
@@ -298,9 +330,9 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         />
 
         <div className="stats-row">
-          <StreakFlame streak={getEffectiveStreak(progress, today)} />
-          <StatPill icon="⚡" label="XP" value={progress.xp} />
-          <StatPill icon="🪙" label="Coins" value={progress.coins} />
+          <StreakFlame streak={getEffectiveStreak(progress, today)} onInfoClick={() => setInfoModalKey('streak')} />
+          <StatPill icon="⚡" label="XP" value={progress.xp} onInfoClick={() => setInfoModalKey('xp')} />
+          <StatPill icon="🪙" label="Coins" value={progress.coins} onInfoClick={() => setInfoModalKey('coins')} />
         </div>
 
         {pendingFriendRequests && pendingFriendRequests.length > 0 && (
@@ -312,19 +344,52 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         )}
 
         <div className="home-actions">
-          <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowLeaderboard(true)}>
-            🏆 Leaderboard
-          </button>
-          <button type="button" className="btn btn-secondary btn-small share-streak-btn" onClick={() => setShowShareScreen(true)}>
-            📤 Share my streak
-            {receivedShareCount > 0 && <span className="notification-badge">{receivedShareCount}</span>}
-          </button>
+          <div className="home-action-wrap">
+            <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowLeaderboard(true)}>
+              🏆 Leaderboard
+            </button>
+            <button
+              type="button"
+              className="info-badge"
+              onClick={() => setInfoModalKey('leaderboard')}
+              aria-label="What is the leaderboard?"
+            >
+              ?
+            </button>
+          </div>
+          <div className="home-action-wrap">
+            <button
+              type="button"
+              className="btn btn-secondary btn-small share-streak-btn"
+              onClick={() => setShowShareScreen(true)}
+            >
+              📤 Share my streak
+              {receivedShareCount > 0 && <span className="notification-badge">{receivedShareCount}</span>}
+            </button>
+            <button
+              type="button"
+              className="info-badge info-badge--left"
+              onClick={() => setInfoModalKey('share')}
+              aria-label="What is Share my streak?"
+            >
+              ?
+            </button>
+          </div>
           <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowFriends(true)}>
             👥 Friends
           </button>
         </div>
 
         <SubjectDashboard completedSubjectIds={completedSubjectIds} onSelectSubject={setPickedSubjectId} />
+
+        {infoModalKey && (
+          <InfoModal
+            icon={INFO_CONTENT[infoModalKey].icon}
+            title={INFO_CONTENT[infoModalKey].title}
+            text={INFO_CONTENT[infoModalKey].text}
+            onClose={() => setInfoModalKey(null)}
+          />
+        )}
       </div>
     )
   }
