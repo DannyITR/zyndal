@@ -2931,7 +2931,7 @@ div.zyndal-logo {
   color: var(--purple-bright);
 }
 
-/* ---------- Share my streak ---------- */
+/* ---------- Share my daily score ---------- */
 
 .share-streak-btn {
   position: relative;
@@ -3042,6 +3042,12 @@ div.zyndal-logo {
 
 .share-friend-stat--share {
   color: var(--blue);
+}
+
+.share-friend-stat--waiting {
+  color: #ffb066;
+  font-weight: 600;
+  font-style: italic;
 }
 
 .share-flame {

@@ -98,7 +98,7 @@ export default function ShareStreakScreen({ user, streak, xp, onBack, onLogout, 
   return (
     <div className="screen student-screen">
       <TopBar
-        title="📤 Share my streak"
+        title="📤 Share my daily score"
         subtitle="With friends or the world"
         username={user.username}
         onBack={onBack}
@@ -130,7 +130,12 @@ export default function ShareStreakScreen({ user, streak, xp, onBack, onLogout, 
         <div className="share-friend-list">
           {friends.map((friend) => {
             const sharedToday = shares ? hasSharedToday(shares, user.id, friend.id) : false
+            const friendSharedBackToday = shares ? hasSharedToday(shares, friend.id, user.id) : false
             const shareStreak = shares ? computeShareStreak(shares, user.id, friend.id) : 0
+            // Mutual-only: the share streak doesn't advance until both sides
+            // share the same day, so a one-sided share needs to say so —
+            // otherwise it looks like nothing happened.
+            const waitingOnFriend = sharedToday && !friendSharedBackToday
             return (
               <button
                 key={friend.id}
@@ -144,6 +149,11 @@ export default function ShareStreakScreen({ user, streak, xp, onBack, onLogout, 
                   <p className="share-friend-name">@{friend.username}</p>
                   <p className="share-friend-stat share-friend-stat--answer">🔥 {friend.streak} day answer streak</p>
                   <p className="share-friend-stat share-friend-stat--share">↔️ {shareStreak} day share streak</p>
+                  {waitingOnFriend && (
+                    <p className="share-friend-stat share-friend-stat--waiting">
+                      Waiting for @{friend.username} to share back 🔥
+                    </p>
+                  )}
                 </div>
                 <span className={`share-flame ${sharedToday ? 'share-flame--shared' : 'share-flame--pending'}`}>
                   🔥
