@@ -1371,11 +1371,6 @@ div.zyndal-logo {
   color: var(--text);
 }
 
-.info-badge--left {
-  right: auto;
-  left: -6px;
-}
-
 /* ---------- Leaderboard ---------- */
 
 .leaderboard-list {
@@ -2959,6 +2954,11 @@ div.zyndal-logo {
   align-items: center;
   justify-content: center;
   box-shadow: 0 0 0 2px var(--bg);
+}
+
+.notification-badge--left {
+  right: auto;
+  left: -6px;
 }
 
 .shared-with-you-list {

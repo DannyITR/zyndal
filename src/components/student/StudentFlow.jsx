@@ -373,11 +373,11 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
               onClick={() => setShowShareScreen(true)}
             >
               Share my streak 📤
-              {receivedShareCount > 0 && <span className="notification-badge">{receivedShareCount}</span>}
+              {receivedShareCount > 0 && <span className="notification-badge notification-badge--left">{receivedShareCount}</span>}
             </button>
             <button
               type="button"
-              className="info-badge info-badge--left"
+              className="info-badge"
               onClick={() => setInfoModalKey('share')}
               aria-label="What is Share my streak?"
             >
