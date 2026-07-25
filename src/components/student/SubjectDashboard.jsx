@@ -7,10 +7,10 @@ export default function SubjectDashboard({ completedSubjectIds, onSelectSubject 
 
   return (
     <div className="subject-dashboard">
-      <p className="subject-dashboard-lead">
+      <p className={`subject-dashboard-lead ${allDone ? 'subject-dashboard-lead--done' : ''}`}>
         {allDone
-          ? "You've completed all of today's questions. Come back tomorrow for new ones."
-          : `Pick a subject to answer today's question. ${completedCount}/${totalCount} done today.`}
+          ? '✅ All 6 done — streak saved for today! 🔥'
+          : `${completedCount}/${totalCount} completed today — answer all 6 to keep your streak alive 🔥`}
       </p>
 
       <div className="subject-grid">

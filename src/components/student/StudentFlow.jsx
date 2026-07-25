@@ -9,7 +9,7 @@ import {
   getTodaysReceivedShares,
 } from '../../lib/storage'
 import { getSubject } from '../../lib/questions'
-import { getEffectiveStreak, todayStr } from '../../lib/streak'
+import { getEffectiveStreak, countCorrectSubjectsToday, todayStr, TOTAL_SUBJECTS } from '../../lib/streak'
 import TopBar from '../shared/TopBar'
 import SubjectDashboard from './SubjectDashboard'
 import StudentHome from './StudentHome'
@@ -34,7 +34,7 @@ const INFO_CONTENT = {
   streak: {
     icon: '🔥',
     title: 'Day Streak',
-    text: "Your streak counts how many days in a row you've answered at least one question correctly. Miss a day and it resets to zero. Keep it alive to earn bonus coins at 7, 14 and 30 days!",
+    text: "Your streak counts how many days in a row you've answered all 6 subjects correctly. Miss even one subject and the day doesn't count — miss a full day and it resets to zero. Keep it alive to earn bonus coins at 7, 14 and 30 days!",
   },
   xp: {
     icon: '⚡',
@@ -162,10 +162,19 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     const ids = new Set()
     if (!progress) return ids
     for (const entry of progress.history) {
-      if (entry.date === today) ids.add(entry.subjectId)
+      if (entry.date === today && entry.correct) ids.add(entry.subjectId)
     }
     return ids
   }, [progress, today])
+
+  // Only worth warning about if there's an actual streak in progress to lose,
+  // and only after 8pm local time so it doesn't nag all day.
+  const subjectsLeftToday = progress ? TOTAL_SUBJECTS - countCorrectSubjectsToday(progress.history, today) : TOTAL_SUBJECTS
+  const showStreakRiskWarning =
+    Boolean(progress) &&
+    getEffectiveStreak(progress, today) > 0 &&
+    subjectsLeftToday > 0 &&
+    new Date().getHours() >= 20
 
   const activeSubject = useMemo(() => (pickedSubjectId ? getSubject(pickedSubjectId) : null), [pickedSubjectId])
   const greetingName = user.display_name || user.username
@@ -379,6 +388,12 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
             👥 Friends
           </button>
         </div>
+
+        {showStreakRiskWarning && (
+          <div className="streak-risk-banner">
+            ⚠️ Your streak expires at midnight — {subjectsLeftToday} subject{subjectsLeftToday === 1 ? '' : 's'} left!
+          </div>
+        )}
 
         <SubjectDashboard completedSubjectIds={completedSubjectIds} onSelectSubject={setPickedSubjectId} />
 

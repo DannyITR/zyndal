@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { submitAnswer } from '../../lib/storage'
 import { getDailyQuestion } from '../../lib/questions'
-import { getEffectiveStreak, todayStr } from '../../lib/streak'
+import { getEffectiveStreak, countCorrectSubjectsToday, todayStr, TOTAL_SUBJECTS } from '../../lib/streak'
 import { countdownLabel, computeReadiness } from '../../lib/testprep'
 import TopBar from '../shared/TopBar'
 import HistoryList from '../shared/HistoryList'
@@ -94,6 +94,7 @@ export default function StudentHome({
   const xpEarnedDisplay = firstAttempt?.xpEarned ?? 0
 
   const displayStreak = getEffectiveStreak(progress, today)
+  const subjectsLeftToday = TOTAL_SUBJECTS - countCorrectSubjectsToday(progress.history, today)
 
   async function handleSelect(index) {
     if (submitting) return
@@ -188,7 +189,11 @@ export default function StudentHome({
               <p className="result-headline">
                 Correct! +{coinsEarnedDisplay} coins · +{xpEarnedDisplay} XP
               </p>
-              <p className="result-next">New question tomorrow. Come back to keep your streak alive.</p>
+              <p className="result-next">
+                {subjectsLeftToday === 0
+                  ? '✅ All 6 done — streak saved for today! 🔥'
+                  : `${subjectsLeftToday} more subject${subjectsLeftToday === 1 ? '' : 's'} to go to keep your streak alive today.`}
+              </p>
             </>
           ) : solvedByRetry ? (
             <>

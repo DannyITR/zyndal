@@ -16,6 +16,10 @@ function diffDays(laterStr, earlierStr) {
   return Math.round((later - earlier) / 86400000)
 }
 
+// A day only counts toward the streak once all 6 subjects have been
+// answered correctly on the first attempt that day.
+export const TOTAL_SUBJECTS = 6
+
 // 6 subjects × 7 days of first-attempt-correct answers, Monday through Sunday.
 export const PERFECT_WEEK_TARGET = 42
 
@@ -39,10 +43,19 @@ export function hasAnsweredSubjectToday(progress, subjectId, today = todayStr())
   return progress.history.some((h) => h.date === today && h.subjectId === subjectId)
 }
 
+// Distinct subjects answered correctly (first attempt) on the given day.
+export function countCorrectSubjectsToday(history, today = todayStr()) {
+  const subjectIds = new Set()
+  for (const entry of history) {
+    if (entry.date === today && entry.correct) subjectIds.add(entry.subjectId)
+  }
+  return subjectIds.size
+}
+
 // The streak as it should be displayed *before* today's question is answered.
-// A gap of more than one day since the last correct answer means a day was
-// missed, so the streak is already broken even if the user hasn't opened the
-// app to "confirm" it.
+// A gap of more than one day since the streak was last credited means a full
+// day (all 6 subjects correct) was missed, so the streak is already broken
+// even if the user hasn't opened the app to "confirm" it.
 export function getEffectiveStreak(progress, today = todayStr()) {
   if (!progress.lastCorrectDate) return 0
   const gap = diffDays(today, progress.lastCorrectDate)
@@ -60,31 +73,9 @@ export function applyDailyAnswer(
   const correct = selectedIndex === question.correctIndex
   const effStreak = getEffectiveStreak(progress, today)
 
-  // The day-streak only advances once per day, on the first correct answer of
-  // that day — answering more subjects correctly the same day shouldn't inflate
-  // it, and a wrong answer in one subject shouldn't erase a day already earned
-  // by another subject answered correctly earlier today. Since a milestone bonus
-  // can only be hit the moment the streak actually advances, gating on this same
-  // flag also keeps a second correct answer the same day from re-awarding it.
-  const alreadyCreditedToday = progress.lastCorrectDate === today
-  let newStreak = effStreak
-  let baseEarned = 0
-  let bonusEarned = 0
-  let milestoneHit = null
-
-  if (correct) {
-    baseEarned = XP_PER_CORRECT
-    if (!alreadyCreditedToday) {
-      newStreak = effStreak + 1
-      if (milestoneBonuses[newStreak]) {
-        bonusEarned = milestoneBonuses[newStreak]
-        milestoneHit = newStreak
-      }
-    }
-  }
-
-  const xpEarned = baseEarned + bonusEarned
-  const coinsEarned = baseEarned + bonusEarned
+  // Coins/XP are awarded per correct answer regardless of how many subjects
+  // are done today — only the day-streak itself is gated on completing all 6.
+  const baseEarned = correct ? XP_PER_CORRECT : 0
 
   const entry = {
     date: today,
@@ -97,19 +88,49 @@ export function applyDailyAnswer(
     selectedAnswer: question.options[selectedIndex],
     correctAnswer: question.options[question.correctIndex],
     correct,
-    xpEarned,
-    coinsEarned,
+    xpEarned: baseEarned,
+    coinsEarned: baseEarned,
+  }
+
+  const newHistory = [...progress.history, entry]
+
+  // The day-streak only advances once per day, the moment this correct answer
+  // brings today's distinct correct-subject count up to all 6 — answering
+  // fewer than 6 doesn't advance it, and a wrong answer in one subject
+  // doesn't erase a day already completed. Gating on "already credited today"
+  // keeps it from double-counting if this somehow fires more than once
+  // (each subject only has one daily question, so it shouldn't in practice).
+  const alreadyCreditedToday = progress.lastCorrectDate === today
+  let newStreak = effStreak
+  let bonusEarned = 0
+  let milestoneHit = null
+
+  if (correct && !alreadyCreditedToday && countCorrectSubjectsToday(newHistory, today) >= TOTAL_SUBJECTS) {
+    newStreak = effStreak + 1
+    if (milestoneBonuses[newStreak]) {
+      bonusEarned = milestoneBonuses[newStreak]
+      milestoneHit = newStreak
+    }
+    entry.xpEarned += bonusEarned
+    entry.coinsEarned += bonusEarned
   }
 
   const newProgress = {
     ...progress,
     streak: newStreak,
     longestStreak: Math.max(progress.longestStreak, newStreak),
-    xp: progress.xp + xpEarned,
-    coins: progress.coins + coinsEarned,
-    lastCorrectDate: correct ? today : progress.lastCorrectDate,
-    history: [...progress.history, entry],
+    xp: progress.xp + entry.xpEarned,
+    coins: progress.coins + entry.coinsEarned,
+    lastCorrectDate: newStreak > effStreak ? today : progress.lastCorrectDate,
+    history: newHistory,
   }
 
-  return { progress: newProgress, correct, coinsEarned, xpEarned, milestoneHit, bonusEarned }
+  return {
+    progress: newProgress,
+    correct,
+    coinsEarned: entry.coinsEarned,
+    xpEarned: entry.xpEarned,
+    milestoneHit,
+    bonusEarned,
+  }
 }

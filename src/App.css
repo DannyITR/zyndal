@@ -595,6 +595,23 @@ div.zyndal-logo {
   font-size: 14px;
 }
 
+.subject-dashboard-lead--done {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.streak-risk-banner {
+  background: rgba(255, 158, 68, 0.12);
+  border: 1.5px solid rgba(255, 158, 68, 0.4);
+  color: #ffb066;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 14px;
+  text-align: center;
+}
+
 .subject-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
