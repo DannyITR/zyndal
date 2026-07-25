@@ -2940,6 +2940,7 @@ div.zyndal-logo {
 
 .share-streak-btn {
   position: relative;
+  white-space: nowrap;
 }
 
 .notification-badge {

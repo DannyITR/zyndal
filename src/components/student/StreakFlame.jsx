@@ -8,7 +8,7 @@ export default function StreakFlame({ streak, onInfoClick }) {
       </div>
       {onInfoClick && (
         <button type="button" className="info-badge" onClick={onInfoClick} aria-label="What is the day streak?">
-          ?
+          i
         </button>
       )}
     </div>

@@ -8,7 +8,7 @@ export default function StatPill({ icon, label, value, onInfoClick }) {
       </div>
       {onInfoClick && (
         <button type="button" className="info-badge" onClick={onInfoClick} aria-label={`What is ${label}?`}>
-          ?
+          i
         </button>
       )}
     </div>

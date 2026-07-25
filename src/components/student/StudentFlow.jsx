@@ -363,7 +363,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
               onClick={() => setInfoModalKey('leaderboard')}
               aria-label="What is the leaderboard?"
             >
-              ?
+              i
             </button>
           </div>
           <div className="home-action-wrap">
@@ -372,7 +372,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
               className="btn btn-secondary btn-small share-streak-btn"
               onClick={() => setShowShareScreen(true)}
             >
-              📤 Share my streak
+              Share my streak 📤
               {receivedShareCount > 0 && <span className="notification-badge">{receivedShareCount}</span>}
             </button>
             <button
@@ -381,7 +381,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
               onClick={() => setInfoModalKey('share')}
               aria-label="What is Share my streak?"
             >
-              ?
+              i
             </button>
           </div>
           <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowFriends(true)}>
