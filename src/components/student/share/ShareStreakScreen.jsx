@@ -147,7 +147,6 @@ export default function ShareStreakScreen({ user, streak, xp, onBack, onLogout, 
                 <span className="share-friend-avatar">{friend.avatar || '👤'}</span>
                 <div className="share-friend-info">
                   <p className="share-friend-name">@{friend.username}</p>
-                  <p className="share-friend-stat share-friend-stat--answer">🔥 {friend.streak} day answer streak</p>
                   <p className="share-friend-stat share-friend-stat--share">↔️ {shareStreak} day share streak</p>
                   {waitingOnFriend && (
                     <p className="share-friend-stat share-friend-stat--waiting">

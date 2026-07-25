@@ -5,13 +5,16 @@ import {
   getPendingFriendRequests,
   respondToFriendRequest,
   getFriendsWithStreaks,
+  getStreakSharesForUser,
 } from '../../../lib/storage'
+import { computeShareStreak } from '../../../lib/streakShare'
 import TopBar from '../../shared/TopBar'
 import FriendRequestBanner from './FriendRequestBanner'
 
 export default function FriendsScreen({ user, onBack, onLogout, onLogoClick }) {
   const [pendingRequests, setPendingRequests] = useState(null)
   const [friends, setFriends] = useState(null)
+  const [shares, setShares] = useState(null)
 
   const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
@@ -20,18 +23,26 @@ export default function FriendsScreen({ user, onBack, onLogout, onLogoClick }) {
   const [requestStatusById, setRequestStatusById] = useState({}) // studentId -> 'sending' | 'sent' | error message
 
   async function refreshFriendsData() {
-    const [pending, friendList] = await Promise.all([getPendingFriendRequests(user.id), getFriendsWithStreaks(user.id)])
+    const [pending, friendList, shareRows] = await Promise.all([
+      getPendingFriendRequests(user.id),
+      getFriendsWithStreaks(user.id),
+      getStreakSharesForUser(user.id),
+    ])
     setPendingRequests(pending)
     setFriends(friendList)
+    setShares(shareRows)
   }
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([getPendingFriendRequests(user.id), getFriendsWithStreaks(user.id)]).then(([pending, friendList]) => {
-      if (cancelled) return
-      setPendingRequests(pending)
-      setFriends(friendList)
-    })
+    Promise.all([getPendingFriendRequests(user.id), getFriendsWithStreaks(user.id), getStreakSharesForUser(user.id)]).then(
+      ([pending, friendList, shareRows]) => {
+        if (cancelled) return
+        setPendingRequests(pending)
+        setFriends(friendList)
+        setShares(shareRows)
+      }
+    )
     return () => {
       cancelled = true
     }
@@ -139,14 +150,21 @@ export default function FriendsScreen({ user, onBack, onLogout, onLogoClick }) {
           <p className="field-hint">No friends yet — search above to follow someone.</p>
         ) : (
           <div className="finance-student-list">
-            {friends.map((friend) => (
-              <div key={friend.id} className="finance-student-row">
-                <div>
-                  <p className="finance-student-name">@{friend.username}</p>
-                  <p className="finance-student-detail">🔥 {friend.streak} day streak</p>
+            {friends.map((friend) => {
+              const shareStreak = shares ? computeShareStreak(shares, user.id, friend.id) : 0
+              return (
+                <div key={friend.id} className="finance-student-row">
+                  <div>
+                    <p className="finance-student-name">@{friend.username}</p>
+                    <p className="finance-student-detail">
+                      {shareStreak > 0
+                        ? `🔥 ${shareStreak} day share streak`
+                        : '🔥 Start a share streak — share your daily score!'}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
