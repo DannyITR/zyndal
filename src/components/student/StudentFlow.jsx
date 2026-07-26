@@ -54,7 +54,7 @@ const INFO_CONTENT = {
   },
   share: {
     icon: '📤',
-    title: 'Share My Daily Score',
+    title: 'Share Daily Score',
     text: 'Share your daily score with friends on Zyndal or post it to Snapchat, Instagram or Discord. Build a share streak by sharing with the same friend every day — just like Snapchat!',
   },
 }
@@ -387,14 +387,14 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
               className="btn btn-secondary btn-small share-streak-btn"
               onClick={() => setShowShareScreen(true)}
             >
-              Share my daily score 📤
+              Share daily score 📤
               {receivedShareCount > 0 && <span className="notification-badge notification-badge--left">{receivedShareCount}</span>}
             </button>
             <button
               type="button"
               className="info-badge"
               onClick={() => setInfoModalKey('share')}
-              aria-label="What is Share my daily score?"
+              aria-label="What is Share daily score?"
             >
               i
             </button>

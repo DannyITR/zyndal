@@ -1325,8 +1325,9 @@ div.zyndal-logo {
 }
 
 .home-actions .btn {
-  flex: 1;
-  min-width: 120px;
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 /* A plain wrapper (not a button) around a home-action button so its "?" info
@@ -1335,12 +1336,12 @@ div.zyndal-logo {
 .home-action-wrap {
   position: relative;
   display: flex;
-  flex: 1;
-  min-width: 120px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .home-action-wrap .btn {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -2931,11 +2932,10 @@ div.zyndal-logo {
   color: var(--purple-bright);
 }
 
-/* ---------- Share my daily score ---------- */
+/* ---------- Share daily score ---------- */
 
 .share-streak-btn {
   position: relative;
-  white-space: nowrap;
 }
 
 .notification-badge {

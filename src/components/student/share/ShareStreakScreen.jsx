@@ -98,7 +98,7 @@ export default function ShareStreakScreen({ user, streak, xp, onBack, onLogout, 
   return (
     <div className="screen student-screen">
       <TopBar
-        title="📤 Share my daily score"
+        title="📤 Share daily score"
         subtitle="With friends or the world"
         username={user.username}
         onBack={onBack}
