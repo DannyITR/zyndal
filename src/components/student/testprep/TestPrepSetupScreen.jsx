@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { SUBJECTS, getSubject } from '../../../lib/questions'
+import { SUBJECTS, getSubject, gradeToSecondary } from '../../../lib/questions'
 import { todayStr } from '../../../lib/streak'
 import { daysUntil } from '../../../lib/testprep'
 import { getUploadedQuestions, createStudyPlan, getPastStudyPlans } from '../../../lib/storage'
@@ -123,9 +123,9 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
           <label htmlFor="testprep-grade">Grade level</label>
           <select id="testprep-grade" value={grade} onChange={(e) => setGrade(e.target.value)}>
             <option value="">Select grade</option>
-            <option value="9">Secondary 9</option>
-            <option value="10">Secondary 10</option>
-            <option value="11">Secondary 11</option>
+            <option value="9">Secondary {gradeToSecondary(9)}</option>
+            <option value="10">Secondary {gradeToSecondary(10)}</option>
+            <option value="11">Secondary {gradeToSecondary(11)}</option>
           </select>
         </div>
 

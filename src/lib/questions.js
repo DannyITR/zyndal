@@ -14,6 +14,17 @@ export function getSubject(subjectId) {
   return SUBJECTS.find((s) => s.id === subjectId) || null
 }
 
+// The app's internal `grade` field (stored on users, questions, study plans,
+// etc.) always uses the North American grade number (7-11) — that's the
+// number the question bank and every other table is keyed by, and it must
+// stay that way. Quebec students don't call it that, though: their school
+// system runs Secondary 1-5, not grades 7-11, so anywhere that number is
+// shown to a student or sent to Claude as "Secondary X", it needs this
+// conversion first (Secondary 1=grade 7, 2=8, 3=9, 4=10, 5=11).
+export function gradeToSecondary(grade) {
+  return grade - 6
+}
+
 export const QUESTIONS_BY_SUBJECT = {
   math: [
     {

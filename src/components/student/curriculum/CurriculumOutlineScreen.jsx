@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getCurriculumOutline, saveCurriculumOutline } from '../../../lib/storage'
 import { generateCurriculumOutline } from '../../../lib/ai'
+import { gradeToSecondary } from '../../../lib/questions'
 import TopBar from '../../shared/TopBar'
 
 // The outline is a static reference document generated at most once per
@@ -93,7 +94,7 @@ export default function CurriculumOutlineScreen({ user, subject, onBack, onLogou
   return (
     <div className="screen student-screen">
       <TopBar
-        title={`📖 ${subject.name} — Secondary ${grade} Curriculum`}
+        title={`📖 ${subject.name} — Secondary ${gradeToSecondary(grade)} Curriculum`}
         subtitle="Reference guide"
         username={user.username}
         onBack={onBack}

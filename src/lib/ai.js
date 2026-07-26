@@ -1,4 +1,4 @@
-import { SUBJECTS } from './questions'
+import { SUBJECTS, gradeToSecondary } from './questions'
 import { buildDemoStudyPlanDays, buildDemoStudyGuide } from './testPrepQuestionBank'
 import { fileToBase64, resizeImageToBase64 } from './imageUtils'
 
@@ -78,7 +78,8 @@ const STUDY_GUIDE_SCHEMA = {
 }
 
 function buildStudyPlanSystemPrompt(grade, subject, topic, days) {
-  return `You are a Quebec high school study planner. Generate a JSON study plan for a Secondary ${grade} student preparing for a ${subject} test on ${topic} in ${days} days. Return only JSON with this structure: { days: [ { day: number, title: string, focus: string, lesson: string (2-3 paragraph mini lesson in simple language a teenager would understand), questions: [ { question: string, options: [string,string,string,string], correct: number, explanation: string } ] } ] }.
+  const secondary = gradeToSecondary(grade)
+  return `You are a Quebec high school study planner. Generate a JSON study plan for a Secondary ${secondary} student preparing for a ${subject} test on ${topic} in ${days} days. Return only JSON with this structure: { days: [ { day: number, title: string, focus: string, lesson: string (2-3 paragraph mini lesson in simple language a teenager would understand), questions: [ { question: string, options: [string,string,string,string], correct: number, explanation: string } ] } ] }.
 
 IMPORTANT DAY LOGIC:
 - If X = 1 (test tomorrow or today) — return only 1 day with everything: full lesson + 10 questions covering all key concepts at mixed difficulty
@@ -139,11 +140,12 @@ export async function generateStudyGuide({ grade, subjectName }) {
   }
 
   const client = await getClient()
+  const secondary = gradeToSecondary(grade)
 
   const stream = client.messages.stream({
     model: MODEL,
     max_tokens: 16000,
-    system: `You are a Quebec high school study planner. Generate a daily practice set for a Secondary ${grade} student in ${subjectName}. Pick ONE specific topic from the Quebec Secondary ${grade} ${subjectName} curriculum (vary your choice — don't always pick the most obvious topic) and write exactly 5 multiple-choice questions on it at mixed difficulty. Return only JSON: { topic: string, questions: [ { question: string, options: [string,string,string,string], correct: number (0-based index), explanation: string } ] }.`,
+    system: `You are a Quebec high school study planner. Generate a daily practice set for a Secondary ${secondary} student in ${subjectName}. Pick ONE specific topic from the Quebec Secondary ${secondary} ${subjectName} curriculum (vary your choice — don't always pick the most obvious topic) and write exactly 5 multiple-choice questions on it at mixed difficulty. Return only JSON: { topic: string, questions: [ { question: string, options: [string,string,string,string], correct: number (0-based index), explanation: string } ] }.`,
     output_config: { format: { type: 'json_schema', schema: STUDY_GUIDE_SCHEMA } },
     messages: [{ role: 'user', content: 'Generate the study guide now.' }],
   })
@@ -201,7 +203,8 @@ const CURRICULUM_OUTLINE_SCHEMA = {
 }
 
 function buildCurriculumSystemPrompt(subjectName, grade) {
-  return `You are a Quebec high school curriculum expert. Generate a complete curriculum outline for ${subjectName} at the Secondary ${grade} level following the Quebec Education Program (QEP). Return only JSON in this format:
+  const secondary = gradeToSecondary(grade)
+  return `You are a Quebec high school curriculum expert. Generate a complete curriculum outline for ${subjectName} at the Secondary ${secondary} level following the Quebec Education Program (QEP). Return only JSON in this format:
 {
   subject: string,
   grade: number,
