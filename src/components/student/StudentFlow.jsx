@@ -27,6 +27,7 @@ import StudyGuideScreen from './testprep/StudyGuideScreen'
 import UploadsFlow from './uploads/UploadsFlow'
 import PracticeFlow from './practice/PracticeFlow'
 import GradesScreen from './grades/GradesScreen'
+import CurriculumOutlineScreen from './curriculum/CurriculumOutlineScreen'
 
 // Explanations shown by the "?" info badges on the home screen's stats and
 // action buttons — keyed to match the setInfoModalKey() calls below.
@@ -76,6 +77,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [uploadsView, setUploadsView] = useState(null) // null | 'select-type' | 'library'
   const [showPractice, setShowPractice] = useState(false)
   const [showGrades, setShowGrades] = useState(false)
+  const [showCurriculum, setShowCurriculum] = useState(false)
 
   // The logo always resets to this subject-selection home view for a logged-in
   // student — StudentHome/AnswerDetail unmount as a side effect of clearing
@@ -91,6 +93,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     setUploadsView(null)
     setShowPractice(false)
     setShowGrades(false)
+    setShowCurriculum(false)
     setPickedSubjectId(null)
   }
 
@@ -326,6 +329,18 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     )
   }
 
+  if (showCurriculum && activeSubject) {
+    return (
+      <CurriculumOutlineScreen
+        user={user}
+        subject={activeSubject}
+        onBack={() => setShowCurriculum(false)}
+        onLogout={onLogout}
+        onLogoClick={handleLogoClick}
+      />
+    )
+  }
+
   if (!activeSubject) {
     return (
       <div className="screen student-screen">
@@ -426,6 +441,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       onOpenMyUploads={() => setUploadsView('library')}
       onOpenPractice={() => setShowPractice(true)}
       onOpenGrades={() => setShowGrades(true)}
+      onOpenCurriculum={() => setShowCurriculum(true)}
       onBack={() => setPickedSubjectId(null)}
       onLogout={onLogout}
       onLogoClick={handleLogoClick}

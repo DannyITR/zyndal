@@ -30,6 +30,7 @@ export default function StudentHome({
   onOpenMyUploads,
   onOpenPractice,
   onOpenGrades,
+  onOpenCurriculum,
   onBack,
   onLogout,
   onLogoClick,
@@ -261,6 +262,9 @@ export default function StudentHome({
         </button>
         <button type="button" className="btn btn-secondary btn-small" onClick={onOpenGrades}>
           📊 My Grades
+        </button>
+        <button type="button" className="btn btn-secondary btn-small" onClick={onOpenCurriculum}>
+          📖 Curriculum
         </button>
       </div>
 

@@ -157,6 +157,92 @@ export async function generateStudyGuide({ grade, subjectName }) {
   return JSON.parse(text)
 }
 
+// ---------- Curriculum outlines ----------
+// Not gated by DEMO_MODE — unlike study plans/guides (generated repeatedly,
+// per student, per session), an outline is generated at most once per
+// subject+grade combination ever and then shared by every student from
+// Supabase forever (see getCurriculumOutline/saveCurriculumOutline in
+// storage.js), so the real-world call volume is already tiny (≤18 calls:
+// 6 subjects × 3 grades) regardless of how many students use the app.
+
+const CURRICULUM_TOPIC_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    topic_title: { type: 'string' },
+    explanation: { type: 'string' },
+    key_formulas: { type: 'array', items: { type: 'string' } },
+    worked_example: { type: 'string' },
+    common_mistakes: { type: 'string' },
+  },
+  required: ['topic_title', 'explanation', 'key_formulas', 'worked_example', 'common_mistakes'],
+}
+
+const CURRICULUM_UNIT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    unit_number: { type: 'integer' },
+    unit_title: { type: 'string' },
+    topics: { type: 'array', items: CURRICULUM_TOPIC_SCHEMA },
+  },
+  required: ['unit_number', 'unit_title', 'topics'],
+}
+
+const CURRICULUM_OUTLINE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    subject: { type: 'string' },
+    grade: { type: 'integer' },
+    units: { type: 'array', items: CURRICULUM_UNIT_SCHEMA },
+  },
+  required: ['subject', 'grade', 'units'],
+}
+
+function buildCurriculumSystemPrompt(subjectName, grade) {
+  return `You are a Quebec high school curriculum expert. Generate a complete curriculum outline for ${subjectName} at the Secondary ${grade} level following the Quebec Education Program (QEP). Return only JSON in this format:
+{
+  subject: string,
+  grade: number,
+  units: [
+    {
+      unit_number: number,
+      unit_title: string,
+      topics: [
+        {
+          topic_title: string,
+          explanation: string (3-4 sentences explaining the concept in simple teen-friendly language),
+          key_formulas: [string] (if applicable, empty array if not),
+          worked_example: string (a step-by-step worked example showing how to solve a typical problem),
+          common_mistakes: string (one sentence describing the most common mistake students make)
+        }
+      ]
+    }
+  ]
+}`
+}
+
+export async function generateCurriculumOutline({ grade, subjectName }) {
+  const client = await getClient()
+
+  const stream = client.messages.stream({
+    model: MODEL,
+    max_tokens: 64000,
+    system: buildCurriculumSystemPrompt(subjectName, grade),
+    output_config: { format: { type: 'json_schema', schema: CURRICULUM_OUTLINE_SCHEMA } },
+    messages: [{ role: 'user', content: 'Generate the curriculum outline now.' }],
+  })
+
+  const message = await stream.finalMessage()
+  if (message.stop_reason === 'refusal') {
+    throw new Error('The curriculum outline request was declined. Please try again.')
+  }
+  const text = message.content.find((b) => b.type === 'text')?.text
+  if (!text) throw new Error('No curriculum outline was generated. Please try again.')
+  return JSON.parse(text)
+}
+
 // ---------- Document upload scanner ----------
 // Not gated by DEMO_MODE — there's no meaningful hardcoded stand-in for
 // "read the content of this specific photo", so this always calls Claude.

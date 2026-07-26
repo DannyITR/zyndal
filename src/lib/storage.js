@@ -1146,3 +1146,39 @@ export async function getTodaysReceivedShares(userId) {
     sharedAt: r.shared_at,
   }))
 }
+
+// ---------- Curriculum outlines ----------
+// A shared, global cache (no user_id) — one row per subject+grade, generated
+// by Claude exactly once and reused by every student forever.
+
+export async function getCurriculumOutline(subject, grade) {
+  const { data, error } = await supabase
+    .from('curriculum_outlines')
+    .select('*')
+    .eq('subject', subject)
+    .eq('grade', grade)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+// If two students open the same never-before-seen subject+grade at the same
+// moment, both may reach this after the "doesn't exist yet" check — the
+// unique constraint lets only the first insert win, and the loser just reads
+// back the winner's row instead of erroring (same pattern as
+// shareStreakWithFriend's 23505 handling above).
+export async function saveCurriculumOutline(subject, grade, outlineData) {
+  const { data, error } = await supabase
+    .from('curriculum_outlines')
+    .insert({ subject, grade, outline_data: outlineData })
+    .select()
+    .single()
+  if (error) {
+    if (error.code === '23505') {
+      const existing = await getCurriculumOutline(subject, grade)
+      if (existing) return existing
+    }
+    throw error
+  }
+  return data
+}
