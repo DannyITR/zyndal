@@ -657,7 +657,7 @@ export async function resolveGradeBonus(bonusId, parentId, studentId, amountCent
 
 // ---------- Document uploads ----------
 
-export async function createUpload({ userId, documentType, subject, topic, gradeReceived, testDate, notes, summary, keyConcepts }) {
+export async function createUpload({ userId, documentType, subject, topic, gradeReceived, testDate, notes, summary, keyConcepts, pagesCount }) {
   const { data, error } = await supabase
     .from('uploads')
     .insert({
@@ -670,6 +670,7 @@ export async function createUpload({ userId, documentType, subject, topic, grade
       notes,
       summary,
       key_concepts: keyConcepts,
+      pages_count: pagesCount,
     })
     .select()
     .single()
@@ -693,7 +694,7 @@ async function createUploadQuestions(uploadId, questions) {
 
 // One call to persist everything from a processed upload: the uploads row,
 // its extracted questions, and — for a graded test — the grade-bonus check.
-export async function saveUpload({ userId, documentType, subject, topic, gradeReceived, testDate, notes, aiResult }) {
+export async function saveUpload({ userId, documentType, subject, topic, gradeReceived, testDate, notes, aiResult, pagesCount }) {
   const upload = await createUpload({
     userId,
     documentType,
@@ -704,12 +705,33 @@ export async function saveUpload({ userId, documentType, subject, topic, gradeRe
     notes,
     summary: aiResult.summary,
     keyConcepts: aiResult.key_concepts,
+    pagesCount,
   })
   await createUploadQuestions(upload.id, aiResult.questions)
   if (documentType === 'test' && gradeReceived != null) {
     await maybeCreateGradeBonusForSource({ userId, gradePercentage: gradeReceived, uploadId: upload.id })
   }
   return { ...upload, questions: aiResult.questions || [] }
+}
+
+// Appends another upload session's pages to an existing upload: the new
+// questions join the same upload_questions bank, and pages_count/updated_at
+// track that more pages were added later (see UploadCaptureScreen's
+// existingUpload mode).
+export async function addPagesToUpload({ uploadId, questions, pagesAdded }) {
+  await createUploadQuestions(uploadId, questions)
+  const { data, error } = await supabase
+    .from('uploads')
+    .select('pages_count')
+    .eq('id', uploadId)
+    .single()
+  if (error) throw error
+
+  const { error: updateError } = await supabase
+    .from('uploads')
+    .update({ pages_count: (data.pages_count || 0) + pagesAdded, updated_at: new Date().toISOString() })
+    .eq('id', uploadId)
+  if (updateError) throw updateError
 }
 
 export async function getUploadsForUser(userId) {

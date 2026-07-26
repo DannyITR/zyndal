@@ -278,8 +278,12 @@ const UPLOAD_DOCUMENT_SCHEMA = {
   required: ['subject', 'topic', 'grade_level', 'document_type', 'questions', 'key_concepts', 'summary'],
 }
 
-function buildDocumentScanSystemPrompt(documentTypePhrase) {
-  return `You are an educational document scanner for Quebec high school students. The student has uploaded a ${documentTypePhrase}. Extract all questions and information from this document and return only JSON in this format:
+function buildDocumentScanSystemPrompt(documentTypePhrase, pageCount) {
+  const pagesNote =
+    pageCount > 1
+      ? ` The student has provided ${pageCount} pages/images that are all part of the same document — treat them as one continuous document, not separate documents. Extract all questions and information found across ALL provided pages combined into a single response, in reading order, and do not repeat a question that appears on more than one page.`
+      : ''
+  return `You are an educational document scanner for Quebec high school students. The student has uploaded a ${documentTypePhrase}.${pagesNote} Extract all questions and information from this document and return only JSON in this format:
 {
   subject: string,
   topic: string,
@@ -304,24 +308,31 @@ If a question in the source document is not already multiple-choice, leave "opti
 // uploadType: 'test' | 'study_material' — only used to phrase the prompt
 // ("a test" vs "a study material"); the model's own document_type
 // classification (test/worksheet/textbook/notes) is what gets returned.
-export async function processUploadedDocument({ file, uploadType }) {
+// files: 1-5 File objects (images and/or PDFs), all pages of one document,
+// sent to Claude together in a single request so it can extract questions
+// spanning multiple pages without duplication.
+export async function processUploadedDocument({ files, uploadType }) {
   const client = await getClient()
-  const isPdf = file.type === 'application/pdf'
-  const { base64, mediaType } = isPdf ? await fileToBase64(file) : await resizeImageToBase64(file)
 
-  const documentBlock = isPdf
-    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
-    : { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } }
+  const documentBlocks = await Promise.all(
+    files.map(async (file) => {
+      const isPdf = file.type === 'application/pdf'
+      const { base64, mediaType } = isPdf ? await fileToBase64(file) : await resizeImageToBase64(file)
+      return isPdf
+        ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
+        : { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } }
+    })
+  )
 
   const stream = client.messages.stream({
     model: MODEL,
-    max_tokens: 8000,
-    system: buildDocumentScanSystemPrompt(uploadType === 'test' ? 'test' : 'study material'),
+    max_tokens: 12000,
+    system: buildDocumentScanSystemPrompt(uploadType === 'test' ? 'test' : 'study material', files.length),
     output_config: { format: { type: 'json_schema', schema: UPLOAD_DOCUMENT_SCHEMA } },
     messages: [
       {
         role: 'user',
-        content: [documentBlock, { type: 'text', text: 'Extract everything from this document now.' }],
+        content: [...documentBlocks, { type: 'text', text: 'Extract everything from this document now.' }],
       },
     ],
   })

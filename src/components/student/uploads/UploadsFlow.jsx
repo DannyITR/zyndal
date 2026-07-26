@@ -14,6 +14,7 @@ export default function UploadsFlow({ user, initialView, lockedSubjectId, onExit
   const [view, setView] = useState(initialView)
   const [uploadType, setUploadType] = useState(null)
   const [selectedUpload, setSelectedUpload] = useState(null)
+  const [addPagesTarget, setAddPagesTarget] = useState(null)
   const [libraryIsBackTarget, setLibraryIsBackTarget] = useState(initialView === 'library')
 
   async function handleSelectUpload(uploadId) {
@@ -23,11 +24,19 @@ export default function UploadsFlow({ user, initialView, lockedSubjectId, onExit
   }
 
   function handleUploadSaved(upload) {
+    setAddPagesTarget(null)
     setSelectedUpload(upload)
     setView('detail')
   }
 
+  function handleAddPages(upload) {
+    setAddPagesTarget(upload)
+    setLibraryIsBackTarget(true)
+    setView('capture')
+  }
+
   function backFromTypeOrDetail() {
+    setAddPagesTarget(null)
     if (libraryIsBackTarget) setView('library')
     else onExit()
   }
@@ -53,8 +62,9 @@ export default function UploadsFlow({ user, initialView, lockedSubjectId, onExit
         user={user}
         uploadType={uploadType}
         lockedSubjectId={lockedSubjectId}
+        existingUpload={addPagesTarget}
         onSaved={handleUploadSaved}
-        onBack={() => setView('select-type')}
+        onBack={() => (addPagesTarget ? backFromTypeOrDetail() : setView('select-type'))}
         onLogout={onLogout}
         onLogoClick={onLogoClick}
       />
@@ -67,6 +77,7 @@ export default function UploadsFlow({ user, initialView, lockedSubjectId, onExit
         user={user}
         lockedSubjectId={lockedSubjectId}
         onSelectUpload={handleSelectUpload}
+        onAddPages={handleAddPages}
         onNewUpload={() => {
           setLibraryIsBackTarget(true)
           setView('select-type')

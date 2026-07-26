@@ -135,6 +135,11 @@ create index if not exists streak_shares_receiver_id_idx on streak_shares(receiv
 -- A document (test, worksheet, textbook page, or notes) a student
 -- photographed or uploaded, plus the AI-extracted summary. grade_received /
 -- test_date are only populated for document_type = 'test'.
+-- pages_count tracks how many pages/photos have been merged into this
+-- upload across every capture session (an upload can start at 1 page and
+-- grow via "Add Pages" in the library — see addPagesToUpload in
+-- storage.js). updated_at moves forward each time pages are added, so the
+-- library can show both "Created" and "Last updated" dates.
 create table if not exists uploads (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references users(id) on delete cascade,
@@ -146,7 +151,9 @@ create table if not exists uploads (
   notes text,
   summary text,
   key_concepts text[],
-  created_at timestamptz not null default now()
+  pages_count integer not null default 1,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 create index if not exists uploads_user_id_idx on uploads(user_id);
 
@@ -265,3 +272,11 @@ alter table grade_bonuses disable row level security;
 alter table study_plans disable row level security;
 alter table practice_sessions disable row level security;
 alter table curriculum_outlines disable row level security;
+
+-- ---------- Migrations ----------
+-- Run against a database that already has an `uploads` table from before
+-- multi-page upload support existed (the `create table if not exists`
+-- above won't add columns to an existing table):
+--
+-- alter table uploads add column if not exists pages_count integer not null default 1;
+-- alter table uploads add column if not exists updated_at timestamptz not null default now();
