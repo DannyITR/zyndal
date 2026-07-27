@@ -2,6 +2,7 @@ import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { getLinkedParent } from '../_lib/db.js'
 import { computeSuggestedBonusCents } from '../../src/lib/gradeReward.js'
+import { sanitizeSubject, sanitizeString, sanitizeInteger } from '../_lib/sanitize.js'
 
 // Backs createGrade() in src/lib/storage.js. Mirrors save-upload.js's
 // maybeCreateGradeBonus side effect exactly, but keyed by grade_id instead
@@ -9,12 +10,23 @@ import { computeSuggestedBonusCents } from '../../src/lib/gradeReward.js'
 // see supabase/schema.sql's grade_bonuses_source_check) — a manually-logged
 // grade feeds the same parent payout-suggestion flow as an uploaded test.
 function validate(body) {
-  if (!body.subject || typeof body.subject !== 'string') return 'subject is required.'
-  if (!body.test_name || typeof body.test_name !== 'string') return 'test_name is required.'
-  if (!Number.isFinite(body.grade_percentage) || body.grade_percentage < 0 || body.grade_percentage > 100) {
-    return 'grade_percentage must be a number between 0 and 100.'
+  const subject = sanitizeSubject(body.subject)
+  if (!subject) return { field: 'subject', message: 'subject must be one of Math, Science, History, Geography, English, French.' }
+  body.subject = subject
+
+  const testName = sanitizeString(body.test_name, 100)
+  if (!testName) return { field: 'test_name', message: 'test_name is required and must be 1-100 characters.' }
+  body.test_name = testName
+
+  const gradePercentage = sanitizeInteger(body.grade_percentage, 0, 100)
+  if (gradePercentage === null) {
+    return { field: 'grade_percentage', message: 'grade_percentage must be a whole number between 0 and 100.' }
   }
-  if (!body.test_date || typeof body.test_date !== 'string') return 'test_date is required.'
+  body.grade_percentage = gradePercentage
+
+  if (!body.test_date || typeof body.test_date !== 'string') {
+    return { field: 'test_date', message: 'test_date is required.' }
+  }
   return null
 }
 

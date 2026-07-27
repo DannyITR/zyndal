@@ -2,6 +2,7 @@ import { createPublicHandler } from '../_lib/publicHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { SAFE_USER_COLUMNS } from '../_lib/db.js'
 import { hashPassword } from '../../src/lib/password.js'
+import { sanitizeUsername, sanitizeAccountType, sanitizeGrade } from '../_lib/sanitize.js'
 
 // Session 5: the whole SignupForm.jsx flow (username-uniqueness check,
 // parent-code lookup, parent-code generation, user creation, streak-row
@@ -37,25 +38,37 @@ async function generateUniqueParentCode() {
 }
 
 function validate(body) {
-  if (!body.username || typeof body.username !== 'string' || body.username.trim().length < 3) {
-    return 'Username must be at least 3 characters.'
-  }
   if (!body.password || typeof body.password !== 'string' || body.password.length < 4) {
-    return 'Password must be at least 4 characters.'
+    return { field: 'password', message: 'Password must be at least 4 characters.' }
   }
-  if (body.account_type !== 'student' && body.account_type !== 'parent') {
-    return "account_type must be 'student' or 'parent'."
+
+  const username = sanitizeUsername(body.username)
+  if (!username) {
+    return { field: 'username', message: 'Username must be 3-20 characters — letters, numbers, and underscores only.' }
   }
-  if (body.grade !== undefined && body.grade !== null && !Number.isFinite(Number(body.grade))) {
-    return 'grade must be a number.'
+  body.username = username
+
+  const accountType = sanitizeAccountType(body.account_type)
+  if (!accountType) {
+    return { field: 'account_type', message: "account_type must be 'student' or 'parent'." }
   }
+  body.account_type = accountType
+
+  if (body.grade !== undefined && body.grade !== null && body.grade !== '') {
+    const grade = sanitizeGrade(body.grade)
+    if (grade === null) {
+      return { field: 'grade', message: 'grade must be 9, 10, or 11.' }
+    }
+    body.grade = grade
+  }
+
   return null
 }
 
 async function handle({ body }) {
-  const username = body.username.trim()
+  const username = body.username
   const accountType = body.account_type
-  const grade = accountType === 'student' && body.grade ? Number(body.grade) : null
+  const grade = accountType === 'student' && body.grade ? body.grade : null
 
   const { data: existing, error: existingError } = await supabase
     .from('users')

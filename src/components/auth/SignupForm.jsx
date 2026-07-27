@@ -102,8 +102,8 @@ export default function SignupForm({ onAuth }) {
             <input
               id="signup-grade"
               type="number"
-              min="1"
-              max="12"
+              min="9"
+              max="11"
               value={grade}
               onChange={(e) => setGrade(e.target.value)}
               placeholder="e.g. 10"

@@ -1,5 +1,6 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
+import { sanitizeUsername } from '../_lib/sanitize.js'
 
 // Mirrors sendFriendRequest and respondToFriendRequest in storage.js behind
 // one action-based endpoint, as spec'd. 'send' accepts target_user_id
@@ -9,12 +10,25 @@ import { supabase } from '../_lib/auth.js'
 // username alone can't identify WHICH pending request to act on, and
 // FriendsScreen already has request.id in hand from get-friends.js.
 function validate(body) {
-  if (!['send', 'accept', 'decline'].includes(body.action)) return "action must be 'send', 'accept', or 'decline'."
-  if (body.action === 'send' && !body.target_user_id && !body.target_username) {
-    return 'target_user_id or target_username is required to send a request.'
+  if (!['send', 'accept', 'decline'].includes(body.action)) {
+    return { field: 'action', message: "action must be 'send', 'accept', or 'decline'." }
   }
+
+  if (body.action === 'send') {
+    if (body.target_username !== undefined && body.target_username !== null && body.target_username !== '') {
+      const targetUsername = sanitizeUsername(body.target_username)
+      if (!targetUsername) {
+        return { field: 'target_username', message: 'target_username must be 3-20 characters — letters, numbers, and underscores only.' }
+      }
+      body.target_username = targetUsername
+    }
+    if (!body.target_user_id && !body.target_username) {
+      return { field: 'target_user_id', message: 'target_user_id or target_username is required to send a request.' }
+    }
+  }
+
   if ((body.action === 'accept' || body.action === 'decline') && !body.request_id) {
-    return 'request_id is required to accept or decline a request.'
+    return { field: 'request_id', message: 'request_id is required to accept or decline a request.' }
   }
   return null
 }
@@ -37,7 +51,7 @@ async function handleSend(userId, body) {
       .from('users')
       .select('id')
       .eq('account_type', 'student')
-      .ilike('username', body.target_username.trim())
+      .ilike('username', body.target_username)
       .maybeSingle()
     if (error) throw error
     if (!data) {

@@ -18,19 +18,24 @@ export function createGenerateHandler({ validate, handle }) {
       return
     }
 
-    const body = req.body || {}
-    const validationError = validate(body)
-    if (validationError) {
-      res.status(400).json({ error: validationError })
-      return
-    }
-
     try {
+      // req.body is a lazy getter (Vercel's dev/prod runtime parses it on
+      // first access) that THROWS on malformed JSON — reading it has to
+      // happen inside this try, or a client sending a bad Content-Type:
+      // application/json body with garbage bytes crashes the whole
+      // function with an uncaught exception instead of getting a clean 400.
+      const body = req.body || {}
+      const validationError = validate(body)
+      if (validationError) {
+        res.status(400).json({ error: validationError })
+        return
+      }
+
       const result = await handle(body)
       res.status(200).json(result)
     } catch (err) {
       console.error('[api] generation failed:', err)
-      res.status(err.refusal ? 422 : 500).json({ error: err.message || 'Generation failed. Please try again.' })
+      res.status(err.refusal ? 422 : err.status || err.statusCode || 500).json({ error: err.message || 'Generation failed. Please try again.' })
     }
   }
 }

@@ -1,12 +1,21 @@
 import { createParentHandler } from '../_lib/parentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { getParentWalletRow, walletRowToJson } from '../_lib/parentDb.js'
+import { sanitizeInteger } from '../_lib/sanitize.js'
 
 // Mirrors addFundsToWallet in storage.js. Simulated money only — no real
 // payment processor is involved (see the "Parent finances" header comment
 // in storage.js) — so this just increments the two wallet columns.
+// 100-1000000 cents ($1-$10,000) bounds a single funding transaction to a
+// sane range — the preset buttons in AddFundsPaymentModal.jsx (10/20/50/100
+// dollars) are well inside it; only a hand-crafted request would ever hit
+// either edge.
 function validate(body) {
-  if (!Number.isFinite(body.amount_cents) || body.amount_cents <= 0) return 'amount_cents must be a positive number.'
+  const amountCents = sanitizeInteger(body.amount_cents, 100, 1000000)
+  if (amountCents === null) {
+    return { field: 'amount_cents', message: 'amount_cents must be a whole number between 100 ($1) and 1000000 ($10,000).' }
+  }
+  body.amount_cents = amountCents
   return null
 }
 

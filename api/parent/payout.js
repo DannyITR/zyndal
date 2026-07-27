@@ -2,6 +2,7 @@ import { createParentHandler } from '../_lib/parentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { getStreakRow } from '../_lib/db.js'
 import { verifyStudentBelongsToParent, getParentWalletRow, walletRowToJson } from '../_lib/parentDb.js'
+import { sanitizeUuid, sanitizeInteger } from '../_lib/sanitize.js'
 
 // Mirrors payoutStudentCoins in storage.js: cashes out a student's coins for
 // real dollars, deducting coins from the student and cents from the parent's
@@ -13,9 +14,20 @@ import { verifyStudentBelongsToParent, getParentWalletRow, walletRowToJson } fro
 // alongside amount_cents for that reason, matching payoutStudentCoins'
 // existing (parentId, studentId, coins, amountCents) signature.
 function validate(body) {
-  if (!body.student_id || typeof body.student_id !== 'string') return 'student_id is required.'
-  if (!Number.isFinite(body.coins) || body.coins <= 0) return 'coins must be a positive number.'
-  if (!Number.isFinite(body.amount_cents) || body.amount_cents <= 0) return 'amount_cents must be a positive number.'
+  const studentId = sanitizeUuid(body.student_id)
+  if (!studentId) return { field: 'student_id', message: 'student_id must be a valid UUID.' }
+  body.student_id = studentId
+
+  if (!Number.isFinite(body.coins) || body.coins <= 0) {
+    return { field: 'coins', message: 'coins must be a positive number.' }
+  }
+
+  const amountCents = sanitizeInteger(body.amount_cents, 1, 1000000)
+  if (amountCents === null) {
+    return { field: 'amount_cents', message: 'amount_cents must be a whole number between 1 and 1000000.' }
+  }
+  body.amount_cents = amountCents
+
   return null
 }
 

@@ -2,6 +2,7 @@ import { createPublicHandler } from '../_lib/publicHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { SAFE_USER_COLUMNS } from '../_lib/db.js'
 import { hashPassword, comparePassword, isBcryptHash } from '../../src/lib/password.js'
+import { sanitizeUsername } from '../_lib/sanitize.js'
 
 // Session 5: mirrors verifyLogin + the silent legacy-plaintext migration
 // (verifyAndMigratePassword) + createSession from the pre-RLS
@@ -9,9 +10,21 @@ import { hashPassword, comparePassword, isBcryptHash } from '../../src/lib/passw
 // behind a session-authenticated handler. Returns the generic "Invalid
 // username or password" message either way (unknown username vs. wrong
 // password) so this can't be used to enumerate valid usernames.
+//
+// sanitizeUsername lowercases + restricts to [a-z0-9_]{3,20} — checked
+// against the live users table before relying on it here: all real accounts
+// already fit that pattern, so this can't lock anyone out of an existing
+// account (nothing has ever let a username be created outside it, since
+// api/auth/signup.js enforces the same pattern on the way in).
 function validate(body) {
-  if (!body.username || typeof body.username !== 'string') return 'username is required.'
-  if (!body.password || typeof body.password !== 'string') return 'password is required.'
+  if (!body.password || typeof body.password !== 'string') {
+    return { field: 'password', message: 'password is required.' }
+  }
+  const username = sanitizeUsername(body.username)
+  if (!username) {
+    return { field: 'username', message: 'username is required.' }
+  }
+  body.username = username
   return null
 }
 
@@ -26,7 +39,7 @@ async function handle({ body }) {
   const { data: user, error } = await supabase
     .from('users')
     .select(`${SAFE_USER_COLUMNS}, password`)
-    .ilike('username', body.username.trim())
+    .ilike('username', body.username)
     .maybeSingle()
   if (error) throw error
   if (!user) throw invalidCredentialsError()

@@ -1,6 +1,7 @@
 import { createParentHandler } from '../_lib/parentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { verifyStudentBelongsToParent, getParentWalletRow, walletRowToJson } from '../_lib/parentDb.js'
+import { sanitizeUuid, sanitizeInteger } from '../_lib/sanitize.js'
 
 // Mirrors FOUR separate storage.js functions (updateCoinRate,
 // updateMilestoneSettings, updatePerfectWeekBonus, updateGradeRewardSettings)
@@ -14,31 +15,51 @@ import { verifyStudentBelongsToParent, getParentWalletRow, walletRowToJson } fro
 // milestone_settings has no other endpoint that could ever update it.
 function validate(body) {
   const hasStudentField = body.perfect_week_bonus !== undefined || body.grade_thresholds !== undefined
-  if (hasStudentField && (!body.student_id || typeof body.student_id !== 'string')) {
-    return 'student_id is required when updating perfect_week_bonus or grade_thresholds.'
+  if (hasStudentField) {
+    const studentId = sanitizeUuid(body.student_id)
+    if (!studentId) {
+      return { field: 'student_id', message: 'student_id must be a valid UUID when updating perfect_week_bonus or grade_thresholds.' }
+    }
+    body.student_id = studentId
   }
-  if (body.coin_rate !== undefined && (!Number.isFinite(body.coin_rate) || body.coin_rate <= 0)) {
-    return 'coin_rate must be a positive number.'
+
+  if (body.coin_rate !== undefined) {
+    const coinRate = sanitizeInteger(body.coin_rate, 1, 1000)
+    if (coinRate === null) {
+      return { field: 'coin_rate', message: 'coin_rate must be a whole number between 1 and 1000.' }
+    }
+    body.coin_rate = coinRate
   }
-  if (body.perfect_week_bonus !== undefined && (!Number.isFinite(body.perfect_week_bonus) || body.perfect_week_bonus < 0)) {
-    return 'perfect_week_bonus must be a non-negative number.'
-  }
-  if (body.grade_thresholds !== undefined) {
-    const { aPlusCents, aCents, bCents, cCents } = body.grade_thresholds || {}
-    if (![aPlusCents, aCents, bCents, cCents].every((v) => Number.isFinite(v) && v >= 0)) {
-      return 'grade_thresholds must include non-negative aPlusCents, aCents, bCents, cCents.'
+
+  if (body.perfect_week_bonus !== undefined) {
+    if (!Number.isFinite(body.perfect_week_bonus) || body.perfect_week_bonus < 0 || body.perfect_week_bonus > 10000) {
+      return { field: 'perfect_week_bonus', message: 'perfect_week_bonus must be a number between 0 and 10000.' }
     }
   }
-  if (body.milestone_settings !== undefined && (typeof body.milestone_settings !== 'object' || body.milestone_settings === null)) {
-    return 'milestone_settings must be an object.'
+
+  if (body.grade_thresholds !== undefined) {
+    const gt = body.grade_thresholds || {}
+    const aPlusCents = sanitizeInteger(gt.aPlusCents, 0, 1000000)
+    const aCents = sanitizeInteger(gt.aCents, 0, 1000000)
+    const bCents = sanitizeInteger(gt.bCents, 0, 1000000)
+    const cCents = sanitizeInteger(gt.cCents, 0, 1000000)
+    if ([aPlusCents, aCents, bCents, cCents].some((v) => v === null)) {
+      return { field: 'grade_thresholds', message: 'grade_thresholds must include whole-number aPlusCents, aCents, bCents, cCents between 0 and 1000000.' }
+    }
+    body.grade_thresholds = { aPlusCents, aCents, bCents, cCents }
   }
+
+  if (body.milestone_settings !== undefined && (typeof body.milestone_settings !== 'object' || body.milestone_settings === null)) {
+    return { field: 'milestone_settings', message: 'milestone_settings must be an object.' }
+  }
+
   if (
     body.coin_rate === undefined &&
     body.perfect_week_bonus === undefined &&
     body.grade_thresholds === undefined &&
     body.milestone_settings === undefined
   ) {
-    return 'Provide at least one setting to update.'
+    return { field: 'body', message: 'Provide at least one setting to update.' }
   }
   return null
 }
