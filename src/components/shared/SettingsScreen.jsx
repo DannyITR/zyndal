@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { updateUserProfile, changePassword, getFriendCount } from '../../lib/storage'
 import { AVATARS } from '../../lib/avatars'
 import TopBar from './TopBar'
+import LegalModal from '../legal/LegalModal'
 
 export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogoClick }) {
   const isStudent = user.account_type === 'student'
@@ -34,6 +35,8 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
   const [passwordSaving, setPasswordSaving] = useState(false)
   const [passwordError, setPasswordError] = useState('')
   const [passwordSuccess, setPasswordSuccess] = useState('')
+
+  const [openLegal, setOpenLegal] = useState(null) // null | 'privacy' | 'terms'
 
   async function handleSaveProfile(e) {
     e.preventDefault()
@@ -206,6 +209,17 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
           {passwordSaving ? 'Updating…' : 'Change Password'}
         </button>
       </form>
+
+      <div className="settings-legal-links">
+        <button type="button" onClick={() => setOpenLegal('privacy')}>
+          Privacy Policy
+        </button>
+        <button type="button" onClick={() => setOpenLegal('terms')}>
+          Terms of Service
+        </button>
+      </div>
+
+      {openLegal && <LegalModal type={openLegal} onClose={() => setOpenLegal(null)} />}
     </div>
   )
 }

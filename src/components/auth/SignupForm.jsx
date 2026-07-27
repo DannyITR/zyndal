@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { signup } from '../../lib/storage'
+import LegalModal from '../legal/LegalModal'
 
 export default function SignupForm({ onAuth }) {
   const [role, setRole] = useState('student')
@@ -8,8 +9,14 @@ export default function SignupForm({ onAuth }) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [grade, setGrade] = useState('')
   const [parentCode, setParentCode] = useState('')
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
+  const [confirmedAge, setConfirmedAge] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [openLegal, setOpenLegal] = useState(null) // null | 'privacy' | 'terms'
+
+  const needsAgeConfirmation = role === 'student'
+  const canSubmit = agreedToTerms && (!needsAgeConfirmation || confirmedAge) && !submitting
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -26,6 +33,14 @@ export default function SignupForm({ onAuth }) {
     }
     if (password !== confirmPassword) {
       setError('Passwords do not match.')
+      return
+    }
+    if (!agreedToTerms) {
+      setError('You must agree to the Terms of Service and Privacy Policy to create an account.')
+      return
+    }
+    if (needsAgeConfirmation && !confirmedAge) {
+      setError('Please confirm the age/parental permission statement below.')
       return
     }
 
@@ -123,10 +138,45 @@ export default function SignupForm({ onAuth }) {
         </>
       )}
 
+      <label className="checkbox-field">
+        <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} />
+        <span>
+          I agree to the{' '}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              setOpenLegal('terms')
+            }}
+          >
+            Terms of Service
+          </button>{' '}
+          and{' '}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              setOpenLegal('privacy')
+            }}
+          >
+            Privacy Policy
+          </button>
+        </span>
+      </label>
+
+      {needsAgeConfirmation && (
+        <label className="checkbox-field">
+          <input type="checkbox" checked={confirmedAge} onChange={(e) => setConfirmedAge(e.target.checked)} />
+          <span>I confirm I am 14 or older, or my parent has given permission</span>
+        </label>
+      )}
+
       {error && <p className="form-error">{error}</p>}
-      <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+      <button type="submit" className="btn btn-primary btn-block" disabled={!canSubmit}>
         {submitting ? 'Creating account…' : 'Create Account'}
       </button>
+
+      {openLegal && <LegalModal type={openLegal} onClose={() => setOpenLegal(null)} />}
     </form>
   )
 }

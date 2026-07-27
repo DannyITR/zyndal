@@ -1,6 +1,10 @@
+import { useState } from 'react'
 import Logo from '../shared/Logo'
+import LegalModal from '../legal/LegalModal'
 
 export default function LandingPage({ onSignUp, onLogIn }) {
+  const [openLegal, setOpenLegal] = useState(null) // null | 'privacy' | 'terms'
+
   return (
     <div className="landing-screen">
       <div className="landing-glow landing-glow--1" aria-hidden="true" />
@@ -23,6 +27,21 @@ export default function LandingPage({ onSignUp, onLogIn }) {
           Log In
         </button>
       </div>
+
+      <footer className="landing-footer">
+        <div className="landing-footer-links">
+          <button type="button" onClick={() => setOpenLegal('privacy')}>
+            Privacy Policy
+          </button>
+          <button type="button" onClick={() => setOpenLegal('terms')}>
+            Terms of Service
+          </button>
+          <a href="mailto:hello@zyndal.com">hello@zyndal.com</a>
+        </div>
+        <p className="landing-footer-copyright">© 2026 Zyndal. All rights reserved.</p>
+      </footer>
+
+      {openLegal && <LegalModal type={openLegal} onClose={() => setOpenLegal(null)} />}
     </div>
   )
 }
