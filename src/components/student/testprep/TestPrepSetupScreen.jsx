@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { SUBJECTS, getSubject, gradeToSecondary } from '../../../lib/questions'
 import { todayStr } from '../../../lib/streak'
 import { daysUntil } from '../../../lib/testprep'
-import { getUploadedQuestionsForSubject, createStudyPlan, getPastStudyPlans } from '../../../lib/storage'
+import { getUploadedQuestionsForSubject, hasAnyUploadsForSubject, createStudyPlan, getPastStudyPlans } from '../../../lib/storage'
 import { generateStudyPlan } from '../../../lib/ai'
 import { saveSourcePreference, buildPlanDaysFromUploads, mixPlanDays } from '../../../lib/questionSource'
 import TopBar from '../../shared/TopBar'
@@ -15,6 +15,7 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
   const [testDate, setTestDate] = useState('')
   const [grade, setGrade] = useState(user.grade ? String(user.grade) : '')
   const [uploadedQuestions, setUploadedQuestions] = useState([])
+  const [hasAnyUploads, setHasAnyUploads] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
   const [pastPlans, setPastPlans] = useState(null)
@@ -42,8 +43,12 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
     if (!canSubmit) return
     setError('')
     try {
-      const questions = await getUploadedQuestionsForSubject(user.id, subjectId)
+      const [questions, anyUploads] = await Promise.all([
+        getUploadedQuestionsForSubject(user.id, subjectId),
+        hasAnyUploadsForSubject(user.id, subjectId),
+      ])
       setUploadedQuestions(questions)
+      setHasAnyUploads(anyUploads)
       setStep('source')
     } catch (err) {
       console.error('[TestPrep] could not check uploaded questions:', err)
@@ -92,6 +97,7 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
         subjectId={subjectId}
         subjectName={subject.name}
         uploadCount={uploadedQuestions.length}
+        hasAnyUploads={hasAnyUploads}
         generating={generating}
         error={error}
         onContinue={handleGenerate}

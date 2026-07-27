@@ -1,12 +1,24 @@
 import { useState } from 'react'
-import { getSourceOptions, getSourcePreference } from '../../../lib/questionSource'
+import { getSourceOptions, getSourcePreference, getNoOptionsHint } from '../../../lib/questionSource'
 import TopBar from '../../shared/TopBar'
 
 // Shared by Test Prep (after subject/topic/date) and Study Guide (after
 // subject is known) — lets the student pick where their practice questions
 // come from before anything is generated. See questionSource.js for the
 // option list and the localStorage preference this pre-selects from.
-export default function QuestionSourceStep({ user, subjectId, subjectName, uploadCount, generating = false, error, onContinue, onBack, onLogout, onLogoClick }) {
+export default function QuestionSourceStep({
+  user,
+  subjectId,
+  subjectName,
+  uploadCount,
+  hasAnyUploads = false,
+  generating = false,
+  error,
+  onContinue,
+  onBack,
+  onLogout,
+  onLogoClick,
+}) {
   const options = getSourceOptions(uploadCount, subjectName)
   const savedPreference = getSourcePreference(subjectId)
   const [selected, setSelected] = useState(() => {
@@ -43,7 +55,7 @@ export default function QuestionSourceStep({ user, subjectId, subjectName, uploa
         ))}
       </div>
 
-      {uploadCount <= 0 && <p className="field-hint">Upload your class materials to unlock more options.</p>}
+      {uploadCount <= 0 && <p className="field-hint">{getNoOptionsHint(hasAnyUploads)}</p>}
 
       {error && <p className="form-error">{error}</p>}
 

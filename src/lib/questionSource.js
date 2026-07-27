@@ -24,6 +24,17 @@ export function getSourceOptions(uploadCount, subjectName) {
   ]
 }
 
+// The hint shown under a single-option (AI-only) picker. Distinguishes "you
+// haven't uploaded anything for this subject" from the more confusing case
+// where uploads exist but none of them extracted as multiple-choice
+// questions (open-ended worksheets/notes) — see getUploadedQuestionsForSubject
+// in storage.js, which only surfaces questions it can actually quiz on.
+export function getNoOptionsHint(hasAnyUploads) {
+  return hasAnyUploads
+    ? "You've uploaded materials for this subject, but none had multiple-choice questions we could pull from yet — upload a test or worksheet with multiple-choice questions to unlock more options."
+    : 'Upload your class materials to unlock more options.'
+}
+
 function prefKey(subjectId) {
   return `zyndal_question_source_${subjectId}`
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { todayStr } from '../../../lib/streak'
 import { generateStudyGuide, getTodaysGuideSubject } from '../../../lib/ai'
-import { getUploadedQuestionsForSubject } from '../../../lib/storage'
+import { getUploadedQuestionsForSubject, hasAnyUploadsForSubject } from '../../../lib/storage'
 import { saveSourcePreference, buildGuideFromUploads, mixGuideQuestions } from '../../../lib/questionSource'
 import TopBar from '../../shared/TopBar'
 import TestPrepQuestion from './TestPrepQuestion'
@@ -39,6 +39,7 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
   // picker only shows up the first time a student opens it each day.
   const [step, setStep] = useState(() => (readCache(user.id, subject.id) ? 'guide' : 'source'))
   const [uploadedQuestions, setUploadedQuestions] = useState([])
+  const [hasAnyUploads, setHasAnyUploads] = useState(false)
   const [uploadsLoaded, setUploadsLoaded] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
@@ -46,16 +47,18 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
   useEffect(() => {
     if (step !== 'source') return
     let cancelled = false
-    getUploadedQuestionsForSubject(user.id, subject.id)
-      .then((questions) => {
+    Promise.all([getUploadedQuestionsForSubject(user.id, subject.id), hasAnyUploadsForSubject(user.id, subject.id)])
+      .then(([questions, anyUploads]) => {
         if (cancelled) return
         setUploadedQuestions(questions)
+        setHasAnyUploads(anyUploads)
         setUploadsLoaded(true)
       })
       .catch((err) => {
         if (cancelled) return
         console.error('[StudyGuide] could not check uploads:', err)
         setUploadedQuestions([])
+        setHasAnyUploads(false)
         setUploadsLoaded(true)
       })
     return () => {
@@ -118,6 +121,7 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
         subjectId={subject.id}
         subjectName={subject.name}
         uploadCount={uploadedQuestions.length}
+        hasAnyUploads={hasAnyUploads}
         generating={generating}
         error={error}
         onContinue={handleGenerate}

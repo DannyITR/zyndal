@@ -856,6 +856,20 @@ export async function getUploadedQuestionsForSubject(userId, subject) {
     }))
 }
 
+// Cheap existence check, independent of the multiple-choice-usability
+// filter in getUploadedQuestionsForSubject above — lets the source picker
+// tell "no uploads at all for this subject" apart from "uploads exist but
+// none of them extracted as multiple-choice yet" (see QuestionSourceStep).
+export async function hasAnyUploadsForSubject(userId, subject) {
+  const { count, error } = await supabase
+    .from('uploads')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('subject', subject)
+  if (error) throw error
+  return (count || 0) > 0
+}
+
 export async function createStudyPlan({ userId, subject, topic, testDate, daysAvailable, gradeLevel, planData }) {
   const { data, error } = await supabase
     .from('study_plans')
