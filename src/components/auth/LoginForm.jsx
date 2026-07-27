@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { verifyLogin, setSession } from '../../lib/storage'
+import { verifyLogin, createSession } from '../../lib/storage'
 
 export default function LoginForm({ onAuth }) {
   const [username, setUsername] = useState('')
@@ -17,7 +17,7 @@ export default function LoginForm({ onAuth }) {
         setError('Invalid username or password.')
         return
       }
-      setSession(user.id)
+      await createSession(user.id)
       onAuth(user)
     } catch {
       setError('Something went wrong. Please try again.')

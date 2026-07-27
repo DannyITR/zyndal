@@ -256,6 +256,21 @@ create table if not exists curriculum_outlines (
   unique (subject, grade)
 );
 
+-- Custom-auth session tokens (Zyndal doesn't use Supabase Auth). Issued on
+-- login/signup, sent as the X-Session-Token header on every Supabase
+-- request (see supabaseClient.js), and deleted on logout. This is prep
+-- work only for now — no RLS policy or server-side function validates the
+-- token yet, so it doesn't gate access on its own until that lands.
+create table if not exists sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  token text not null unique,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default now() + interval '30 days'
+);
+create index if not exists sessions_token_idx on sessions(token);
+create index if not exists sessions_user_id_idx on sessions(user_id);
+
 -- No auth system yet, so RLS is off for all tables.
 alter table users disable row level security;
 alter table streaks disable row level security;
@@ -273,6 +288,7 @@ alter table grade_bonuses disable row level security;
 alter table study_plans disable row level security;
 alter table practice_sessions disable row level security;
 alter table curriculum_outlines disable row level security;
+alter table sessions disable row level security;
 
 -- ---------- Migrations ----------
 -- Run against a database that already has an `uploads` table from before

@@ -15,27 +15,54 @@ import { centsToCoins } from './money'
 import { findQuestionByPrompt } from './questions'
 import { computeSuggestedBonusCents } from './gradeReward'
 
+// This key is duplicated (not imported) in supabaseClient.js, which reads
+// it to attach the X-Session-Token header to every request — storage.js
+// already imports supabaseClient.js, so the reverse import would be circular.
 const SESSION_KEY = 'zyndal_session'
 
 // ---------- Session ----------
-// localStorage is only ever used as a cache of which user id is currently
-// logged in on this device — every other piece of data lives in Supabase.
+// A signed-in device holds a random session token (crypto.randomUUID()),
+// issued into the `sessions` table on login/signup and looked up — not
+// trusted from localStorage alone — on every getCurrentUser() call. This is
+// the client half of the session-token system; nothing server-side (RLS
+// policy or serverless function) validates the token yet, so on its own
+// this doesn't restrict data access — see supabase/schema.sql for the
+// `sessions` table and the plan for what comes next.
 
-export function getSessionUserId() {
+export function getSessionToken() {
   try {
     const raw = localStorage.getItem(SESSION_KEY)
-    return raw ? JSON.parse(raw).userId : null
+    return raw ? JSON.parse(raw).token : null
   } catch {
     return null
   }
 }
 
-export function setSession(userId) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ userId }))
+// Called on successful login/signup — issues a fresh token, persists it to
+// Supabase, and stores it as this device's session.
+export async function createSession(userId) {
+  const token = crypto.randomUUID()
+  const { error } = await supabase.from('sessions').insert({ user_id: userId, token })
+  if (error) throw error
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ token }))
+  return token
 }
 
+// Clears the local session immediately (so the UI can log the user out
+// without waiting on a network round trip) and deletes the matching row
+// from Supabase in the background — best-effort, since a session that
+// merely expires after 30 days is an acceptable fallback if this fails.
 export function clearSession() {
+  const token = getSessionToken()
   localStorage.removeItem(SESSION_KEY)
+  if (!token) return
+  supabase
+    .from('sessions')
+    .delete()
+    .eq('token', token)
+    .then(({ error }) => {
+      if (error) console.error('[storage] failed to delete session:', error)
+    })
 }
 
 // ---------- Users ----------
@@ -148,15 +175,26 @@ export async function changePassword(userId, currentPassword, newPassword) {
 }
 
 export async function getCurrentUser() {
-  const userId = getSessionUserId()
-  if (!userId) return null
+  const token = getSessionToken()
+  if (!token) return null
   try {
-    const user = await findUserById(userId)
+    const { data: session, error } = await supabase
+      .from('sessions')
+      .select('user_id, expires_at')
+      .eq('token', token)
+      .maybeSingle()
+    if (error) throw error
+    if (!session || new Date(session.expires_at) <= new Date()) {
+      clearSession()
+      return null
+    }
+    const user = await findUserById(session.user_id)
     if (!user) clearSession()
     return user
   } catch {
     // Stale or invalid session (e.g. leftover from before this device's
-    // localStorage was pointed at Supabase) — treat it as logged out.
+    // localStorage was pointed at Supabase, or a deleted sessions row) —
+    // treat it as logged out.
     clearSession()
     return null
   }

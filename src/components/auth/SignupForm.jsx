@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createUser, findUserByUsername, findUserByParentCode, linkParentAndStudent, setSession } from '../../lib/storage'
+import { createUser, findUserByUsername, findUserByParentCode, linkParentAndStudent, createSession } from '../../lib/storage'
 import { generateParentCode } from '../../lib/codes'
 
 export default function SignupForm({ onAuth }) {
@@ -58,7 +58,7 @@ export default function SignupForm({ onAuth }) {
         await linkParentAndStudent(linkedParent.id, newUser.id)
       }
 
-      setSession(newUser.id)
+      await createSession(newUser.id)
       onAuth(newUser)
     } catch {
       setError('Something went wrong. Please try again.')
