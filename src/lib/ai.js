@@ -151,6 +151,68 @@ export async function generateStudyGuide({ grade, subjectName }) {
   return JSON.parse(text)
 }
 
+// ---------- Questions generated from an upload's content ----------
+// Not gated by DEMO_MODE — like processUploadedDocument, there's no
+// meaningful hardcoded stand-in for "generate questions from THIS specific
+// document's summary"; a demo-bank question would have nothing to do with
+// what the student actually uploaded. Used by questionSource.js's fallback
+// chain for an upload that has a summary/key_concepts but no (usable)
+// pre-extracted multiple-choice questions — the result gets cached into
+// upload_questions (see cacheGeneratedUploadQuestions in storage.js) so
+// this only runs once per upload.
+
+const UPLOAD_CONTENT_QUESTIONS_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    questions: { type: 'array', items: QUESTION_SCHEMA },
+  },
+  required: ['questions'],
+}
+
+function buildUploadContentQuestionsPrompt(summary, keyConcepts, subjectName, grade) {
+  const secondary = gradeToSecondary(grade)
+  const conceptsText = keyConcepts && keyConcepts.length > 0 ? keyConcepts.join(', ') : 'Not specified'
+  return `You are a Quebec high school teacher. Based on the following uploaded study material, generate 5 multiple choice questions a student might face on a test. Each question should test understanding of the key concepts in the material.
+
+Material summary: ${summary}
+Key concepts: ${conceptsText}
+Subject: ${subjectName}
+Grade: Secondary ${secondary}
+
+Return only JSON:
+{
+  questions: [
+    {
+      question: string,
+      options: [string, string, string, string],
+      correct: number (0-3),
+      explanation: string
+    }
+  ]
+}`
+}
+
+export async function generateQuestionsFromUploadContent({ summary, keyConcepts, subject, grade }) {
+  const client = await getClient()
+
+  const stream = client.messages.stream({
+    model: MODEL,
+    max_tokens: 8000,
+    system: buildUploadContentQuestionsPrompt(summary, keyConcepts, subject, grade),
+    output_config: { format: { type: 'json_schema', schema: UPLOAD_CONTENT_QUESTIONS_SCHEMA } },
+    messages: [{ role: 'user', content: 'Generate the questions now.' }],
+  })
+
+  const message = await stream.finalMessage()
+  if (message.stop_reason === 'refusal') {
+    throw new Error('Could not generate questions from this material. Please try again.')
+  }
+  const text = message.content.find((b) => b.type === 'text')?.text
+  if (!text) throw new Error('No questions were generated from this material. Please try again.')
+  return JSON.parse(text)
+}
+
 // ---------- Curriculum outlines ----------
 // Not gated by DEMO_MODE — unlike study plans/guides (generated repeatedly,
 // per student, per session), an outline is generated at most once per

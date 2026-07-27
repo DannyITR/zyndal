@@ -13,6 +13,7 @@ export default function QuestionSourceStep({
   uploadCount,
   hasAnyUploads = false,
   generating = false,
+  generatingLabel = '',
   error,
   onContinue,
   onBack,
@@ -60,7 +61,7 @@ export default function QuestionSourceStep({
       {error && <p className="form-error">{error}</p>}
 
       <button type="button" className="btn btn-primary btn-block" disabled={!selected || generating} onClick={() => onContinue(selected)}>
-        {generating ? 'Generating your questions… (this can take a minute)' : 'Continue'}
+        {generating ? generatingLabel || 'Generating your questions… (this can take a minute)' : 'Continue'}
       </button>
     </div>
   )

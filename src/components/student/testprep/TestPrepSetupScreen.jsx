@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { SUBJECTS, getSubject, gradeToSecondary } from '../../../lib/questions'
 import { todayStr } from '../../../lib/streak'
 import { daysUntil } from '../../../lib/testprep'
-import { getUploadedQuestionsForSubject, hasAnyUploadsForSubject, createStudyPlan, getPastStudyPlans } from '../../../lib/storage'
+import { getUploadedContentForSubject, createStudyPlan, getPastStudyPlans } from '../../../lib/storage'
 import { generateStudyPlan } from '../../../lib/ai'
-import { saveSourcePreference, buildPlanDaysFromUploads, mixPlanDays } from '../../../lib/questionSource'
+import { saveSourcePreference, countUsableUploads, resolveUploadQuestionPool, buildPlanDaysFromUploads, mixPlanDays } from '../../../lib/questionSource'
 import TopBar from '../../shared/TopBar'
 import QuestionSourceStep from './QuestionSourceStep'
 
@@ -14,9 +14,9 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
   const [topic, setTopic] = useState('')
   const [testDate, setTestDate] = useState('')
   const [grade, setGrade] = useState(user.grade ? String(user.grade) : '')
-  const [uploadedQuestions, setUploadedQuestions] = useState([])
-  const [hasAnyUploads, setHasAnyUploads] = useState(false)
+  const [uploadContent, setUploadContent] = useState([])
   const [generating, setGenerating] = useState(false)
+  const [generatingLabel, setGeneratingLabel] = useState('')
   const [error, setError] = useState('')
   const [pastPlans, setPastPlans] = useState(null)
 
@@ -43,21 +43,18 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
     if (!canSubmit) return
     setError('')
     try {
-      const [questions, anyUploads] = await Promise.all([
-        getUploadedQuestionsForSubject(user.id, subjectId),
-        hasAnyUploadsForSubject(user.id, subjectId),
-      ])
-      setUploadedQuestions(questions)
-      setHasAnyUploads(anyUploads)
+      const content = await getUploadedContentForSubject(user.id, subjectId)
+      setUploadContent(content)
       setStep('source')
     } catch (err) {
-      console.error('[TestPrep] could not check uploaded questions:', err)
+      console.error('[TestPrep] could not check uploaded content:', err)
       setError(err.message || "Couldn't load your uploads. Please try again.")
     }
   }
 
   async function handleGenerate(source) {
     setGenerating(true)
+    setGeneratingLabel('')
     setError('')
     saveSourcePreference(subjectId, source)
     try {
@@ -66,11 +63,24 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
       const daysAvailable = Math.max(1, daysUntil(testDate))
 
       let planData
-      if (source === 'uploads') {
-        planData = { days: buildPlanDaysFromUploads(uploadedQuestions, daysAvailable, topic.trim()) }
+      if (source === 'ai') {
+        planData = await generateStudyPlan({ grade: Number(grade), subject: subject.name, topic: topic.trim(), daysAvailable })
       } else {
-        const aiData = await generateStudyPlan({ grade: Number(grade), subject: subject.name, topic: topic.trim(), daysAvailable })
-        planData = source === 'mix' ? { days: mixPlanDays(uploadedQuestions, aiData.days) } : aiData
+        const uploadedQuestions = await resolveUploadQuestionPool(
+          user.id,
+          subjectId,
+          subject.name,
+          Number(grade),
+          setGeneratingLabel
+        )
+        if (source === 'uploads') {
+          if (uploadedQuestions.length === 0) throw new Error("Couldn't build questions from your uploads. Please try Curriculum Guide instead.")
+          planData = { days: buildPlanDaysFromUploads(uploadedQuestions, daysAvailable, topic.trim()) }
+        } else {
+          setGeneratingLabel('')
+          const aiData = await generateStudyPlan({ grade: Number(grade), subject: subject.name, topic: topic.trim(), daysAvailable })
+          planData = { days: mixPlanDays(uploadedQuestions, aiData.days) }
+        }
       }
 
       const plan = await createStudyPlan({
@@ -96,9 +106,10 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
         user={user}
         subjectId={subjectId}
         subjectName={subject.name}
-        uploadCount={uploadedQuestions.length}
-        hasAnyUploads={hasAnyUploads}
+        uploadCount={countUsableUploads(uploadContent)}
+        hasAnyUploads={uploadContent.length > 0}
         generating={generating}
+        generatingLabel={generatingLabel}
         error={error}
         onContinue={handleGenerate}
         onBack={() => setStep('form')}

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { todayStr } from '../../../lib/streak'
 import { generateStudyGuide, getTodaysGuideSubject } from '../../../lib/ai'
-import { getUploadedQuestionsForSubject, hasAnyUploadsForSubject } from '../../../lib/storage'
-import { saveSourcePreference, buildGuideFromUploads, mixGuideQuestions } from '../../../lib/questionSource'
+import { getUploadedContentForSubject } from '../../../lib/storage'
+import { saveSourcePreference, countUsableUploads, resolveUploadQuestionPool, buildGuideFromUploads, mixGuideQuestions } from '../../../lib/questionSource'
 import TopBar from '../../shared/TopBar'
 import TestPrepQuestion from './TestPrepQuestion'
 import QuestionSourceStep from './QuestionSourceStep'
@@ -38,27 +38,25 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
   // Skipped entirely once today's guide is already cached — the source
   // picker only shows up the first time a student opens it each day.
   const [step, setStep] = useState(() => (readCache(user.id, subject.id) ? 'guide' : 'source'))
-  const [uploadedQuestions, setUploadedQuestions] = useState([])
-  const [hasAnyUploads, setHasAnyUploads] = useState(false)
+  const [uploadContent, setUploadContent] = useState([])
   const [uploadsLoaded, setUploadsLoaded] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const [generatingLabel, setGeneratingLabel] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
     if (step !== 'source') return
     let cancelled = false
-    Promise.all([getUploadedQuestionsForSubject(user.id, subject.id), hasAnyUploadsForSubject(user.id, subject.id)])
-      .then(([questions, anyUploads]) => {
+    getUploadedContentForSubject(user.id, subject.id)
+      .then((content) => {
         if (cancelled) return
-        setUploadedQuestions(questions)
-        setHasAnyUploads(anyUploads)
+        setUploadContent(content)
         setUploadsLoaded(true)
       })
       .catch((err) => {
         if (cancelled) return
         console.error('[StudyGuide] could not check uploads:', err)
-        setUploadedQuestions([])
-        setHasAnyUploads(false)
+        setUploadContent([])
         setUploadsLoaded(true)
       })
     return () => {
@@ -68,15 +66,23 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
 
   async function handleGenerate(source) {
     setGenerating(true)
+    setGeneratingLabel('')
     setError('')
     saveSourcePreference(subject.id, source)
     try {
       let result
-      if (source === 'uploads') {
-        result = buildGuideFromUploads(uploadedQuestions, subject.name)
+      if (source === 'ai') {
+        result = await generateStudyGuide({ grade: user.grade || 9, subjectName: subject.name })
       } else {
-        const aiGuide = await generateStudyGuide({ grade: user.grade || 9, subjectName: subject.name })
-        result = source === 'mix' ? mixGuideQuestions(uploadedQuestions, aiGuide) : aiGuide
+        const uploadedQuestions = await resolveUploadQuestionPool(user.id, subject.id, subject.name, user.grade || 9, setGeneratingLabel)
+        if (source === 'uploads') {
+          if (uploadedQuestions.length === 0) throw new Error("Couldn't build questions from your uploads. Please try Curriculum Guide instead.")
+          result = buildGuideFromUploads(uploadedQuestions, subject.name)
+        } else {
+          setGeneratingLabel('')
+          const aiGuide = await generateStudyGuide({ grade: user.grade || 9, subjectName: subject.name })
+          result = mixGuideQuestions(uploadedQuestions, aiGuide)
+        }
       }
       const fresh = { ...result, subjectId: subject.id, progress: {} }
       writeCache(user.id, subject.id, fresh)
@@ -120,9 +126,10 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
         user={user}
         subjectId={subject.id}
         subjectName={subject.name}
-        uploadCount={uploadedQuestions.length}
-        hasAnyUploads={hasAnyUploads}
+        uploadCount={countUsableUploads(uploadContent)}
+        hasAnyUploads={uploadContent.length > 0}
         generating={generating}
+        generatingLabel={generatingLabel}
         error={error}
         onContinue={handleGenerate}
         onBack={onBack}

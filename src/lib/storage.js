@@ -831,43 +831,67 @@ export async function getUploadedQuestions(userId, subject, topic) {
   }))
 }
 
-// Every question the student has ever uploaded for a subject, regardless of
-// topic — used by the Test Prep / Study Guide source picker (see
-// questionSource.js), which lets the student choose to draw from these
-// directly instead of the topic-scoped getUploadedQuestions above. Only
-// rows that came from an already-multiple-choice source document are
-// usable here (options must be non-empty and actually contain the
-// recorded correct answer) — shaped to match QUESTION_SCHEMA (options +
-// 0-based correct index) so callers can drop them straight into a plan.
-export async function getUploadedQuestionsForSubject(userId, subject) {
-  const { data, error } = await supabase
-    .from('upload_questions')
-    .select('question, correct_answer, options, explanation, uploads!inner(user_id, subject)')
-    .eq('uploads.user_id', userId)
-    .eq('uploads.subject', subject)
-  if (error) throw error
-  return (data || [])
-    .filter((row) => row.options && row.options.length > 0 && row.options.includes(row.correct_answer))
-    .map((row) => ({
-      question: row.question,
-      options: row.options,
-      correct: row.options.indexOf(row.correct_answer),
-      explanation: row.explanation,
-    }))
-}
-
-// Cheap existence check, independent of the multiple-choice-usability
-// filter in getUploadedQuestionsForSubject above — lets the source picker
-// tell "no uploads at all for this subject" apart from "uploads exist but
-// none of them extracted as multiple-choice yet" (see QuestionSourceStep).
-export async function hasAnyUploadsForSubject(userId, subject) {
-  const { count, error } = await supabase
+// Every upload the student has for a subject, regardless of topic — used by
+// the Test Prep / Study Guide source picker (see questionSource.js) to
+// decide whether "My Uploads" / "Mix Both" are offered, and to actually
+// build a question pool from them. Each upload comes back with whatever
+// pre-extracted multiple-choice questions it already has (options must be
+// non-empty and actually contain the recorded correct answer — shaped to
+// QUESTION_SCHEMA so callers can drop them straight into a plan) PLUS its
+// summary/key_concepts, so a caller can fall back to generating questions
+// on the fly (see resolveUploadQuestionPool in questionSource.js) for an
+// upload whose extracted content wasn't multiple-choice, or wasn't
+// extracted as discrete questions at all.
+export async function getUploadedContentForSubject(userId, subject) {
+  const { data: uploads, error: uploadsError } = await supabase
     .from('uploads')
-    .select('id', { count: 'exact', head: true })
+    .select('id, summary, key_concepts')
     .eq('user_id', userId)
     .eq('subject', subject)
+  if (uploadsError) throw uploadsError
+  if (!uploads || uploads.length === 0) return []
+
+  const uploadIds = uploads.map((u) => u.id)
+  const { data: questions, error: questionsError } = await supabase
+    .from('upload_questions')
+    .select('upload_id, question, correct_answer, options, explanation')
+    .in('upload_id', uploadIds)
+  if (questionsError) throw questionsError
+
+  return uploads.map((upload) => {
+    const usableQuestions = (questions || [])
+      .filter((row) => row.upload_id === upload.id)
+      .filter((row) => row.options && row.options.length > 0 && row.options.includes(row.correct_answer))
+      .map((row) => ({
+        question: row.question,
+        options: row.options,
+        correct: row.options.indexOf(row.correct_answer),
+        explanation: row.explanation,
+      }))
+    return {
+      uploadId: upload.id,
+      summary: upload.summary,
+      keyConcepts: upload.key_concepts || [],
+      usableQuestions,
+    }
+  })
+}
+
+// Persists questions generated on the fly from an upload's summary (see
+// generateQuestionsFromUploadContent in ai.js) into upload_questions, so the
+// same upload never needs a second Claude call — the next student session
+// finds them as ordinary pre-extracted questions via getUploadedContentForSubject.
+export async function cacheGeneratedUploadQuestions(uploadId, questions) {
+  const rows = questions.map((q) => ({
+    upload_id: uploadId,
+    question: q.question,
+    correct_answer: q.options[q.correct],
+    options: q.options,
+    explanation: q.explanation,
+    difficulty: 'medium',
+  }))
+  const { error } = await supabase.from('upload_questions').insert(rows)
   if (error) throw error
-  return (count || 0) > 0
 }
 
 export async function createStudyPlan({ userId, subject, topic, testDate, daysAvailable, gradeLevel, planData }) {
