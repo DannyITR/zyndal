@@ -1,16 +1,6 @@
 import { supabase } from './supabaseClient'
 import { hashPassword, comparePassword, isBcryptHash } from './password'
-import {
-  XP_PER_CORRECT,
-  COINS_PER_CORRECT,
-  DEFAULT_MILESTONE_BONUSES,
-  PERFECT_WEEK_TARGET,
-  applyDailyAnswer,
-  getEffectiveStreak,
-  getWeeklyCorrectCount,
-  mondayOfWeek,
-  todayStr,
-} from './streak'
+import { XP_PER_CORRECT, COINS_PER_CORRECT, getEffectiveStreak, todayStr } from './streak'
 import { centsToCoins } from './money'
 import { findQuestionByPrompt } from './questions'
 import { computeSuggestedBonusCents } from './gradeReward'
@@ -19,6 +9,57 @@ import { computeSuggestedBonusCents } from './gradeReward'
 // it to attach the X-Session-Token header to every request — storage.js
 // already imports supabaseClient.js, so the reverse import would be circular.
 const SESSION_KEY = 'zyndal_session'
+
+// Session 3: student-data and questions calls now go through /api/student
+// and /api/questions serverless functions (session-token authenticated)
+// instead of direct Supabase queries — see api/_lib/auth.js and
+// api/_lib/db.js, which mirror the relevant pure logic and private helpers
+// from this file. Only migrated where the call is always about the
+// CURRENTLY authenticated user's own data: getProgress() is deliberately
+// NOT migrated, since ParentDashboard/FinanceScreen call it for a parent's
+// *other* linked students too, which the new self-only session-auth
+// endpoints don't support without cross-user authorization that wasn't
+// part of this migration.
+let sessionExpiredHandler = null
+// Registered once by App.jsx so any 401 from these endpoints — not just
+// the initial page-load check — redirects to the login screen immediately,
+// without every calling component needing its own 401 handling.
+export function setSessionExpiredHandler(fn) {
+  sessionExpiredHandler = fn
+}
+
+async function callApi(basePath, method, endpoint, body) {
+  const token = getSessionToken()
+  let response
+  try {
+    response = await fetch(`${basePath}/${endpoint}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'X-Session-Token': token } : {}),
+      },
+      body: method === 'GET' ? undefined : JSON.stringify(body || {}),
+    })
+  } catch {
+    throw new Error('Connection error — please try again.')
+  }
+
+  const data = await response.json().catch(() => null)
+
+  if (response.status === 401) {
+    clearSession()
+    sessionExpiredHandler?.()
+    throw new Error(data?.error || 'Your session has expired. Please log in again.')
+  }
+  if (!response.ok) {
+    throw new Error(data?.error || `Request to ${endpoint} failed (${response.status}).`)
+  }
+  return data
+}
+
+function callStudentApi(method, endpoint, body) {
+  return callApi('/api/student', method, endpoint, body)
+}
 
 // ---------- Session ----------
 // A signed-in device holds a random session token (crypto.randomUUID()),
@@ -77,13 +118,6 @@ export async function findUserByUsername(username) {
   return data
 }
 
-export async function findUserById(id) {
-  if (!id) return null
-  const { data, error } = await supabase.from('users').select('*').eq('id', id).maybeSingle()
-  if (error) throw error
-  return data
-}
-
 export async function findUserByParentCode(code) {
   const { data, error } = await supabase
     .from('users')
@@ -114,26 +148,19 @@ export async function createUser({ username, password, accountType, grade = null
 }
 
 // grade and languagePreference are only meaningful for students; pass the
-// existing value through for parents.
+// existing value through for parents. userId isn't sent — the server
+// derives who's editing from the session token (see
+// api/student/update-settings.js) — but stays in the signature since
+// SettingsScreen.jsx calls this positionally.
 export async function updateUserProfile(userId, { displayName, email, schoolName, avatar, grade, languagePreference }) {
-  const { data, error } = await supabase
-    .from('users')
-    .update({
-      display_name: displayName || null,
-      email: email || null,
-      school: schoolName || null,
-      avatar: avatar || null,
-      grade,
-      language_preference: languagePreference,
-    })
-    .eq('id', userId)
-    .select()
-    .single()
-  if (error) {
-    console.error('[storage] updateUserProfile failed:', error)
-    throw error
-  }
-  return data
+  return callStudentApi('POST', 'update-settings', {
+    display_name: displayName,
+    email,
+    school: schoolName,
+    avatar,
+    grade,
+    language_preference: languagePreference,
+  })
 }
 
 // Checks a plain-text password against a user row that may still have its
@@ -161,40 +188,21 @@ export async function verifyLogin(username, password) {
   return valid ? user : null
 }
 
+// userId isn't sent — the server derives who's changing their password from
+// the session token (see api/student/change-password.js) — but stays in
+// the signature since SettingsScreen.jsx calls this positionally.
 export async function changePassword(userId, currentPassword, newPassword) {
-  const user = await findUserById(userId)
-  if (!user || !(await verifyAndMigratePassword(user, currentPassword))) {
-    throw new Error('Current password is incorrect.')
-  }
-  const hashedNew = await hashPassword(newPassword)
-  const { error } = await supabase.from('users').update({ password: hashedNew }).eq('id', userId)
-  if (error) {
-    console.error('[storage] changePassword failed:', error)
-    throw error
-  }
+  await callStudentApi('POST', 'change-password', { current_password: currentPassword, new_password: newPassword })
 }
 
 export async function getCurrentUser() {
   const token = getSessionToken()
   if (!token) return null
   try {
-    const { data: session, error } = await supabase
-      .from('sessions')
-      .select('user_id, expires_at')
-      .eq('token', token)
-      .maybeSingle()
-    if (error) throw error
-    if (!session || new Date(session.expires_at) <= new Date()) {
-      clearSession()
-      return null
-    }
-    const user = await findUserById(session.user_id)
-    if (!user) clearSession()
-    return user
+    return await callStudentApi('GET', 'get-profile')
   } catch {
-    // Stale or invalid session (e.g. leftover from before this device's
-    // localStorage was pointed at Supabase, or a deleted sessions row) —
-    // treat it as logged out.
+    // Invalid/expired session (already cleared by callApi on a 401) or a
+    // network hiccup — either way, treat it as logged out.
     clearSession()
     return null
   }
@@ -352,85 +360,35 @@ async function getLinkedParent(studentId) {
   }
 }
 
-function normalizeMilestoneBonuses(milestoneSettings) {
-  if (!milestoneSettings) return DEFAULT_MILESTONE_BONUSES
-  const normalized = {}
-  for (const [day, bonus] of Object.entries(milestoneSettings)) {
-    normalized[Number(day)] = Number(bonus)
-  }
-  return normalized
-}
-
-// Fires once per student per week, the moment their weekly correct-first-attempt
-// count reaches PERFECT_WEEK_TARGET. The unique (student_id, week_start)
-// constraint makes this safe to call more than once for the same week.
-async function recordPerfectWeekAchievement(studentId, parentId, perfectWeekBonusDollars, today) {
-  const weekStart = mondayOfWeek(today)
-  const suggestedBonusCents = Math.round(perfectWeekBonusDollars * 100)
-
-  const { data, error } = await supabase
-    .from('perfect_week_achievements')
-    .insert({
-      student_id: studentId,
-      parent_id: parentId,
-      week_start: weekStart,
-      correct_count: PERFECT_WEEK_TARGET,
-      suggested_bonus_cents: suggestedBonusCents,
-    })
-    .select()
-    .single()
-  if (error) {
-    if (error.code === '23505') return null // already recorded this week
-    throw error
-  }
-  return data
-}
-
 // Computes the result of answering today's question and persists both the
-// new answer row and the updated streak/xp/coin totals.
-export async function submitAnswer(progress, question, selectedIndex, subjectId, today) {
-  const linkedParent = await getLinkedParent(progress.studentId)
-  const milestoneBonuses = normalizeMilestoneBonuses(linkedParent?.milestoneSettings)
-  const result = applyDailyAnswer(progress, question, selectedIndex, subjectId, today, milestoneBonuses)
+// new answer row and the updated streak/xp/coin totals. question and today
+// aren't sent — the server looks up today's actual question itself and
+// derives correctness/streak/milestones/perfect-week server-side (see
+// api/student/submit-answer.js, which reuses the exact same
+// applyDailyAnswer logic from src/lib/streak.js) — both params stay in the
+// signature only because StudentHome.jsx calls this positionally.
+export async function submitAnswer(progress, question, selectedIndex, subjectId, _today) {
+  const data = await callStudentApi('POST', 'submit-answer', { subject: subjectId, selected_index: selectedIndex })
 
-  const { error: answerError } = await supabase.from('answers').insert({
-    user_id: progress.studentId,
-    subject: subjectId,
-    question_text: question.prompt,
-    selected_answer: question.options[selectedIndex],
-    correct: result.correct,
-  })
-  if (answerError) throw answerError
-
-  const { error: streakError } = await supabase
-    .from('streaks')
-    .update({
-      current_streak: result.progress.streak,
-      longest_streak: result.progress.longestStreak,
-      total_xp: result.progress.xp,
-      coin_balance: result.progress.coins,
-      last_answered_date: result.progress.lastCorrectDate,
-    })
-    .eq('user_id', progress.studentId)
-  if (streakError) throw streakError
-
-  let perfectWeek = null
-  if (result.correct && linkedParent) {
-    const weeklyCount = getWeeklyCorrectCount(result.progress.history, today)
-    if (weeklyCount === PERFECT_WEEK_TARGET) {
-      const achievement = await recordPerfectWeekAchievement(
-        progress.studentId,
-        linkedParent.parentId,
-        linkedParent.perfectWeekBonusDollars,
-        today
-      )
-      if (achievement) {
-        perfectWeek = { bonusCents: achievement.suggested_bonus_cents }
-      }
-    }
+  const newProgress = {
+    ...progress,
+    streak: data.new_streak,
+    longestStreak: data.longest_streak,
+    xp: data.new_xp_total,
+    coins: data.new_coins_total,
+    lastCorrectDate: data.last_correct_date,
+    history: [...progress.history, data.entry],
   }
 
-  return { ...result, perfectWeek }
+  return {
+    progress: newProgress,
+    correct: data.correct,
+    coinsEarned: data.coins_earned,
+    xpEarned: data.xp_earned,
+    milestoneHit: data.milestone_reached,
+    bonusEarned: data.bonus_earned,
+    perfectWeek: data.perfect_week_bonus_cents != null ? { bonusCents: data.perfect_week_bonus_cents } : null,
+  }
 }
 
 // ---------- Parent finances ----------

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getCurrentUser, clearSession } from './lib/storage'
+import { getCurrentUser, clearSession, setSessionExpiredHandler } from './lib/storage'
 import LandingPage from './components/landing/LandingPage'
 import AuthScreen from './components/auth/AuthScreen'
 import StudentFlow from './components/student/StudentFlow'
@@ -26,6 +26,20 @@ function App() {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  // Fires from anywhere a /api/student or /api/questions call gets a 401
+  // mid-session (session row deleted or expired while the user was active)
+  // — see setSessionExpiredHandler in storage.js. Goes straight to the
+  // login screen rather than the marketing landing page, since this only
+  // fires for someone who was already logged in.
+  useEffect(() => {
+    setSessionExpiredHandler(() => {
+      setUser(null)
+      setShowLanding(false)
+      setAuthMode('login')
+    })
+    return () => setSessionExpiredHandler(null)
   }, [])
 
   function handleLogout() {

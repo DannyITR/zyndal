@@ -7,7 +7,7 @@
 // are modeled on common student mistakes, not random noise, matching the
 // style of the AI-generated questions this replaces.
 
-import { getSubject } from './questions'
+import { getSubject } from './questions.js'
 
 const TEST_PREP_QUESTION_BANK = {
   math: {
