@@ -91,31 +91,23 @@ IMPORTANT DAY LOGIC:
 Every question must have exactly 4 options, and "correct" is the 0-based index of the right option.`
 }
 
-// uploadedQuestions: rows from upload_questions to use as the primary source
-// (may be empty — the common case at launch).
-export async function generateStudyPlan({ grade, subject, topic, daysAvailable, uploadedQuestions = [] }) {
+// Pure AI generation, curriculum-aligned only — the student's own uploaded
+// questions (if they chose that source, or "mix") are merged in
+// client-side afterward by questionSource.js, which keeps them verbatim
+// instead of trusting the model not to paraphrase them.
+export async function generateStudyPlan({ grade, subject, topic, daysAvailable }) {
   if (DEMO_MODE) {
     return buildDemoStudyPlanDays({ subjectId: resolveSubjectId(subject), grade, topic, daysAvailable })
   }
 
   const client = await getClient()
 
-  let userContent = 'Generate the study plan now.'
-  if (uploadedQuestions.length > 0) {
-    const serialized = uploadedQuestions
-      .map((q) =>
-        JSON.stringify({ question: q.question, options: q.options, correct_answer: q.correct_answer, explanation: q.explanation })
-      )
-      .join('\n')
-    userContent = `The student has uploaded these practice questions from their class. Use them as the PRIMARY source — include them (verbatim or lightly cleaned up) in the plan first, then supplement with your own generated questions to fill each day's quota:\n${serialized}\n\nGenerate the study plan now.`
-  }
-
   const stream = client.messages.stream({
     model: MODEL,
     max_tokens: 64000,
     system: buildStudyPlanSystemPrompt(grade, subject, topic, daysAvailable),
     output_config: { format: { type: 'json_schema', schema: STUDY_PLAN_SCHEMA } },
-    messages: [{ role: 'user', content: userContent }],
+    messages: [{ role: 'user', content: 'Generate the study plan now.' }],
   })
 
   const message = await stream.finalMessage()

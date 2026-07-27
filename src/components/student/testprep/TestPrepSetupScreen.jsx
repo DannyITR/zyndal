@@ -2,15 +2,19 @@ import { useEffect, useState } from 'react'
 import { SUBJECTS, getSubject, gradeToSecondary } from '../../../lib/questions'
 import { todayStr } from '../../../lib/streak'
 import { daysUntil } from '../../../lib/testprep'
-import { getUploadedQuestions, createStudyPlan, getPastStudyPlans } from '../../../lib/storage'
+import { getUploadedQuestionsForSubject, createStudyPlan, getPastStudyPlans } from '../../../lib/storage'
 import { generateStudyPlan } from '../../../lib/ai'
+import { saveSourcePreference, buildPlanDaysFromUploads, mixPlanDays } from '../../../lib/questionSource'
 import TopBar from '../../shared/TopBar'
+import QuestionSourceStep from './QuestionSourceStep'
 
 export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreated, onBack, onLogout, onLogoClick }) {
+  const [step, setStep] = useState('form') // 'form' | 'source'
   const [subjectId, setSubjectId] = useState(lockedSubjectId || 'math')
   const [topic, setTopic] = useState('')
   const [testDate, setTestDate] = useState('')
   const [grade, setGrade] = useState(user.grade ? String(user.grade) : '')
+  const [uploadedQuestions, setUploadedQuestions] = useState([])
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
   const [pastPlans, setPastPlans] = useState(null)
@@ -33,24 +37,36 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
       : pastPlans
     : []
 
-  async function handleSubmit(e) {
+  async function handleFormSubmit(e) {
     e.preventDefault()
     if (!canSubmit) return
+    setError('')
+    try {
+      const questions = await getUploadedQuestionsForSubject(user.id, subjectId)
+      setUploadedQuestions(questions)
+      setStep('source')
+    } catch (err) {
+      console.error('[TestPrep] could not check uploaded questions:', err)
+      setError(err.message || "Couldn't load your uploads. Please try again.")
+    }
+  }
+
+  async function handleGenerate(source) {
     setGenerating(true)
     setError('')
+    saveSourcePreference(subjectId, source)
     try {
       // "In X days" where the test being today or tomorrow both mean 1 day
       // of prep — the plan generator's single-day mode.
       const daysAvailable = Math.max(1, daysUntil(testDate))
 
-      const uploadedQuestions = await getUploadedQuestions(user.id, subjectId, topic)
-      const planData = await generateStudyPlan({
-        grade: Number(grade),
-        subject: subject.name,
-        topic: topic.trim(),
-        daysAvailable,
-        uploadedQuestions,
-      })
+      let planData
+      if (source === 'uploads') {
+        planData = { days: buildPlanDaysFromUploads(uploadedQuestions, daysAvailable, topic.trim()) }
+      } else {
+        const aiData = await generateStudyPlan({ grade: Number(grade), subject: subject.name, topic: topic.trim(), daysAvailable })
+        planData = source === 'mix' ? { days: mixPlanDays(uploadedQuestions, aiData.days) } : aiData
+      }
 
       const plan = await createStudyPlan({
         userId: user.id,
@@ -69,6 +85,23 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
     }
   }
 
+  if (step === 'source') {
+    return (
+      <QuestionSourceStep
+        user={user}
+        subjectId={subjectId}
+        subjectName={subject.name}
+        uploadCount={uploadedQuestions.length}
+        generating={generating}
+        error={error}
+        onContinue={handleGenerate}
+        onBack={() => setStep('form')}
+        onLogout={onLogout}
+        onLogoClick={onLogoClick}
+      />
+    )
+  }
+
   return (
     <div className="screen student-screen">
       <TopBar
@@ -80,7 +113,7 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
         onLogoClick={onLogoClick}
       />
 
-      <form className="auth-form" onSubmit={handleSubmit}>
+      <form className="auth-form" onSubmit={handleFormSubmit}>
         <div className="field">
           <label htmlFor="testprep-subject">Subject</label>
           {lockedSubjectId ? (
@@ -132,11 +165,8 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
         {error && <p className="form-error">{error}</p>}
 
         <button type="submit" className="btn btn-primary btn-block" disabled={!canSubmit}>
-          {generating ? 'Building your study plan… (this can take a minute)' : 'Build My Study Plan'}
+          Choose Your Questions
         </button>
-        {generating && (
-          <p className="field-hint">Claude is writing lessons and questions tailored to your test. Hang tight!</p>
-        )}
       </form>
 
       <h3 className="section-heading">Past Plans</h3>

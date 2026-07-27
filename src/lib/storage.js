@@ -831,6 +831,31 @@ export async function getUploadedQuestions(userId, subject, topic) {
   }))
 }
 
+// Every question the student has ever uploaded for a subject, regardless of
+// topic — used by the Test Prep / Study Guide source picker (see
+// questionSource.js), which lets the student choose to draw from these
+// directly instead of the topic-scoped getUploadedQuestions above. Only
+// rows that came from an already-multiple-choice source document are
+// usable here (options must be non-empty and actually contain the
+// recorded correct answer) — shaped to match QUESTION_SCHEMA (options +
+// 0-based correct index) so callers can drop them straight into a plan.
+export async function getUploadedQuestionsForSubject(userId, subject) {
+  const { data, error } = await supabase
+    .from('upload_questions')
+    .select('question, correct_answer, options, explanation, uploads!inner(user_id, subject)')
+    .eq('uploads.user_id', userId)
+    .eq('uploads.subject', subject)
+  if (error) throw error
+  return (data || [])
+    .filter((row) => row.options && row.options.length > 0 && row.options.includes(row.correct_answer))
+    .map((row) => ({
+      question: row.question,
+      options: row.options,
+      correct: row.options.indexOf(row.correct_answer),
+      explanation: row.explanation,
+    }))
+}
+
 export async function createStudyPlan({ userId, subject, topic, testDate, daysAvailable, gradeLevel, planData }) {
   const { data, error } = await supabase
     .from('study_plans')

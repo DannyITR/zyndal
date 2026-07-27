@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { todayStr } from '../../../lib/streak'
 import { generateStudyGuide, getTodaysGuideSubject } from '../../../lib/ai'
+import { getUploadedQuestionsForSubject } from '../../../lib/storage'
+import { saveSourcePreference, buildGuideFromUploads, mixGuideQuestions } from '../../../lib/questionSource'
 import TopBar from '../../shared/TopBar'
 import TestPrepQuestion from './TestPrepQuestion'
+import QuestionSourceStep from './QuestionSourceStep'
 
 // The guide (questions + the student's answers) is cached per user per day in
 // localStorage — it regenerates fresh each day, and a page reload doesn't
@@ -32,30 +35,57 @@ function writeCache(userId, subjectId, guide) {
 export default function StudyGuideScreen({ user, subject: lockedSubject, onBack, onLogout, onLogoClick }) {
   const subject = lockedSubject || getTodaysGuideSubject()
   const [guide, setGuide] = useState(() => readCache(user.id, subject.id))
-  const [loading, setLoading] = useState(!guide)
+  // Skipped entirely once today's guide is already cached — the source
+  // picker only shows up the first time a student opens it each day.
+  const [step, setStep] = useState(() => (readCache(user.id, subject.id) ? 'guide' : 'source'))
+  const [uploadedQuestions, setUploadedQuestions] = useState([])
+  const [uploadsLoaded, setUploadsLoaded] = useState(false)
+  const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (guide) return
+    if (step !== 'source') return
     let cancelled = false
-    generateStudyGuide({ grade: user.grade || 9, subjectName: subject.name })
-      .then((generated) => {
+    getUploadedQuestionsForSubject(user.id, subject.id)
+      .then((questions) => {
         if (cancelled) return
-        const fresh = { ...generated, subjectId: subject.id, progress: {} }
-        writeCache(user.id, subject.id, fresh)
-        setGuide(fresh)
-        setLoading(false)
+        setUploadedQuestions(questions)
+        setUploadsLoaded(true)
       })
       .catch((err) => {
         if (cancelled) return
-        console.error('[StudyGuide] generation failed:', err)
-        setError(err.message || "Couldn't generate today's study guide. Please try again.")
-        setLoading(false)
+        console.error('[StudyGuide] could not check uploads:', err)
+        setUploadedQuestions([])
+        setUploadsLoaded(true)
       })
     return () => {
       cancelled = true
     }
-  }, [guide, user.id, user.grade, subject.id, subject.name])
+  }, [step, user.id, subject.id])
+
+  async function handleGenerate(source) {
+    setGenerating(true)
+    setError('')
+    saveSourcePreference(subject.id, source)
+    try {
+      let result
+      if (source === 'uploads') {
+        result = buildGuideFromUploads(uploadedQuestions, subject.name)
+      } else {
+        const aiGuide = await generateStudyGuide({ grade: user.grade || 9, subjectName: subject.name })
+        result = source === 'mix' ? mixGuideQuestions(uploadedQuestions, aiGuide) : aiGuide
+      }
+      const fresh = { ...result, subjectId: subject.id, progress: {} }
+      writeCache(user.id, subject.id, fresh)
+      setGuide(fresh)
+      setStep('guide')
+    } catch (err) {
+      console.error('[StudyGuide] generation failed:', err)
+      setError(err.message || "Couldn't generate today's study guide. Please try again.")
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   function handleFirstAttempt(questionIndex, selectedIndex, correct) {
     const updated = {
@@ -64,6 +94,38 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
     }
     writeCache(user.id, subject.id, updated)
     setGuide(updated)
+  }
+
+  if (step === 'source') {
+    if (!uploadsLoaded) {
+      return (
+        <div className="screen student-screen">
+          <TopBar
+            title="📚 Study Guide"
+            subtitle="Fresh questions every day"
+            username={user.username}
+            onBack={onBack}
+            onLogout={onLogout}
+            onLogoClick={onLogoClick}
+          />
+          <p className="loading-text">Loading…</p>
+        </div>
+      )
+    }
+    return (
+      <QuestionSourceStep
+        user={user}
+        subjectId={subject.id}
+        subjectName={subject.name}
+        uploadCount={uploadedQuestions.length}
+        generating={generating}
+        error={error}
+        onContinue={handleGenerate}
+        onBack={onBack}
+        onLogout={onLogout}
+        onLogoClick={onLogoClick}
+      />
+    )
   }
 
   return (
@@ -76,12 +138,6 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
         onLogout={onLogout}
         onLogoClick={onLogoClick}
       />
-
-      {loading && (
-        <p className="loading-text">Generating today's study guide… (this can take a minute)</p>
-      )}
-
-      {error && <p className="form-error">{error}</p>}
 
       {guide && (
         <>
