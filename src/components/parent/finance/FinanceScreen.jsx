@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   getParentWallet,
   getStudentsForParent,
-  getProgress,
+  getStudentProgress,
   getPayoutHistory,
   addFundsToWallet,
   updateCoinRate,
@@ -124,13 +124,13 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
   useEffect(() => {
     if (!students || students.length === 0) return
     let cancelled = false
-    Promise.all(students.map((s) => getProgress(s.id).then((p) => [s.id, p]))).then((pairs) => {
+    Promise.all(students.map((s) => getStudentProgress(user.id, s.id).then((p) => [s.id, p]))).then((pairs) => {
       if (!cancelled) setProgressByStudent(Object.fromEntries(pairs))
     })
     return () => {
       cancelled = true
     }
-  }, [students])
+  }, [students, user.id])
 
   async function handleFunded(amountCents) {
     await addFundsToWallet(user.id, amountCents)
@@ -196,7 +196,7 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
     const amountCents = coinsToCents(coins, wallet.coinToDollarRate)
     await payoutStudentCoins(user.id, targetId, coins, amountCents)
     const [updatedProgress, updatedWallet, updatedHistory] = await Promise.all([
-      getProgress(targetId),
+      getStudentProgress(user.id, targetId),
       getParentWallet(user.id),
       getPayoutHistory(user.id),
     ])
@@ -209,7 +209,7 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
   async function handleResolveAchievement(achievement, amountCents) {
     await resolvePerfectWeekAchievement(achievement.id, user.id, achievement.studentId, amountCents)
     const [updatedProgress, updatedWallet, updatedHistory] = await Promise.all([
-      getProgress(achievement.studentId),
+      getStudentProgress(user.id, achievement.studentId),
       getParentWallet(user.id),
       getPayoutHistory(user.id),
     ])
@@ -222,7 +222,7 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
   async function handleResolveGradeBonus(bonus, amountCents) {
     await resolveGradeBonus(bonus.id, user.id, bonus.studentId, amountCents)
     const [updatedProgress, updatedWallet, updatedHistory] = await Promise.all([
-      getProgress(bonus.studentId),
+      getStudentProgress(user.id, bonus.studentId),
       getParentWallet(user.id),
       getPayoutHistory(user.id),
     ])

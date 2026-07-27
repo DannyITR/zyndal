@@ -1,24 +1,14 @@
-import { supabase } from './supabaseClient'
-import { hashPassword, comparePassword, isBcryptHash } from './password'
-import { XP_PER_CORRECT, COINS_PER_CORRECT, todayStr } from './streak'
-import { findQuestionByPrompt } from './questions'
-import { computeSuggestedBonusCents } from './gradeReward'
-
-// This key is duplicated (not imported) in supabaseClient.js, which reads
-// it to attach the X-Session-Token header to every request — storage.js
-// already imports supabaseClient.js, so the reverse import would be circular.
+// Session 5: RLS is enabled on every Supabase table (see supabase/schema.sql)
+// and the anon key this file used to query with directly is blocked by
+// policy now — every remaining direct supabase.from() call in this file
+// (auth, grades, study plans, practice sessions, progress) has moved behind
+// a session-authenticated /api endpoint, the same way Sessions 3-4 already
+// migrated student/parent/social/uploads/curriculum data. This file no
+// longer imports the Supabase client at all — everything goes through
+// callApi below. See src/lib/codes.js and src/lib/supabaseClient.js, both
+// deleted this session as a result (nothing imports them anymore).
 const SESSION_KEY = 'zyndal_session'
 
-// Session 3: student-data and questions calls now go through /api/student
-// and /api/questions serverless functions (session-token authenticated)
-// instead of direct Supabase queries — see api/_lib/auth.js and
-// api/_lib/db.js, which mirror the relevant pure logic and private helpers
-// from this file. Only migrated where the call is always about the
-// CURRENTLY authenticated user's own data: getProgress() is deliberately
-// NOT migrated, since ParentDashboard/FinanceScreen call it for a parent's
-// *other* linked students too, which the new self-only session-auth
-// endpoints don't support without cross-user authorization that wasn't
-// part of this migration.
 let sessionExpiredHandler = null
 // Registered once by App.jsx so any 401 from these endpoints — not just
 // the initial page-load check — redirects to the login screen immediately,
@@ -54,6 +44,10 @@ async function callApi(basePath, method, endpoint, body) {
     throw new Error(data?.error || `Request to ${endpoint} failed (${response.status}).`)
   }
   return data
+}
+
+function callAuthApi(endpoint, body) {
+  return callApi('/api/auth', 'POST', endpoint, body)
 }
 
 function callStudentApi(method, endpoint, body) {
@@ -121,13 +115,9 @@ function invalidateFriendsDashboard() {
 }
 
 // ---------- Session ----------
-// A signed-in device holds a random session token (crypto.randomUUID()),
-// issued into the `sessions` table on login/signup and looked up — not
-// trusted from localStorage alone — on every getCurrentUser() call. This is
-// the client half of the session-token system; nothing server-side (RLS
-// policy or serverless function) validates the token yet, so on its own
-// this doesn't restrict data access — see supabase/schema.sql for the
-// `sessions` table and the plan for what comes next.
+// A signed-in device holds a random session token, issued by /api/auth/login
+// or /api/auth/signup into the `sessions` table and looked up (server-side,
+// via X-Session-Token) on every authenticated request.
 
 export function getSessionToken() {
   try {
@@ -138,79 +128,50 @@ export function getSessionToken() {
   }
 }
 
-// Called on successful login/signup — issues a fresh token, persists it to
-// Supabase, and stores it as this device's session.
-export async function createSession(userId) {
-  const token = crypto.randomUUID()
-  const { error } = await supabase.from('sessions').insert({ user_id: userId, token })
-  if (error) throw error
+function storeSession(token) {
   localStorage.setItem(SESSION_KEY, JSON.stringify({ token }))
-  return token
 }
 
 // Clears the local session immediately (so the UI can log the user out
-// without waiting on a network round trip) and deletes the matching row
-// from Supabase in the background — best-effort, since a session that
-// merely expires after 30 days is an acceptable fallback if this fails.
+// without waiting on a network round trip) and deletes the matching row on
+// the server in the background — best-effort, since a session that merely
+// expires after 30 days is an acceptable fallback if this fails.
 export function clearSession() {
   const token = getSessionToken()
   localStorage.removeItem(SESSION_KEY)
   if (!token) return
-  supabase
-    .from('sessions')
-    .delete()
-    .eq('token', token)
-    .then(({ error }) => {
-      if (error) console.error('[storage] failed to delete session:', error)
-    })
+  callAuthApi('logout', { token }).catch((error) => console.error('[storage] failed to delete session:', error))
 }
 
-// ---------- Users ----------
+// ---------- Auth ----------
+// Session 5: login/signup necessarily run BEFORE a session token exists, so
+// neither can go through the session-authenticated handlers everything else
+// in this file uses — see api/auth/login.js and api/auth/signup.js, which
+// now do everything findUserByUsername/findUserByParentCode/createUser/
+// verifyLogin/linkParentAndStudent/createSession/generateParentCode used to
+// do via direct (pre-RLS) Supabase calls from here.
 
-export async function findUserByUsername(username) {
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .ilike('username', username.trim())
-    .maybeSingle()
-  if (error) throw error
-  return data
+export async function login(username, password) {
+  const { user, token } = await callAuthApi('login', { username, password })
+  storeSession(token)
+  return user
 }
 
-export async function findUserByParentCode(code) {
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('account_type', 'parent')
-    .eq('parent_code', code.trim().toUpperCase())
-    .maybeSingle()
-  if (error) throw error
-  return data
+export async function signup({ username, password, accountType, grade = null, parentCode = null }) {
+  const { user, token } = await callAuthApi('signup', {
+    username,
+    password,
+    account_type: accountType,
+    grade,
+    parent_code: parentCode,
+  })
+  storeSession(token)
+  return user
 }
 
-// accountType: 'student' | 'parent'; grade and parentCode are nullable.
-export async function createUser({ username, password, accountType, grade = null, parentCode = null }) {
-  const hashedPassword = await hashPassword(password)
-  const { data, error } = await supabase
-    .from('users')
-    .insert({ username, password: hashedPassword, account_type: accountType, grade, parent_code: parentCode })
-    .select()
-    .single()
-  if (error) throw error
-
-  if (accountType === 'student') {
-    const { error: streakError } = await supabase.from('streaks').insert({ user_id: data.id })
-    if (streakError) throw streakError
-  }
-
-  return data
-}
-
-// grade and languagePreference are only meaningful for students; pass the
-// existing value through for parents. userId isn't sent — the server
-// derives who's editing from the session token (see
-// api/student/update-settings.js) — but stays in the signature since
-// SettingsScreen.jsx calls this positionally.
+// userId isn't sent — the server derives who's editing from the session
+// token (see api/student/update-settings.js) — but stays in the signature
+// since SettingsScreen.jsx calls this positionally.
 export async function updateUserProfile(userId, { displayName, email, schoolName, avatar, grade, languagePreference }) {
   return callStudentApi('POST', 'update-settings', {
     display_name: displayName,
@@ -220,31 +181,6 @@ export async function updateUserProfile(userId, { displayName, email, schoolName
     grade,
     language_preference: languagePreference,
   })
-}
-
-// Checks a plain-text password against a user row that may still have its
-// original plain-text password (pre-dating bcrypt hashing) or an already
-// hashed one. On a successful match against a legacy plain-text row, it
-// silently rewrites the row with a proper bcrypt hash — every account
-// migrates itself the next time its owner logs in or changes their
-// password, with no forced reset.
-async function verifyAndMigratePassword(user, plainTextPassword) {
-  if (isBcryptHash(user.password)) {
-    return comparePassword(plainTextPassword, user.password)
-  }
-  if (user.password !== plainTextPassword) return false
-
-  const hashed = await hashPassword(plainTextPassword)
-  const { error } = await supabase.from('users').update({ password: hashed }).eq('id', user.id)
-  if (error) console.error('[storage] silent password migration failed:', error)
-  return true
-}
-
-export async function verifyLogin(username, password) {
-  const user = await findUserByUsername(username)
-  if (!user) return null
-  const valid = await verifyAndMigratePassword(user, password)
-  return valid ? user : null
 }
 
 // userId isn't sent — the server derives who's changing their password from
@@ -269,19 +205,11 @@ export async function getCurrentUser() {
 
 // ---------- Parent <-> student links ----------
 
-export async function linkParentAndStudent(parentId, studentId) {
-  const { error } = await supabase.from('parent_student').insert({ parent_id: parentId, student_id: studentId })
-  if (error) throw error
-}
-
 // Session 4: reads from the shared dashboard fetch (see
 // fetchParentDashboard above) instead of querying parent_student/users
 // directly — stripped back down to the same shape this function always
 // returned (no progress/practice/grades, which the dashboard also carries
-// for other callers). Also fixes a pre-existing bug: the old direct query
-// used `select('*')` on users, which included the bcrypt password hash in
-// every student object handed to the parent's browser; get-dashboard.js
-// uses an explicit safe column list instead (see STUDENT_SAFE_COLUMNS).
+// for other callers).
 export async function getStudentsForParent(parentId) {
   const dash = await fetchParentDashboard(parentId)
   return dash.students.map(({ progress: _progress, recentPracticeSessions: _sessions, grades: _grades, ...student }) => student)
@@ -302,95 +230,34 @@ export async function updateGradeRewardSettings(parentId, studentId, { aPlusCent
 
 // ---------- Streaks & answers ----------
 
-async function getStreakRow(userId) {
-  const { data, error } = await supabase.from('streaks').select('*').eq('user_id', userId).maybeSingle()
-  if (error) throw error
-  if (data) return data
-
-  const { data: created, error: insertError } = await supabase
-    .from('streaks')
-    .insert({ user_id: userId })
-    .select()
-    .single()
-  if (insertError) throw insertError
-  return created
+// userId isn't sent — the server derives it from the session token (see
+// api/student/get-progress.js) — but stays in the signature since
+// StudentFlow.jsx calls this positionally. For a PARENT viewing a linked
+// student's progress, see getStudentProgress below instead — this endpoint
+// is self-only and would 403/404 a parent asking about someone else's data.
+export async function getProgress(_userId) {
+  return callStudentApi('GET', 'get-progress')
 }
 
-// The answers table stores the selected option's text directly, but not the
-// full option list or which index it was, so those are reconstructed here by
-// matching the static question bank on prompt text.
-function rowToEntry(row) {
-  const match = findQuestionByPrompt(row.subject, row.question_text)
-  const selectedIndex = match ? match.options.indexOf(row.selected_answer) : -1
-  return {
-    id: row.id,
-    date: row.answered_at.slice(0, 10),
-    subjectId: row.subject,
-    prompt: row.question_text,
-    correct: row.correct,
-    correctIndex: match?.correctIndex,
-    options: match?.options,
-    selectedIndex: selectedIndex >= 0 ? selectedIndex : null,
-    selectedAnswer: row.selected_answer,
-    correctAnswer: match ? match.options[match.correctIndex] : null,
-    xpEarned: row.correct ? XP_PER_CORRECT : 0,
-    coinsEarned: row.correct ? COINS_PER_CORRECT : 0,
-  }
+// Session 5: a parent viewing a linked student's progress/practice/grades
+// (ParentDashboard, FinanceScreen) reads from the same shared dashboard
+// fetch as getStudentsForParent above — get-dashboard.js already returns
+// this per student (it verifies the parent<->student link server-side),
+// so there's no separate endpoint needed, and no way for a parent to end up
+// pulling data for a student who isn't actually theirs.
+export async function getStudentProgress(parentId, studentId) {
+  const dash = await fetchParentDashboard(parentId)
+  return dash.students.find((s) => s.id === studentId)?.progress ?? null
 }
 
-function toProgress(streakRow, answerRows) {
-  return {
-    studentId: streakRow.user_id,
-    streak: streakRow.current_streak,
-    longestStreak: streakRow.longest_streak,
-    xp: streakRow.total_xp,
-    coins: streakRow.coin_balance,
-    // Reused as "date the streak was last credited" (i.e. last correct answer).
-    lastCorrectDate: streakRow.last_answered_date,
-    history: answerRows.map(rowToEntry),
-  }
+export async function getStudentPracticeSessions(parentId, studentId) {
+  const dash = await fetchParentDashboard(parentId)
+  return dash.students.find((s) => s.id === studentId)?.recentPracticeSessions ?? []
 }
 
-export async function getProgress(userId) {
-  const streakRow = await getStreakRow(userId)
-  const { data: answerRows, error } = await supabase
-    .from('answers')
-    .select('*')
-    .eq('user_id', userId)
-    .order('answered_at', { ascending: true })
-  if (error) throw error
-
-  return toProgress(streakRow, answerRows || [])
-}
-
-// A student's linked parent (if any), with the settings that parent controls.
-async function getLinkedParent(studentId) {
-  const { data: link, error: linkError } = await supabase
-    .from('parent_student')
-    .select(
-      'parent_id, perfect_week_bonus, grade_reward_a_plus_cents, grade_reward_a_cents, grade_reward_b_cents, grade_reward_c_cents'
-    )
-    .eq('student_id', studentId)
-    .maybeSingle()
-  if (linkError) throw linkError
-  if (!link) return null
-
-  const { data: parent, error: parentError } = await supabase
-    .from('users')
-    .select('milestone_settings')
-    .eq('id', link.parent_id)
-    .maybeSingle()
-  if (parentError) throw parentError
-
-  return {
-    parentId: link.parent_id,
-    perfectWeekBonusDollars: Number(link.perfect_week_bonus ?? 10),
-    milestoneSettings: parent?.milestone_settings ?? null,
-    gradeRewardAPlusCents: link.grade_reward_a_plus_cents ?? 2500,
-    gradeRewardACents: link.grade_reward_a_cents ?? 1500,
-    gradeRewardBCents: link.grade_reward_b_cents ?? 1000,
-    gradeRewardCCents: link.grade_reward_c_cents ?? 500,
-  }
+export async function getStudentGrades(parentId, studentId) {
+  const dash = await fetchParentDashboard(parentId)
+  return dash.students.find((s) => s.id === studentId)?.grades ?? []
 }
 
 // Computes the result of answering today's question and persists both the
@@ -489,38 +356,10 @@ export async function resolvePerfectWeekAchievement(achievementId, parentId, _st
 // Same shape as the perfect-week bonus above: a suggested amount is recorded
 // once (idempotent per source row) when a qualifying grade comes in, and the
 // parent explicitly confirms or adjusts it — this never pays automatically.
-// A bonus can be triggered by either source: a graded test upload
-// (uploadId set) or a manually-logged grade (gradeId set) — exactly one is
-// ever set on a given grade_bonuses row.
-
-// Fires whenever a grade lands (via upload or manual entry) and the student
-// has a linked parent whose reward settings suggest a non-zero bonus for it.
-// Silently no-ops (returns null) below 60% or with no linked parent.
-async function maybeCreateGradeBonusForSource({ userId, gradePercentage, uploadId = null, gradeId = null }) {
-  const linkedParent = await getLinkedParent(userId)
-  if (!linkedParent) return null
-
-  const suggestedBonusCents = computeSuggestedBonusCents(gradePercentage, linkedParent)
-  if (suggestedBonusCents <= 0) return null
-
-  const { data, error } = await supabase
-    .from('grade_bonuses')
-    .insert({
-      upload_id: uploadId,
-      grade_id: gradeId,
-      student_id: userId,
-      parent_id: linkedParent.parentId,
-      grade_received: gradePercentage,
-      suggested_bonus_cents: suggestedBonusCents,
-    })
-    .select()
-    .single()
-  if (error) {
-    if (error.code === '23505') return null // already recorded for this source
-    throw error
-  }
-  return data
-}
+// A bonus can be triggered by either source: a graded test upload or a
+// manually-logged grade — see api/uploads/save-upload.js and
+// api/student/create-grade.js, which both call the (now server-side only)
+// grade-bonus-creation logic right after their own insert.
 
 export async function getPendingGradeBonuses(parentId) {
   const dash = await fetchParentDashboard(parentId)
@@ -536,13 +375,10 @@ export async function resolveGradeBonus(bonusId, parentId, _studentId, amountCen
 }
 
 // ---------- Document uploads ----------
-// Session 4: saveUpload/addPagesToUpload now compose two endpoints
-// (save-upload, save-questions) instead of inserting into uploads/
-// upload_questions directly — createUpload/createUploadQuestions (the old
-// internal helpers those two composed locally) are gone, since the actual
-// inserts happen server-side now. The grade-bonus check that used to run
-// here after saveUpload's insert also moved server-side, into
-// api/uploads/save-upload.js's handler.
+// Session 4: saveUpload/addPagesToUpload compose two endpoints (save-upload,
+// save-questions) instead of inserting into uploads/upload_questions
+// directly. The grade-bonus check that used to run here after saveUpload's
+// insert runs server-side, in api/uploads/save-upload.js's handler.
 
 // One call to persist everything from a processed upload: the uploads row
 // and its extracted questions (and, server-side, the grade-bonus check for
@@ -595,33 +431,18 @@ export async function getTestGradesForParent(parentId) {
 // ---------- Grades (manual tracker) ----------
 // Independent of Test Prep and uploads — a student can log any grade at any
 // time. Still feeds the same grade-bonus payout flow as an uploaded test.
+// userId stays in both signatures below since GradesScreen.jsx/
+// LogGradeModal.jsx call them positionally — the server derives the actual
+// caller from the session token (see api/student/create-grade.js and
+// api/student/get-grades.js). For a parent viewing a linked student's
+// grades, see getStudentGrades above instead.
 
-export async function createGrade({ userId, subject, testName, gradePercentage, testDate, notes }) {
-  const { data, error } = await supabase
-    .from('grades')
-    .insert({
-      user_id: userId,
-      subject,
-      test_name: testName,
-      grade_percentage: gradePercentage,
-      test_date: testDate,
-      notes,
-    })
-    .select()
-    .single()
-  if (error) throw error
-
-  await maybeCreateGradeBonusForSource({ userId, gradePercentage, gradeId: data.id })
-  return data
+export async function createGrade({ userId: _userId, subject, testName, gradePercentage, testDate, notes }) {
+  return callStudentApi('POST', 'create-grade', { subject, test_name: testName, grade_percentage: gradePercentage, test_date: testDate, notes })
 }
 
-export async function getGradesForUser(userId) {
-  const { data, error } = await supabase
-    .from('grades')
-    .select('*')
-    .eq('user_id', userId)
-    .order('test_date', { ascending: false })
-  if (error) throw error
+export async function getGradesForUser(_userId) {
+  const data = await callStudentApi('GET', 'get-grades')
   return data || []
 }
 
@@ -683,68 +504,44 @@ export async function cacheGeneratedUploadQuestions(uploadId, questions) {
   await callUploadsApi('POST', 'save-questions', { upload_id: uploadId, questions: rows })
 }
 
-export async function createStudyPlan({ userId, subject, topic, testDate, daysAvailable, gradeLevel, planData }) {
-  const { data, error } = await supabase
-    .from('study_plans')
-    .insert({
-      user_id: userId,
-      subject,
-      topic,
-      test_date: testDate,
-      days_available: daysAvailable,
-      grade_level: gradeLevel,
-      plan_data: planData,
-    })
-    .select()
-    .single()
-  if (error) throw error
-  return data
+// userId stays in every signature below since TestPrepSetupScreen.jsx/
+// StudyPlanScreen.jsx/StudentFlow.jsx call these positionally — the server
+// derives the actual caller from the session token, and verifies ownership
+// on every plan_id-scoped mutation (see api/student/update-study-plan.js).
+export async function createStudyPlan({ userId: _userId, subject, topic, testDate, daysAvailable, gradeLevel, planData }) {
+  return callStudentApi('POST', 'create-study-plan', {
+    subject,
+    topic,
+    test_date: testDate,
+    days_available: daysAvailable,
+    grade_level: gradeLevel,
+    plan_data: planData,
+  })
 }
 
-// The most recent active plan whose test hasn't passed yet. A plan the
-// student marked done or cancelled stops showing here even if its test_date
-// is still in the future.
-export async function getActiveStudyPlan(userId) {
-  const { data, error } = await supabase
-    .from('study_plans')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .gte('test_date', todayStr())
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  if (error) throw error
-  return data
+// The most recent active plan whose test hasn't passed yet.
+export async function getActiveStudyPlan(_userId) {
+  return callStudentApi('GET', 'get-active-study-plan')
 }
 
 export async function updateStudyPlanData(planId, planData) {
-  const { error } = await supabase.from('study_plans').update({ plan_data: planData }).eq('id', planId)
-  if (error) throw error
+  await callStudentApi('POST', 'update-study-plan', { plan_id: planId, plan_data: planData })
 }
 
 export async function completeStudyPlan(planId) {
-  const { error } = await supabase.from('study_plans').update({ status: 'completed' }).eq('id', planId)
-  if (error) throw error
+  await callStudentApi('POST', 'update-study-plan', { plan_id: planId, status: 'completed' })
 }
 
 export async function cancelStudyPlan(planId) {
-  const { error } = await supabase.from('study_plans').update({ status: 'cancelled' }).eq('id', planId)
-  if (error) throw error
+  await callStudentApi('POST', 'update-study-plan', { plan_id: planId, status: 'cancelled' })
 }
 
 // Completed and cancelled plans, most recent test first — for the Past
 // Plans section. Plans that simply expired without being marked either way
 // are not included (they're still technically 'active', just past their
 // test date, and quietly stop showing on the home screen on their own).
-export async function getPastStudyPlans(userId) {
-  const { data, error } = await supabase
-    .from('study_plans')
-    .select('*')
-    .eq('user_id', userId)
-    .in('status', ['completed', 'cancelled'])
-    .order('test_date', { ascending: false })
-  if (error) throw error
+export async function getPastStudyPlans(_userId) {
+  const data = await callStudentApi('GET', 'get-past-study-plans')
   return data || []
 }
 
@@ -755,43 +552,23 @@ export async function getActiveStudyPlansForParent(parentId) {
 
 // ---------- Practice ----------
 // Unlike Test Prep/Study Guide, Practice sessions do award coins (never XP —
-// XP stays exclusive to the daily question).
+// XP stays exclusive to the daily question). Session 5: the per-question
+// live coin award (awardCoins) is gone — see api/student/save-practice-
+// session.js's header comment for why that could never be made authoritative
+// under RLS, and PracticeSessionScreen.jsx for the corresponding UI change
+// (coins now land all at once when the session is saved, not per-question).
 
-export async function awardCoins(userId, amount) {
-  const streakRow = await getStreakRow(userId)
-  const { error } = await supabase
-    .from('streaks')
-    .update({ coin_balance: streakRow.coin_balance + amount })
-    .eq('user_id', userId)
-  if (error) throw error
+export async function savePracticeSession({ userId: _userId, subject, topic, questionsCorrect, questionsTotal }) {
+  return callStudentApi('POST', 'save-practice-session', {
+    subject,
+    topic,
+    questions_correct: questionsCorrect,
+    questions_total: questionsTotal,
+  })
 }
 
-export async function savePracticeSession({ userId, subject, topic, scorePercentage, questionsCorrect, questionsTotal, coinsEarned }) {
-  const { data, error } = await supabase
-    .from('practice_sessions')
-    .insert({
-      user_id: userId,
-      subject,
-      topic,
-      score_percentage: scorePercentage,
-      questions_correct: questionsCorrect,
-      questions_total: questionsTotal,
-      coins_earned: coinsEarned,
-    })
-    .select()
-    .single()
-  if (error) throw error
-  return data
-}
-
-export async function getRecentPracticeSessions(userId, limit = 5) {
-  const { data, error } = await supabase
-    .from('practice_sessions')
-    .select('*')
-    .eq('user_id', userId)
-    .order('completed_at', { ascending: false })
-    .limit(limit)
-  if (error) throw error
+export async function getRecentPracticeSessions(_userId, limit = 5) {
+  const data = await callStudentApi('GET', `get-practice-sessions?limit=${limit}`)
   return data || []
 }
 
@@ -884,11 +661,10 @@ export async function getTodaysReceivedShares(userId) {
 // ---------- Curriculum outlines ----------
 // A shared, global cache (no user_id) — one row per subject+grade, generated
 // by Claude exactly once and reused by every student forever. Session 4
-// replaces the old two-call read/write pair (getCurriculumOutline, then —
-// if missing — generateCurriculumOutline in ai.js, then saveCurriculumOutline)
-// with a single call: /api/curriculum/get-outline does the
-// check-generate-save orchestration server-side. See
-// CurriculumOutlineScreen.jsx for the corresponding client change.
+// replaced the old two-call read/write pair with a single call:
+// /api/curriculum/get-outline does the check-generate-save orchestration
+// server-side. See CurriculumOutlineScreen.jsx for the corresponding client
+// change.
 export async function getOrGenerateCurriculumOutline(subject, grade) {
   return callCurriculumApi('GET', `get-outline?subject=${encodeURIComponent(subject)}&grade=${encodeURIComponent(grade)}`)
 }

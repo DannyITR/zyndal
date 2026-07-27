@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { verifyLogin, createSession } from '../../lib/storage'
+import { login } from '../../lib/storage'
 
 export default function LoginForm({ onAuth }) {
   const [username, setUsername] = useState('')
@@ -12,15 +12,10 @@ export default function LoginForm({ onAuth }) {
     setError('')
     setSubmitting(true)
     try {
-      const user = await verifyLogin(username, password)
-      if (!user) {
-        setError('Invalid username or password.')
-        return
-      }
-      await createSession(user.id)
+      const user = await login(username, password)
       onAuth(user)
-    } catch {
-      setError('Something went wrong. Please try again.')
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.')
     } finally {
       setSubmitting(false)
     }

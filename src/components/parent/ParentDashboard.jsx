@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import {
   getStudentsForParent,
-  getProgress,
+  getStudentProgress,
   getActiveStudyPlansForParent,
   getTestGradesForParent,
-  getRecentPracticeSessions,
-  getGradesForUser,
+  getStudentPracticeSessions,
+  getStudentGrades,
 } from '../../lib/storage'
 import { SUBJECTS, getSubject } from '../../lib/questions'
 import { countdownLabel, computeReadiness } from '../../lib/testprep'
@@ -58,25 +58,25 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
   useEffect(() => {
     if (!students || students.length === 0) return
     let cancelled = false
-    Promise.all(students.map((s) => getProgress(s.id).then((p) => [s.id, p]))).then((pairs) => {
+    Promise.all(students.map((s) => getStudentProgress(user.id, s.id).then((p) => [s.id, p]))).then((pairs) => {
       if (!cancelled) setProgressByStudent(Object.fromEntries(pairs))
     })
-    Promise.all(students.map((s) => getRecentPracticeSessions(s.id, 5).then((list) => [s.id, list]))).then((pairs) => {
+    Promise.all(students.map((s) => getStudentPracticeSessions(user.id, s.id).then((list) => [s.id, list]))).then((pairs) => {
       if (!cancelled) setPracticeByStudent(Object.fromEntries(pairs))
     })
-    Promise.all(students.map((s) => getGradesForUser(s.id).then((list) => [s.id, list]))).then((pairs) => {
+    Promise.all(students.map((s) => getStudentGrades(user.id, s.id).then((list) => [s.id, list]))).then((pairs) => {
       if (!cancelled) setGradesByStudent(Object.fromEntries(pairs))
     })
     return () => {
       cancelled = true
     }
-  }, [students])
+  }, [students, user.id])
 
   // Coin balances can change on the Finance page (payouts) without this
   // dashboard's own progress snapshot knowing, so refetch on the way back.
   async function refreshStudentProgress() {
     if (!students || students.length === 0) return
-    const pairs = await Promise.all(students.map((s) => getProgress(s.id).then((p) => [s.id, p])))
+    const pairs = await Promise.all(students.map((s) => getStudentProgress(user.id, s.id).then((p) => [s.id, p])))
     setProgressByStudent(Object.fromEntries(pairs))
   }
 

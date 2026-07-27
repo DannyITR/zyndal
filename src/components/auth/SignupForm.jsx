@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { createUser, findUserByUsername, findUserByParentCode, linkParentAndStudent, createSession } from '../../lib/storage'
-import { generateParentCode } from '../../lib/codes'
+import { signup } from '../../lib/storage'
 
 export default function SignupForm({ onAuth }) {
   const [role, setRole] = useState('student')
@@ -32,36 +31,16 @@ export default function SignupForm({ onAuth }) {
 
     setSubmitting(true)
     try {
-      if (await findUserByUsername(trimmedUsername)) {
-        setError('That username is already taken.')
-        return
-      }
-
-      let linkedParent = null
-      if (role === 'student' && parentCode.trim()) {
-        linkedParent = await findUserByParentCode(parentCode)
-        if (!linkedParent) {
-          setError('That parent code was not found.')
-          return
-        }
-      }
-
-      const newUser = await createUser({
+      const newUser = await signup({
         username: trimmedUsername,
         password,
         accountType: role,
         grade: role === 'student' && grade ? Number(grade) : null,
-        parentCode: role === 'parent' ? await generateParentCode() : null,
+        parentCode: role === 'student' ? parentCode : null,
       })
-
-      if (linkedParent) {
-        await linkParentAndStudent(linkedParent.id, newUser.id)
-      }
-
-      await createSession(newUser.id)
       onAuth(newUser)
-    } catch {
-      setError('Something went wrong. Please try again.')
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.')
     } finally {
       setSubmitting(false)
     }

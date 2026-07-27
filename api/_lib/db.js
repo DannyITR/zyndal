@@ -10,6 +10,13 @@ import { supabase } from './auth.js'
 import { DEFAULT_MILESTONE_BONUSES, PERFECT_WEEK_TARGET, mondayOfWeek } from '../../src/lib/streak.js'
 import { findQuestionByPrompt } from '../../src/lib/questions.js'
 
+// Every column a user is allowed to see on their OWN row — everything
+// except password. Shared by get-profile.js and the Session 5 auth
+// endpoints (login/signup return the same shape get-profile.js does, so the
+// client's `user` object looks identical regardless of which call produced it).
+export const SAFE_USER_COLUMNS =
+  'id, username, account_type, grade, parent_code, created_at, display_name, email, school, avatar, wallet_balance_cents, total_added_cents, total_paid_out_cents, coin_to_dollar_rate, milestone_settings, is_premium, language_preference'
+
 export async function getStreakRow(userId) {
   const { data, error } = await supabase.from('streaks').select('*').eq('user_id', userId).maybeSingle()
   if (error) throw error

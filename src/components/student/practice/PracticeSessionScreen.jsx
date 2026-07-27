@@ -1,8 +1,14 @@
 import { useState } from 'react'
-import { awardCoins, savePracticeSession } from '../../../lib/storage'
+import { savePracticeSession } from '../../../lib/storage'
 import TopBar from '../../shared/TopBar'
 import PracticeQuestion from './PracticeQuestion'
 
+// Session 5: coins are no longer awarded live per question — see
+// api/student/save-practice-session.js's header comment for why an
+// authoritative per-question award isn't possible for AI/upload-sourced
+// practice content. `answers` still drives the running coinsEarned shown
+// while the session is in progress (cosmetic only, not a DB write); the
+// real award happens once, when the session is saved.
 export default function PracticeSessionScreen({
   user,
   subjectId,
@@ -15,44 +21,40 @@ export default function PracticeSessionScreen({
   onLogoClick,
 }) {
   const [answers, setAnswers] = useState({}) // questionIndex -> { selectedIndex, correct }
-  const [coinsEarned, setCoinsEarned] = useState(0)
   const [error, setError] = useState('')
   const [finishing, setFinishing] = useState(false)
 
   const allAnswered = Object.keys(answers).length === questions.length
+  const coinsEarned = Object.values(answers).filter((a) => a.correct).length
 
-  async function handleFirstAttempt(questionIndex, selectedIndex, correct) {
+  function handleFirstAttempt(questionIndex, selectedIndex, correct) {
     setError('')
-    try {
-      if (correct) await awardCoins(user.id, 1)
-      setAnswers((prev) => ({ ...prev, [questionIndex]: { selectedIndex, correct } }))
-      if (correct) setCoinsEarned((c) => c + 1)
-    } catch (err) {
-      console.error('[Practice] coin award failed:', err)
-      setError("Couldn't save your answer. Check your connection and try again.")
-      throw err
-    }
+    setAnswers((prev) => ({ ...prev, [questionIndex]: { selectedIndex, correct } }))
   }
 
   async function handleSeeResults() {
     setFinishing(true)
-    const questionsCorrect = Object.values(answers).filter((a) => a.correct).length
+    const questionsCorrect = coinsEarned
     const questionsTotal = questions.length
-    const scorePercentage = Math.round((questionsCorrect / questionsTotal) * 100)
     try {
-      await savePracticeSession({
+      const session = await savePracticeSession({
         userId: user.id,
         subject: subjectId,
         topic,
-        scorePercentage,
         questionsCorrect,
         questionsTotal,
-        coinsEarned,
+      })
+      onFinished({
+        questionsCorrect: session.questions_correct,
+        questionsTotal: session.questions_total,
+        coinsEarned: session.coins_earned,
+        scorePercentage: session.score_percentage,
       })
     } catch (err) {
       console.error('[Practice] session save failed:', err)
+      setError("Couldn't save your results. Check your connection and try again.")
+      setFinishing(false)
     }
-    onFinished({ questionsCorrect, questionsTotal, coinsEarned, scorePercentage })
   }
 
   return (

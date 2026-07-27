@@ -1,12 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Same public Supabase project the client already uses — the VITE_ prefix
-// only controls whether Vite bundles a var into client code; process.env
-// still has it available here server-side. RLS is not yet enabled on these
-// tables (see the deferred RLS SQL from the Session 1 password-hashing
-// work), so this behaves identically to direct client access today; once
-// RLS lands, these functions will need a service-role key instead.
-export const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY)
+// Session 5: RLS is enabled on every table (see supabase/schema.sql), so the
+// anon key the browser uses is now blocked by default — every /api/* function
+// authenticates the caller itself (see requireAuth below) and then needs to
+// read/write ANY row those policies would otherwise hide from an anonymous
+// client (e.g. a parent's linked student's row, or the row matching a
+// session token before that token has proven anything). The service-role key
+// bypasses RLS entirely, which is safe here specifically because every
+// serverless function using this client already re-implements the
+// authorization RLS would have done (requireAuth + explicit ownership checks
+// like verifyStudentBelongsToParent) — this key must never be exposed to the
+// browser, hence no VITE_ prefix.
+export const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
 // Validates X-Session-Token against the sessions table — the server-side
 // mirror of getCurrentUser's check in src/lib/storage.js. Returns the
