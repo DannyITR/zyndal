@@ -1,7 +1,6 @@
 import { supabase } from './supabaseClient'
 import { hashPassword, comparePassword, isBcryptHash } from './password'
-import { XP_PER_CORRECT, COINS_PER_CORRECT, getEffectiveStreak, todayStr } from './streak'
-import { centsToCoins } from './money'
+import { XP_PER_CORRECT, COINS_PER_CORRECT, todayStr } from './streak'
 import { findQuestionByPrompt } from './questions'
 import { computeSuggestedBonusCents } from './gradeReward'
 
@@ -59,6 +58,66 @@ async function callApi(basePath, method, endpoint, body) {
 
 function callStudentApi(method, endpoint, body) {
   return callApi('/api/student', method, endpoint, body)
+}
+
+function callParentApi(method, endpoint, body) {
+  return callApi('/api/parent', method, endpoint, body)
+}
+
+function callSocialApi(method, endpoint, body) {
+  return callApi('/api/social', method, endpoint, body)
+}
+
+function callUploadsApi(method, endpoint, body) {
+  return callApi('/api/uploads', method, endpoint, body)
+}
+
+function callCurriculumApi(method, endpoint, body) {
+  return callApi('/api/curriculum', method, endpoint, body)
+}
+
+// Session 4: ParentDashboard and FinanceScreen each already fetch several
+// small, always-together pieces on mount via Promise.all (students,
+// wallet, study plans, pending bonuses, payout history, per-student
+// progress...). Rather than giving each its own endpoint, /api/parent/
+// get-dashboard returns all of it in one round trip, and every parent-only
+// getter below shares ONE in-flight/cached request for it — a burst of
+// calls in the same tick (e.g. a Promise.all) collapses to a single fetch,
+// since the promise is cached synchronously before any await happens.
+// Mutations invalidate the cache so the next read is fresh.
+let parentDashboardCache = null
+
+function fetchParentDashboard(parentId) {
+  if (parentDashboardCache?.parentId === parentId) return parentDashboardCache.promise
+  const promise = callParentApi('GET', 'get-dashboard').catch((err) => {
+    if (parentDashboardCache?.promise === promise) parentDashboardCache = null
+    throw err
+  })
+  parentDashboardCache = { parentId, promise }
+  return promise
+}
+
+function invalidateParentDashboard() {
+  parentDashboardCache = null
+}
+
+// Same dedup-cache pattern as the parent dashboard above, for
+// /api/social/get-friends — FriendsScreen and ShareStreakScreen each fetch
+// friends+requests+shares together on mount.
+let friendsDashboardCache = null
+
+function fetchFriendsDashboard(userId) {
+  if (friendsDashboardCache?.userId === userId) return friendsDashboardCache.promise
+  const promise = callSocialApi('GET', 'get-friends').catch((err) => {
+    if (friendsDashboardCache?.promise === promise) friendsDashboardCache = null
+    throw err
+  })
+  friendsDashboardCache = { userId, promise }
+  return promise
+}
+
+function invalidateFriendsDashboard() {
+  friendsDashboardCache = null
 }
 
 // ---------- Session ----------
@@ -215,56 +274,30 @@ export async function linkParentAndStudent(parentId, studentId) {
   if (error) throw error
 }
 
+// Session 4: reads from the shared dashboard fetch (see
+// fetchParentDashboard above) instead of querying parent_student/users
+// directly — stripped back down to the same shape this function always
+// returned (no progress/practice/grades, which the dashboard also carries
+// for other callers). Also fixes a pre-existing bug: the old direct query
+// used `select('*')` on users, which included the bcrypt password hash in
+// every student object handed to the parent's browser; get-dashboard.js
+// uses an explicit safe column list instead (see STUDENT_SAFE_COLUMNS).
 export async function getStudentsForParent(parentId) {
-  const { data: links, error: linkError } = await supabase
-    .from('parent_student')
-    .select(
-      'student_id, perfect_week_bonus, grade_reward_a_plus_cents, grade_reward_a_cents, grade_reward_b_cents, grade_reward_c_cents'
-    )
-    .eq('parent_id', parentId)
-  if (linkError) throw linkError
-
-  const studentIds = (links || []).map((link) => link.student_id)
-  if (studentIds.length === 0) return []
-
-  const { data: students, error } = await supabase.from('users').select('*').in('id', studentIds)
-  if (error) throw error
-
-  const linkByStudentId = Object.fromEntries((links || []).map((l) => [l.student_id, l]))
-  return (students || []).map((s) => {
-    const link = linkByStudentId[s.id] || {}
-    return {
-      ...s,
-      perfectWeekBonus: Number(link.perfect_week_bonus ?? 10),
-      gradeRewardAPlusCents: link.grade_reward_a_plus_cents ?? 2500,
-      gradeRewardACents: link.grade_reward_a_cents ?? 1500,
-      gradeRewardBCents: link.grade_reward_b_cents ?? 1000,
-      gradeRewardCCents: link.grade_reward_c_cents ?? 500,
-    }
-  })
+  const dash = await fetchParentDashboard(parentId)
+  return dash.students.map(({ progress: _progress, recentPracticeSessions: _sessions, grades: _grades, ...student }) => student)
 }
 
 export async function updatePerfectWeekBonus(parentId, studentId, amountDollars) {
-  const { error } = await supabase
-    .from('parent_student')
-    .update({ perfect_week_bonus: amountDollars })
-    .eq('parent_id', parentId)
-    .eq('student_id', studentId)
-  if (error) throw error
+  await callParentApi('POST', 'update-settings', { student_id: studentId, perfect_week_bonus: amountDollars })
+  invalidateParentDashboard()
 }
 
 export async function updateGradeRewardSettings(parentId, studentId, { aPlusCents, aCents, bCents, cCents }) {
-  const { error } = await supabase
-    .from('parent_student')
-    .update({
-      grade_reward_a_plus_cents: aPlusCents,
-      grade_reward_a_cents: aCents,
-      grade_reward_b_cents: bCents,
-      grade_reward_c_cents: cCents,
-    })
-    .eq('parent_id', parentId)
-    .eq('student_id', studentId)
-  if (error) throw error
+  await callParentApi('POST', 'update-settings', {
+    student_id: studentId,
+    grade_thresholds: { aPlusCents, aCents, bCents, cCents },
+  })
+  invalidateParentDashboard()
 }
 
 // ---------- Streaks & answers ----------
@@ -397,179 +430,59 @@ export async function submitAnswer(progress, question, selectedIndex, subjectId,
 // later without touching the rest of the app: addFundsToWallet is the only
 // place that would need to become a real charge.
 
+// Session 4: reads pull from the shared dashboard fetch; mutations call
+// their own endpoint and invalidate the cache so the next read is fresh
+// (see fetchParentDashboard/invalidateParentDashboard above).
 export async function getParentWallet(parentId) {
-  const { data, error } = await supabase
-    .from('users')
-    .select('wallet_balance_cents, total_added_cents, total_paid_out_cents, coin_to_dollar_rate, milestone_settings')
-    .eq('id', parentId)
-    .single()
-  if (error) throw error
-  return {
-    walletBalanceCents: data.wallet_balance_cents,
-    totalAddedCents: data.total_added_cents,
-    totalPaidOutCents: data.total_paid_out_cents,
-    coinToDollarRate: data.coin_to_dollar_rate,
-    milestoneSettings: data.milestone_settings,
-  }
+  const dash = await fetchParentDashboard(parentId)
+  return dash.wallet
 }
 
 export async function addFundsToWallet(parentId, amountCents) {
-  const wallet = await getParentWallet(parentId)
-  const { error } = await supabase
-    .from('users')
-    .update({
-      wallet_balance_cents: wallet.walletBalanceCents + amountCents,
-      total_added_cents: wallet.totalAddedCents + amountCents,
-    })
-    .eq('id', parentId)
-  if (error) throw error
+  await callParentApi('POST', 'add-funds', { amount_cents: amountCents })
+  invalidateParentDashboard()
 }
 
 export async function updateCoinRate(parentId, rate) {
-  const { error } = await supabase.from('users').update({ coin_to_dollar_rate: rate }).eq('id', parentId)
-  if (error) throw error
+  await callParentApi('POST', 'update-settings', { coin_rate: rate })
+  invalidateParentDashboard()
 }
 
 export async function updateMilestoneSettings(parentId, settings) {
-  const { error } = await supabase.from('users').update({ milestone_settings: settings }).eq('id', parentId)
-  if (error) throw error
+  await callParentApi('POST', 'update-settings', { milestone_settings: settings })
+  invalidateParentDashboard()
 }
 
-// Converts a student's coins to dollars at the parent's current rate,
-// deducts coins from the student and dollars from the parent's wallet, and
-// logs the payout. XP is a permanent record and is never touched.
+// coins is sent alongside amountCents (the /api/parent/payout endpoint
+// accepts both) rather than re-derived server-side from amountCents and the
+// coin rate — recomputing would risk rounding drift from the coin count the
+// parent actually saw and confirmed on the PayoutModal.
 export async function payoutStudentCoins(parentId, studentId, coins, amountCents) {
-  const streakRow = await getStreakRow(studentId)
-  if (coins > streakRow.coin_balance) {
-    throw new Error('Cannot pay out more coins than the student has.')
-  }
-
-  const { error: streakError } = await supabase
-    .from('streaks')
-    .update({ coin_balance: streakRow.coin_balance - coins })
-    .eq('user_id', studentId)
-  if (streakError) throw streakError
-
-  const wallet = await getParentWallet(parentId)
-  const { error: walletError } = await supabase
-    .from('users')
-    .update({
-      wallet_balance_cents: wallet.walletBalanceCents - amountCents,
-      total_paid_out_cents: wallet.totalPaidOutCents + amountCents,
-    })
-    .eq('id', parentId)
-  if (walletError) throw walletError
-
-  const { error: payoutError } = await supabase.from('payouts').insert({
-    parent_id: parentId,
-    student_id: studentId,
-    coins,
-    amount_cents: amountCents,
-    type: 'manual',
-  })
-  if (payoutError) throw payoutError
+  await callParentApi('POST', 'payout', { student_id: studentId, coins, amount_cents: amountCents, payout_type: 'manual' })
+  invalidateParentDashboard()
 }
 
 export async function getPayoutHistory(parentId) {
-  const { data: rows, error } = await supabase
-    .from('payouts')
-    .select('*')
-    .eq('parent_id', parentId)
-    .order('created_at', { ascending: false })
-  if (error) throw error
-
-  const studentIds = [...new Set((rows || []).map((r) => r.student_id))]
-  let usernameById = {}
-  if (studentIds.length > 0) {
-    const { data: studentRows, error: studentError } = await supabase
-      .from('users')
-      .select('id, username')
-      .in('id', studentIds)
-    if (studentError) throw studentError
-    usernameById = Object.fromEntries((studentRows || []).map((s) => [s.id, s.username]))
-  }
-
-  return (rows || []).map((r) => ({
-    id: r.id,
-    studentUsername: usernameById[r.student_id] || 'Unknown',
-    coins: r.coins,
-    amountCents: r.amount_cents,
-    type: r.type || 'manual',
-    date: r.created_at.slice(0, 10),
-  }))
+  const dash = await fetchParentDashboard(parentId)
+  return dash.payoutHistory
 }
 
 // ---------- Perfect week bonus ----------
 
 export async function getPendingPerfectWeekAchievements(parentId) {
-  const { data: rows, error } = await supabase
-    .from('perfect_week_achievements')
-    .select('*')
-    .eq('parent_id', parentId)
-    .eq('resolved', false)
-    .order('created_at', { ascending: false })
-  if (error) throw error
-
-  const studentIds = [...new Set((rows || []).map((r) => r.student_id))]
-  let usernameById = {}
-  if (studentIds.length > 0) {
-    const { data: studentRows, error: studentError } = await supabase
-      .from('users')
-      .select('id, username')
-      .in('id', studentIds)
-    if (studentError) throw studentError
-    usernameById = Object.fromEntries((studentRows || []).map((s) => [s.id, s.username]))
-  }
-
-  return (rows || []).map((r) => ({
-    id: r.id,
-    studentId: r.student_id,
-    studentUsername: usernameById[r.student_id] || 'Unknown',
-    weekStart: r.week_start,
-    suggestedBonusCents: r.suggested_bonus_cents,
-  }))
+  const dash = await fetchParentDashboard(parentId)
+  return dash.pendingPerfectWeekAchievements
 }
 
 // Confirming (or adjusting) a perfect-week bonus is the reverse of a normal
 // payout: dollars leave the parent's wallet and are converted into coins
-// added to the student's balance, rather than cashing coins out.
-export async function resolvePerfectWeekAchievement(achievementId, parentId, studentId, amountCents) {
-  const wallet = await getParentWallet(parentId)
-  if (amountCents > wallet.walletBalanceCents) {
-    throw new Error('Wallet balance is not enough to cover this bonus.')
-  }
-  const coinsToAdd = centsToCoins(amountCents, wallet.coinToDollarRate)
-
-  const streakRow = await getStreakRow(studentId)
-  const { error: streakError } = await supabase
-    .from('streaks')
-    .update({ coin_balance: streakRow.coin_balance + coinsToAdd })
-    .eq('user_id', studentId)
-  if (streakError) throw streakError
-
-  const { error: walletError } = await supabase
-    .from('users')
-    .update({
-      wallet_balance_cents: wallet.walletBalanceCents - amountCents,
-      total_paid_out_cents: wallet.totalPaidOutCents + amountCents,
-    })
-    .eq('id', parentId)
-  if (walletError) throw walletError
-
-  const { error: payoutError } = await supabase.from('payouts').insert({
-    parent_id: parentId,
-    student_id: studentId,
-    coins: coinsToAdd,
-    amount_cents: amountCents,
-    type: 'perfect_week_bonus',
-  })
-  if (payoutError) throw payoutError
-
-  const { error: achievementError } = await supabase
-    .from('perfect_week_achievements')
-    .update({ resolved: true, resolved_amount_cents: amountCents, resolved_at: new Date().toISOString() })
-    .eq('id', achievementId)
-  if (achievementError) throw achievementError
+// added to the student's balance, rather than cashing coins out. studentId
+// isn't sent — the server looks up which student the achievement belongs to
+// from the achievement row itself — but stays in the signature since
+// FinanceScreen.jsx calls this positionally.
+export async function resolvePerfectWeekAchievement(achievementId, parentId, _studentId, amountCents) {
+  await callParentApi('POST', 'resolve-bonus', { bonus_id: achievementId, bonus_type: 'perfect_week', amount_cents: amountCents, confirmed: true })
+  invalidateParentDashboard()
 }
 
 // ---------- Grade-based payout bonus ----------
@@ -610,132 +523,44 @@ async function maybeCreateGradeBonusForSource({ userId, gradePercentage, uploadI
 }
 
 export async function getPendingGradeBonuses(parentId) {
-  const { data: rows, error } = await supabase
-    .from('grade_bonuses')
-    .select('*, uploads(subject, topic), grades(subject, test_name)')
-    .eq('parent_id', parentId)
-    .eq('resolved', false)
-    .order('created_at', { ascending: false })
-  if (error) throw error
-
-  const studentIds = [...new Set((rows || []).map((r) => r.student_id))]
-  let usernameById = {}
-  if (studentIds.length > 0) {
-    const { data: studentRows, error: studentError } = await supabase
-      .from('users')
-      .select('id, username')
-      .in('id', studentIds)
-    if (studentError) throw studentError
-    usernameById = Object.fromEntries((studentRows || []).map((s) => [s.id, s.username]))
-  }
-
-  return (rows || []).map((r) => ({
-    id: r.id,
-    studentId: r.student_id,
-    studentUsername: usernameById[r.student_id] || 'Unknown',
-    subject: r.uploads?.subject || r.grades?.subject,
-    topic: r.uploads?.topic || r.grades?.test_name,
-    gradeReceived: r.grade_received,
-    suggestedBonusCents: r.suggested_bonus_cents,
-  }))
+  const dash = await fetchParentDashboard(parentId)
+  return dash.pendingGradeBonuses
 }
 
 // Confirming (or adjusting) a grade bonus is the same coins-in-exchange-for-
-// wallet-dollars flow as resolvePerfectWeekAchievement.
-export async function resolveGradeBonus(bonusId, parentId, studentId, amountCents) {
-  const wallet = await getParentWallet(parentId)
-  if (amountCents > wallet.walletBalanceCents) {
-    throw new Error('Wallet balance is not enough to cover this bonus.')
-  }
-  const coinsToAdd = centsToCoins(amountCents, wallet.coinToDollarRate)
-
-  const streakRow = await getStreakRow(studentId)
-  const { error: streakError } = await supabase
-    .from('streaks')
-    .update({ coin_balance: streakRow.coin_balance + coinsToAdd })
-    .eq('user_id', studentId)
-  if (streakError) throw streakError
-
-  const { error: walletError } = await supabase
-    .from('users')
-    .update({
-      wallet_balance_cents: wallet.walletBalanceCents - amountCents,
-      total_paid_out_cents: wallet.totalPaidOutCents + amountCents,
-    })
-    .eq('id', parentId)
-  if (walletError) throw walletError
-
-  const { error: payoutError } = await supabase.from('payouts').insert({
-    parent_id: parentId,
-    student_id: studentId,
-    coins: coinsToAdd,
-    amount_cents: amountCents,
-    type: 'grade_bonus',
-  })
-  if (payoutError) throw payoutError
-
-  const { error: bonusError } = await supabase
-    .from('grade_bonuses')
-    .update({ resolved: true, resolved_amount_cents: amountCents, resolved_at: new Date().toISOString() })
-    .eq('id', bonusId)
-  if (bonusError) throw bonusError
+// wallet-dollars flow as resolvePerfectWeekAchievement. studentId isn't
+// sent, for the same reason noted there.
+export async function resolveGradeBonus(bonusId, parentId, _studentId, amountCents) {
+  await callParentApi('POST', 'resolve-bonus', { bonus_id: bonusId, bonus_type: 'grade_bonus', amount_cents: amountCents, confirmed: true })
+  invalidateParentDashboard()
 }
 
 // ---------- Document uploads ----------
+// Session 4: saveUpload/addPagesToUpload now compose two endpoints
+// (save-upload, save-questions) instead of inserting into uploads/
+// upload_questions directly — createUpload/createUploadQuestions (the old
+// internal helpers those two composed locally) are gone, since the actual
+// inserts happen server-side now. The grade-bonus check that used to run
+// here after saveUpload's insert also moved server-side, into
+// api/uploads/save-upload.js's handler.
 
-export async function createUpload({ userId, documentType, subject, topic, gradeReceived, testDate, notes, summary, keyConcepts, pagesCount }) {
-  const { data, error } = await supabase
-    .from('uploads')
-    .insert({
-      user_id: userId,
-      document_type: documentType,
-      subject,
-      topic,
-      grade_received: gradeReceived,
-      test_date: testDate,
-      notes,
-      summary,
-      key_concepts: keyConcepts,
-      pages_count: pagesCount,
-    })
-    .select()
-    .single()
-  if (error) throw error
-  return data
-}
-
-async function createUploadQuestions(uploadId, questions) {
-  if (!questions || questions.length === 0) return
-  const rows = questions.map((q) => ({
-    upload_id: uploadId,
-    question: q.question,
-    correct_answer: q.correct_answer,
-    options: q.options,
-    explanation: q.explanation,
-    difficulty: q.difficulty,
-  }))
-  const { error } = await supabase.from('upload_questions').insert(rows)
-  if (error) throw error
-}
-
-// One call to persist everything from a processed upload: the uploads row,
-// its extracted questions, and — for a graded test — the grade-bonus check.
-export async function saveUpload({ userId, documentType, subject, topic, gradeReceived, testDate, notes, aiResult, pagesCount }) {
-  const upload = await createUpload({
-    userId,
-    documentType,
+// One call to persist everything from a processed upload: the uploads row
+// and its extracted questions (and, server-side, the grade-bonus check for
+// a graded test).
+export async function saveUpload({ userId: _userId, documentType, subject, topic, gradeReceived, testDate, notes, aiResult, pagesCount }) {
+  const upload = await callUploadsApi('POST', 'save-upload', {
     subject,
     topic,
-    gradeReceived,
-    testDate,
+    grade_received: gradeReceived,
+    test_date: testDate,
     notes,
     summary: aiResult.summary,
-    keyConcepts: aiResult.key_concepts,
-    pagesCount,
+    key_concepts: aiResult.key_concepts,
+    document_type: documentType,
+    pages_count: pagesCount,
   })
-  await createUploadQuestions(upload.id, aiResult.questions)
-  if (documentType === 'test' && gradeReceived != null) {
-    await maybeCreateGradeBonusForSource({ userId, gradePercentage: gradeReceived, uploadId: upload.id })
+  if (aiResult.questions && aiResult.questions.length > 0) {
+    await callUploadsApi('POST', 'save-questions', { upload_id: upload.id, questions: aiResult.questions })
   }
   return { ...upload, questions: aiResult.questions || [] }
 }
@@ -745,62 +570,26 @@ export async function saveUpload({ userId, documentType, subject, topic, gradeRe
 // track that more pages were added later (see UploadCaptureScreen's
 // existingUpload mode).
 export async function addPagesToUpload({ uploadId, questions, pagesAdded }) {
-  await createUploadQuestions(uploadId, questions)
-  const { data, error } = await supabase
-    .from('uploads')
-    .select('pages_count')
-    .eq('id', uploadId)
-    .single()
-  if (error) throw error
-
-  const { error: updateError } = await supabase
-    .from('uploads')
-    .update({ pages_count: (data.pages_count || 0) + pagesAdded, updated_at: new Date().toISOString() })
-    .eq('id', uploadId)
-  if (updateError) throw updateError
+  await callUploadsApi('POST', 'save-questions', { upload_id: uploadId, questions, pages_added: pagesAdded })
 }
 
-export async function getUploadsForUser(userId) {
-  const { data, error } = await supabase
-    .from('uploads')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-  if (error) throw error
+// userId isn't sent — the server scopes to the caller's own uploads from
+// the session token (see api/uploads/get-uploads.js) — but stays in the
+// signature since UploadsLibraryScreen.jsx calls this positionally.
+export async function getUploadsForUser(_userId) {
+  const data = await callUploadsApi('GET', 'get-uploads')
   return data || []
 }
 
 export async function getUploadDetail(uploadId) {
-  const { data: upload, error } = await supabase.from('uploads').select('*').eq('id', uploadId).single()
-  if (error) throw error
-  const { data: questions, error: questionsError } = await supabase
-    .from('upload_questions')
-    .select('*')
-    .eq('upload_id', uploadId)
-    .order('created_at', { ascending: true })
-  if (questionsError) throw questionsError
-  return { ...upload, questions: questions || [] }
+  const data = await callUploadsApi('GET', `get-upload-questions?upload_id=${encodeURIComponent(uploadId)}`)
+  return { ...data.upload, questions: data.questions }
 }
 
 // All graded test uploads across a parent's linked students, newest test first.
 export async function getTestGradesForParent(parentId) {
-  const students = await getStudentsForParent(parentId)
-  if (students.length === 0) return []
-
-  const { data, error } = await supabase
-    .from('uploads')
-    .select('*')
-    .in(
-      'user_id',
-      students.map((s) => s.id)
-    )
-    .eq('document_type', 'test')
-    .not('grade_received', 'is', null)
-    .order('test_date', { ascending: false })
-  if (error) throw error
-
-  const nameById = Object.fromEntries(students.map((s) => [s.id, s.display_name || s.username]))
-  return (data || []).map((row) => ({ ...row, studentName: nameById[row.user_id] || 'Unknown' }))
+  const dash = await fetchParentDashboard(parentId)
+  return dash.testGrades
 }
 
 // ---------- Grades (manual tracker) ----------
@@ -842,19 +631,18 @@ export async function getGradesForUser(userId) {
 // below) as the primary source for a study plan, when they've uploaded
 // something matching this subject/topic.
 export async function getUploadedQuestions(userId, subject, topic) {
-  const { data, error } = await supabase
-    .from('upload_questions')
-    .select('question, correct_answer, options, explanation, uploads!inner(user_id, subject, topic)')
-    .eq('uploads.user_id', userId)
-    .eq('uploads.subject', subject)
-    .ilike('uploads.topic', `%${topic.trim()}%`)
-  if (error) throw error
-  return (data || []).map((row) => ({
-    question: row.question,
-    correct_answer: row.correct_answer,
-    options: row.options,
-    explanation: row.explanation,
-  }))
+  const data = await callUploadsApi('GET', `get-upload-questions?subject=${encodeURIComponent(subject)}`)
+  const trimmed = topic.trim().toLowerCase()
+  return data.uploads
+    .filter((upload) => (upload.topic || '').toLowerCase().includes(trimmed))
+    .flatMap((upload) =>
+      upload.questions.map((q) => ({
+        question: q.question,
+        correct_answer: q.correct_answer,
+        options: q.options,
+        explanation: q.explanation,
+      }))
+    )
 }
 
 // Every upload the student has for a subject, regardless of topic — used by
@@ -869,38 +657,15 @@ export async function getUploadedQuestions(userId, subject, topic) {
 // upload whose extracted content wasn't multiple-choice, or wasn't
 // extracted as discrete questions at all.
 export async function getUploadedContentForSubject(userId, subject) {
-  const { data: uploads, error: uploadsError } = await supabase
-    .from('uploads')
-    .select('id, summary, key_concepts')
-    .eq('user_id', userId)
-    .eq('subject', subject)
-  if (uploadsError) throw uploadsError
-  if (!uploads || uploads.length === 0) return []
-
-  const uploadIds = uploads.map((u) => u.id)
-  const { data: questions, error: questionsError } = await supabase
-    .from('upload_questions')
-    .select('upload_id, question, correct_answer, options, explanation')
-    .in('upload_id', uploadIds)
-  if (questionsError) throw questionsError
-
-  return uploads.map((upload) => {
-    const usableQuestions = (questions || [])
-      .filter((row) => row.upload_id === upload.id)
-      .filter((row) => row.options && row.options.length > 0 && row.options.includes(row.correct_answer))
-      .map((row) => ({
-        question: row.question,
-        options: row.options,
-        correct: row.options.indexOf(row.correct_answer),
-        explanation: row.explanation,
-      }))
-    return {
-      uploadId: upload.id,
-      summary: upload.summary,
-      keyConcepts: upload.key_concepts || [],
-      usableQuestions,
-    }
-  })
+  const data = await callUploadsApi('GET', `get-upload-questions?subject=${encodeURIComponent(subject)}`)
+  return data.uploads.map((upload) => ({
+    uploadId: upload.uploadId,
+    summary: upload.summary,
+    keyConcepts: upload.keyConcepts || [],
+    usableQuestions: upload.questions
+      .filter((q) => q.options && q.options.length > 0 && q.options.includes(q.correct_answer))
+      .map((q) => ({ question: q.question, options: q.options, correct: q.options.indexOf(q.correct_answer), explanation: q.explanation })),
+  }))
 }
 
 // Persists questions generated on the fly from an upload's summary (see
@@ -909,15 +674,13 @@ export async function getUploadedContentForSubject(userId, subject) {
 // finds them as ordinary pre-extracted questions via getUploadedContentForSubject.
 export async function cacheGeneratedUploadQuestions(uploadId, questions) {
   const rows = questions.map((q) => ({
-    upload_id: uploadId,
     question: q.question,
     correct_answer: q.options[q.correct],
     options: q.options,
     explanation: q.explanation,
     difficulty: 'medium',
   }))
-  const { error } = await supabase.from('upload_questions').insert(rows)
-  if (error) throw error
+  await callUploadsApi('POST', 'save-questions', { upload_id: uploadId, questions: rows })
 }
 
 export async function createStudyPlan({ userId, subject, topic, testDate, daysAvailable, gradeLevel, planData }) {
@@ -986,20 +749,8 @@ export async function getPastStudyPlans(userId) {
 }
 
 export async function getActiveStudyPlansForParent(parentId) {
-  const students = await getStudentsForParent(parentId)
-  if (students.length === 0) return []
-
-  const { data, error } = await supabase
-    .from('study_plans')
-    .select('*')
-    .in('user_id', students.map((s) => s.id))
-    .eq('status', 'active')
-    .gte('test_date', todayStr())
-    .order('test_date', { ascending: true })
-  if (error) throw error
-
-  const usernameById = Object.fromEntries(students.map((s) => [s.id, s.display_name || s.username]))
-  return (data || []).map((plan) => ({ ...plan, studentName: usernameById[plan.user_id] || 'Unknown' }))
+  const dash = await fetchParentDashboard(parentId)
+  return dash.studyPlans
 }
 
 // ---------- Practice ----------
@@ -1046,250 +797,98 @@ export async function getRecentPracticeSessions(userId, limit = 5) {
 
 // ---------- Leaderboard ----------
 
-// Ranked by total XP. Streak is recomputed with the same day-gap decay used
-// everywhere else in the app, rather than trusting the raw stored value, so
-// a lapsed streak doesn't show stale. userIds, if given, scopes the ranking
-// to just those students (used for the friends leaderboard); omit for global.
-async function fetchLeaderboardRows(userIds) {
-  let query = supabase
-    .from('streaks')
-    .select('current_streak, total_xp, last_answered_date, user_id, users:user_id(username, grade, account_type)')
-    .order('total_xp', { ascending: false })
-  if (userIds) query = query.in('user_id', userIds)
-
-  const { data, error } = await query
-  if (error) throw error
-
-  const today = todayStr()
-  return (data || [])
-    .filter((row) => row.users?.account_type === 'student')
-    .map((row) => ({
-      userId: row.user_id,
-      username: row.users.username,
-      grade: row.users.grade,
-      xp: row.total_xp,
-      streak: getEffectiveStreak({ streak: row.current_streak, lastCorrectDate: row.last_answered_date }, today),
-    }))
-}
-
+// Session 4: both now call /api/social/get-leaderboard?type=global|friends
+// — userId on getFriendsLeaderboard isn't sent (the server derives "my
+// friends" from the session token), but stays in the signature since
+// Leaderboard.jsx calls this positionally.
 export async function getLeaderboard() {
-  return fetchLeaderboardRows()
+  return callSocialApi('GET', 'get-leaderboard?type=global')
 }
 
-export async function getFriendsLeaderboard(userId) {
-  const friendIds = await getFriendIds(userId)
-  return fetchLeaderboardRows([userId, ...friendIds])
+export async function getFriendsLeaderboard(_userId) {
+  return callSocialApi('GET', 'get-leaderboard?type=friends')
 }
 
 // ---------- Friends ----------
-
-async function getFriendIds(userId) {
-  const { data, error } = await supabase.from('friends').select('friend_id').eq('user_id', userId)
-  if (error) throw error
-  return (data || []).map((r) => r.friend_id)
-}
+// Session 4: FriendsScreen and ShareStreakScreen each fetch several of these
+// together via Promise.all on mount, so they all read from the shared
+// /api/social/get-friends fetch (see fetchFriendsDashboard above) instead of
+// querying friends/friend_requests/streak_shares directly.
 
 export async function getFriendCount(userId) {
-  const { count, error } = await supabase
-    .from('friends')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-  if (error) throw error
-  return count || 0
+  const dash = await fetchFriendsDashboard(userId)
+  return dash.friends.length
 }
 
 export async function getFriendsWithStreaks(userId) {
-  const friendIds = await getFriendIds(userId)
-  if (friendIds.length === 0) return []
-
-  const { data, error } = await supabase
-    .from('streaks')
-    .select('user_id, current_streak, last_answered_date, users:user_id(username, grade, avatar)')
-    .in('user_id', friendIds)
-  if (error) throw error
-
-  const today = todayStr()
-  return (data || []).map((row) => ({
-    id: row.user_id,
-    username: row.users?.username,
-    grade: row.users?.grade,
-    avatar: row.users?.avatar,
-    streak: getEffectiveStreak({ streak: row.current_streak, lastCorrectDate: row.last_answered_date }, today),
-  }))
+  const dash = await fetchFriendsDashboard(userId)
+  return dash.friends
 }
 
-export async function searchStudentsByUsername(query, excludeUserId) {
-  const trimmed = query.trim()
-  if (!trimmed) return []
-  const { data, error } = await supabase
-    .from('users')
-    .select('id, username, grade')
-    .eq('account_type', 'student')
-    .ilike('username', `%${trimmed}%`)
-    .neq('id', excludeUserId)
-    .limit(10)
-  if (error) throw error
-  return data || []
+// excludeUserId isn't sent — the server excludes the caller (from the
+// session token) and their existing friends automatically (see
+// api/social/search-users.js) — but stays in the signature since
+// FriendsScreen.jsx calls this positionally.
+export async function searchStudentsByUsername(query, _excludeUserId) {
+  if (!query.trim()) return []
+  return callSocialApi('GET', `search-users?username=${encodeURIComponent(query)}`)
 }
 
-async function findExistingFriendRequest(userAId, userBId) {
-  const { data, error } = await supabase
-    .from('friend_requests')
-    .select('*')
-    .or(`and(sender_id.eq.${userAId},receiver_id.eq.${userBId}),and(sender_id.eq.${userBId},receiver_id.eq.${userAId})`)
-    .in('status', ['pending', 'accepted'])
-    .maybeSingle()
-  if (error) throw error
-  return data
-}
-
+// receiverId is the target's user id — /api/social/friend-request also
+// accepts a username (target_username), but the search results this is
+// always called from already carry the id, so there's no reason to make the
+// server re-resolve a username back to one.
 export async function sendFriendRequest(senderId, receiverId) {
-  if (senderId === receiverId) throw new Error("You can't follow yourself.")
-  const existing = await findExistingFriendRequest(senderId, receiverId)
-  if (existing) {
-    throw new Error(existing.status === 'accepted' ? 'You are already friends.' : 'A request is already pending.')
-  }
-  const { error } = await supabase
-    .from('friend_requests')
-    .insert({ sender_id: senderId, receiver_id: receiverId, status: 'pending' })
-  if (error) throw error
+  await callSocialApi('POST', 'friend-request', { action: 'send', target_user_id: receiverId })
+  invalidateFriendsDashboard()
 }
 
 export async function getPendingFriendRequests(userId) {
-  const { data: rows, error } = await supabase
-    .from('friend_requests')
-    .select('*')
-    .eq('receiver_id', userId)
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false })
-  if (error) throw error
-
-  const senderIds = [...new Set((rows || []).map((r) => r.sender_id))]
-  let usernameById = {}
-  if (senderIds.length > 0) {
-    const { data: senderRows, error: senderError } = await supabase
-      .from('users')
-      .select('id, username')
-      .in('id', senderIds)
-    if (senderError) throw senderError
-    usernameById = Object.fromEntries((senderRows || []).map((s) => [s.id, s.username]))
-  }
-
-  return (rows || []).map((r) => ({
-    id: r.id,
-    senderId: r.sender_id,
-    senderUsername: usernameById[r.sender_id] || 'Unknown',
-  }))
+  const dash = await fetchFriendsDashboard(userId)
+  return dash.pendingRequests.received
 }
 
-// Accepting inserts both directions of the friendship in one go; the unique
-// constraint makes a double-click (or double-accept race) harmless.
+// Accepting inserts both directions of the friendship in one go server-side;
+// see api/social/friend-request.js.
 export async function respondToFriendRequest(requestId, accept) {
-  const { data: request, error: fetchError } = await supabase
-    .from('friend_requests')
-    .select('*')
-    .eq('id', requestId)
-    .single()
-  if (fetchError) throw fetchError
-
-  const { error: updateError } = await supabase
-    .from('friend_requests')
-    .update({ status: accept ? 'accepted' : 'declined' })
-    .eq('id', requestId)
-  if (updateError) throw updateError
-
-  if (accept) {
-    const { error: friendError } = await supabase.from('friends').insert([
-      { user_id: request.sender_id, friend_id: request.receiver_id },
-      { user_id: request.receiver_id, friend_id: request.sender_id },
-    ])
-    if (friendError && friendError.code !== '23505') throw friendError
-  }
+  await callSocialApi('POST', 'friend-request', { action: accept ? 'accept' : 'decline', request_id: requestId })
+  invalidateFriendsDashboard()
 }
 
 // ---------- Streak sharing ----------
 
-// share_date is set explicitly (rather than relying on a DB-side default)
-// so "today" always matches the app's UTC-day convention (todayStr()),
-// regardless of the database server's timezone setting. The unique
-// constraint on (sender_id, receiver_id, share_date) makes a repeat share on
-// the same day a no-op rather than an error.
-export async function shareStreakWithFriend(senderId, receiverId, senderStreak) {
-  const { error } = await supabase.from('streak_shares').insert({
-    sender_id: senderId,
-    receiver_id: receiverId,
-    sender_streak: senderStreak,
-    share_date: todayStr(),
-  })
-  if (error) {
-    if (error.code === '23505') return // already shared with this friend today
-    throw error
-  }
+// senderStreak isn't sent — the server derives the caller's own current
+// streak from their streaks row rather than trusting a client-supplied
+// value (see api/social/share-score.js) — but stays in the signature since
+// ShareStreakScreen.jsx calls this positionally.
+export async function shareStreakWithFriend(senderId, receiverId, _senderStreak) {
+  await callSocialApi('POST', 'share-score', { receiver_id: receiverId })
+  invalidateFriendsDashboard()
 }
 
 // Every share involving this user, in either direction — used client-side to
 // derive "shared with this friend today" and the mutual share streak per
 // friend without an extra round trip per friend.
 export async function getStreakSharesForUser(userId) {
-  const { data, error } = await supabase
-    .from('streak_shares')
-    .select('*')
-    .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
-  if (error) throw error
-  return data || []
+  const dash = await fetchFriendsDashboard(userId)
+  return dash.shares
 }
 
 // Shares received today, with sender identity — for the "shared with you
 // today" list and the home-screen notification badge count.
 export async function getTodaysReceivedShares(userId) {
-  const { data, error } = await supabase
-    .from('streak_shares')
-    .select('*, users:sender_id(username, avatar)')
-    .eq('receiver_id', userId)
-    .eq('share_date', todayStr())
-    .order('shared_at', { ascending: false })
-  if (error) throw error
-  return (data || []).map((r) => ({
-    id: r.id,
-    senderUsername: r.users?.username || 'Unknown',
-    senderAvatar: r.users?.avatar || null,
-    senderStreak: r.sender_streak,
-    sharedAt: r.shared_at,
-  }))
+  const dash = await fetchFriendsDashboard(userId)
+  return dash.receivedToday
 }
 
 // ---------- Curriculum outlines ----------
 // A shared, global cache (no user_id) — one row per subject+grade, generated
-// by Claude exactly once and reused by every student forever.
-
-export async function getCurriculumOutline(subject, grade) {
-  const { data, error } = await supabase
-    .from('curriculum_outlines')
-    .select('*')
-    .eq('subject', subject)
-    .eq('grade', grade)
-    .maybeSingle()
-  if (error) throw error
-  return data
-}
-
-// If two students open the same never-before-seen subject+grade at the same
-// moment, both may reach this after the "doesn't exist yet" check — the
-// unique constraint lets only the first insert win, and the loser just reads
-// back the winner's row instead of erroring (same pattern as
-// shareStreakWithFriend's 23505 handling above).
-export async function saveCurriculumOutline(subject, grade, outlineData) {
-  const { data, error } = await supabase
-    .from('curriculum_outlines')
-    .insert({ subject, grade, outline_data: outlineData })
-    .select()
-    .single()
-  if (error) {
-    if (error.code === '23505') {
-      const existing = await getCurriculumOutline(subject, grade)
-      if (existing) return existing
-    }
-    throw error
-  }
-  return data
+// by Claude exactly once and reused by every student forever. Session 4
+// replaces the old two-call read/write pair (getCurriculumOutline, then —
+// if missing — generateCurriculumOutline in ai.js, then saveCurriculumOutline)
+// with a single call: /api/curriculum/get-outline does the
+// check-generate-save orchestration server-side. See
+// CurriculumOutlineScreen.jsx for the corresponding client change.
+export async function getOrGenerateCurriculumOutline(subject, grade) {
+  return callCurriculumApi('GET', `get-outline?subject=${encodeURIComponent(subject)}&grade=${encodeURIComponent(grade)}`)
 }

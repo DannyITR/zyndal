@@ -71,13 +71,21 @@ function validate(body) {
   return null
 }
 
-async function handle({ subject, grade }) {
+// Exported separately from the default HTTP handler so
+// api/curriculum/get-outline.js can call the generation logic directly (an
+// in-process function call) instead of round-tripping through this
+// endpoint's own HTTP route, rate limit, and CORS layer.
+export async function generateCurriculumOutlineData(subject, grade) {
   return generateJson({
     system: buildSystemPrompt(subject, grade),
     schema: CURRICULUM_OUTLINE_SCHEMA,
     maxTokens: 64000,
     content: 'Generate the curriculum outline now.',
   })
+}
+
+async function handle({ subject, grade }) {
+  return generateCurriculumOutlineData(subject, grade)
 }
 
 export default createGenerateHandler({ validate, handle })

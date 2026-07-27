@@ -1,4 +1,4 @@
-import { todayStr } from './streak'
+import { todayStr } from './streak.js'
 
 export function hasSharedToday(shares, userId, friendId, today = todayStr()) {
   return shares.some((s) => s.sender_id === userId && s.receiver_id === friendId && s.share_date === today)

@@ -87,6 +87,10 @@ export async function getLinkedParent(studentId) {
     parentId: link.parent_id,
     perfectWeekBonusDollars: Number(link.perfect_week_bonus ?? 10),
     milestoneSettings: parent?.milestone_settings ?? null,
+    gradeRewardAPlusCents: link.grade_reward_a_plus_cents ?? 2500,
+    gradeRewardACents: link.grade_reward_a_cents ?? 1500,
+    gradeRewardBCents: link.grade_reward_b_cents ?? 1000,
+    gradeRewardCCents: link.grade_reward_c_cents ?? 500,
   }
 }
 

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getCurriculumOutline, saveCurriculumOutline } from '../../../lib/storage'
-import { generateCurriculumOutline } from '../../../lib/ai'
+import { getOrGenerateCurriculumOutline } from '../../../lib/storage'
 import { gradeToSecondary } from '../../../lib/questions'
 import TopBar from '../../shared/TopBar'
 
@@ -36,7 +35,6 @@ export default function CurriculumOutlineScreen({ user, subject, onBack, onLogou
   const [outline, setOutline] = useState(null)
   const [generatedAt, setGeneratedAt] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
   const [isOfflineCopy, setIsOfflineCopy] = useState(false)
 
@@ -45,27 +43,18 @@ export default function CurriculumOutlineScreen({ user, subject, onBack, onLogou
 
     async function load() {
       setLoading(true)
-      setGenerating(false)
       setError('')
       setIsOfflineCopy(false)
       try {
-        const existing = await getCurriculumOutline(subject.id, grade)
+        // One call: /api/curriculum/get-outline checks curriculum_outlines
+        // itself and generates + saves on a miss, so there's no client-side
+        // way to tell "was already cached" from "just generated" anymore —
+        // both look identical from here, just possibly slower.
+        const result = await getOrGenerateCurriculumOutline(subject.id, grade)
         if (cancelled) return
-
-        if (existing) {
-          setOutline(existing.outline_data)
-          setGeneratedAt(existing.generated_at)
-          writeCache(subject.id, grade, { outline_data: existing.outline_data, generated_at: existing.generated_at })
-        } else {
-          setGenerating(true)
-          const generated = await generateCurriculumOutline({ grade, subjectName: subject.name })
-          if (cancelled) return
-          const saved = await saveCurriculumOutline(subject.id, grade, generated)
-          if (cancelled) return
-          setOutline(saved.outline_data)
-          setGeneratedAt(saved.generated_at)
-          writeCache(subject.id, grade, { outline_data: saved.outline_data, generated_at: saved.generated_at })
-        }
+        setOutline(result.outline_data)
+        setGeneratedAt(result.generated_at)
+        writeCache(subject.id, grade, { outline_data: result.outline_data, generated_at: result.generated_at })
       } catch (err) {
         if (cancelled) return
         const cached = readCache(subject.id, grade)
@@ -78,10 +67,7 @@ export default function CurriculumOutlineScreen({ user, subject, onBack, onLogou
           setError(err.message || "Couldn't load the curriculum outline. Please try again.")
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false)
-          setGenerating(false)
-        }
+        if (!cancelled) setLoading(false)
       }
     }
 
@@ -105,11 +91,7 @@ export default function CurriculumOutlineScreen({ user, subject, onBack, onLogou
       {loading && (
         <div className="curriculum-loading">
           <div className="curriculum-spinner" />
-          <p>
-            {generating
-              ? `Generating your ${subject.name} curriculum guide… this only happens once!`
-              : 'Loading your curriculum guide…'}
-          </p>
+          <p>Loading your {subject.name} curriculum guide…</p>
         </div>
       )}
 

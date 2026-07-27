@@ -68,16 +68,6 @@ export async function generateQuestionsFromUploadContent({ summary, keyConcepts,
   return callGenerateApi('generate-from-upload', { subject, grade, summary, key_concepts: keyConcepts, language })
 }
 
-// Not gated by DEMO_MODE — unlike study plans/guides (generated repeatedly,
-// per student, per session), an outline is generated at most once per
-// subject+grade combination ever and then shared by every student from
-// Supabase forever (see getCurriculumOutline/saveCurriculumOutline in
-// storage.js), so the real-world call volume is already tiny (≤18 calls:
-// 6 subjects × 3 grades) regardless of how many students use the app.
-export async function generateCurriculumOutline({ grade, subjectName }) {
-  return callGenerateApi('generate-curriculum', { subject: subjectName, grade })
-}
-
 // Not gated by DEMO_MODE — there's no meaningful hardcoded stand-in for
 // "read the content of this specific photo", so this always calls the API.
 // uploadType: 'test' | 'study_material' — only used to phrase the prompt
