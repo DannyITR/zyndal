@@ -42,9 +42,12 @@ function writeCache(userId, subjectId, guide) {
 export default function StudyGuideScreen({ user, subject: lockedSubject, onBack, onLogout, onLogoClick }) {
   const subject = lockedSubject || getTodaysGuideSubject()
   const [guide, setGuide] = useState(() => readCache(user.id, subject.id))
-  // Skipped entirely once today's guide is already cached — the source
-  // picker only shows up the first time a student opens it each day.
-  const [step, setStep] = useState(() => (readCache(user.id, subject.id) ? 'guide' : 'source'))
+  // Always shown first, even if today's guide is already cached — picking a
+  // source is how the student starts a guide, not just a one-time-per-day
+  // fork. If they re-pick the same source Continue reuses the cached guide
+  // (and its progress) instead of burning another generation — see
+  // handleGenerate below.
+  const [step, setStep] = useState('source')
   const [uploadContent, setUploadContent] = useState([])
   const [uploadsLoaded, setUploadsLoaded] = useState(false)
   const [generating, setGenerating] = useState(false)
@@ -72,10 +75,21 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
   }, [step, user.id, subject.id])
 
   async function handleGenerate(source) {
-    setGenerating(true)
-    setGeneratingLabel('')
     setError('')
     saveSourcePreference(subject.id, source)
+
+    // Reuse today's guide if it was already generated from this same
+    // source — keeps recorded progress and avoids a pointless regenerate
+    // when the student is just re-opening what they already started today.
+    const cached = readCache(user.id, subject.id)
+    if (cached && cached.source === source) {
+      setGuide(cached)
+      setStep('guide')
+      return
+    }
+
+    setGenerating(true)
+    setGeneratingLabel('')
     try {
       let result
       if (source === 'ai') {
@@ -98,7 +112,7 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
           result = mixGuideQuestions(uploadedQuestions, aiGuide)
         }
       }
-      const fresh = { ...result, subjectId: subject.id, progress: {} }
+      const fresh = { ...result, subjectId: subject.id, progress: {}, source }
       writeCache(user.id, subject.id, fresh)
       setGuide(fresh)
       setStep('guide')
