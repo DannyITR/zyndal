@@ -6,6 +6,7 @@
 
 import { getUploadedContentForSubject, cacheGeneratedUploadQuestions } from './storage'
 import { generateQuestionsFromUploadContent } from './ai'
+import { detectLanguageFromContent } from './languageDetection'
 
 const SOURCE_META = {
   uploads: { icon: '📁', label: 'From your uploaded materials' },
@@ -65,14 +66,35 @@ export function saveSourcePreference(subjectId, source) {
   }
 }
 
+// The language AI-generated content should use when nothing's being pulled
+// from an upload (the pure "ai" source) — the student's own preference from
+// Settings, defaulting to English. Uploads/mix instead detect language from
+// the actual uploaded material (see resolveUploadQuestionPool) so the
+// generated questions match what the student is studying from, even if
+// that differs from their general preference.
+export function resolveGenerationLanguage(user) {
+  return user.language_preference || 'English'
+}
+
 // ---------- Resolving an upload's questions ----------
 // For each of the student's uploads for this subject, in order: use its
 // pre-extracted multiple-choice questions if it has any; otherwise generate
 // 5 from its summary/key_concepts via Claude and cache them into
 // upload_questions so this upload never needs generating again; otherwise
 // (no summary either) skip it — there's nothing to build questions from.
+// The language for every generated batch is detected once, from all of the
+// subject's uploaded content combined, so a "mix" session's AI-supplemented
+// questions come out in the same language as the student's own material
+// instead of the AI's default.
 export async function resolveUploadQuestionPool(userId, subject, subjectName, grade, onStatusChange) {
   const content = await getUploadedContentForSubject(userId, subject)
+  const language = detectLanguageFromContent(
+    content
+      .map((upload) => upload.summary)
+      .filter(Boolean)
+      .join(' '),
+    content.flatMap((upload) => upload.keyConcepts || [])
+  )
   const pool = []
 
   for (const upload of content) {
@@ -87,6 +109,7 @@ export async function resolveUploadQuestionPool(userId, subject, subjectName, gr
         keyConcepts: upload.keyConcepts,
         subject: subjectName,
         grade,
+        language,
       })
       await cacheGeneratedUploadQuestions(upload.uploadId, generated.questions)
       pool.push(...generated.questions)
@@ -95,7 +118,7 @@ export async function resolveUploadQuestionPool(userId, subject, subjectName, gr
     // Insufficient content (no extracted questions, no summary) — skip this upload.
   }
 
-  return pool
+  return { pool, language }
 }
 
 // ---------- Uploads-only (no API call once the pool above is resolved) ----------

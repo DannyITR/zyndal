@@ -2,7 +2,14 @@ import { useEffect, useState } from 'react'
 import { todayStr } from '../../../lib/streak'
 import { generateStudyGuide, getTodaysGuideSubject } from '../../../lib/ai'
 import { getUploadedContentForSubject } from '../../../lib/storage'
-import { saveSourcePreference, countUsableUploads, resolveUploadQuestionPool, buildGuideFromUploads, mixGuideQuestions } from '../../../lib/questionSource'
+import {
+  saveSourcePreference,
+  countUsableUploads,
+  resolveUploadQuestionPool,
+  resolveGenerationLanguage,
+  buildGuideFromUploads,
+  mixGuideQuestions,
+} from '../../../lib/questionSource'
 import TopBar from '../../shared/TopBar'
 import TestPrepQuestion from './TestPrepQuestion'
 import QuestionSourceStep from './QuestionSourceStep'
@@ -72,15 +79,22 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
     try {
       let result
       if (source === 'ai') {
-        result = await generateStudyGuide({ grade: user.grade || 9, subjectName: subject.name })
+        const language = resolveGenerationLanguage(user)
+        result = await generateStudyGuide({ grade: user.grade || 9, subjectName: subject.name, language })
       } else {
-        const uploadedQuestions = await resolveUploadQuestionPool(user.id, subject.id, subject.name, user.grade || 9, setGeneratingLabel)
+        const { pool: uploadedQuestions, language } = await resolveUploadQuestionPool(
+          user.id,
+          subject.id,
+          subject.name,
+          user.grade || 9,
+          setGeneratingLabel
+        )
         if (source === 'uploads') {
           if (uploadedQuestions.length === 0) throw new Error("Couldn't build questions from your uploads. Please try Curriculum Guide instead.")
           result = buildGuideFromUploads(uploadedQuestions, subject.name)
         } else {
           setGeneratingLabel('')
-          const aiGuide = await generateStudyGuide({ grade: user.grade || 9, subjectName: subject.name })
+          const aiGuide = await generateStudyGuide({ grade: user.grade || 9, subjectName: subject.name, language })
           result = mixGuideQuestions(uploadedQuestions, aiGuide)
         }
       }

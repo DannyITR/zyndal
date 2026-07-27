@@ -4,7 +4,14 @@ import { todayStr } from '../../../lib/streak'
 import { daysUntil } from '../../../lib/testprep'
 import { getUploadedContentForSubject, createStudyPlan, getPastStudyPlans } from '../../../lib/storage'
 import { generateStudyPlan } from '../../../lib/ai'
-import { saveSourcePreference, countUsableUploads, resolveUploadQuestionPool, buildPlanDaysFromUploads, mixPlanDays } from '../../../lib/questionSource'
+import {
+  saveSourcePreference,
+  countUsableUploads,
+  resolveUploadQuestionPool,
+  resolveGenerationLanguage,
+  buildPlanDaysFromUploads,
+  mixPlanDays,
+} from '../../../lib/questionSource'
 import TopBar from '../../shared/TopBar'
 import QuestionSourceStep from './QuestionSourceStep'
 
@@ -64,9 +71,10 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
 
       let planData
       if (source === 'ai') {
-        planData = await generateStudyPlan({ grade: Number(grade), subject: subject.name, topic: topic.trim(), daysAvailable })
+        const language = resolveGenerationLanguage(user)
+        planData = await generateStudyPlan({ grade: Number(grade), subject: subject.name, topic: topic.trim(), daysAvailable, language })
       } else {
-        const uploadedQuestions = await resolveUploadQuestionPool(
+        const { pool: uploadedQuestions, language } = await resolveUploadQuestionPool(
           user.id,
           subjectId,
           subject.name,
@@ -78,7 +86,7 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
           planData = { days: buildPlanDaysFromUploads(uploadedQuestions, daysAvailable, topic.trim()) }
         } else {
           setGeneratingLabel('')
-          const aiData = await generateStudyPlan({ grade: Number(grade), subject: subject.name, topic: topic.trim(), daysAvailable })
+          const aiData = await generateStudyPlan({ grade: Number(grade), subject: subject.name, topic: topic.trim(), daysAvailable, language })
           planData = { days: mixPlanDays(uploadedQuestions, aiData.days) }
         }
       }

@@ -24,6 +24,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
   const [email, setEmail] = useState(user.email || '')
   const [schoolName, setSchoolName] = useState(user.school || '')
   const [grade, setGrade] = useState(user.grade ? String(user.grade) : '')
+  const [languagePreference, setLanguagePreference] = useState(user.language_preference || 'English')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -46,6 +47,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
         schoolName: schoolName.trim(),
         avatar,
         grade: isStudent ? (grade ? Number(grade) : null) : user.grade,
+        languagePreference: isStudent ? languagePreference : user.language_preference,
       })
       onSaved(updated)
       setSuccess('Saved!')
@@ -155,6 +157,17 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
               <option value="10">10</option>
               <option value="11">11</option>
             </select>
+          </div>
+        )}
+
+        {isStudent && (
+          <div className="field">
+            <label htmlFor="settings-language">Preferred language</label>
+            <select id="settings-language" value={languagePreference} onChange={(e) => setLanguagePreference(e.target.value)}>
+              <option value="English">English</option>
+              <option value="French">French</option>
+            </select>
+            <p className="field-hint">Used for AI-generated study guide and test prep questions when you're not studying from your own uploads.</p>
           </div>
         )}
 

@@ -84,8 +84,9 @@ export async function createUser({ username, password, accountType, grade = null
   return data
 }
 
-// grade is only meaningful for students; pass the existing value through for parents.
-export async function updateUserProfile(userId, { displayName, email, schoolName, avatar, grade }) {
+// grade and languagePreference are only meaningful for students; pass the
+// existing value through for parents.
+export async function updateUserProfile(userId, { displayName, email, schoolName, avatar, grade, languagePreference }) {
   const { data, error } = await supabase
     .from('users')
     .update({
@@ -94,6 +95,7 @@ export async function updateUserProfile(userId, { displayName, email, schoolName
       school: schoolName || null,
       avatar: avatar || null,
       grade,
+      language_preference: languagePreference,
     })
     .eq('id', userId)
     .select()

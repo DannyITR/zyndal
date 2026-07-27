@@ -21,7 +21,8 @@ create table if not exists users (
   total_paid_out_cents integer not null default 0,
   coin_to_dollar_rate integer not null default 10,
   milestone_settings jsonb not null default '{"7":10,"14":20,"30":50}'::jsonb,
-  is_premium boolean not null default false
+  is_premium boolean not null default false,
+  language_preference text default 'English'
 );
 
 create table if not exists streaks (
@@ -280,3 +281,8 @@ alter table curriculum_outlines disable row level security;
 --
 -- alter table uploads add column if not exists pages_count integer not null default 1;
 -- alter table uploads add column if not exists updated_at timestamptz not null default now();
+--
+-- Run against a database that already has a `users` table from before the
+-- study guide / test prep language preference existed:
+--
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS language_preference text default 'English';

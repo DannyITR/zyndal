@@ -77,7 +77,19 @@ const STUDY_GUIDE_SCHEMA = {
   required: ['topic', 'questions'],
 }
 
-function buildStudyPlanSystemPrompt(grade, subject, topic, days) {
+// Shared across every generator below (study plan, study guide, and
+// upload-content questions) instead of leaving language to whatever Claude
+// infers from the subject name — which broke for e.g. English material
+// uploaded under the French subject, or vice versa. `language` is either
+// detected from the student's own uploaded content (see
+// languageDetection.js, used for the uploads/mix sources) or the student's
+// language_preference profile setting (used for pure curriculum
+// generation — see questionSource.js and resolveGenerationLanguage there).
+function languageInstruction(language) {
+  return `Generate all questions, options, explanations and content in ${language}. Match the language of the source material exactly.`
+}
+
+function buildStudyPlanSystemPrompt(grade, subject, topic, days, language) {
   const secondary = gradeToSecondary(grade)
   return `You are a Quebec high school study planner. Generate a JSON study plan for a Secondary ${secondary} student preparing for a ${subject} test on ${topic} in ${days} days. Return only JSON with this structure: { days: [ { day: number, title: string, focus: string, lesson: string (2-3 paragraph mini lesson in simple language a teenager would understand), questions: [ { question: string, options: [string,string,string,string], correct: number, explanation: string } ] } ] }.
 
@@ -88,14 +100,16 @@ IMPORTANT DAY LOGIC:
 - Generate 3-5 questions per day except when X=1 generate 10 questions
 - Align to Quebec Secondary curriculum
 
-Every question must have exactly 4 options, and "correct" is the 0-based index of the right option.`
+Every question must have exactly 4 options, and "correct" is the 0-based index of the right option.
+
+${languageInstruction(language)}`
 }
 
 // Pure AI generation, curriculum-aligned only — the student's own uploaded
 // questions (if they chose that source, or "mix") are merged in
 // client-side afterward by questionSource.js, which keeps them verbatim
 // instead of trusting the model not to paraphrase them.
-export async function generateStudyPlan({ grade, subject, topic, daysAvailable }) {
+export async function generateStudyPlan({ grade, subject, topic, daysAvailable, language = 'English' }) {
   if (DEMO_MODE) {
     return buildDemoStudyPlanDays({ subjectId: resolveSubjectId(subject), grade, topic, daysAvailable })
   }
@@ -105,7 +119,7 @@ export async function generateStudyPlan({ grade, subject, topic, daysAvailable }
   const stream = client.messages.stream({
     model: MODEL,
     max_tokens: 64000,
-    system: buildStudyPlanSystemPrompt(grade, subject, topic, daysAvailable),
+    system: buildStudyPlanSystemPrompt(grade, subject, topic, daysAvailable, language),
     output_config: { format: { type: 'json_schema', schema: STUDY_PLAN_SCHEMA } },
     messages: [{ role: 'user', content: 'Generate the study plan now.' }],
   })
@@ -126,7 +140,7 @@ export function getTodaysGuideSubject(date = new Date()) {
   return SUBJECTS[daysSinceEpoch % SUBJECTS.length]
 }
 
-export async function generateStudyGuide({ grade, subjectName }) {
+export async function generateStudyGuide({ grade, subjectName, language = 'English' }) {
   if (DEMO_MODE) {
     return buildDemoStudyGuide({ subjectId: resolveSubjectId(subjectName), grade })
   }
@@ -137,7 +151,7 @@ export async function generateStudyGuide({ grade, subjectName }) {
   const stream = client.messages.stream({
     model: MODEL,
     max_tokens: 16000,
-    system: `You are a Quebec high school study planner. Generate a daily practice set for a Secondary ${secondary} student in ${subjectName}. Pick ONE specific topic from the Quebec Secondary ${secondary} ${subjectName} curriculum (vary your choice — don't always pick the most obvious topic) and write exactly 5 multiple-choice questions on it at mixed difficulty. Return only JSON: { topic: string, questions: [ { question: string, options: [string,string,string,string], correct: number (0-based index), explanation: string } ] }.`,
+    system: `You are a Quebec high school study planner. Generate a daily practice set for a Secondary ${secondary} student in ${subjectName}. Pick ONE specific topic from the Quebec Secondary ${secondary} ${subjectName} curriculum (vary your choice — don't always pick the most obvious topic) and write exactly 5 multiple-choice questions on it at mixed difficulty. Return only JSON: { topic: string, questions: [ { question: string, options: [string,string,string,string], correct: number (0-based index), explanation: string } ] }.\n\n${languageInstruction(language)}`,
     output_config: { format: { type: 'json_schema', schema: STUDY_GUIDE_SCHEMA } },
     messages: [{ role: 'user', content: 'Generate the study guide now.' }],
   })
@@ -170,7 +184,7 @@ const UPLOAD_CONTENT_QUESTIONS_SCHEMA = {
   required: ['questions'],
 }
 
-function buildUploadContentQuestionsPrompt(summary, keyConcepts, subjectName, grade) {
+function buildUploadContentQuestionsPrompt(summary, keyConcepts, subjectName, grade, language) {
   const secondary = gradeToSecondary(grade)
   const conceptsText = keyConcepts && keyConcepts.length > 0 ? keyConcepts.join(', ') : 'Not specified'
   return `You are a Quebec high school teacher. Based on the following uploaded study material, generate 5 multiple choice questions a student might face on a test. Each question should test understanding of the key concepts in the material.
@@ -190,16 +204,22 @@ Return only JSON:
       explanation: string
     }
   ]
-}`
 }
 
-export async function generateQuestionsFromUploadContent({ summary, keyConcepts, subject, grade }) {
+${languageInstruction(language)}`
+}
+
+// language: the language detected from this upload's own summary/key_concepts
+// (see detectLanguageFromContent in languageDetection.js, computed by the
+// caller in questionSource.js) — not the student's profile preference,
+// since the point is to match whatever language THIS material is in.
+export async function generateQuestionsFromUploadContent({ summary, keyConcepts, subject, grade, language = 'English' }) {
   const client = await getClient()
 
   const stream = client.messages.stream({
     model: MODEL,
     max_tokens: 8000,
-    system: buildUploadContentQuestionsPrompt(summary, keyConcepts, subject, grade),
+    system: buildUploadContentQuestionsPrompt(summary, keyConcepts, subject, grade, language),
     output_config: { format: { type: 'json_schema', schema: UPLOAD_CONTENT_QUESTIONS_SCHEMA } },
     messages: [{ role: 'user', content: 'Generate the questions now.' }],
   })
