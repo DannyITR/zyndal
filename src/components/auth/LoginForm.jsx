@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { findUserByUsername, setSession } from '../../lib/storage'
+import { verifyLogin, setSession } from '../../lib/storage'
 
 export default function LoginForm({ onAuth }) {
   const [username, setUsername] = useState('')
@@ -12,8 +12,8 @@ export default function LoginForm({ onAuth }) {
     setError('')
     setSubmitting(true)
     try {
-      const user = await findUserByUsername(username)
-      if (!user || user.password !== password) {
+      const user = await verifyLogin(username, password)
+      if (!user) {
         setError('Invalid username or password.')
         return
       }

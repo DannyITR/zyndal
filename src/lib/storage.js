@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import { hashPassword, comparePassword, isBcryptHash } from './password'
 import {
   XP_PER_CORRECT,
   COINS_PER_CORRECT,
@@ -69,9 +70,10 @@ export async function findUserByParentCode(code) {
 
 // accountType: 'student' | 'parent'; grade and parentCode are nullable.
 export async function createUser({ username, password, accountType, grade = null, parentCode = null }) {
+  const hashedPassword = await hashPassword(password)
   const { data, error } = await supabase
     .from('users')
-    .insert({ username, password, account_type: accountType, grade, parent_code: parentCode })
+    .insert({ username, password: hashedPassword, account_type: accountType, grade, parent_code: parentCode })
     .select()
     .single()
   if (error) throw error
@@ -107,12 +109,38 @@ export async function updateUserProfile(userId, { displayName, email, schoolName
   return data
 }
 
+// Checks a plain-text password against a user row that may still have its
+// original plain-text password (pre-dating bcrypt hashing) or an already
+// hashed one. On a successful match against a legacy plain-text row, it
+// silently rewrites the row with a proper bcrypt hash — every account
+// migrates itself the next time its owner logs in or changes their
+// password, with no forced reset.
+async function verifyAndMigratePassword(user, plainTextPassword) {
+  if (isBcryptHash(user.password)) {
+    return comparePassword(plainTextPassword, user.password)
+  }
+  if (user.password !== plainTextPassword) return false
+
+  const hashed = await hashPassword(plainTextPassword)
+  const { error } = await supabase.from('users').update({ password: hashed }).eq('id', user.id)
+  if (error) console.error('[storage] silent password migration failed:', error)
+  return true
+}
+
+export async function verifyLogin(username, password) {
+  const user = await findUserByUsername(username)
+  if (!user) return null
+  const valid = await verifyAndMigratePassword(user, password)
+  return valid ? user : null
+}
+
 export async function changePassword(userId, currentPassword, newPassword) {
   const user = await findUserById(userId)
-  if (!user || user.password !== currentPassword) {
+  if (!user || !(await verifyAndMigratePassword(user, currentPassword))) {
     throw new Error('Current password is incorrect.')
   }
-  const { error } = await supabase.from('users').update({ password: newPassword }).eq('id', userId)
+  const hashedNew = await hashPassword(newPassword)
+  const { error } = await supabase.from('users').update({ password: hashedNew }).eq('id', userId)
   if (error) {
     console.error('[storage] changePassword failed:', error)
     throw error
