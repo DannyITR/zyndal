@@ -107,6 +107,7 @@ async function handle({ userId }) {
       .filter((r) => !r.users?.deleted_at)
       .map((r) => ({
         id: r.id,
+        senderId: r.sender_id,
         senderUsername: r.users?.username || 'Unknown',
         senderAvatar: r.users?.avatar || null,
         senderStreak: r.sender_streak,

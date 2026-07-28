@@ -295,6 +295,8 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         user={user}
         streak={getEffectiveStreak(progress, today)}
         xp={progress.xp}
+        todayScore={dailyProgress?.total_completed ?? 0}
+        today={today}
         onBack={() => {
           setShowShareScreen(false)
           getTodaysReceivedShares(user.id).then((list) => setReceivedShareCount(list.length))

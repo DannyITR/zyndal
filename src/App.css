@@ -2210,28 +2210,21 @@ div.zyndal-logo {
   z-index: 1;
 }
 
-.share-card-flame {
-  font-size: 46px;
-  margin: 0;
-  line-height: 1;
-}
-
-.share-card-streak-number {
+.share-card-date {
   font-family: var(--font-heading);
   font-weight: 800;
-  font-size: 62px;
-  line-height: 1;
-  margin: 4px 0 0;
-  color: var(--gold);
+  font-size: 22px;
+  color: var(--text);
+  margin: 0 0 8px;
 }
 
-.share-card-streak-label {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  margin: 2px 0 14px;
+.share-card-score {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 54px;
+  line-height: 1;
+  margin: 0 0 16px;
+  color: var(--gold);
 }
 
 .share-card-username {
@@ -2247,15 +2240,6 @@ div.zyndal-logo {
   color: var(--purple-bright);
   font-weight: 700;
   margin: 4px 0 0;
-}
-
-.share-card-cta {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--text);
-  line-height: 1.4;
-  z-index: 1;
 }
 
 /* ---------- Finance dashboard ---------- */

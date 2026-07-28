@@ -3,7 +3,7 @@ import { getFriendsWithStreaks, getStreakSharesForUser, getTodaysReceivedShares,
 import { hasSharedToday, computeShareStreak } from '../../../lib/streakShare'
 import TopBar from '../../shared/TopBar'
 
-export default function ShareStreakScreen({ user, streak, xp, onBack, onLogout, onLogoClick }) {
+export default function ShareStreakScreen({ user, streak, xp, todayScore, today, onBack, onLogout, onLogoClick }) {
   const [friends, setFriends] = useState(null)
   const [shares, setShares] = useState(null)
   const [receivedToday, setReceivedToday] = useState(null)
@@ -13,6 +13,20 @@ export default function ShareStreakScreen({ user, streak, xp, onBack, onLogout, 
   const cardRef = useRef(null)
   const [generating, setGenerating] = useState(false)
   const [cardError, setCardError] = useState('')
+
+  const formattedDate = new Date(`${today}T00:00:00Z`).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+
+  // Only worth surfacing as a prompt when there's no share streak with that
+  // friend yet — once one exists, the middle "Share with Friends" section
+  // already shows it every time this screen opens, so repeating it up top
+  // too would be redundant nagging rather than a nudge to start one.
+  const receivedToShow =
+    receivedToday && shares ? receivedToday.filter((r) => computeShareStreak(shares, user.id, r.senderId) === 0) : []
 
   useEffect(() => {
     let cancelled = false
@@ -60,7 +74,7 @@ export default function ShareStreakScreen({ user, streak, xp, onBack, onLogout, 
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
       if (!blob) throw new Error('Could not generate image')
 
-      const fileName = `zyndal-streak-${user.username}.png`
+      const fileName = `zyndal-score-${user.username}.png`
       const file = new File([blob], fileName, { type: 'image/png' })
 
       let shared = false
@@ -68,8 +82,8 @@ export default function ShareStreakScreen({ user, streak, xp, onBack, onLogout, 
         try {
           await navigator.share({
             files: [file],
-            title: 'My Zyndal Streak',
-            text: `I'm on a ${streak}-day streak on Zyndal! Can you beat it?`,
+            title: 'My Zyndal Score',
+            text: `I got ${todayScore}/6 correct on Zyndal today! 🎯`,
           })
           shared = true
         } catch (err) {
@@ -106,11 +120,11 @@ export default function ShareStreakScreen({ user, streak, xp, onBack, onLogout, 
         onLogoClick={onLogoClick}
       />
 
-      {receivedToday && receivedToday.length > 0 && (
+      {receivedToShow.length > 0 && (
         <div className="finance-section-card">
           <h3 className="section-heading">Shared with you today</h3>
           <div className="shared-with-you-list">
-            {receivedToday.map((r) => (
+            {receivedToShow.map((r) => (
               <p key={r.id} className="shared-with-you-row">
                 {r.senderAvatar ? `${r.senderAvatar} ` : ''}
                 <strong>@{r.senderUsername}</strong> shared their {r.senderStreak} day streak with you 🔥
@@ -175,18 +189,11 @@ export default function ShareStreakScreen({ user, streak, xp, onBack, onLogout, 
         </div>
 
         <div className="share-card-middle">
-          <p className="share-card-flame">🔥</p>
-          <p className="share-card-streak-number">{streak}</p>
-          <p className="share-card-streak-label">Day Streak</p>
+          <p className="share-card-date">{formattedDate}</p>
+          <p className="share-card-score">{todayScore}/6 ✓</p>
           <p className="share-card-username">@{user.username}</p>
           <p className="share-card-xp">⚡ {xp} XP</p>
         </div>
-
-        <p className="share-card-cta">
-          Can you beat my streak?
-          <br />
-          zyndal.com
-        </p>
       </div>
 
       {cardError && <p className="form-error">{cardError}</p>}
