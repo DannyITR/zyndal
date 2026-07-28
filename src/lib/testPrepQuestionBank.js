@@ -3,14 +3,99 @@
 // DEMO_MODE in ai.js. Swap the AI calls back on and this file becomes unused
 // (safe to delete or keep as a fallback).
 //
-// 5 questions per subject per grade (9, 10, 11) = 90 total. Wrong options
-// are modeled on common student mistakes, not random noise, matching the
-// style of the AI-generated questions this replaces.
+// 5 questions per subject per grade (7, 8, 9, 10, 11) = 150 total. Wrong
+// options are modeled on common student mistakes, not random noise, matching
+// the style of the AI-generated questions this replaces.
+// Grade range currently 7-11. Elementary grades (1-6) planned for future release.
 
 import { getSubject } from './questions.js'
 
 const TEST_PREP_QUESTION_BANK = {
   math: {
+    7: [
+      {
+        topic: 'Fractions',
+        difficulty: 'easy',
+        question: 'What is 2/3 + 1/6?',
+        options: ['1/2', '5/6', '3/9', '1/3'],
+        correct: 1,
+        explanation: 'Convert 2/3 to 4/6, then add 1/6 to get 5/6.',
+      },
+      {
+        topic: 'Decimals',
+        difficulty: 'easy',
+        question: 'What is 1.75 - 0.5?',
+        options: ['1.25', '1.7', '2.25', '1.5'],
+        correct: 0,
+        explanation: 'Subtracting 0.5 from 1.75 gives 1.25.',
+      },
+      {
+        topic: 'Percentages',
+        difficulty: 'medium',
+        question: 'What is 40% of 60?',
+        options: ['24', '40', '20', '16'],
+        correct: 0,
+        explanation: '40% of 60 = 0.4 × 60 = 24.',
+      },
+      {
+        topic: 'Basic Geometry',
+        difficulty: 'easy',
+        question: 'What is the perimeter of a rectangle with length 8 cm and width 3 cm?',
+        options: ['22 cm', '24 cm', '11 cm', '19 cm'],
+        correct: 0,
+        explanation: 'Perimeter = 2(length + width) = 2(8 + 3) = 22 cm.',
+      },
+      {
+        topic: 'Integers',
+        difficulty: 'medium',
+        question: 'What is (-4) × (-3)?',
+        options: ['12', '-12', '-7', '7'],
+        correct: 0,
+        explanation: 'Multiplying two negative integers gives a positive result: (-4) × (-3) = 12.',
+      },
+    ],
+    8: [
+      {
+        topic: 'Algebra',
+        difficulty: 'easy',
+        question: 'Solve for x: 2x + 3 = 11',
+        options: ['4', '7', '5.5', '8'],
+        correct: 0,
+        explanation: 'Subtract 3 from both sides to get 2x = 8, then divide by 2 to get x = 4.',
+      },
+      {
+        topic: 'Algebra',
+        difficulty: 'medium',
+        question: 'Simplify: 5x - 2x + 3',
+        options: ['3x + 3', '7x + 3', '3x - 3', '2x + 3'],
+        correct: 0,
+        explanation: 'Combine like terms: 5x - 2x = 3x, so the expression simplifies to 3x + 3.',
+      },
+      {
+        topic: 'Ratios and Proportions',
+        difficulty: 'medium',
+        question: 'If 4 pencils cost $2, how much do 10 pencils cost?',
+        options: ['$5', '$4', '$8', '$2.50'],
+        correct: 0,
+        explanation: 'The ratio is $0.50 per pencil, so 10 pencils cost 10 × $0.50 = $5.',
+      },
+      {
+        topic: 'Pythagorean Theorem',
+        difficulty: 'medium',
+        question: 'A right triangle has legs of 6 and 8. What is the length of the hypotenuse?',
+        options: ['10', '14', '48', '7'],
+        correct: 0,
+        explanation: 'Using a² + b² = c²: 6² + 8² = 36 + 64 = 100, so c = √100 = 10.',
+      },
+      {
+        topic: 'Statistics',
+        difficulty: 'medium',
+        question: 'What is the median of this data set: 3, 7, 9, 2, 5?',
+        options: ['5', '7', '2', '9'],
+        correct: 0,
+        explanation: 'Ordering the data: 2, 3, 5, 7, 9 — the middle value is 5.',
+      },
+    ],
     9: [
       {
         topic: 'Algebra',
@@ -150,6 +235,95 @@ const TEST_PREP_QUESTION_BANK = {
   },
 
   science: {
+    7: [
+      {
+        topic: 'Cells',
+        difficulty: 'easy',
+        question: 'What is the basic unit of life?',
+        options: ['The atom', 'The cell', 'The organ', 'The tissue'],
+        correct: 1,
+        explanation: 'The cell is the smallest structural and functional unit of all living organisms.',
+      },
+      {
+        topic: 'Cells',
+        difficulty: 'easy',
+        question: 'Which part of a plant cell is not found in an animal cell?',
+        options: ['Nucleus', 'Cell wall', 'Cytoplasm', 'Mitochondria'],
+        correct: 1,
+        explanation: 'Plant cells have a rigid cell wall outside the cell membrane, which animal cells lack.',
+      },
+      {
+        topic: 'Ecosystems',
+        difficulty: 'medium',
+        question: 'What do we call the flow of energy from one organism to another in a food chain?',
+        options: ['Photosynthesis', 'Energy transfer', 'Respiration', 'Decomposition'],
+        correct: 1,
+        explanation: 'Energy passes from producers to consumers as each organism is eaten by the next.',
+      },
+      {
+        topic: 'Ecosystems',
+        difficulty: 'easy',
+        question: 'Which organism in an ecosystem is classified as a producer?',
+        options: ['A rabbit', 'A wolf', 'A plant', 'A mushroom'],
+        correct: 2,
+        explanation: 'Producers, like plants, make their own food through photosynthesis.',
+      },
+      {
+        topic: 'Matter and Energy',
+        difficulty: 'medium',
+        question: 'What is the term for a solid changing directly into a gas without becoming a liquid?',
+        options: ['Evaporation', 'Condensation', 'Sublimation', 'Freezing'],
+        correct: 2,
+        explanation: 'Sublimation is the process where a solid changes directly into a gas, skipping the liquid phase.',
+      },
+    ],
+    8: [
+      {
+        topic: 'Fluids',
+        difficulty: 'medium',
+        question: "What does Pascal's Law state about pressure in a fluid?",
+        options: [
+          'Pressure applied to a confined fluid is transmitted equally in all directions',
+          'Fluids always flow downhill',
+          'Pressure only affects the bottom of a container',
+          'Fluids cannot be compressed',
+        ],
+        correct: 0,
+        explanation: "Pascal's Law states that pressure applied to a confined fluid is transmitted equally throughout the fluid in all directions.",
+      },
+      {
+        topic: 'Fluids',
+        difficulty: 'easy',
+        question: 'What determines whether an object floats or sinks in a fluid?',
+        options: ['Its color', 'Its density compared to the fluid', 'Its temperature only', 'Its shape only'],
+        correct: 1,
+        explanation: 'An object floats if it is less dense than the fluid it is placed in, and sinks if it is denser.',
+      },
+      {
+        topic: 'Optics',
+        difficulty: 'easy',
+        question: 'What is the term for light bouncing off a surface?',
+        options: ['Refraction', 'Reflection', 'Absorption', 'Diffraction'],
+        correct: 1,
+        explanation: 'Reflection occurs when light bounces off a surface, such as a mirror.',
+      },
+      {
+        topic: 'Optics',
+        difficulty: 'medium',
+        question: 'Which type of lens is used to correct nearsightedness?',
+        options: ['Concave lens', 'Convex lens', 'Flat lens', 'Cylindrical lens'],
+        correct: 0,
+        explanation: 'A concave (diverging) lens spreads light rays out and is used to correct nearsightedness.',
+      },
+      {
+        topic: 'Cells and Systems',
+        difficulty: 'medium',
+        question: 'Which organ system works with the circulatory system to deliver oxygen to the blood?',
+        options: ['The respiratory system', 'The digestive system', 'The skeletal system', 'The excretory system'],
+        correct: 0,
+        explanation: 'The respiratory system brings oxygen into the lungs, where it is picked up by the blood and delivered by the circulatory system.',
+      },
+    ],
     9: [
       {
         topic: 'Biology',
@@ -294,6 +468,100 @@ const TEST_PREP_QUESTION_BANK = {
   },
 
   history: {
+    7: [
+      {
+        topic: 'New France',
+        difficulty: 'easy',
+        question: 'Who founded Quebec City in 1608?',
+        options: ['Jacques Cartier', 'Samuel de Champlain', 'Louis Jolliet', 'Étienne Brûlé'],
+        correct: 1,
+        explanation: 'Samuel de Champlain founded Quebec City in 1608, establishing a key settlement in New France.',
+      },
+      {
+        topic: 'New France',
+        difficulty: 'medium',
+        question: 'What was the primary economic activity in New France?',
+        options: ['The fur trade', 'Gold mining', 'Cotton farming', 'Fishing only'],
+        correct: 0,
+        explanation: 'The fur trade, especially in beaver pelts, was the economic backbone of New France.',
+      },
+      {
+        topic: 'Early Canadian History',
+        difficulty: 'easy',
+        question: 'In what year did Jacques Cartier first explore the St. Lawrence River?',
+        options: ['1534', '1608', '1663', '1763'],
+        correct: 0,
+        explanation: 'Jacques Cartier explored the St. Lawrence River starting in 1534, claiming the land for France.',
+      },
+      {
+        topic: 'Early Canadian History',
+        difficulty: 'medium',
+        question: 'Which treaty ended the Seven Years War and transferred New France to Britain?',
+        options: ['The Treaty of Paris (1763)', 'The Treaty of Versailles', 'The Treaty of Utrecht', 'The Treaty of Ghent'],
+        correct: 0,
+        explanation: 'The Treaty of Paris in 1763 formally ended the Seven Years War and ceded New France to Britain.',
+      },
+      {
+        topic: 'New France',
+        difficulty: 'medium',
+        question: 'What group did French settlers rely on for trading furs and surviving in the new colony?',
+        options: ['Indigenous peoples', 'British colonists', 'Spanish explorers', 'Dutch traders'],
+        correct: 0,
+        explanation: 'French settlers formed alliances and trading relationships with Indigenous peoples, who were essential to the fur trade and survival in the colony.',
+      },
+    ],
+    8: [
+      {
+        topic: 'Colonial Canada',
+        difficulty: 'medium',
+        question: 'What did the Constitutional Act of 1791 do?',
+        options: ['Divided Quebec into Upper and Lower Canada', 'Created Confederation', 'Ended the fur trade', 'Gave Canada independence'],
+        correct: 0,
+        explanation: 'The Constitutional Act of 1791 split the Province of Quebec into Upper Canada (mostly English-speaking) and Lower Canada (mostly French-speaking).',
+      },
+      {
+        topic: 'Colonial Canada',
+        difficulty: 'medium',
+        question: 'What was a major cause of the Rebellions of 1837-1838 in Upper and Lower Canada?',
+        options: [
+          'Demand for more democratic and responsible government',
+          'A war with the United States',
+          'A dispute over the fur trade',
+          'Religious conflict with France',
+        ],
+        correct: 0,
+        explanation: 'Reformers in both colonies rebelled partly due to frustration with unelected governing councils and a desire for responsible government.',
+      },
+      {
+        topic: 'Confederation',
+        difficulty: 'easy',
+        question: 'What document created the Dominion of Canada in 1867?',
+        options: ['The British North America Act', 'The Treaty of Paris', 'The Magna Carta', 'The Statute of Westminster'],
+        correct: 0,
+        explanation: 'The British North America Act of 1867 established Canada as a self-governing dominion.',
+      },
+      {
+        topic: 'Confederation',
+        difficulty: 'medium',
+        question: 'What was one major reason the colonies wanted to unite in Confederation?',
+        options: [
+          'Shared defense against potential U.S. expansion and economic benefits',
+          'To join the United States',
+          'To create a monarchy',
+          'To end all trade with Britain',
+        ],
+        correct: 0,
+        explanation: 'Concerns about U.S. expansion after the American Civil War, along with economic advantages, pushed the colonies toward uniting.',
+      },
+      {
+        topic: 'Confederation',
+        difficulty: 'easy',
+        question: 'How many provinces originally joined together at Confederation in 1867?',
+        options: ['Four', 'Two', 'Seven', 'Ten'],
+        correct: 0,
+        explanation: 'Ontario, Quebec, Nova Scotia, and New Brunswick were the four original provinces of Confederation.',
+      },
+    ],
     9: [
       {
         topic: 'Canadian history',
@@ -478,6 +746,110 @@ const TEST_PREP_QUESTION_BANK = {
   },
 
   geography: {
+    7: [
+      {
+        topic: 'Physical Geography of Canada',
+        difficulty: 'easy',
+        question: 'What is the longest river in Canada?',
+        options: ['The Mackenzie River', 'The Fraser River', 'The St. Lawrence River', 'The Yukon River'],
+        correct: 0,
+        explanation: 'The Mackenzie River, at about 4,241 km, is the longest river in Canada.',
+      },
+      {
+        topic: 'Physical Geography of Canada',
+        difficulty: 'medium',
+        question: 'Which large rocky region covers much of central and eastern Canada?',
+        options: ['The Canadian Shield', 'The Rocky Mountains', 'The Great Plains', 'The Arctic Archipelago'],
+        correct: 0,
+        explanation: 'The Canadian Shield is a vast area of ancient rock covering much of central and eastern Canada.',
+      },
+      {
+        topic: 'Maps and Coordinates',
+        difficulty: 'easy',
+        question: 'What do lines of latitude measure?',
+        options: [
+          'Distance north or south of the equator',
+          'Distance east or west of the Prime Meridian',
+          'Elevation above sea level',
+          'Time zones only',
+        ],
+        correct: 0,
+        explanation: 'Lines of latitude run east-west and measure distance north or south of the equator.',
+      },
+      {
+        topic: 'Maps and Coordinates',
+        difficulty: 'medium',
+        question: 'What is the imaginary line at 0° longitude called?',
+        options: ['The equator', 'The Prime Meridian', 'The Tropic of Cancer', 'The Arctic Circle'],
+        correct: 1,
+        explanation: 'The Prime Meridian, passing through Greenwich, England, marks 0° longitude.',
+      },
+      {
+        topic: 'Physical Geography of Canada',
+        difficulty: 'easy',
+        question: "Which body of water lies along Canada's east coast?",
+        options: ['The Pacific Ocean', 'The Atlantic Ocean', 'The Arctic Ocean', 'The Gulf of Mexico'],
+        correct: 1,
+        explanation: "Canada's east coast borders the Atlantic Ocean.",
+      },
+    ],
+    8: [
+      {
+        topic: 'Global Geography',
+        difficulty: 'easy',
+        question: 'How many continents are there?',
+        options: ['5', '6', '7', '8'],
+        correct: 2,
+        explanation: 'There are 7 continents: Africa, Antarctica, Asia, Australia, Europe, North America, and South America.',
+      },
+      {
+        topic: 'Global Geography',
+        difficulty: 'medium',
+        question: 'Which country has the largest population in the world?',
+        options: ['India', 'China', 'United States', 'Indonesia'],
+        correct: 0,
+        explanation: 'As of recent estimates, India has surpassed China to become the most populous country in the world.',
+      },
+      {
+        topic: 'Climate Zones',
+        difficulty: 'medium',
+        question: 'What best describes a temperate climate zone?',
+        options: [
+          'Moderate temperatures with four distinct seasons',
+          'Constant heat and heavy rainfall year-round',
+          'Extremely cold with permafrost year-round',
+          'Very dry with minimal precipitation',
+        ],
+        correct: 0,
+        explanation: 'Temperate climate zones, like much of Canada and Europe, experience moderate temperatures and four distinct seasons.',
+      },
+      {
+        topic: 'Human Geography',
+        difficulty: 'medium',
+        question: 'What is "population density"?',
+        options: [
+          'The number of people living per unit of area',
+          'The total population of a country',
+          'The rate at which a population grows',
+          'The percentage of people living in cities',
+        ],
+        correct: 0,
+        explanation: 'Population density measures how many people live within a given area, such as per square kilometer.',
+      },
+      {
+        topic: 'Human Geography',
+        difficulty: 'medium',
+        question: 'What is migration?',
+        options: [
+          'The movement of people from one place to live in another',
+          'The movement of tectonic plates',
+          'The changing of seasons',
+          'The flow of rivers to the ocean',
+        ],
+        correct: 0,
+        explanation: 'Migration refers to people moving from one region or country to settle in another.',
+      },
+    ],
     9: [
       {
         topic: 'Canada',
@@ -637,6 +1009,95 @@ const TEST_PREP_QUESTION_BANK = {
   },
 
   english: {
+    7: [
+      {
+        topic: 'Grammar',
+        difficulty: 'easy',
+        question: 'Which word is a pronoun in this sentence? "She gave him the book."',
+        options: ['Gave', 'She', 'Book', 'The'],
+        correct: 1,
+        explanation: "'She' replaces a noun (a person's name), which is what a pronoun does.",
+      },
+      {
+        topic: 'Grammar',
+        difficulty: 'easy',
+        question: 'Which sentence uses correct capitalization?',
+        options: ['my Favorite subject is science.', 'My favorite subject is Science.', 'My favorite subject is science.', 'my favorite Subject is science.'],
+        correct: 2,
+        explanation: "Only the first word of a sentence and proper nouns are capitalized; 'science' here is not a proper noun.",
+      },
+      {
+        topic: 'Reading Comprehension',
+        difficulty: 'medium',
+        question: 'What is it called when you form a mental picture based on details in a text?',
+        options: ['Inferencing', 'Visualizing', 'Skimming', 'Summarizing'],
+        correct: 1,
+        explanation: 'Visualizing means creating a mental image based on descriptive details in what you read.',
+      },
+      {
+        topic: 'Reading Comprehension',
+        difficulty: 'medium',
+        question: 'What does it mean to "infer" something while reading?',
+        options: [
+          'To copy a sentence exactly',
+          'To use clues in the text to figure out something not directly stated',
+          'To read the text out loud',
+          'To count the number of paragraphs',
+        ],
+        correct: 1,
+        explanation: 'Inferring means using clues and context from the text to understand something the author does not state directly.',
+      },
+      {
+        topic: 'Writing Basics',
+        difficulty: 'easy',
+        question: 'What should every paragraph include to stay organized?',
+        options: ['A topic sentence and supporting details', 'A title and a picture', 'A question and an answer', 'A list of vocabulary words'],
+        correct: 0,
+        explanation: 'A well-organized paragraph starts with a topic sentence and includes supporting details about that idea.',
+      },
+    ],
+    8: [
+      {
+        topic: 'Literary Devices',
+        difficulty: 'medium',
+        question: 'What is an example of alliteration?',
+        options: ['"Peter Piper picked a peck of pickled peppers"', '"The wind whispered like a voice"', '"Time is a thief"', '"She is as brave as a lion"'],
+        correct: 0,
+        explanation: 'Alliteration is the repetition of the same starting consonant sound in nearby words, as in "Peter Piper picked."',
+      },
+      {
+        topic: 'Literary Devices',
+        difficulty: 'medium',
+        question: 'What literary device gives human qualities to non-human things?',
+        options: ['Personification', 'Simile', 'Alliteration', 'Irony'],
+        correct: 0,
+        explanation: 'Personification attributes human characteristics or behavior to non-human objects, animals, or ideas.',
+      },
+      {
+        topic: 'Essay Writing',
+        difficulty: 'medium',
+        question: 'What is the purpose of a thesis statement?',
+        options: ["To state the essay's main argument or claim", 'To list every source used', 'To conclude the essay', 'To ask a question the essay will not answer'],
+        correct: 0,
+        explanation: "A thesis statement clearly presents the essay's central argument, usually near the end of the introduction.",
+      },
+      {
+        topic: 'Essay Writing',
+        difficulty: 'easy',
+        question: 'What should supporting paragraphs in an essay contain?',
+        options: ['Evidence and details that support the thesis', 'A completely new topic each time', 'Only opinions with no evidence', 'A summary of the introduction'],
+        correct: 0,
+        explanation: 'Supporting paragraphs should provide evidence, examples, and details that back up the thesis statement.',
+      },
+      {
+        topic: 'Parts of Speech',
+        difficulty: 'easy',
+        question: 'Which part of speech connects words, phrases, or clauses, such as "and," "but," or "or"?',
+        options: ['Conjunction', 'Preposition', 'Interjection', 'Pronoun'],
+        correct: 0,
+        explanation: 'Conjunctions like "and," "but," and "or" join words, phrases, or clauses together.',
+      },
+    ],
     9: [
       {
         topic: 'Grammar',
@@ -826,6 +1287,90 @@ const TEST_PREP_QUESTION_BANK = {
   },
 
   french: {
+    7: [
+      {
+        topic: 'Vocabulary',
+        difficulty: 'easy',
+        question: 'What does "la pomme" mean in English?',
+        options: ['The banana', 'The apple', 'The orange', 'The grape'],
+        correct: 1,
+        explanation: "'Pomme' means apple; it's a feminine noun so it takes 'la'.",
+      },
+      {
+        topic: 'Vocabulary',
+        difficulty: 'easy',
+        question: 'How do you say "goodbye" in French?',
+        options: ['Bonjour', 'Au revoir', 'Merci', "S'il vous plaît"],
+        correct: 1,
+        explanation: "'Au revoir' is the standard way to say goodbye in French.",
+      },
+      {
+        topic: 'Present Tense Verbs',
+        difficulty: 'medium',
+        question: "Conjugate 'avoir' (to have) for 'nous': Nous ___ un chien.",
+        options: ['avons', 'avez', 'ai', 'ont'],
+        correct: 0,
+        explanation: "The verb 'avoir' conjugates as 'nous avons' (we have) in the present tense.",
+      },
+      {
+        topic: 'Present Tense Verbs',
+        difficulty: 'medium',
+        question: "Conjugate 'être' (to be) for 'ils': Ils ___ contents.",
+        options: ['sont', 'est', 'sommes', 'êtes'],
+        correct: 0,
+        explanation: "The verb 'être' conjugates as 'ils sont' (they are) in the present tense.",
+      },
+      {
+        topic: 'Simple Sentences',
+        difficulty: 'easy',
+        question: 'Which sentence correctly means "I like the book" in French?',
+        options: ["J'aime le livre.", 'Je aime le livre.', "J'aimes le livre.", 'Je aiment le livre.'],
+        correct: 0,
+        explanation: "'J'aime le livre' is correct — 'je' becomes 'j'' before a vowel sound.",
+      },
+    ],
+    8: [
+      {
+        topic: 'Past Tense',
+        difficulty: 'medium',
+        question: "Which sentence correctly uses the passé composé of 'aller' (to go)?",
+        options: ['Elle est allée au marché.', 'Elle a allé au marché.', 'Elle allait au marché demain.', 'Elle va allée au marché.'],
+        correct: 0,
+        explanation: "'Aller' uses 'être' as its auxiliary verb in the passé composé, and the past participle agrees with the subject: 'elle est allée'.",
+      },
+      {
+        topic: 'Past Tense',
+        difficulty: 'medium',
+        question: "What is the passé composé form of 'finir' (to finish) for 'j'ai'?",
+        options: ["J'ai fini", 'Je finis', "J'ai finir", 'Je finissais'],
+        correct: 0,
+        explanation: "The passé composé of 'finir' uses 'avoir' + past participle: 'j'ai fini' (I finished).",
+      },
+      {
+        topic: 'Adjectives',
+        difficulty: 'easy',
+        question: "What is the correct plural form of the adjective 'heureux' (happy, masculine)?",
+        options: ['Heureux', 'Heureuse', 'Heureuses', 'Heureuxs'],
+        correct: 0,
+        explanation: "'Heureux' already ends in -x, so the masculine plural form stays the same: 'heureux'.",
+      },
+      {
+        topic: 'Adjectives',
+        difficulty: 'medium',
+        question: 'Where do most French adjectives go in relation to the noun they describe?',
+        options: ['After the noun', 'Always before the noun', 'At the start of the sentence', 'It does not matter'],
+        correct: 0,
+        explanation: 'Most French adjectives are placed after the noun they describe, unlike in English.',
+      },
+      {
+        topic: 'Reading Comprehension',
+        difficulty: 'medium',
+        question: "In the sentence 'Après avoir mangé, il est parti', what does 'après' indicate?",
+        options: ['A sequence of events (after doing something)', 'A location', 'A question', 'A negative statement'],
+        correct: 0,
+        explanation: "'Après' means 'after,' indicating that one action (leaving) happened following another (eating).",
+      },
+    ],
     9: [
       {
         topic: 'Vocabulary',
@@ -974,9 +1519,8 @@ const DIFFICULTY_ORDER = { easy: 0, medium: 1, hard: 2 }
 
 function clampGrade(grade) {
   const g = Number(grade)
-  if (!Number.isFinite(g) || g <= 9) return 9
-  if (g >= 11) return 11
-  return 10
+  if (!Number.isFinite(g)) return 9
+  return Math.min(11, Math.max(7, Math.round(g)))
 }
 
 export function getBankForGrade(subjectId, grade) {

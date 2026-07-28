@@ -33,7 +33,7 @@ function validate(body) {
 
   if (body.grade !== undefined && body.grade !== null && body.grade !== '') {
     const grade = sanitizeGrade(body.grade)
-    if (grade === null) return { field: 'grade', message: 'grade must be 9, 10, or 11.' }
+    if (grade === null) return { field: 'grade', message: 'grade must be 7, 8, 9, 10, or 11.' }
     body.grade = grade
   }
 

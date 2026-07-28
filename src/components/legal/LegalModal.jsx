@@ -17,28 +17,26 @@ export default function LegalModal({ type, onClose }) {
       <div className="modal-card legal-modal" onClick={(e) => e.stopPropagation()}>
         <div className="legal-modal-header">
           <h2 className="modal-title">{isPrivacy ? 'Privacy Policy' : 'Terms of Service'}</h2>
-          {isPrivacy && (
-            <div className="lang-toggle" role="group" aria-label="Language">
-              <button
-                type="button"
-                className={`lang-toggle-btn ${lang === 'en' ? 'lang-toggle-btn--active' : ''}`}
-                onClick={() => setLang('en')}
-              >
-                English
-              </button>
-              <button
-                type="button"
-                className={`lang-toggle-btn ${lang === 'fr' ? 'lang-toggle-btn--active' : ''}`}
-                onClick={() => setLang('fr')}
-              >
-                Français
-              </button>
-            </div>
-          )}
+          <div className="lang-toggle" role="group" aria-label="Language">
+            <button
+              type="button"
+              className={`lang-toggle-btn ${lang === 'en' ? 'lang-toggle-btn--active' : ''}`}
+              onClick={() => setLang('en')}
+            >
+              English
+            </button>
+            <button
+              type="button"
+              className={`lang-toggle-btn ${lang === 'fr' ? 'lang-toggle-btn--active' : ''}`}
+              onClick={() => setLang('fr')}
+            >
+              Français
+            </button>
+          </div>
         </div>
 
         <div className="legal-modal-body">
-          {isPrivacy ? <PrivacyPolicyContent lang={lang} /> : <TermsOfServiceContent />}
+          {isPrivacy ? <PrivacyPolicyContent lang={lang} /> : <TermsOfServiceContent lang={lang} />}
         </div>
 
         <div className="modal-actions">

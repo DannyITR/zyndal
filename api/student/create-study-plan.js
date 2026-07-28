@@ -24,7 +24,7 @@ function validate(body) {
 
   if (body.grade_level !== undefined && body.grade_level !== null && body.grade_level !== '') {
     const gradeLevel = sanitizeGrade(body.grade_level)
-    if (gradeLevel === null) return { field: 'grade_level', message: 'grade_level must be 9, 10, or 11.' }
+    if (gradeLevel === null) return { field: 'grade_level', message: 'grade_level must be 7, 8, 9, 10, or 11.' }
     body.grade_level = gradeLevel
   }
 

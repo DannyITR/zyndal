@@ -114,15 +114,14 @@ export default function SignupForm({ onAuth }) {
         <>
           <div className="field">
             <label htmlFor="signup-grade">Grade (optional)</label>
-            <input
-              id="signup-grade"
-              type="number"
-              min="9"
-              max="11"
-              value={grade}
-              onChange={(e) => setGrade(e.target.value)}
-              placeholder="e.g. 10"
-            />
+            <select id="signup-grade" value={grade} onChange={(e) => setGrade(e.target.value)}>
+              <option value="">Select grade</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+            </select>
           </div>
           <div className="field">
             <label htmlFor="signup-parent-code">Parent code (optional)</label>

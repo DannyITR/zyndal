@@ -24,8 +24,8 @@ function EnglishContent() {
       <p className="legal-updated">Last updated: {LAST_UPDATED}</p>
 
       <p>
-        Zyndal ("we", "us", "Zyndal") is a daily study app for students in grades 9-11 (Secondary
-        3-5) and their parents. This page explains what personal information we collect, why we
+        Zyndal ("we", "us", "Zyndal") is a daily study app for students in grades 7-11 (Secondary
+        1-5) and their parents. This page explains what personal information we collect, why we
         collect it, and what rights you have over it. We've tried to write it in plain language —
         if anything is unclear, email us at{' '}
         <a href="mailto:privacy@zyndal.com">privacy@zyndal.com</a> and we'll explain it properly.
@@ -121,7 +121,7 @@ function FrenchContent() {
 
       <p>
         Zyndal (« nous », « Zyndal ») est une application d'étude quotidienne destinée aux élèves
-        de la 3e à la 5e secondaire et à leurs parents. Cette page explique quels renseignements
+        de la 7e à la 11e année (secondaire 1 à 5) et à leurs parents. Cette page explique quels renseignements
         personnels nous recueillons, pourquoi nous les recueillons, et quels droits vous avez à
         leur égard. Nous avons voulu l'écrire en langage clair — si quelque chose n'est pas clair,
         écrivez-nous à <a href="mailto:privacy@zyndal.com">privacy@zyndal.com</a> et nous vous
