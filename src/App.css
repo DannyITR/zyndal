@@ -866,8 +866,8 @@ div.zyndal-logo {
 .daily-score-box-share {
   position: relative;
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 999px;
   border: none;
   background: var(--card-2);
@@ -2187,7 +2187,7 @@ div.zyndal-logo {
   display: grid;
   grid-template-columns: 32px 1fr 32px;
   align-items: center;
-  gap: 8px;
+  gap: 0;
   width: 100%;
   z-index: 1;
 }
@@ -2195,7 +2195,7 @@ div.zyndal-logo {
 .share-card-bolt {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   width: 32px;
   font-size: 32px;
   line-height: 1;
