@@ -1,6 +1,8 @@
 -- Zyndal Supabase schema.
 -- Run this once in the Supabase SQL Editor:
--- https://supabase.com/dashboard/project/rvflvijyyppbtgcnnsyr/sql/new
+-- https://supabase.com/dashboard/project/lquvzcecykluziwdmwff/sql/new
+-- (migrated from the old US project, rvflvijyyppbtgcnnsyr, via
+-- scripts/migrate-to-canada.js — that project is retired)
 
 create extension if not exists pgcrypto;
 
