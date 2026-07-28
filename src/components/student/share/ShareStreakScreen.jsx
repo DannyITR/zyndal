@@ -27,13 +27,20 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
   })
 
   // Only worth surfacing as a prompt when there's no share streak with that
-  // friend yet — once one exists, the middle "Share with Friends" section
+  // friend yet — once one exists, the active-streak friend list below
   // already shows it every time this screen opens, so repeating it up top
   // too would be redundant nagging rather than a nudge to start one.
   const receivedToShow =
     receivedToday && shares ? receivedToday.filter((r) => computeShareStreak(shares, user.id, r.senderId) === 0) : []
 
   const scoreColor = SCORE_COLORS[Math.min(Math.max(todayScore, 0), 6)]
+
+  // Only friends with an established (1+ day) mutual share streak are worth
+  // surfacing as a card here — everyone else is reachable via the picker
+  // modal instead of cluttering the main screen with 0-streak friends.
+  const activeStreakFriends = friends
+    ? friends.filter((friend) => shares && computeShareStreak(shares, user.id, friend.id) >= 1)
+    : []
 
   useEffect(() => {
     let cancelled = false
@@ -118,14 +125,7 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
 
   return (
     <div className="screen student-screen">
-      <TopBar
-        title="📤 Share daily score"
-        subtitle="With friends or the world"
-        username={user.username}
-        onBack={onBack}
-        onLogout={onLogout}
-        onLogoClick={onLogoClick}
-      />
+      <TopBar username={user.username} onBack={onBack} onLogout={onLogout} onLogoClick={onLogoClick} />
 
       {receivedToShow.length > 0 && (
         <div className="finance-section-card">
@@ -141,18 +141,13 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
         </div>
       )}
 
-      <h3 className="section-heading">Share with Friends</h3>
       {error && <p className="form-error">{error}</p>}
       <button type="button" className="btn btn-primary btn-block" onClick={() => setShowFriendPicker(true)}>
-        👥 Share with Friends
+        👥 Share with more friends
       </button>
-      {!friends ? (
-        <p className="loading-text">Loading…</p>
-      ) : friends.length === 0 ? (
-        <p className="field-hint">Add some friends first to share your streak with them.</p>
-      ) : (
+      {activeStreakFriends.length > 0 && (
         <div className="share-friend-list">
-          {friends.map((friend) => {
+          {activeStreakFriends.map((friend) => {
             const sharedToday = shares ? hasSharedToday(shares, user.id, friend.id) : false
             const friendSharedBackToday = shares ? hasSharedToday(shares, friend.id, user.id) : false
             const shareStreak = shares ? computeShareStreak(shares, user.id, friend.id) : 0
@@ -165,16 +160,13 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
                 <span className="share-friend-avatar">{friend.avatar || '👤'}</span>
                 <div className="share-friend-info">
                   <p className="share-friend-name">@{friend.username}</p>
-                  <p className="share-friend-stat share-friend-stat--share">↔️ {shareStreak} day share streak</p>
+                  <p className="share-friend-stat share-friend-stat--share">🔥 {shareStreak} day share streak</p>
                   {waitingOnFriend && (
                     <p className="share-friend-stat share-friend-stat--waiting">
                       Waiting for @{friend.username} to share back 🔥
                     </p>
                   )}
                 </div>
-                <span className={`share-flame ${sharedToday ? 'share-flame--shared' : 'share-flame--pending'}`}>
-                  🔥
-                </span>
               </div>
             )
           })}
