@@ -191,6 +191,12 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
         <div className="share-card-top">
           <span className="share-card-bolt">⚡</span>
           <span className="share-card-brand">Zyndal</span>
+          {/* Invisible mirror of the bolt — same content so it takes the
+              same width, keeping the text column truly centered on the
+              card without moving the real bolt from beside the Z. */}
+          <span className="share-card-bolt share-card-bolt--mirror" aria-hidden="true">
+            ⚡
+          </span>
         </div>
 
         <div className="share-card-middle">

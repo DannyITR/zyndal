@@ -2186,17 +2186,22 @@ div.zyndal-logo {
 }
 
 .share-card-top {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 8px;
+  width: 100%;
   z-index: 1;
-  align-self: center;
 }
 
 .share-card-bolt {
   font-size: 30px;
   line-height: 1;
   filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.8));
+}
+
+.share-card-bolt--mirror {
+  visibility: hidden;
 }
 
 .share-card-brand {
