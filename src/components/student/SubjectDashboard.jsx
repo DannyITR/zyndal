@@ -5,7 +5,6 @@ export default function SubjectDashboard({
   incorrectSubjectIds = new Set(),
   onSelectSubject,
   onShareClick,
-  receivedShareCount = 0,
 }) {
   const correctCount = completedSubjectIds.size
   const totalCount = SUBJECTS.length
@@ -32,7 +31,7 @@ export default function SubjectDashboard({
               <polyline points="16 6 12 2 8 6" />
               <line x1="12" y1="2" x2="12" y2="15" />
             </svg>
-            {receivedShareCount > 0 && <span className="notification-badge">{receivedShareCount}</span>}
+            Share
           </button>
         </div>
       )}

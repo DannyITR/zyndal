@@ -864,10 +864,9 @@ div.zyndal-logo {
 }
 
 .daily-score-box-share {
-  position: relative;
   flex-shrink: 0;
-  width: 32px;
   height: 32px;
+  padding: 0 12px;
   border-radius: 999px;
   border: none;
   background: var(--card-2);
@@ -875,7 +874,10 @@ div.zyndal-logo {
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
   transition: transform 0.12s ease;
 }
 
@@ -2193,12 +2195,10 @@ div.zyndal-logo {
 }
 
 .share-card-bolt {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  width: 32px;
-  font-size: 32px;
-  line-height: 1;
+  width: 24px;
+  height: 27px;
+  fill: var(--gold);
+  justify-self: end;
 }
 
 .share-card-brand {
@@ -3724,29 +3724,6 @@ div.zyndal-logo {
 
 .share-streak-btn {
   position: relative;
-}
-
-.notification-badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: var(--red);
-  color: white;
-  font-size: 10px;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 0 2px var(--bg);
-}
-
-.notification-badge--left {
-  right: auto;
-  left: -6px;
 }
 
 .shared-with-you-list {

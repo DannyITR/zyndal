@@ -7,7 +7,6 @@ import {
   getActiveStudyPlan,
   completeStudyPlan,
   cancelStudyPlan,
-  getTodaysReceivedShares,
 } from '../../lib/storage'
 import { getSubject } from '../../lib/questions'
 import { getEffectiveStreak, todayStr } from '../../lib/streak'
@@ -74,7 +73,6 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [showShareScreen, setShowShareScreen] = useState(false)
   const [showFriends, setShowFriends] = useState(false)
   const [pendingFriendRequests, setPendingFriendRequests] = useState(null)
-  const [receivedShareCount, setReceivedShareCount] = useState(0)
   const [activePlan, setActivePlan] = useState(null)
   const [showTestPrepSetup, setShowTestPrepSetup] = useState(false)
   const [showStudyPlan, setShowStudyPlan] = useState(false)
@@ -190,16 +188,6 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   }, [user.id])
 
   useEffect(() => {
-    let cancelled = false
-    getTodaysReceivedShares(user.id).then((list) => {
-      if (!cancelled) setReceivedShareCount(list.length)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [user.id])
-
-  useEffect(() => {
     if (!user.is_premium) return
     let cancelled = false
     getActiveStudyPlan(user.id).then((plan) => {
@@ -297,10 +285,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         xp={progress.xp}
         todayScore={dailyProgress?.total_completed ?? 0}
         today={today}
-        onBack={() => {
-          setShowShareScreen(false)
-          getTodaysReceivedShares(user.id).then((list) => setReceivedShareCount(list.length))
-        }}
+        onBack={() => setShowShareScreen(false)}
         onLogout={onLogout}
         onLogoClick={handleLogoClick}
       />
@@ -507,7 +492,6 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           incorrectSubjectIds={incorrectSubjectIds}
           onSelectSubject={setPickedSubjectId}
           onShareClick={() => setShowShareScreen(true)}
-          receivedShareCount={receivedShareCount}
         />
 
         {infoModalKey && (
