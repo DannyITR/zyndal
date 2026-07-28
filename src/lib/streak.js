@@ -44,14 +44,46 @@ export function isValidTimeZone(timeZone) {
   }
 }
 
+// The UTC instant for local noon on dateStr in the given timezone — used by
+// api/student/submit-late-answer.js to store a Day Review "late answer" with
+// an answered_at that todayStr()/rowToEntry() will correctly bucket back to
+// that exact past date, not "today" or the wrong neighbouring day. Noon
+// (rather than, say, midnight) keeps this safely away from both the
+// UTC-day boundary and any local DST transition, which never happens at
+// solar noon.
+//
+// Works by guessing noon UTC, reading what that instant's wall-clock time
+// actually is IN the target zone (which reflects that zone's real offset —
+// including DST — at that specific moment, not a fixed year-round value),
+// then shifting by the difference between that reading and true noon. This
+// stays correct across a DST transition on the target date because the
+// probe instant (noon UTC) is only ever a few hours from true local noon,
+// nowhere near when a transition would actually occur (always in the small
+// hours of the morning).
+export function localNoonUtc(dateStr, timeZone) {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const guessUtc = Date.UTC(year, month - 1, day, 12, 0, 0)
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', { timeZone, hour12: false, hour: '2-digit', minute: '2-digit' })
+      .formatToParts(guessUtc)
+      .map((p) => [p.type, p.value])
+  )
+  const localHour = Number(parts.hour) % 24 // Intl can format midnight as "24"
+  const localMinute = Number(parts.minute)
+  const offsetMinutes = localHour * 60 + localMinute - 12 * 60
+  return new Date(guessUtc - offsetMinutes * 60000)
+}
+
 function diffDays(laterStr, earlierStr) {
   const later = new Date(laterStr + 'T00:00:00Z')
   const earlier = new Date(earlierStr + 'T00:00:00Z')
   return Math.round((later - earlier) / 86400000)
 }
 
-// A day only counts toward the streak once all 6 subjects have been
-// answered correctly on the first attempt that day.
+// Number of daily subjects — still used for the "X/6 completed today"
+// display and score box, but no longer gates the day streak itself (see
+// applyDailyAnswer below: one correct first-attempt answer, in any subject,
+// is now enough to keep the streak alive for the day).
 export const TOTAL_SUBJECTS = 6
 
 // 6 subjects × 7 days of first-attempt-correct answers, Monday through Sunday.
@@ -128,18 +160,17 @@ export function applyDailyAnswer(
 
   const newHistory = [...progress.history, entry]
 
-  // The day-streak only advances once per day, the moment this correct answer
-  // brings today's distinct correct-subject count up to all 6 — answering
-  // fewer than 6 doesn't advance it, and a wrong answer in one subject
-  // doesn't erase a day already completed. Gating on "already credited today"
-  // keeps it from double-counting if this somehow fires more than once
-  // (each subject only has one daily question, so it shouldn't in practice).
+  // The day-streak advances the moment the FIRST correct first-attempt
+  // answer of the day lands, in any subject — it no longer requires all 6.
+  // A wrong answer never erases a day already secured. Gating on "already
+  // credited today" keeps a 2nd/3rd/etc. correct answer that same day from
+  // double-incrementing.
   const alreadyCreditedToday = progress.lastCorrectDate === today
   let newStreak = effStreak
   let bonusEarned = 0
   let milestoneHit = null
 
-  if (correct && !alreadyCreditedToday && countCorrectSubjectsToday(newHistory, today) >= TOTAL_SUBJECTS) {
+  if (correct && !alreadyCreditedToday) {
     newStreak = effStreak + 1
     if (milestoneBonuses[newStreak]) {
       bonusEarned = milestoneBonuses[newStreak]

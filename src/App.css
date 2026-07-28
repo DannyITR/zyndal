@@ -836,6 +836,249 @@ div.zyndal-logo {
   border-color: rgba(255, 92, 122, 0.45);
 }
 
+.daily-score-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.daily-score-box-text {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.daily-score-box--celebrate {
+  border-color: rgba(52, 224, 161, 0.5);
+  background: linear-gradient(160deg, rgba(52, 224, 161, 0.15), var(--card) 60%);
+}
+
+.daily-score-box--celebrate .daily-score-box-text {
+  color: var(--green);
+}
+
+.daily-score-box-share {
+  position: relative;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: none;
+  background: var(--card-2);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s ease;
+}
+
+.daily-score-box-share:active {
+  transform: scale(0.92);
+}
+
+.calendar-icon-btn {
+  flex-shrink: 0;
+  width: 44px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.calendar-icon-btn:active {
+  transform: scale(0.95);
+}
+
+.calendar-icon-btn:hover {
+  border-color: var(--purple);
+}
+
+/* ---------- Calendar screen ---------- */
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.calendar-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.calendar-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.calendar-legend-dot--correct {
+  background: var(--green);
+}
+
+.calendar-legend-dot--wrong {
+  background: var(--red);
+}
+
+.calendar-legend-dot--empty {
+  background: var(--border-strong);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.calendar-weekday-label {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-faint);
+  padding-bottom: 4px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.calendar-day:not(:disabled):active {
+  transform: scale(0.93);
+}
+
+.calendar-day:disabled {
+  cursor: default;
+}
+
+.calendar-day--blank {
+  border: none;
+  background: transparent;
+}
+
+.calendar-day--empty {
+  background: var(--card-2);
+  color: var(--text-faint);
+}
+
+.calendar-day--correct {
+  background: rgba(52, 224, 161, 0.22);
+  border-color: rgba(52, 224, 161, 0.5);
+  color: var(--green);
+}
+
+.calendar-day--wrong {
+  background: rgba(255, 92, 122, 0.18);
+  border-color: rgba(255, 92, 122, 0.45);
+  color: var(--red);
+}
+
+.calendar-day--future {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-faint);
+  opacity: 0.4;
+}
+
+.calendar-day--today {
+  border-color: var(--purple);
+  border-width: 2px;
+  box-shadow: 0 0 0 2px rgba(155, 77, 255, 0.25);
+}
+
+/* ---------- Day review screen ---------- */
+
+.day-review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.day-review-subject {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.day-review-subject-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.day-review-subject-icon {
+  font-size: 20px;
+}
+
+.day-review-subject-name {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 15px;
+  flex: 1;
+}
+
+.day-review-subject-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.day-review-subject-badge--correct {
+  background: rgba(52, 224, 161, 0.18);
+  color: var(--green);
+}
+
+.day-review-subject-badge--wrong {
+  background: rgba(255, 92, 122, 0.18);
+  color: var(--red);
+}
+
+.day-review-answer-now {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.late-answer-notice {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffb066;
+  background: rgba(255, 158, 68, 0.12);
+  border: 1px solid rgba(255, 158, 68, 0.35);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
 /* ---------- Question card ---------- */
 
 .question-card {

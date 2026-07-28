@@ -15,6 +15,13 @@ import { getEffectiveStreak, todayStr, isValidTimeZone, DEFAULT_TIMEZONE } from 
 // timezone-sensitive (a full missed day means midnight in the user's own
 // zone, not UTC), so this needs the same timezone param submit-answer.js
 // and get-daily-progress.js take.
+//
+// Streak rule: a day counts as long as at least one first-attempt answer
+// was correct that day (see applyDailyAnswer in src/lib/streak.js) — not
+// all 6 subjects. getEffectiveStreak itself needs no change for this: it
+// only ever compares lastCorrectDate against today, and lastCorrectDate now
+// simply gets set a day earlier (on the first correct answer, not the 6th)
+// than it used to.
 async function handle({ userId, body }) {
   const timezone = isValidTimeZone(body.timezone) ? body.timezone : DEFAULT_TIMEZONE
   const today = todayStr(new Date(), timezone)

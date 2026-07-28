@@ -10,11 +10,13 @@ import {
   getTodaysReceivedShares,
 } from '../../lib/storage'
 import { getSubject } from '../../lib/questions'
-import { getEffectiveStreak, todayStr, TOTAL_SUBJECTS } from '../../lib/streak'
+import { getEffectiveStreak, todayStr } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
 import TopBar from '../shared/TopBar'
 import SubjectDashboard from './SubjectDashboard'
 import StudentHome from './StudentHome'
+import CalendarScreen from './CalendarScreen'
+import DayReviewScreen from './DayReviewScreen'
 import Leaderboard from '../shared/Leaderboard'
 import SettingsScreen from '../shared/SettingsScreen'
 import ShareStreakScreen from './share/ShareStreakScreen'
@@ -37,7 +39,7 @@ const INFO_CONTENT = {
   streak: {
     icon: '🔥',
     title: 'Day Streak',
-    text: "Your streak counts how many days in a row you've answered all 6 subjects correctly. Miss even one subject and the day doesn't count — miss a full day and it resets to zero. Keep it alive to earn bonus coins at 7, 14 and 30 days!",
+    text: "Your streak counts how many days in a row you've answered at least one question correctly. Go a full day without a single correct answer and it resets to zero. Keep it alive to earn bonus coins at 7, 14 and 30 days!",
   },
   xp: {
     icon: '⚡',
@@ -53,11 +55,6 @@ const INFO_CONTENT = {
     icon: '🏆',
     title: 'Leaderboard',
     text: 'The leaderboard ranks all Zyndal students by XP. See how you stack up against friends and students across Canada. A Friends tab shows only your added friends.',
-  },
-  share: {
-    icon: '📤',
-    title: 'Share Daily Score',
-    text: 'Share your daily score with friends on Zyndal or post it to Snapchat, Instagram or Discord. Build a share streak by sharing with the same friend every day — just like Snapchat!',
   },
 }
 
@@ -86,6 +83,8 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [showPractice, setShowPractice] = useState(false)
   const [showGrades, setShowGrades] = useState(false)
   const [showCurriculum, setShowCurriculum] = useState(false)
+  const [showCalendar, setShowCalendar] = useState(false)
+  const [reviewDate, setReviewDate] = useState(null) // YYYY-MM-DD | null — takes priority over showCalendar when set
 
   // user.linked_parent_deleted comes from login/get-profile (see
   // api/_lib/db.js's isLinkedParentDeleted) — shown once per mount, then
@@ -112,6 +111,8 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     setShowPractice(false)
     setShowGrades(false)
     setShowCurriculum(false)
+    setShowCalendar(false)
+    setReviewDate(null)
     setPickedSubjectId(null)
   }
 
@@ -161,6 +162,19 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     getDailyProgress().then(setDailyProgress)
   }
 
+  // DayReviewScreen.jsx calls this after a late (past-day) answer —
+  // api/student/submit-late-answer.js already enforced XP-only/no-streak
+  // server-side, so this just appends the entry and adds its XP locally,
+  // matching that exactly. Never touches coins/streak/dailyProgress: a past
+  // day's answer was never "today" and shouldn't move any of those.
+  function handleLateAnswered(entry) {
+    setProgress((prev) => ({
+      ...prev,
+      xp: prev.xp + entry.xpEarned,
+      history: [...prev.history, entry],
+    }))
+  }
+
   useEffect(() => {
     let cancelled = false
     getPendingFriendRequests(user.id).then((list) => {
@@ -205,13 +219,15 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const completedSubjectIds = useMemo(() => new Set(dailyProgress?.completed_subjects ?? []), [dailyProgress])
   const incorrectSubjectIds = useMemo(() => new Set(dailyProgress?.incorrect_subjects ?? []), [dailyProgress])
 
-  // Only worth warning about if there's an actual streak in progress to lose,
-  // and only after 8pm local time so it doesn't nag all day.
-  const subjectsLeftToday = dailyProgress ? TOTAL_SUBJECTS - dailyProgress.total_completed : TOTAL_SUBJECTS
+  // Only worth warning about if there's an actual streak in progress to
+  // lose, the student hasn't gotten a single correct answer yet today (one
+  // is now all it takes to keep the streak — see applyDailyAnswer), and
+  // it's after 8pm local time so it doesn't nag all day.
   const showStreakRiskWarning =
     Boolean(progress) &&
+    Boolean(dailyProgress) &&
     getEffectiveStreak(progress, today) > 0 &&
-    subjectsLeftToday > 0 &&
+    dailyProgress.total_completed === 0 &&
     new Date().getHours() >= 20
 
   const activeSubject = useMemo(() => (pickedSubjectId ? getSubject(pickedSubjectId) : null), [pickedSubjectId])
@@ -376,6 +392,34 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     )
   }
 
+  if (reviewDate) {
+    return (
+      <DayReviewScreen
+        user={user}
+        date={reviewDate}
+        progress={progress}
+        onAnswered={handleLateAnswered}
+        onBack={() => setReviewDate(null)}
+        onLogout={onLogout}
+        onLogoClick={handleLogoClick}
+      />
+    )
+  }
+
+  if (showCalendar) {
+    return (
+      <CalendarScreen
+        user={user}
+        progress={progress}
+        today={today}
+        onSelectDay={setReviewDate}
+        onBack={() => setShowCalendar(false)}
+        onLogout={onLogout}
+        onLogoClick={handleLogoClick}
+      />
+    )
+  }
+
   if (!activeSubject) {
     return (
       <div className="screen student-screen">
@@ -404,6 +448,9 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
 
         <div className="stats-row">
           <StreakFlame streak={getEffectiveStreak(progress, today)} onInfoClick={() => setInfoModalKey('streak')} />
+          <button type="button" className="calendar-icon-btn" onClick={() => setShowCalendar(true)} aria-label="View calendar">
+            📅
+          </button>
           <StatPill icon="⚡" label="XP" value={progress.xp} onInfoClick={() => setInfoModalKey('xp')} />
           <StatPill icon="🪙" label="Coins" value={progress.coins} onInfoClick={() => setInfoModalKey('coins')} />
         </div>
@@ -430,24 +477,6 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
               i
             </button>
           </div>
-          <div className="home-action-wrap">
-            <button
-              type="button"
-              className="btn btn-secondary btn-small share-streak-btn"
-              onClick={() => setShowShareScreen(true)}
-            >
-              Share daily score 📤
-              {receivedShareCount > 0 && <span className="notification-badge notification-badge--left">{receivedShareCount}</span>}
-            </button>
-            <button
-              type="button"
-              className="info-badge"
-              onClick={() => setInfoModalKey('share')}
-              aria-label="What is Share daily score?"
-            >
-              i
-            </button>
-          </div>
           <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowFriends(true)}>
             👥 Friends
           </button>
@@ -455,7 +484,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
 
         {showStreakRiskWarning && (
           <div className="streak-risk-banner">
-            ⚠️ Your streak expires at midnight — {subjectsLeftToday} subject{subjectsLeftToday === 1 ? '' : 's'} left!
+            ⚠️ Your streak expires at midnight — answer at least one question correctly to keep it alive!
           </div>
         )}
 
@@ -463,6 +492,8 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           completedSubjectIds={completedSubjectIds}
           incorrectSubjectIds={incorrectSubjectIds}
           onSelectSubject={setPickedSubjectId}
+          onShareClick={() => setShowShareScreen(true)}
+          receivedShareCount={receivedShareCount}
         />
 
         {infoModalKey && (

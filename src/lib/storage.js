@@ -373,6 +373,23 @@ export async function submitAnswer(progress, question, selectedIndex, subjectId,
   }
 }
 
+// Catching up on a subject that was never answered on a PAST day (Calendar
+// → Day Review → "Answer now" — see DayReviewScreen.jsx). Deliberately a
+// separate endpoint/call from submitAnswer above, not the same one with a
+// date override: XP only, no coins, no streak credit — see
+// api/student/submit-late-answer.js's header comment. Returns just
+// { correct, entry } (no progress object), since the caller updates its own
+// local progress.history/xp directly rather than reconstructing a whole new
+// progress object the way submitAnswer's response shape implies.
+export async function submitLateAnswer({ subject, selectedIndex, date }) {
+  return callStudentApi('POST', 'submit-late-answer', {
+    subject,
+    selected_index: selectedIndex,
+    date,
+    timezone: getUserTimeZone(),
+  })
+}
+
 // ---------- Parent finances ----------
 // Simulated money only — wallet_balance_cents etc. are plain columns on
 // users, not backed by any real payment processor. Swappable for Stripe

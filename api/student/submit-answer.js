@@ -58,6 +58,13 @@ async function handle({ userId, body }) {
 
   const linkedParent = await getLinkedParent(userId)
   const milestoneBonuses = normalizeMilestoneBonuses(linkedParent?.milestoneSettings)
+  // Day-streak rule: applyDailyAnswer credits the streak the moment the
+  // FIRST correct first-attempt answer of the day lands, in any single
+  // subject — it no longer requires all 6. Nothing else here needs to
+  // change for that: coins/XP already accrue per correct answer regardless
+  // of subject count, and getEffectiveStreak's gap-based reset (see
+  // api/student/get-streak.js) is driven purely by lastCorrectDate vs
+  // today, agnostic to how it got set.
   const result = applyDailyAnswer(progress, question, selected_index, subject, today, milestoneBonuses)
 
   const { error: answerError } = await supabase.from('answers').insert({

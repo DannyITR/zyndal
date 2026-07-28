@@ -193,8 +193,8 @@ export default function StudentHome({
               </p>
               <p className="result-next">
                 {subjectsLeftToday === 0
-                  ? '✅ All 6 done — streak saved for today! 🔥'
-                  : `${subjectsLeftToday} more subject${subjectsLeftToday === 1 ? '' : 's'} to go to keep your streak alive today.`}
+                  ? '✅ All 6 done for today!'
+                  : `🔥 Streak saved for today! ${subjectsLeftToday} more subject${subjectsLeftToday === 1 ? '' : 's'} left for extra XP and coins.`}
               </p>
             </>
           ) : solvedByRetry ? (
