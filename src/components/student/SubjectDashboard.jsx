@@ -7,20 +7,24 @@ export default function SubjectDashboard({
   onShareClick,
   receivedShareCount = 0,
 }) {
-  const completedCount = completedSubjectIds.size
+  const correctCount = completedSubjectIds.size
   const totalCount = SUBJECTS.length
-  const allDone = completedCount === totalCount
+  // "Completed" for the progress text and score box means attempted today,
+  // right or wrong — the box's own score line is the only place that cares
+  // about correctness.
+  const attemptedCount = correctCount + incorrectSubjectIds.size
+  const allAttempted = attemptedCount === totalCount
 
   return (
     <div className="subject-dashboard">
-      <p className={`subject-dashboard-lead ${allDone ? 'subject-dashboard-lead--done' : ''}`}>
-        {allDone ? '✅ All 6 done for today!' : `${completedCount}/${totalCount} completed today — answer all 6`}
+      <p className={`subject-dashboard-lead ${allAttempted ? 'subject-dashboard-lead--done' : ''}`}>
+        {allAttempted ? '✅ All 6 done for today!' : `${attemptedCount}/${totalCount} completed today — answer all 6`}
       </p>
 
-      {allDone && (
+      {allAttempted && (
         <div className="daily-score-box daily-score-box--celebrate">
           <span className="daily-score-box-text">
-            Today's score: {completedCount}/{totalCount} ✓
+            Today's score: {correctCount}/{totalCount} ✓
           </span>
           <button type="button" className="daily-score-box-share" onClick={onShareClick} aria-label="Share daily score">
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

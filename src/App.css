@@ -716,6 +716,7 @@ div.zyndal-logo {
 .subject-dashboard-lead {
   color: var(--text-dim);
   font-size: 14px;
+  text-align: center;
 }
 
 .subject-dashboard-lead--done {
