@@ -1,7 +1,11 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import TopBar from '../shared/TopBar'
 
 const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+
+// Nothing to show before Zyndal existed — also doubles as the ← bound so a
+// student can't navigate into months with no possible data.
+const EARLIEST_YEAR_MONTH = '2026-07'
 
 function pad(n) {
   return String(n).padStart(2, '0')
@@ -9,52 +13,117 @@ function pad(n) {
 
 // Every color state this screen needs already lives in the already-loaded
 // progress.history (see StudentFlow.jsx's getProgress() call) — one entry
-// per subject per day ever answered, each with its own .date and .correct.
-// No new endpoint needed just to color a month grid.
-function computeDayStates(history) {
+// per subject per day ever answered, each with its own .date, .subjectId
+// and .correct. No new endpoint needed just to color a month grid.
+//
+// subjectId filters to a single subject's own history (StudentHome.jsx's
+// "My Calendar" button) — at most one entry per day then, so hasCorrect and
+// hasIncorrect are mutually exclusive and the "mixed" state below never
+// applies. Omitting it (the home screen's calendar icon) combines all
+// subjects, where a day can genuinely have both.
+function computeDayStates(history, subjectId) {
   const map = {}
   for (const entry of history) {
-    const state = map[entry.date] || { hasAny: false, hasCorrect: false }
-    state.hasAny = true
+    if (subjectId && entry.subjectId !== subjectId) continue
+    const state = map[entry.date] || { hasCorrect: false, hasIncorrect: false }
     if (entry.correct) state.hasCorrect = true
+    else state.hasIncorrect = true
     map[entry.date] = state
   }
   return map
 }
 
-export default function CalendarScreen({ user, progress, today, onSelectDay, onBack, onLogout, onLogoClick }) {
-  const [year, month] = today.split('-').map(Number)
+function colorClassFor(state, isFuture) {
+  if (isFuture) return 'calendar-day--future'
+  if (!state) return 'calendar-day--empty'
+  if (state.hasCorrect && state.hasIncorrect) return 'calendar-day--mixed'
+  if (state.hasCorrect) return 'calendar-day--correct'
+  return 'calendar-day--wrong'
+}
 
-  const dayStates = useMemo(() => computeDayStates(progress.history), [progress.history])
+export default function CalendarScreen({ user, progress, subject, today, onSelectDay, onBack, onLogout, onLogoClick }) {
+  const [todayYear, todayMonth] = today.split('-').map(Number)
+  const [viewYear, setViewYear] = useState(todayYear)
+  const [viewMonth, setViewMonth] = useState(todayMonth)
+
+  const viewYearMonth = `${viewYear}-${pad(viewMonth)}`
+  const todayYearMonth = `${todayYear}-${pad(todayMonth)}`
+  const isEarliestMonth = viewYearMonth <= EARLIEST_YEAR_MONTH
+  const isLatestMonth = viewYearMonth >= todayYearMonth
+
+  function goPrevMonth() {
+    if (isEarliestMonth) return
+    if (viewMonth === 1) {
+      setViewYear(viewYear - 1)
+      setViewMonth(12)
+    } else {
+      setViewMonth(viewMonth - 1)
+    }
+  }
+
+  function goNextMonth() {
+    if (isLatestMonth) return
+    if (viewMonth === 12) {
+      setViewYear(viewYear + 1)
+      setViewMonth(1)
+    } else {
+      setViewMonth(viewMonth + 1)
+    }
+  }
+
+  const dayStates = useMemo(() => computeDayStates(progress.history, subject?.id), [progress.history, subject?.id])
 
   const monthLabel = useMemo(
-    () => new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
-    [year, month]
+    () =>
+      new Date(Date.UTC(viewYear, viewMonth - 1, 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
+    [viewYear, viewMonth]
   )
 
   const cells = useMemo(() => {
-    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
-    const firstWeekday = new Date(Date.UTC(year, month - 1, 1)).getUTCDay() // 0 = Sunday
+    const daysInMonth = new Date(Date.UTC(viewYear, viewMonth, 0)).getUTCDate()
+    const firstWeekday = new Date(Date.UTC(viewYear, viewMonth - 1, 1)).getUTCDay() // 0 = Sunday
     const list = []
     for (let i = 0; i < firstWeekday; i++) list.push(null)
     for (let d = 1; d <= daysInMonth; d++) list.push(d)
     return list
-  }, [year, month])
+  }, [viewYear, viewMonth])
 
   return (
     <div className="screen student-screen">
-      <TopBar title="📅 Calendar" subtitle={monthLabel} username={user.username} onBack={onBack} onLogout={onLogout} onLogoClick={onLogoClick} />
+      <TopBar
+        title={subject ? `${subject.icon} ${subject.name} Calendar` : '📅 Calendar'}
+        subtitle={subject ? undefined : 'All subjects'}
+        username={user.username}
+        onBack={onBack}
+        onLogout={onLogout}
+        onLogoClick={onLogoClick}
+      />
 
       <div className="calendar-legend">
         <span className="calendar-legend-item">
           <span className="calendar-legend-dot calendar-legend-dot--correct" /> Correct
         </span>
+        {!subject && (
+          <span className="calendar-legend-item">
+            <span className="calendar-legend-dot calendar-legend-dot--mixed" /> Mixed
+          </span>
+        )}
         <span className="calendar-legend-item">
-          <span className="calendar-legend-dot calendar-legend-dot--wrong" /> Wrong
+          <span className="calendar-legend-dot calendar-legend-dot--wrong" /> {subject ? 'Incorrect' : 'Wrong'}
         </span>
         <span className="calendar-legend-item">
           <span className="calendar-legend-dot calendar-legend-dot--empty" /> No activity
         </span>
+      </div>
+
+      <div className="calendar-nav">
+        <button type="button" className="calendar-nav-arrow" onClick={goPrevMonth} disabled={isEarliestMonth} aria-label="Previous month">
+          ←
+        </button>
+        <span className="calendar-nav-label">{monthLabel}</span>
+        <button type="button" className="calendar-nav-arrow" onClick={goNextMonth} disabled={isLatestMonth} aria-label="Next month">
+          →
+        </button>
       </div>
 
       <div className="calendar-grid">
@@ -66,16 +135,11 @@ export default function CalendarScreen({ user, progress, today, onSelectDay, onB
         {cells.map((d, i) => {
           if (d === null) return <div key={`blank-${i}`} className="calendar-day calendar-day--blank" />
 
-          const dateStr = `${year}-${pad(month)}-${pad(d)}`
+          const dateStr = `${viewYear}-${pad(viewMonth)}-${pad(d)}`
           const isFuture = dateStr > today
           const isToday = dateStr === today
           const isTappable = !isFuture && !isToday
-          const state = dayStates[dateStr]
-
-          let colorClass = 'calendar-day--empty'
-          if (isFuture) colorClass = 'calendar-day--future'
-          else if (state?.hasCorrect) colorClass = 'calendar-day--correct'
-          else if (state?.hasAny) colorClass = 'calendar-day--wrong'
+          const colorClass = colorClassFor(dayStates[dateStr], isFuture)
 
           return (
             <button

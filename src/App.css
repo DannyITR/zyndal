@@ -935,8 +935,57 @@ div.zyndal-logo {
   background: var(--red);
 }
 
+.calendar-legend-dot--mixed {
+  background: linear-gradient(to bottom right, var(--green) 50%, var(--red) 50%);
+}
+
 .calendar-legend-dot--empty {
   background: var(--border-strong);
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 4px;
+}
+
+.calendar-nav-arrow {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
+}
+
+.calendar-nav-arrow:not(:disabled):hover {
+  border-color: var(--purple);
+}
+
+.calendar-nav-arrow:not(:disabled):active {
+  transform: scale(0.92);
+}
+
+.calendar-nav-arrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.calendar-nav-label {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 15px;
+  min-width: 140px;
+  text-align: center;
 }
 
 .calendar-grid {
@@ -994,6 +1043,12 @@ div.zyndal-logo {
   background: rgba(255, 92, 122, 0.18);
   border-color: rgba(255, 92, 122, 0.45);
   color: var(--red);
+}
+
+.calendar-day--mixed {
+  background: linear-gradient(to bottom right, rgba(52, 224, 161, 0.35) 50%, rgba(255, 92, 122, 0.35) 50%);
+  border-color: var(--border-strong);
+  color: var(--text);
 }
 
 .calendar-day--future {

@@ -84,6 +84,10 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [showGrades, setShowGrades] = useState(false)
   const [showCurriculum, setShowCurriculum] = useState(false)
   const [showCalendar, setShowCalendar] = useState(false)
+  // null = home screen's calendar icon (all subjects combined); a subject
+  // object = opened via a specific subject screen's "My Calendar" button
+  // (StudentHome.jsx), filtered to just that subject — see CalendarScreen.jsx.
+  const [calendarSubject, setCalendarSubject] = useState(null)
   const [reviewDate, setReviewDate] = useState(null) // YYYY-MM-DD | null — takes priority over showCalendar when set
 
   // user.linked_parent_deleted comes from login/get-profile (see
@@ -411,6 +415,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       <CalendarScreen
         user={user}
         progress={progress}
+        subject={calendarSubject}
         today={today}
         onSelectDay={setReviewDate}
         onBack={() => setShowCalendar(false)}
@@ -448,9 +453,6 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
 
         <div className="stats-row">
           <StreakFlame streak={getEffectiveStreak(progress, today)} onInfoClick={() => setInfoModalKey('streak')} />
-          <button type="button" className="calendar-icon-btn" onClick={() => setShowCalendar(true)} aria-label="View calendar">
-            📅
-          </button>
           <StatPill icon="⚡" label="XP" value={progress.xp} onInfoClick={() => setInfoModalKey('xp')} />
           <StatPill icon="🪙" label="Coins" value={progress.coins} onInfoClick={() => setInfoModalKey('coins')} />
         </div>
@@ -479,6 +481,16 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           </div>
           <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowFriends(true)}>
             👥 Friends
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary btn-small"
+            onClick={() => {
+              setCalendarSubject(null)
+              setShowCalendar(true)
+            }}
+          >
+            📅 Calendar
           </button>
         </div>
 
@@ -526,6 +538,10 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       onOpenPractice={() => setShowPractice(true)}
       onOpenGrades={() => setShowGrades(true)}
       onOpenCurriculum={() => setShowCurriculum(true)}
+      onOpenCalendar={() => {
+        setCalendarSubject(activeSubject)
+        setShowCalendar(true)
+      }}
       onBack={() => setPickedSubjectId(null)}
       onLogout={onLogout}
       onLogoClick={handleLogoClick}

@@ -32,6 +32,7 @@ export default function StudentHome({
   onOpenPractice,
   onOpenGrades,
   onOpenCurriculum,
+  onOpenCalendar,
   onBack,
   onLogout,
   onLogoClick,
@@ -164,6 +165,10 @@ export default function StudentHome({
       <div className={`daily-status-banner ${firstAttemptMade ? 'daily-status-banner--done' : 'daily-status-banner--pending'}`}>
         {firstAttemptMade ? "✅ Today's question answered" : "🕐 Today's question not answered yet"}
       </div>
+
+      <button type="button" className="btn btn-secondary btn-block" onClick={onOpenCalendar}>
+        📅 My Calendar
+      </button>
 
       <QuestionCard
         question={question}
