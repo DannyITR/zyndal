@@ -7,7 +7,7 @@
 // algorithm stays byte-identical between client and server — only the
 // Supabase I/O glue is duplicated here.
 import { supabase } from './auth.js'
-import { DEFAULT_MILESTONE_BONUSES, PERFECT_WEEK_TARGET, mondayOfWeek } from '../../src/lib/streak.js'
+import { DEFAULT_MILESTONE_BONUSES, PERFECT_WEEK_TARGET, mondayOfWeek, todayStr } from '../../src/lib/streak.js'
 import { findQuestionByPrompt } from '../../src/lib/questions.js'
 
 // Every column a user is allowed to see on their OWN row — everything
@@ -68,13 +68,27 @@ export async function getStreakRow(userId) {
   return created
 }
 
-// Mirrors rowToEntry in storage.js exactly.
-function rowToEntry(row) {
+// Mirrors rowToEntry in storage.js exactly, plus timezone-aware date
+// bucketing (storage.js's version predates the timezone feature and isn't
+// used for any date comparison itself — see its own comment).
+//
+// Bug fix: this used to always do row.answered_at.slice(0, 10) — a raw UTC
+// slice of the stored timestamp, completely ignoring timezone. That made
+// "today" comparisons downstream (get-daily-progress.js's grid state,
+// submit-answer.js's dedup check, get-progress.js's per-subject "already
+// answered" lookup) wrong for any answer submitted late at night local
+// time, since its UTC calendar date can already be "tomorrow" — e.g. 11pm
+// Toronto is 3/4am UTC the next day. An answer from last night could then
+// still read as "today" for the rest of that UTC day. Every current caller
+// now passes a timezone (see getProgressForUser below); the undefined
+// fallback exists only as a defensive default, not because anything
+// intentionally omits one.
+function rowToEntry(row, timezone) {
   const match = findQuestionByPrompt(row.subject, row.question_text)
   const selectedIndex = match ? match.options.indexOf(row.selected_answer) : -1
   return {
     id: row.id,
-    date: row.answered_at.slice(0, 10),
+    date: timezone ? todayStr(new Date(row.answered_at), timezone) : row.answered_at.slice(0, 10),
     subjectId: row.subject,
     prompt: row.question_text,
     correct: row.correct,
@@ -89,7 +103,7 @@ function rowToEntry(row) {
 }
 
 // Mirrors toProgress + getProgress in storage.js exactly.
-export function toProgress(streakRow, answerRows) {
+export function toProgress(streakRow, answerRows, timezone) {
   return {
     studentId: streakRow.user_id,
     streak: streakRow.current_streak,
@@ -97,11 +111,11 @@ export function toProgress(streakRow, answerRows) {
     xp: streakRow.total_xp,
     coins: streakRow.coin_balance,
     lastCorrectDate: streakRow.last_answered_date,
-    history: answerRows.map(rowToEntry),
+    history: answerRows.map((row) => rowToEntry(row, timezone)),
   }
 }
 
-export async function getProgressForUser(userId) {
+export async function getProgressForUser(userId, timezone) {
   const streakRow = await getStreakRow(userId)
   const { data: answerRows, error } = await supabase
     .from('answers')
@@ -109,7 +123,7 @@ export async function getProgressForUser(userId) {
     .eq('user_id', userId)
     .order('answered_at', { ascending: true })
   if (error) throw error
-  return toProgress(streakRow, answerRows || [])
+  return toProgress(streakRow, answerRows || [], timezone)
 }
 
 // Mirrors getLinkedParent in storage.js exactly.

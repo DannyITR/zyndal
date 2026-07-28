@@ -304,7 +304,7 @@ export async function updateGradeRewardSettings(parentId, studentId, { aPlusCent
 // student's progress, see getStudentProgress below instead — this endpoint
 // is self-only and would 403/404 a parent asking about someone else's data.
 export async function getProgress(_userId) {
-  return callStudentApi('GET', 'get-progress')
+  return callStudentApi('GET', `get-progress?timezone=${encodeURIComponent(getUserTimeZone())}`)
 }
 
 // Drives the subject grid's per-card done/incorrect state (SubjectDashboard

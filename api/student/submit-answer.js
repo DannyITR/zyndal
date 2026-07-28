@@ -43,7 +43,7 @@ async function handle({ userId, body }) {
     throw err
   }
 
-  const progress = await getProgressForUser(userId)
+  const progress = await getProgressForUser(userId, timezone)
 
   // Same one-answer-per-subject-per-day rule the client already enforces by
   // never calling this a second time — enforced here too since the server

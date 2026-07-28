@@ -29,7 +29,7 @@ async function handle({ userId, body }) {
   const today = todayStr(new Date(), timezone)
   await syncUserTimezone(userId, timezone)
 
-  const progress = await getProgressForUser(userId)
+  const progress = await getProgressForUser(userId, timezone)
   const { completed, incorrect } = computeDailyState(progress.history, today)
 
   return {
