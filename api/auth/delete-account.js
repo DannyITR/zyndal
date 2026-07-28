@@ -35,7 +35,7 @@ async function handle({ userId }) {
   const { error: sessionError } = await supabase.from('sessions').delete().eq('user_id', userId)
   if (sessionError) throw sessionError
 
-  if (user.account_type === 'parent') {
+  if (user.account_type === 'parent' || user.account_type === 'teacher') {
     const { data: links, error: linksError } = await supabase.from('parent_student').select('student_id').eq('parent_id', userId)
     if (linksError) throw linksError
     const studentIds = (links || []).map((l) => l.student_id)

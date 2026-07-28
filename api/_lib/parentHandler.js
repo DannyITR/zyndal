@@ -2,11 +2,16 @@ import { applyCors } from './cors.js'
 import { requireAuth, supabase } from './auth.js'
 
 // Same shape as createStudentHandler (studentHandler.js), plus one extra
-// check: the authenticated session must belong to a parent account, or the
-// request is rejected with 403 (not 401 — the token itself is valid, the
-// account just isn't authorized for this route). handle() receives
-// { parentId, body } instead of { userId, body } to make the parent-only
-// nature of these endpoints explicit at the call site.
+// check: the authenticated session must belong to a parent (or teacher —
+// see below) account, or the request is rejected with 403 (not 401 — the
+// token itself is valid, the account just isn't authorized for this
+// route). handle() receives { parentId, body } instead of { userId, body }
+// to make the parent-only nature of these endpoints explicit at the call
+// site; teacher accounts are treated identically to parent accounts here
+// (they share ParentDashboard — see App.jsx — until class-specific teacher
+// features exist), so `parentId` for a teacher caller is really "this
+// teacher's own user id," same as it always meant for a parent.
+const PARENT_LIKE_ACCOUNT_TYPES = ['parent', 'teacher']
 export function createParentHandler({ method = 'GET', validate, handle }) {
   return async function (req, res) {
     if (applyCors(req, res)) return
@@ -24,7 +29,7 @@ export function createParentHandler({ method = 'GET', validate, handle }) {
       res.status(401).json({ error: 'Invalid or expired session.', code: 'UNAUTHENTICATED' })
       return
     }
-    if (user.account_type !== 'parent') {
+    if (!PARENT_LIKE_ACCOUNT_TYPES.includes(user.account_type)) {
       res.status(403).json({ error: 'This action is only available to parent accounts.', code: 'FORBIDDEN' })
       return
     }

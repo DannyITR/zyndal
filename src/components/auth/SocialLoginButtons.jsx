@@ -1,29 +1,15 @@
 import { useState } from 'react'
 import { supabaseAuth } from '../../lib/supabaseAuthClient'
 
-// Shared by LoginForm.jsx and SignupForm.jsx — same three buttons either
-// way, since "continue with Google" doesn't mean anything different between
-// logging in and signing up (api/auth/oauth-callback.js decides which one
-// actually happened server-side). `lang` is optional so LoginForm (which
-// has no translation system of its own) can render this in English by
-// default while SignupForm's existing EN/FR toggle still covers it.
+// Shared by LoginForm.jsx and SignupForm.jsx. Google is the only live OAuth
+// provider (Facebook and Snapchat were removed — neither is active yet, and
+// showing disabled/dead buttons wasn't worth the confusion). "Continue with
+// Email" isn't OAuth at all — it just tells the parent form to reveal its
+// own username/password fields, which are hidden by default now; see
+// onContinueWithEmail below and showEmailForm in LoginForm/SignupForm.
 const STRINGS = {
-  en: {
-    or: '— or —',
-    google: 'Continue with Google',
-    facebook: 'Continue with Facebook',
-    snapchat: 'Continue with Snapchat',
-    comingSoon: 'Coming soon',
-    redirecting: 'Redirecting…',
-  },
-  fr: {
-    or: '— ou —',
-    google: 'Continuer avec Google',
-    facebook: 'Continuer avec Facebook',
-    snapchat: 'Continuer avec Snapchat',
-    comingSoon: 'Bientôt disponible',
-    redirecting: 'Redirection…',
-  },
+  en: { google: 'Continue with Google', email: 'Continue with Email', redirecting: 'Redirecting…' },
+  fr: { google: 'Continuer avec Google', email: 'Continuer avec e-mail', redirecting: 'Redirection…' },
 }
 
 // See https://zyndal.vercel.app/auth/callback — App.jsx renders
@@ -42,68 +28,43 @@ function GoogleIcon() {
   )
 }
 
-function FacebookIcon() {
+function EmailIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
-      <path
-        fill="#fff"
-        d="M18 9a9 9 0 1 0-10.4 8.9v-6.3H5.3V9h2.3V7c0-2.3 1.35-3.55 3.44-3.55.99 0 2.03.18 2.03.18v2.24h-1.14c-1.13 0-1.48.7-1.48 1.42V9h2.52l-.4 2.6h-2.12v6.3A9 9 0 0 0 18 9Z"
-      />
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <rect x="1.5" y="3.5" width="15" height="11" rx="2" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M2.5 4.5 9 9.5l6.5-5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 
-function SnapchatIcon() {
-  return <span aria-hidden="true">👻</span>
-}
-
-export default function SocialLoginButtons({ lang = 'en', onError }) {
+export default function SocialLoginButtons({ lang = 'en', onError, onContinueWithEmail }) {
   const t = STRINGS[lang] || STRINGS.en
-  const [redirecting, setRedirecting] = useState(null) // null | 'google' | 'facebook'
+  const [redirecting, setRedirecting] = useState(false)
 
-  async function handleOAuth(provider) {
+  async function handleGoogle() {
     onError?.('')
-    setRedirecting(provider)
+    setRedirecting(true)
     const { error } = await supabaseAuth.auth.signInWithOAuth({
-      provider,
+      provider: 'google',
       options: { redirectTo: REDIRECT_URL },
     })
     if (error) {
-      setRedirecting(null)
+      setRedirecting(false)
       onError?.(error.message || 'Could not start sign-in. Please try again.')
     }
-    // On success the browser navigates away to the provider immediately —
-    // nothing left to do here.
+    // On success the browser navigates away to Google immediately — nothing left to do here.
   }
 
   return (
     <div className="social-login">
-      <button
-        type="button"
-        className="btn social-btn social-btn--google"
-        disabled={redirecting !== null}
-        onClick={() => handleOAuth('google')}
-      >
+      <button type="button" className="btn social-btn social-btn--google" disabled={redirecting} onClick={handleGoogle}>
         <GoogleIcon />
-        {redirecting === 'google' ? t.redirecting : t.google}
+        {redirecting ? t.redirecting : t.google}
       </button>
-      <button
-        type="button"
-        className="btn social-btn social-btn--facebook"
-        disabled={redirecting !== null}
-        onClick={() => handleOAuth('facebook')}
-      >
-        <FacebookIcon />
-        {redirecting === 'facebook' ? t.redirecting : t.facebook}
+      <button type="button" className="btn social-btn social-btn--email" onClick={onContinueWithEmail}>
+        <EmailIcon />
+        {t.email}
       </button>
-      <button type="button" className="btn social-btn social-btn--snapchat" disabled title={t.comingSoon}>
-        <SnapchatIcon />
-        {t.snapchat}
-      </button>
-
-      <div className="social-login-divider">
-        <span>{t.or}</span>
-      </div>
     </div>
   )
 }

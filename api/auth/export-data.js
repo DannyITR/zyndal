@@ -30,12 +30,12 @@ async function handle({ userId }) {
   const exportedAt = new Date().toISOString()
   let payload
 
-  if (profile.account_type === 'parent') {
+  if (profile.account_type === 'parent' || profile.account_type === 'teacher') {
     const [links, payoutHistory] = await Promise.all([getParentLinks(userId), getPayoutHistoryRows(userId)])
     const linkedStudents = await getStudentRows(links.map((l) => l.student_id))
     payload = {
       exported_at: exportedAt,
-      account_type: 'parent',
+      account_type: profile.account_type,
       profile,
       linked_students: linkedStudents,
       payout_history: payoutHistory,

@@ -101,7 +101,10 @@ function App() {
     return <AuthScreen initialMode={authMode} onAuth={setUser} onLogoClick={() => setShowLanding(true)} />
   }
 
-  if (user.account_type === 'parent') {
+  // Teacher accounts share ParentDashboard with parent accounts for now —
+  // see api/_lib/parentHandler.js, which authorizes both the same way.
+  // Class-specific teacher features are a future session.
+  if (user.account_type === 'parent' || user.account_type === 'teacher') {
     return (
       <>
         <ParentDashboard user={user} onLogout={handleLogout} onUserUpdate={setUser} />

@@ -3,6 +3,7 @@ import { login } from '../../lib/storage'
 import SocialLoginButtons from './SocialLoginButtons'
 
 export default function LoginForm({ onAuth }) {
+  const [showEmailForm, setShowEmailForm] = useState(false)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -24,32 +25,37 @@ export default function LoginForm({ onAuth }) {
 
   return (
     <form className="auth-form" onSubmit={handleSubmit}>
-      <SocialLoginButtons onError={setError} />
+      <SocialLoginButtons onError={setError} onContinueWithEmail={() => setShowEmailForm(true)} />
 
-      <div className="field">
-        <label htmlFor="login-username">Username</label>
-        <input
-          id="login-username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          autoComplete="username"
-          autoFocus
-        />
-      </div>
-      <div className="field">
-        <label htmlFor="login-password">Password</label>
-        <input
-          id="login-password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
-        />
-      </div>
+      {showEmailForm && (
+        <>
+          <div className="field">
+            <label htmlFor="login-username">Username</label>
+            <input
+              id="login-username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
+              autoFocus
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="login-password">Password</label>
+            <input
+              id="login-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+          </div>
+          <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+            {submitting ? 'Logging in…' : 'Log In'}
+          </button>
+        </>
+      )}
+
       {error && <p className="form-error">{error}</p>}
-      <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-        {submitting ? 'Logging in…' : 'Log In'}
-      </button>
     </form>
   )
 }

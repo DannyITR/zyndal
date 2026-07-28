@@ -10,7 +10,13 @@ create table if not exists users (
   id uuid primary key default gen_random_uuid(),
   username text not null unique,
   password text not null,
-  account_type text not null check (account_type in ('student', 'parent')),
+  -- 'teacher' added alongside 'parent'/'student' — teacher accounts are
+  -- routed into the same ParentDashboard as parent accounts for now (see
+  -- api/_lib/parentHandler.js and App.jsx); class-specific teacher features
+  -- are a future session. On an existing database this column's check
+  -- constraint has to be dropped and recreated (ALTER TABLE doesn't touch
+  -- an already-created table) — see the ALTER statements below.
+  account_type text not null check (account_type in ('student', 'parent', 'teacher')),
   grade integer,
   parent_code text unique,
   created_at timestamptz not null default now(),
@@ -37,6 +43,12 @@ create table if not exists users (
   -- username/password signups, which never verify email ownership today.
   email_verified boolean not null default false
 );
+
+-- Run on an existing database (create table if not exists above only
+-- applies to a fresh install) — widens the account_type check constraint to
+-- allow 'teacher' without dropping/recreating the whole table.
+alter table users drop constraint if exists users_account_type_check;
+alter table users add constraint users_account_type_check check (account_type in ('student', 'parent', 'teacher'));
 
 create table if not exists streaks (
   id uuid primary key default gen_random_uuid(),

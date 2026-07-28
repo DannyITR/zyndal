@@ -2,16 +2,18 @@ import { useState } from 'react'
 import { signup } from '../../lib/storage'
 import LegalModal from '../legal/LegalModal'
 import SocialLoginButtons from './SocialLoginButtons'
+import AccountTypeSelector from './AccountTypeSelector'
 
 // Bilingual UI strings for this form only (not a general i18n system — see
 // PrivacyPolicyContent/TermsOfServiceContent for the same EN/FR pattern
-// applied to the legal pages). Server-side validation error messages
-// (thrown from signup()) are shown as-is, in whatever language the API
-// returned them in, since the API itself is English-only today.
+// applied to the legal pages). Account-type copy (student/parent/teacher
+// labels+descriptions) lives in AccountTypeSelector.jsx instead, since that
+// component is shared with OAuthOnboardingScreen. Server-side validation
+// error messages (thrown from signup()) are shown as-is, in whatever
+// language the API returned them in, since the API itself is English-only
+// today.
 const STRINGS = {
   en: {
-    student: '🎓 Student',
-    parent: '👪 Parent',
     username: 'Username',
     password: 'Password',
     confirmPassword: 'Confirm password',
@@ -35,8 +37,6 @@ const STRINGS = {
     errorFallback: 'Something went wrong. Please try again.',
   },
   fr: {
-    student: '🎓 Élève',
-    parent: '👪 Parent',
     username: "Nom d'utilisateur",
     password: 'Mot de passe',
     confirmPassword: 'Confirmer le mot de passe',
@@ -65,7 +65,8 @@ export default function SignupForm({ onAuth }) {
   const [lang, setLang] = useState('en')
   const t = STRINGS[lang]
 
-  const [role, setRole] = useState('student')
+  const [showEmailForm, setShowEmailForm] = useState(false)
+  const [accountType, setAccountType] = useState('student')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -77,7 +78,7 @@ export default function SignupForm({ onAuth }) {
   const [submitting, setSubmitting] = useState(false)
   const [openLegal, setOpenLegal] = useState(null) // null | 'privacy' | 'terms'
 
-  const needsAgeConfirmation = role === 'student'
+  const needsAgeConfirmation = accountType === 'student'
   const canSubmit = agreedToTerms && (!needsAgeConfirmation || confirmedAge) && !submitting
 
   async function handleSubmit(e) {
@@ -111,9 +112,9 @@ export default function SignupForm({ onAuth }) {
       const newUser = await signup({
         username: trimmedUsername,
         password,
-        accountType: role,
-        grade: role === 'student' && grade ? Number(grade) : null,
-        parentCode: role === 'student' ? parentCode : null,
+        accountType,
+        grade: accountType === 'student' && grade ? Number(grade) : null,
+        parentCode: accountType === 'student' ? parentCode : null,
       })
       onAuth(newUser)
     } catch (err) {
@@ -144,119 +145,109 @@ export default function SignupForm({ onAuth }) {
         </div>
       </div>
 
-      <SocialLoginButtons lang={lang} onError={setError} />
+      <SocialLoginButtons lang={lang} onError={setError} onContinueWithEmail={() => setShowEmailForm(true)} />
 
-      <div className="role-toggle">
-        <button
-          type="button"
-          className={`role-btn ${role === 'student' ? 'role-btn--active' : ''}`}
-          onClick={() => setRole('student')}
-        >
-          {t.student}
-        </button>
-        <button
-          type="button"
-          className={`role-btn ${role === 'parent' ? 'role-btn--active' : ''}`}
-          onClick={() => setRole('parent')}
-        >
-          {t.parent}
-        </button>
-      </div>
-
-      <div className="field">
-        <label htmlFor="signup-username">{t.username}</label>
-        <input
-          id="signup-username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          autoComplete="username"
-        />
-      </div>
-      <div className="field">
-        <label htmlFor="signup-password">{t.password}</label>
-        <input
-          id="signup-password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="new-password"
-        />
-      </div>
-      <div className="field">
-        <label htmlFor="signup-confirm">{t.confirmPassword}</label>
-        <input
-          id="signup-confirm"
-          type="password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          autoComplete="new-password"
-        />
-      </div>
-
-      {role === 'student' && (
+      {showEmailForm && (
         <>
+          <AccountTypeSelector value={accountType} onChange={setAccountType} lang={lang} />
+
           <div className="field">
-            <label htmlFor="signup-grade">{t.grade}</label>
-            <select id="signup-grade" value={grade} onChange={(e) => setGrade(e.target.value)}>
-              <option value="">{t.selectGrade}</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
-              <option value="9">9</option>
-              <option value="10">10</option>
-              <option value="11">11</option>
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="signup-parent-code">{t.parentCode}</label>
+            <label htmlFor="signup-username">{t.username}</label>
             <input
-              id="signup-parent-code"
-              value={parentCode}
-              onChange={(e) => setParentCode(e.target.value.toUpperCase())}
-              placeholder={t.parentCodePlaceholder}
-              maxLength={6}
+              id="signup-username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
             />
-            <p className="field-hint">{t.parentCodeHint}</p>
           </div>
+          <div className="field">
+            <label htmlFor="signup-password">{t.password}</label>
+            <input
+              id="signup-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="signup-confirm">{t.confirmPassword}</label>
+            <input
+              id="signup-confirm"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+          </div>
+
+          {accountType === 'student' && (
+            <>
+              <div className="field">
+                <label htmlFor="signup-grade">{t.grade}</label>
+                <select id="signup-grade" value={grade} onChange={(e) => setGrade(e.target.value)}>
+                  <option value="">{t.selectGrade}</option>
+                  <option value="7">7</option>
+                  <option value="8">8</option>
+                  <option value="9">9</option>
+                  <option value="10">10</option>
+                  <option value="11">11</option>
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="signup-parent-code">{t.parentCode}</label>
+                <input
+                  id="signup-parent-code"
+                  value={parentCode}
+                  onChange={(e) => setParentCode(e.target.value.toUpperCase())}
+                  placeholder={t.parentCodePlaceholder}
+                  maxLength={6}
+                />
+                <p className="field-hint">{t.parentCodeHint}</p>
+              </div>
+            </>
+          )}
+
+          <label className="checkbox-field">
+            <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} />
+            <span>
+              {t.agreeToPrefix}{' '}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  setOpenLegal('terms')
+                }}
+              >
+                {t.termsOfService}
+              </button>{' '}
+              {t.and}{' '}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  setOpenLegal('privacy')
+                }}
+              >
+                {t.privacyPolicy}
+              </button>
+            </span>
+          </label>
+
+          {needsAgeConfirmation && (
+            <label className="checkbox-field">
+              <input type="checkbox" checked={confirmedAge} onChange={(e) => setConfirmedAge(e.target.checked)} />
+              <span>{t.ageConfirmation}</span>
+            </label>
+          )}
+
+          <button type="submit" className="btn btn-primary btn-block" disabled={!canSubmit}>
+            {submitting ? t.creatingAccount : t.createAccount}
+          </button>
         </>
       )}
 
-      <label className="checkbox-field">
-        <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} />
-        <span>
-          {t.agreeToPrefix}{' '}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault()
-              setOpenLegal('terms')
-            }}
-          >
-            {t.termsOfService}
-          </button>{' '}
-          {t.and}{' '}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault()
-              setOpenLegal('privacy')
-            }}
-          >
-            {t.privacyPolicy}
-          </button>
-        </span>
-      </label>
-
-      {needsAgeConfirmation && (
-        <label className="checkbox-field">
-          <input type="checkbox" checked={confirmedAge} onChange={(e) => setConfirmedAge(e.target.checked)} />
-          <span>{t.ageConfirmation}</span>
-        </label>
-      )}
-
       {error && <p className="form-error">{error}</p>}
-      <button type="submit" className="btn btn-primary btn-block" disabled={!canSubmit}>
-        {submitting ? t.creatingAccount : t.createAccount}
-      </button>
 
       {openLegal && <LegalModal type={openLegal} onClose={() => setOpenLegal(null)} />}
     </form>

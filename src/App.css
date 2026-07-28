@@ -438,29 +438,66 @@ div.zyndal-logo {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
-.social-btn--facebook {
-  background: #1877f2;
-  color: #fff;
+.social-btn--email {
+  background: var(--card-2);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
 }
 
-.social-btn--facebook:not(:disabled):hover {
-  box-shadow: 0 10px 30px rgba(24, 119, 242, 0.4);
+.social-btn--email:not(:disabled):hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
-.social-btn--snapchat {
-  background: #fffc00;
-  color: #1a1a1a;
+.account-type-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.social-login-divider {
+.account-type-option {
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: var(--text-faint);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  margin: 2px 0;
+  gap: 12px;
+  text-align: left;
+  background: var(--card-2);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  font-family: inherit;
+}
+
+.account-type-option--selected {
+  border-color: var(--purple);
+  background: rgba(155, 77, 255, 0.15);
+}
+
+.account-type-icon {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.account-type-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.account-type-label {
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--text);
+}
+
+.account-type-option--selected .account-type-label {
+  color: var(--purple-bright);
+}
+
+.account-type-description {
+  font-size: 12.5px;
+  color: var(--text-dim);
 }
 
 .oauth-onboarding-title {

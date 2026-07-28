@@ -102,7 +102,10 @@ async function handle({ body }) {
   }
 
   const hashedPassword = await hashPassword(body.password)
-  const parentCode = accountType === 'parent' ? await generateUniqueParentCode() : null
+  // Teacher accounts are routed into the same ParentDashboard as parent
+  // accounts (teacher-specific class features are a future session), so
+  // they need a parent_code too or the dashboard has nothing to show/share.
+  const parentCode = accountType === 'parent' || accountType === 'teacher' ? await generateUniqueParentCode() : null
 
   const { data: newUser, error: insertError } = await supabase
     .from('users')

@@ -1,21 +1,23 @@
 import { useState } from 'react'
 import { updateUserProfile } from '../../lib/storage'
 import Logo from '../shared/Logo'
+import AccountTypeSelector from './AccountTypeSelector'
 
 // Shown once, immediately after api/auth/oauth-callback.js auto-creates a
-// brand-new account (is_new_user: true) — Google/Facebook only hand over a
-// name and email, so this is where the two things Zyndal actually needs
-// (grade, and whether this is a student or parent account) get collected
-// before the person ever sees the home screen. Saves via the same
-// update-settings.js call SettingsScreen.jsx uses later, just with
-// account_type included this one time (see that endpoint's comment).
+// brand-new account (is_new_user: true) — Google only hands over a name and
+// email, so this is where the things Zyndal actually needs (account type,
+// and grade for students) get collected before the person ever sees the
+// home screen. Saves via the same update-settings.js call
+// SettingsScreen.jsx uses later, just with account_type included this one
+// time (see that endpoint's comment). Teacher is fully selectable here and
+// treated identically to parent downstream — see App.jsx's comment.
 export default function OAuthOnboardingScreen({ user, onDone }) {
   const [grade, setGrade] = useState('')
   const [accountType, setAccountType] = useState('student')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const canSubmit = accountType === 'parent' || Boolean(grade)
+  const canSubmit = accountType !== 'student' || Boolean(grade)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -50,25 +52,7 @@ export default function OAuthOnboardingScreen({ user, onDone }) {
         <p className="auth-tagline">Just a couple of things to get started.</p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
-          <div className="field">
-            <label>I am a</label>
-            <div className="role-toggle">
-              <button
-                type="button"
-                className={`role-btn ${accountType === 'student' ? 'role-btn--active' : ''}`}
-                onClick={() => setAccountType('student')}
-              >
-                🎓 Student
-              </button>
-              <button
-                type="button"
-                className={`role-btn ${accountType === 'parent' ? 'role-btn--active' : ''}`}
-                onClick={() => setAccountType('parent')}
-              >
-                👪 Parent
-              </button>
-            </div>
-          </div>
+          <AccountTypeSelector value={accountType} onChange={setAccountType} />
 
           {accountType === 'student' && (
             <div className="field">
