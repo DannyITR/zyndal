@@ -1,6 +1,6 @@
 import { createPublicHandler } from '../_lib/publicHandler.js'
 import { supabase } from '../_lib/auth.js'
-import { SAFE_USER_COLUMNS } from '../_lib/db.js'
+import { SAFE_USER_COLUMNS, isLinkedParentDeleted } from '../_lib/db.js'
 import { hashPassword, comparePassword, isBcryptHash } from '../../src/lib/password.js'
 import { sanitizeUsername } from '../_lib/sanitize.js'
 
@@ -35,14 +35,29 @@ function invalidCredentialsError() {
   return err
 }
 
+// Deliberately checked before the password — a returning user who no longer
+// remembers their exact password still needs to see this (that's the whole
+// point: it tells them to email support instead of endlessly retrying), and
+// unlike a wrong-password attempt this isn't account enumeration risk in any
+// meaningful new way — a deleted username is already effectively "known"
+// the moment someone who used to know it tries to log back in.
+function accountDeletedError() {
+  const err = new Error('Account deactivated')
+  err.status = 401
+  err.code = 'ACCOUNT_DELETED'
+  err.userMessage = 'This account has been deleted. Email hello@zyndal.com within 90 days to restore it.'
+  return err
+}
+
 async function handle({ body }) {
   const { data: user, error } = await supabase
     .from('users')
-    .select(`${SAFE_USER_COLUMNS}, password`)
+    .select(`${SAFE_USER_COLUMNS}, password, deleted_at`)
     .ilike('username', body.username)
     .maybeSingle()
   if (error) throw error
   if (!user) throw invalidCredentialsError()
+  if (user.deleted_at) throw accountDeletedError()
 
   const valid = isBcryptHash(user.password) ? await comparePassword(body.password, user.password) : user.password === body.password
   if (!valid) throw invalidCredentialsError()
@@ -57,7 +72,10 @@ async function handle({ body }) {
   const { error: sessionError } = await supabase.from('sessions').insert({ user_id: user.id, token })
   if (sessionError) throw sessionError
 
-  const { password: _password, ...safeUser } = user
+  const { password: _password, deleted_at: _deletedAt, ...safeUser } = user
+  if (safeUser.account_type === 'student') {
+    safeUser.linked_parent_deleted = await isLinkedParentDeleted(user.id)
+  }
   return { user: safeUser, token }
 }
 

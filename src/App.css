@@ -65,6 +65,25 @@
   border: 1px solid var(--border);
 }
 
+.btn-danger {
+  background: var(--red);
+  color: white;
+}
+
+.btn-danger:not(:disabled):hover {
+  box-shadow: 0 10px 30px rgba(255, 92, 122, 0.4);
+}
+
+.btn-danger-outline {
+  background: transparent;
+  color: var(--red);
+  border: 1.5px solid rgba(255, 92, 122, 0.5);
+}
+
+.btn-danger-outline:not(:disabled):hover {
+  background: rgba(255, 92, 122, 0.1);
+}
+
 /* ---------- Forms ---------- */
 
 .field {
@@ -610,6 +629,38 @@ div.zyndal-logo {
   font-weight: 700;
   font-size: 14px;
   text-align: center;
+}
+
+.parent-deleted-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 92, 122, 0.12);
+  border: 1.5px solid rgba(255, 92, 122, 0.4);
+  color: #ffb3c1;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.parent-deleted-banner span {
+  flex: 1;
+}
+
+.parent-deleted-banner-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  padding: 4px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.parent-deleted-banner-close:hover {
+  opacity: 1;
 }
 
 .subject-grid {
@@ -1258,6 +1309,14 @@ div.zyndal-logo {
   font-family: inherit;
   cursor: pointer;
   text-decoration: underline;
+}
+
+.settings-danger-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
 }
 
 .preset-row {

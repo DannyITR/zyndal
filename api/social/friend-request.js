@@ -51,6 +51,7 @@ async function handleSend(userId, body) {
       .from('users')
       .select('id')
       .eq('account_type', 'student')
+      .is('deleted_at', null)
       .ilike('username', body.target_username)
       .maybeSingle()
     if (error) throw error
@@ -61,6 +62,19 @@ async function handleSend(userId, body) {
       throw err
     }
     targetId = data.id
+  } else {
+    // target_user_id skips the username lookup above (and its deleted_at
+    // filter) — search-users.js already excludes deleted accounts from
+    // results, but a stale/cached id or a hand-crafted request could still
+    // name one directly, so it's checked again here.
+    const { data: target, error: targetError } = await supabase.from('users').select('deleted_at').eq('id', targetId).maybeSingle()
+    if (targetError) throw targetError
+    if (!target || target.deleted_at) {
+      const err = new Error('That student is not available.')
+      err.status = 404
+      err.code = 'NOT_FOUND'
+      throw err
+    }
   }
 
   if (targetId === userId) {

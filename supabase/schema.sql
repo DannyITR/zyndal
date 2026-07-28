@@ -24,7 +24,13 @@ create table if not exists users (
   coin_to_dollar_rate integer not null default 10,
   milestone_settings jsonb not null default '{"7":10,"14":20,"30":50}'::jsonb,
   is_premium boolean not null default false,
-  language_preference text default 'English'
+  language_preference text default 'English',
+  -- Soft delete (Quebec Law 25 right-to-deletion flow — see
+  -- api/auth/delete-account.js). Null = active account. Set to the deletion
+  -- timestamp on self-delete; data is retained 90 days from this date to
+  -- allow restoration (email hello@zyndal.com), then permanently removed —
+  -- manually for now, no automated purge job yet.
+  deleted_at timestamptz
 );
 
 create table if not exists streaks (

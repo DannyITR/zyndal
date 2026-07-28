@@ -16,9 +16,13 @@ async function getFriendIds(userId) {
   return (data || []).map((r) => r.friend_id)
 }
 
+// Deleted accounts are excluded (not just filtered from the result — the
+// query itself skips them), so a pending request from/to one falls back to
+// the existing 'Unknown' handling below rather than surfacing anything
+// about a deactivated account.
 async function usernameLookup(userIds) {
   if (userIds.length === 0) return {}
-  const { data, error } = await supabase.from('users').select('id, username').in('id', userIds)
+  const { data, error } = await supabase.from('users').select('id, username').in('id', userIds).is('deleted_at', null)
   if (error) throw error
   return Object.fromEntries((data || []).map((u) => [u.id, u.username]))
 }
@@ -31,7 +35,7 @@ async function handle({ userId }) {
       ? Promise.resolve([])
       : supabase
           .from('streaks')
-          .select('user_id, current_streak, last_answered_date, users:user_id(username, grade, avatar)')
+          .select('user_id, current_streak, last_answered_date, users:user_id(username, grade, avatar, deleted_at)')
           .in('user_id', friendIds)
           .then((r) => {
             if (r.error) throw r.error
@@ -67,7 +71,7 @@ async function handle({ userId }) {
       }),
     supabase
       .from('streak_shares')
-      .select('*, users:sender_id(username, avatar)')
+      .select('*, users:sender_id(username, avatar, deleted_at)')
       .eq('receiver_id', userId)
       .eq('share_date', todayStr())
       .order('shared_at', { ascending: false })
@@ -78,13 +82,15 @@ async function handle({ userId }) {
   ])
 
   const today = todayStr()
-  const friends = friendRows.map((row) => ({
-    id: row.user_id,
-    username: row.users?.username,
-    grade: row.users?.grade,
-    avatar: row.users?.avatar,
-    streak: getEffectiveStreak({ streak: row.current_streak, lastCorrectDate: row.last_answered_date }, today),
-  }))
+  const friends = friendRows
+    .filter((row) => !row.users?.deleted_at)
+    .map((row) => ({
+      id: row.user_id,
+      username: row.users?.username,
+      grade: row.users?.grade,
+      avatar: row.users?.avatar,
+      streak: getEffectiveStreak({ streak: row.current_streak, lastCorrectDate: row.last_answered_date }, today),
+    }))
 
   const senderIds = [...new Set(receivedRequests.map((r) => r.sender_id))]
   const receiverIds = [...new Set(sentRequests.map((r) => r.receiver_id))]
@@ -97,13 +103,15 @@ async function handle({ userId }) {
       sent: sentRequests.map((r) => ({ id: r.id, receiverId: r.receiver_id, receiverUsername: receiverUsernames[r.receiver_id] || 'Unknown' })),
     },
     shares: shareRows,
-    receivedToday: receivedTodayRows.map((r) => ({
-      id: r.id,
-      senderUsername: r.users?.username || 'Unknown',
-      senderAvatar: r.users?.avatar || null,
-      senderStreak: r.sender_streak,
-      sharedAt: r.shared_at,
-    })),
+    receivedToday: receivedTodayRows
+      .filter((r) => !r.users?.deleted_at)
+      .map((r) => ({
+        id: r.id,
+        senderUsername: r.users?.username || 'Unknown',
+        senderAvatar: r.users?.avatar || null,
+        senderStreak: r.sender_streak,
+        sharedAt: r.shared_at,
+      })),
   }
 }
 

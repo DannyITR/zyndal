@@ -4,8 +4,10 @@ import { requireAuth } from './auth.js'
 // Shared wrapper for every /api/student and /api/questions endpoint: CORS,
 // method check, session auth, request validation, and a consistent
 // { error, code } error shape — each endpoint file only supplies its own
-// validate(body) and handle({ userId, body }).
-export function createStudentHandler({ method = 'GET', validate, handle }) {
+// validate(body) and handle({ userId, body }). downloadFilename is optional
+// — set it (see api/auth/export-data.js) to add a Content-Disposition
+// header so a direct authenticated request downloads as a named file.
+export function createStudentHandler({ method = 'GET', validate, handle, downloadFilename }) {
   return async function (req, res) {
     if (applyCors(req, res)) return
 
@@ -41,10 +43,16 @@ export function createStudentHandler({ method = 'GET', validate, handle }) {
       }
 
       const result = await handle({ userId, body })
+      if (downloadFilename) res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`)
       res.status(200).json(result)
     } catch (err) {
       console.error('[api] request failed:', err)
-      res.status(err.status || err.statusCode || 500).json({ error: err.message || 'Something went wrong. Please try again.', code: err.code || 'SERVER_ERROR' })
+      // err.userMessage carries an optional longer, more actionable message
+      // alongside the short err.message label — most thrown errors don't
+      // set it, so `message` is simply omitted for those.
+      const body = { error: err.message || 'Something went wrong. Please try again.', code: err.code || 'SERVER_ERROR' }
+      if (err.userMessage) body.message = err.userMessage
+      res.status(err.status || err.statusCode || 500).json(body)
     }
   }
 }

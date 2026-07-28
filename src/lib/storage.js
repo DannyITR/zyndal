@@ -35,13 +35,20 @@ async function callApi(basePath, method, endpoint, body) {
 
   const data = await response.json().catch(() => null)
 
+  // Prefer the longer, specific `message` over the short `error` label when
+  // both are present — every endpoint using the sanitize.js validation
+  // convention ({ error: 'Invalid input', field, message: '...' }) or a
+  // thrown err.userMessage (e.g. api/auth/login.js's ACCOUNT_DELETED) sends
+  // exactly this shape specifically so the UI shows the useful text instead
+  // of a generic label. `error` alone remains the fallback for the many
+  // endpoints that only ever set that one field.
   if (response.status === 401) {
     clearSession()
     sessionExpiredHandler?.()
-    throw new Error(data?.error || 'Your session has expired. Please log in again.')
+    throw new Error(data?.message || data?.error || 'Your session has expired. Please log in again.')
   }
   if (!response.ok) {
-    throw new Error(data?.error || `Request to ${endpoint} failed (${response.status}).`)
+    throw new Error(data?.message || data?.error || `Request to ${endpoint} failed (${response.status}).`)
   }
   return data
 }
@@ -188,6 +195,26 @@ export async function updateUserProfile(userId, { displayName, email, schoolName
 // the signature since SettingsScreen.jsx calls this positionally.
 export async function changePassword(userId, currentPassword, newPassword) {
   await callStudentApi('POST', 'change-password', { current_password: currentPassword, new_password: newPassword })
+}
+
+// Soft delete (Quebec Law 25) — sets deleted_at server-side and purges every
+// session for this account (see api/auth/delete-account.js), so the token
+// this call itself used is already invalid by the time it returns; the
+// caller (DeleteAccountModal → SettingsScreen) clears local session state
+// and logs out regardless of this promise resolving vs. the session simply
+// no longer working.
+export async function deleteAccount() {
+  return callAuthApi('delete-account', { confirmation: 'DELETE' })
+}
+
+// GET (unlike every other callAuthApi user, which are POST) — callApi's
+// method param lets us call it directly rather than through the POST-only
+// callAuthApi helper. Returns the parsed JSON payload; turning that into an
+// actual browser file download is SettingsScreen.jsx's job (see
+// handleExport there), since a header alone can't trigger one for a
+// fetch()-based, header-authenticated request.
+export async function exportMyData() {
+  return callApi('/api/auth', 'GET', 'export-data')
 }
 
 export async function getCurrentUser() {

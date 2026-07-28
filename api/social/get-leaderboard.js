@@ -15,7 +15,7 @@ function validate(body) {
 async function fetchLeaderboardRows(userIds) {
   let query = supabase
     .from('streaks')
-    .select('current_streak, total_xp, last_answered_date, user_id, users:user_id(username, grade, account_type)')
+    .select('current_streak, total_xp, last_answered_date, user_id, users:user_id(username, grade, account_type, deleted_at)')
     .order('total_xp', { ascending: false })
   if (userIds) query = query.in('user_id', userIds)
 
@@ -24,7 +24,7 @@ async function fetchLeaderboardRows(userIds) {
 
   const today = todayStr()
   return (data || [])
-    .filter((row) => row.users?.account_type === 'student')
+    .filter((row) => row.users?.account_type === 'student' && !row.users?.deleted_at)
     .map((row) => ({
       userId: row.user_id,
       username: row.users.username,

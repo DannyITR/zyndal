@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { updateUserProfile, changePassword, getFriendCount } from '../../lib/storage'
+import { updateUserProfile, changePassword, getFriendCount, exportMyData, deleteAccount } from '../../lib/storage'
 import { AVATARS } from '../../lib/avatars'
 import TopBar from './TopBar'
 import LegalModal from '../legal/LegalModal'
+import DeleteAccountModal from './DeleteAccountModal'
 
 export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogoClick }) {
   const isStudent = user.account_type === 'student'
@@ -37,6 +38,42 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
   const [passwordSuccess, setPasswordSuccess] = useState('')
 
   const [openLegal, setOpenLegal] = useState(null) // null | 'privacy' | 'terms'
+
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState('')
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+
+  // fetch() with a custom X-Session-Token header can't trigger a native
+  // browser download the way a plain link to the URL could — so this fetches
+  // the JSON via the authenticated API call, then builds the download
+  // client-side with a Blob + a synthetic, immediately-clicked <a download>.
+  async function handleExport() {
+    setExportError('')
+    setExporting(true)
+    try {
+      const data = await exportMyData()
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'zyndal-my-data.json'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('[Settings] data export failed:', err)
+      setExportError(err.message || "Couldn't download your data. Please try again.")
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  async function handleDeleteAccount() {
+    await deleteAccount()
+    setShowDeleteModal(false)
+    onLogout()
+  }
 
   async function handleSaveProfile(e) {
     e.preventDefault()
@@ -219,7 +256,19 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
         </button>
       </div>
 
+      <div className="settings-danger-zone">
+        <button type="button" className="btn btn-secondary btn-block" disabled={exporting} onClick={handleExport}>
+          {exporting ? 'Preparing download…' : '⬇️ Download my data'}
+        </button>
+        {exportError && <p className="form-error">{exportError}</p>}
+
+        <button type="button" className="btn btn-danger-outline btn-block" onClick={() => setShowDeleteModal(true)}>
+          Delete My Account
+        </button>
+      </div>
+
       {openLegal && <LegalModal type={openLegal} onClose={() => setOpenLegal(null)} />}
+      {showDeleteModal && <DeleteAccountModal onConfirm={handleDeleteAccount} onClose={() => setShowDeleteModal(false)} />}
     </div>
   )
 }

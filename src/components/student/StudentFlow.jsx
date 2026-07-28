@@ -79,6 +79,16 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [showGrades, setShowGrades] = useState(false)
   const [showCurriculum, setShowCurriculum] = useState(false)
 
+  // user.linked_parent_deleted comes from login/get-profile (see
+  // api/_lib/db.js's isLinkedParentDeleted) — shown once per mount, then
+  // auto-dismisses on its own after 5s (still manually closeable sooner).
+  const [showParentDeletedBanner, setShowParentDeletedBanner] = useState(Boolean(user.linked_parent_deleted))
+  useEffect(() => {
+    if (!user.linked_parent_deleted) return
+    const timer = setTimeout(() => setShowParentDeletedBanner(false), 5000)
+    return () => clearTimeout(timer)
+  }, [user.linked_parent_deleted])
+
   // The logo always resets to this subject-selection home view for a logged-in
   // student — StudentHome/AnswerDetail unmount as a side effect of clearing
   // pickedSubjectId, so their own local state doesn't need separate resetting.
@@ -352,6 +362,20 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           onSettings={() => setShowSettings(true)}
           onLogoClick={handleLogoClick}
         />
+
+        {showParentDeletedBanner && (
+          <div className="parent-deleted-banner">
+            <span>Your parent account was deactivated. Ask a parent to create a new account and re-link.</span>
+            <button
+              type="button"
+              className="parent-deleted-banner-close"
+              onClick={() => setShowParentDeletedBanner(false)}
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         <div className="stats-row">
           <StreakFlame streak={getEffectiveStreak(progress, today)} onInfoClick={() => setInfoModalKey('streak')} />

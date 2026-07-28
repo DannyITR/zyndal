@@ -29,6 +29,7 @@ async function handle({ userId, body }) {
     .from('users')
     .select('id, username, grade')
     .eq('account_type', 'student')
+    .is('deleted_at', null)
     .ilike('username', `%${body.username}%`)
     .not('id', 'in', `(${excludeIds.join(',')})`)
     .limit(10)

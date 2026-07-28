@@ -88,6 +88,17 @@ function EnglishContent() {
         We'll respond within a reasonable time, as required by law.
       </p>
 
+      <h3>Deactivating your account</h3>
+      <p>
+        You can deactivate your own account at any time from <strong>Settings → Delete My
+        Account</strong>. This is a deactivation, not an instant erasure: your account is
+        immediately signed out everywhere and can no longer be logged into, but your data is kept
+        for <strong>90 days</strong> in case you want it back. To restore a deactivated account
+        within that window, email <a href="mailto:hello@zyndal.com">hello@zyndal.com</a>. After 90
+        days, everything is <strong>permanently and irreversibly deleted</strong>. This process is
+        in place specifically to comply with Quebec's Law 25.
+      </p>
+
       <h3>No selling data, no advertising</h3>
       <p>We do not sell, rent, or trade your personal information to any third party — ever. Zyndal has no advertising and never will while it remains a study tool for students.</p>
 
@@ -97,6 +108,7 @@ function EnglishContent() {
       <h3>Contact us</h3>
       <p>
         Questions, concerns, or a request about your data: <a href="mailto:privacy@zyndal.com">privacy@zyndal.com</a>.
+        To restore a deactivated account: <a href="mailto:hello@zyndal.com">hello@zyndal.com</a>.
       </p>
     </div>
   )
@@ -175,6 +187,18 @@ function FrenchContent() {
         Nous répondrons dans un délai raisonnable, tel que requis par la loi.
       </p>
 
+      <h3>Désactiver votre compte</h3>
+      <p>
+        Vous pouvez désactiver votre propre compte en tout temps depuis <strong>Paramètres →
+        Supprimer mon compte</strong>. Il s'agit d'une désactivation, pas d'un effacement
+        instantané : votre compte est immédiatement déconnecté partout et ne peut plus être utilisé
+        pour vous connecter, mais vos données sont conservées pendant <strong>90 jours</strong> au
+        cas où vous souhaiteriez les récupérer. Pour restaurer un compte désactivé pendant cette
+        période, écrivez à <a href="mailto:hello@zyndal.com">hello@zyndal.com</a>. Après 90 jours,
+        tout est <strong>supprimé de façon permanente et irréversible</strong>. Ce processus est en
+        place spécifiquement pour se conformer à la Loi 25 du Québec.
+      </p>
+
       <h3>Aucune vente de données, aucune publicité</h3>
       <p>
         Nous ne vendons, ne louons ni n'échangeons jamais vos renseignements personnels à des
@@ -188,7 +212,8 @@ function FrenchContent() {
       <h3>Nous contacter</h3>
       <p>
         Questions, préoccupations ou demande concernant vos données :{' '}
-        <a href="mailto:privacy@zyndal.com">privacy@zyndal.com</a>.
+        <a href="mailto:privacy@zyndal.com">privacy@zyndal.com</a>. Pour restaurer un compte
+        désactivé : <a href="mailto:hello@zyndal.com">hello@zyndal.com</a>.
       </p>
     </div>
   )

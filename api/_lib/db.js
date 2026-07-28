@@ -101,6 +101,24 @@ export async function getLinkedParent(studentId) {
   }
 }
 
+// For a student's home screen: whether their linked parent (if any) has
+// deleted their own account — drives the one-time "your parent account was
+// deactivated" banner in StudentFlow.jsx. False (not an error) when there's
+// no link at all.
+export async function isLinkedParentDeleted(studentId) {
+  const { data: link, error: linkError } = await supabase
+    .from('parent_student')
+    .select('parent_id')
+    .eq('student_id', studentId)
+    .maybeSingle()
+  if (linkError) throw linkError
+  if (!link) return false
+
+  const { data: parent, error: parentError } = await supabase.from('users').select('deleted_at').eq('id', link.parent_id).maybeSingle()
+  if (parentError) throw parentError
+  return Boolean(parent?.deleted_at)
+}
+
 // Mirrors normalizeMilestoneBonuses in storage.js exactly.
 export function normalizeMilestoneBonuses(milestoneSettings) {
   if (!milestoneSettings) return DEFAULT_MILESTONE_BONUSES
