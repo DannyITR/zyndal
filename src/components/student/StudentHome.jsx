@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { submitAnswer } from '../../lib/storage'
 import { getDailyQuestion } from '../../lib/questions'
 import { getEffectiveStreak, countCorrectSubjectsToday, todayStr, TOTAL_SUBJECTS } from '../../lib/streak'
+import { getUserTimeZone } from '../../lib/timezone'
 import { countdownLabel, computeReadiness } from '../../lib/testprep'
 import TopBar from '../shared/TopBar'
 import HistoryList from '../shared/HistoryList'
@@ -35,7 +36,7 @@ export default function StudentHome({
   onLogout,
   onLogoClick,
 }) {
-  const today = todayStr()
+  const today = todayStr(new Date(), getUserTimeZone())
   const question = useMemo(() => getDailyQuestion(subject.id), [subject.id])
   // The scored first attempt persisted this session: { selectedIndex, correct, coinsEarned, xpEarned }
   const [justAnswered, setJustAnswered] = useState(null)

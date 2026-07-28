@@ -6,8 +6,42 @@ export const COINS_PER_CORRECT = 1
 // is the fallback for students with no linked parent or no custom settings.
 export const DEFAULT_MILESTONE_BONUSES = { 7: 10, 14: 20, 30: 50 }
 
-export function todayStr(date = new Date()) {
-  return date.toISOString().slice(0, 10)
+// Matches the default on users.timezone in supabase/schema.sql — used
+// whenever a request doesn't send a (valid) timezone, e.g. an old cached
+// frontend bundle or a non-browser client.
+export const DEFAULT_TIMEZONE = 'America/Toronto'
+
+// Without a timeZone, "today" is UTC midnight — wrong for every Quebec user
+// between 8pm and midnight local time (UTC-4/-5 depending on DST), who'd
+// see tomorrow's date hours before their own midnight. With one, this
+// renders the given instant as a calendar date IN that zone instead —
+// en-CA's default numeric date format is already YYYY-MM-DD, so no
+// reformatting is needed after Intl does the zone conversion. Falls back to
+// UTC if timeZone is present but not a real IANA zone name (Intl throws a
+// RangeError rather than silently ignoring it) — callers should prefer
+// isValidTimeZone/DEFAULT_TIMEZONE over relying on this fallback, but it's
+// here so a bad value can never crash date math.
+export function todayStr(date = new Date(), timeZone) {
+  if (!timeZone) return date.toISOString().slice(0, 10)
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
+  } catch {
+    return date.toISOString().slice(0, 10)
+  }
+}
+
+// Guards every timezone value this app ever accepts from a client before
+// it reaches todayStr/Intl — used both server-side (request body/query) and
+// nowhere client-side today, since getUserTimeZone() (src/lib/timezone.js)
+// already reads a real zone straight from the browser.
+export function isValidTimeZone(timeZone) {
+  if (!timeZone || typeof timeZone !== 'string') return false
+  try {
+    new Intl.DateTimeFormat(undefined, { timeZone })
+    return true
+  } catch {
+    return false
+  }
 }
 
 function diffDays(laterStr, earlierStr) {

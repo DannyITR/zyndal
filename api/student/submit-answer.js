@@ -1,7 +1,7 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
-import { getProgressForUser, getLinkedParent, normalizeMilestoneBonuses, recordPerfectWeekAchievement } from '../_lib/db.js'
-import { applyDailyAnswer, getWeeklyCorrectCount, PERFECT_WEEK_TARGET, todayStr } from '../../src/lib/streak.js'
+import { getProgressForUser, getLinkedParent, normalizeMilestoneBonuses, recordPerfectWeekAchievement, syncUserTimezone } from '../_lib/db.js'
+import { applyDailyAnswer, getWeeklyCorrectCount, PERFECT_WEEK_TARGET, todayStr, isValidTimeZone, DEFAULT_TIMEZONE } from '../../src/lib/streak.js'
 import { getDailyQuestion, SUBJECTS } from '../../src/lib/questions.js'
 
 // Deliberately NOT the request shape originally specified
@@ -25,7 +25,15 @@ function validate(body) {
 
 async function handle({ userId, body }) {
   const { subject, selected_index } = body
-  const today = todayStr()
+  // The client detects its own zone (Intl.DateTimeFormat, see
+  // src/lib/timezone.js) and sends it with every answer submission — the
+  // server has no way to know a browser's local timezone on its own.
+  // Falls back to America/Toronto (matches users.timezone's column
+  // default) for a missing/invalid value rather than UTC, since that's the
+  // closer default for this app's actual user base.
+  const timezone = isValidTimeZone(body.timezone) ? body.timezone : DEFAULT_TIMEZONE
+  const today = todayStr(new Date(), timezone)
+  await syncUserTimezone(userId, timezone)
 
   const question = getDailyQuestion(subject)
   if (!question) {

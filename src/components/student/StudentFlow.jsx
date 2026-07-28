@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   getProgress,
+  getDailyProgress,
   getPendingFriendRequests,
   respondToFriendRequest,
   getActiveStudyPlan,
@@ -9,7 +10,8 @@ import {
   getTodaysReceivedShares,
 } from '../../lib/storage'
 import { getSubject } from '../../lib/questions'
-import { getEffectiveStreak, countCorrectSubjectsToday, todayStr, TOTAL_SUBJECTS } from '../../lib/streak'
+import { getEffectiveStreak, todayStr, TOTAL_SUBJECTS } from '../../lib/streak'
+import { getUserTimeZone } from '../../lib/timezone'
 import TopBar from '../shared/TopBar'
 import SubjectDashboard from './SubjectDashboard'
 import StudentHome from './StudentHome'
@@ -60,8 +62,14 @@ const INFO_CONTENT = {
 }
 
 export default function StudentFlow({ user, onLogout, onUserUpdate }) {
-  const today = todayStr()
+  // The browser's own zone, not UTC — see src/lib/timezone.js. Used for
+  // every local derivation from the already-loaded progress object
+  // (streak flame, streak-risk banner); the subject grid's own done/wrong
+  // state comes from dailyProgress below instead, computed server-side in
+  // this same zone (see api/student/get-daily-progress.js).
+  const today = todayStr(new Date(), getUserTimeZone())
   const [progress, setProgress] = useState(null)
+  const [dailyProgress, setDailyProgress] = useState(null)
   const [pickedSubjectId, setPickedSubjectId] = useState(null)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -124,7 +132,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       // Best-effort cache so the offline fallback page (public/offline.html)
       // can still show a streak count with no network or app bundle loaded.
       try {
-        localStorage.setItem('zyndal_last_streak', String(getEffectiveStreak(p, todayStr())))
+        localStorage.setItem('zyndal_last_streak', String(getEffectiveStreak(p, todayStr(new Date(), getUserTimeZone()))))
       } catch {
         // Ignore — offline page just won't show a streak number.
       }
@@ -133,6 +141,25 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       cancelled = true
     }
   }, [user.id])
+
+  useEffect(() => {
+    let cancelled = false
+    getDailyProgress().then((d) => {
+      if (!cancelled) setDailyProgress(d)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [user.id])
+
+  // StudentHome.jsx calls this via onProgressChange right after a real
+  // (server-scored) answer submission — re-fetching here keeps the subject
+  // grid's done/incorrect state in sync with that answer without trusting a
+  // client-side guess at what just changed.
+  function handleProgressChange(newProgress) {
+    setProgress(newProgress)
+    getDailyProgress().then(setDailyProgress)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -171,18 +198,16 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     setPendingFriendRequests(list)
   }
 
-  const completedSubjectIds = useMemo(() => {
-    const ids = new Set()
-    if (!progress) return ids
-    for (const entry of progress.history) {
-      if (entry.date === today && entry.correct) ids.add(entry.subjectId)
-    }
-    return ids
-  }, [progress, today])
+  // Sourced from dailyProgress (api/student/get-daily-progress.js), not
+  // derived from progress.history locally — see handleProgressChange above
+  // for why the grid trusts the server's own local-timezone "today" rather
+  // than recomputing it client-side.
+  const completedSubjectIds = useMemo(() => new Set(dailyProgress?.completed_subjects ?? []), [dailyProgress])
+  const incorrectSubjectIds = useMemo(() => new Set(dailyProgress?.incorrect_subjects ?? []), [dailyProgress])
 
   // Only worth warning about if there's an actual streak in progress to lose,
   // and only after 8pm local time so it doesn't nag all day.
-  const subjectsLeftToday = progress ? TOTAL_SUBJECTS - countCorrectSubjectsToday(progress.history, today) : TOTAL_SUBJECTS
+  const subjectsLeftToday = dailyProgress ? TOTAL_SUBJECTS - dailyProgress.total_completed : TOTAL_SUBJECTS
   const showStreakRiskWarning =
     Boolean(progress) &&
     getEffectiveStreak(progress, today) > 0 &&
@@ -434,7 +459,11 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           </div>
         )}
 
-        <SubjectDashboard completedSubjectIds={completedSubjectIds} onSelectSubject={setPickedSubjectId} />
+        <SubjectDashboard
+          completedSubjectIds={completedSubjectIds}
+          incorrectSubjectIds={incorrectSubjectIds}
+          onSelectSubject={setPickedSubjectId}
+        />
 
         {infoModalKey && (
           <InfoModal
@@ -453,7 +482,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       user={user}
       subject={activeSubject}
       progress={progress}
-      onProgressChange={setProgress}
+      onProgressChange={handleProgressChange}
       activePlan={activePlan}
       isPremium={user.is_premium}
       onOpenTestPrep={() => setShowTestPrepSetup(true)}

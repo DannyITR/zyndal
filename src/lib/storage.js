@@ -7,6 +7,8 @@
 // longer imports the Supabase client at all — everything goes through
 // callApi below. See src/lib/codes.js and src/lib/supabaseClient.js, both
 // deleted this session as a result (nothing imports them anymore).
+import { getUserTimeZone } from './timezone'
+
 const SESSION_KEY = 'zyndal_session'
 
 let sessionExpiredHandler = null
@@ -305,6 +307,16 @@ export async function getProgress(_userId) {
   return callStudentApi('GET', 'get-progress')
 }
 
+// Drives the subject grid's per-card done/incorrect state (SubjectDashboard
+// via StudentFlow.jsx) — a narrower, timezone-aware sibling of getProgress
+// above rather than a client-side derivation from progress.history, so
+// "today" is resolved server-side in the caller's own local timezone (see
+// api/student/get-daily-progress.js) instead of trusting the browser's
+// clock for something that decides the streak-safe badge.
+export async function getDailyProgress() {
+  return callStudentApi('GET', `get-daily-progress?timezone=${encodeURIComponent(getUserTimeZone())}`)
+}
+
 // Session 5: a parent viewing a linked student's progress/practice/grades
 // (ParentDashboard, FinanceScreen) reads from the same shared dashboard
 // fetch as getStudentsForParent above — get-dashboard.js already returns
@@ -334,7 +346,11 @@ export async function getStudentGrades(parentId, studentId) {
 // applyDailyAnswer logic from src/lib/streak.js) — both params stay in the
 // signature only because StudentHome.jsx calls this positionally.
 export async function submitAnswer(progress, question, selectedIndex, subjectId, _today) {
-  const data = await callStudentApi('POST', 'submit-answer', { subject: subjectId, selected_index: selectedIndex })
+  const data = await callStudentApi('POST', 'submit-answer', {
+    subject: subjectId,
+    selected_index: selectedIndex,
+    timezone: getUserTimeZone(),
+  })
 
   const newProgress = {
     ...progress,

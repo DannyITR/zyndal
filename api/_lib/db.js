@@ -47,6 +47,17 @@ export async function generateUniqueParentCode() {
   throw err
 }
 
+// Best-effort — a failed write here only matters if a future request
+// somehow arrives with no timezone at all (falls back to
+// users.timezone's own default, 'America/Toronto', in that case), so this
+// never throws. The .neq filter turns a no-op call (the stored value
+// already matches) into zero rows updated instead of a wasted write, since
+// this runs on every submit-answer/get-daily-progress/get-streak call.
+export async function syncUserTimezone(userId, timezone) {
+  const { error } = await supabase.from('users').update({ timezone }).eq('id', userId).neq('timezone', timezone)
+  if (error) console.error('[db] failed to sync user timezone:', error)
+}
+
 export async function getStreakRow(userId) {
   const { data, error } = await supabase.from('streaks').select('*').eq('user_id', userId).maybeSingle()
   if (error) throw error

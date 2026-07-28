@@ -41,7 +41,17 @@ create table if not exists users (
   -- auto-created from a verified Google/Facebook identity (the provider
   -- already confirmed the email); false/default for ordinary
   -- username/password signups, which never verify email ownership today.
-  email_verified boolean not null default false
+  email_verified boolean not null default false,
+  -- IANA zone name (e.g. 'America/Toronto'), detected browser-side via
+  -- Intl.DateTimeFormat().resolvedOptions().timeZone (see
+  -- src/lib/timezone.js) and kept in sync by api/_lib/db.js's
+  -- syncUserTimezone on every submit-answer/get-daily-progress/get-streak
+  -- call. Used server-side to compute "today" in the student's own local
+  -- time instead of UTC, so the daily question, streak, and subject-grid
+  -- done/incorrect state all reset at the user's own midnight — not
+  -- Vercel's. The 'America/Toronto' default matches Quebec (UTC-4/-5
+  -- depending on DST) for any row created before this column existed.
+  timezone text default 'America/Toronto'
 );
 
 -- Run on an existing database (create table if not exists above only
@@ -49,6 +59,10 @@ create table if not exists users (
 -- allow 'teacher' without dropping/recreating the whole table.
 alter table users drop constraint if exists users_account_type_check;
 alter table users add constraint users_account_type_check check (account_type in ('student', 'parent', 'teacher'));
+
+-- Run on an existing database — same reason as above, this only applies to
+-- a fresh install otherwise.
+alter table users add column if not exists timezone text default 'America/Toronto';
 
 create table if not exists streaks (
   id uuid primary key default gen_random_uuid(),

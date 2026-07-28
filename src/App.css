@@ -827,6 +827,15 @@ div.zyndal-logo {
   border-color: rgba(52, 224, 161, 0.45);
 }
 
+.subject-card-badge--incorrect {
+  background: rgba(255, 92, 122, 0.18);
+  color: var(--red);
+}
+
+.subject-card--incorrect {
+  border-color: rgba(255, 92, 122, 0.45);
+}
+
 /* ---------- Question card ---------- */
 
 .question-card {
