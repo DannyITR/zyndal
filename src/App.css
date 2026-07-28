@@ -2184,12 +2184,12 @@ div.zyndal-logo {
 }
 
 .share-card-top {
-  display: flex;
+  display: grid;
+  grid-template-columns: 32px 1fr 32px;
   align-items: center;
-  justify-content: center;
   gap: 8px;
+  width: 100%;
   z-index: 1;
-  align-self: center;
 }
 
 .share-card-bolt {
@@ -2202,6 +2202,7 @@ div.zyndal-logo {
 }
 
 .share-card-brand {
+  text-align: center;
   font-family: var(--font-heading);
   font-weight: 800;
   font-size: 30px;

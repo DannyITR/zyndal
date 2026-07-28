@@ -184,8 +184,6 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
         />
       )}
 
-      <h3 className="section-heading">Share to Other Platforms</h3>
-
       <div className="share-card" ref={cardRef}>
         <div className="share-card-glow share-card-glow--1" />
         <div className="share-card-glow share-card-glow--2" />
