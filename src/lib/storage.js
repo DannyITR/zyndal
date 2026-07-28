@@ -176,6 +176,45 @@ export async function signup({ username, password, accountType, grade = null, pa
   return user
 }
 
+// ---------- Social login (Google/Facebook) ----------
+// See OAuthCallbackScreen.jsx / OAuthMergeScreen.jsx for the flow this
+// backs. Both calls hit api/auth/oauth-callback.js and
+// api/auth/oauth-merge.js — new endpoints alongside login/signup above, not
+// replacements for them; username/password auth is untouched.
+
+// provider/supabaseAccessToken are the only inputs that actually matter —
+// api/auth/oauth-callback.js re-derives provider_user_id/email/name itself
+// from the verified token rather than trusting anything else the client
+// might send (see that file's comment), so there's nothing else to pass here.
+//
+// Response shape is one of:
+//   { success: true, token, user, is_new_user } — logged in, session stored
+//   { needs_merge: true, existing_username, provider_email, provider_name,
+//     provider_user_id, provider } — no session yet, caller shows the merge screen
+export async function oauthCallback({ provider, supabaseAccessToken }) {
+  const data = await callAuthApi('oauth-callback', {
+    provider,
+    supabase_access_token: supabaseAccessToken,
+  })
+  if (data.token) storeSession(data.token)
+  return data
+}
+
+// Same rationale as oauthCallback above — api/auth/oauth-merge.js derives
+// the provider identity from supabaseAccessToken itself; existingUsername
+// and existingPassword are the only client-submitted values it trusts, and
+// only because they're gated behind a bcrypt check.
+export async function oauthMerge({ provider, supabaseAccessToken, existingUsername, existingPassword }) {
+  const data = await callAuthApi('oauth-merge', {
+    provider,
+    supabase_access_token: supabaseAccessToken,
+    existing_username: existingUsername,
+    existing_password: existingPassword,
+  })
+  if (data.token) storeSession(data.token)
+  return data.user
+}
+
 // userId isn't sent — the server derives who's editing from the session
 // token (see api/student/update-settings.js) — but stays in the signature
 // since SettingsScreen.jsx calls this positionally.

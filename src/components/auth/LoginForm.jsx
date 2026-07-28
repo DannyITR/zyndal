@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { login } from '../../lib/storage'
+import SocialLoginButtons from './SocialLoginButtons'
 
 export default function LoginForm({ onAuth }) {
   const [username, setUsername] = useState('')
@@ -23,6 +24,8 @@ export default function LoginForm({ onAuth }) {
 
   return (
     <form className="auth-form" onSubmit={handleSubmit}>
+      <SocialLoginButtons onError={setError} />
+
       <div className="field">
         <label htmlFor="login-username">Username</label>
         <input

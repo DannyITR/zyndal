@@ -17,6 +17,36 @@ import { findQuestionByPrompt } from '../../src/lib/questions.js'
 export const SAFE_USER_COLUMNS =
   'id, username, account_type, grade, parent_code, created_at, display_name, email, school, avatar, wallet_balance_cents, total_added_cents, total_paid_out_cents, coin_to_dollar_rate, milestone_settings, is_premium, language_preference'
 
+// Deliberately duplicated from the local (unexported) generateUniqueParentCode
+// in api/auth/signup.js rather than importing it from there — signup.js is
+// off-limits to changes (see api/auth/oauth-callback.js), so this is the
+// shared home for any other endpoint (currently just
+// api/student/update-settings.js, for a student->parent OAuth-onboarding
+// conversion) that also needs to mint a parent code. Keep the two in sync by
+// hand if this logic ever changes.
+const PARENT_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no 0/O/1/I
+
+function randomParentCode(length = 6) {
+  let code = ''
+  for (let i = 0; i < length; i++) {
+    code += PARENT_CODE_ALPHABET[Math.floor(Math.random() * PARENT_CODE_ALPHABET.length)]
+  }
+  return code
+}
+
+export async function generateUniqueParentCode() {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const code = randomParentCode()
+    const { data, error } = await supabase.from('users').select('id').eq('parent_code', code).maybeSingle()
+    if (error) throw error
+    if (!data) return code
+  }
+  const err = new Error('Could not generate a unique parent code. Please try again.')
+  err.status = 500
+  err.code = 'SERVER_ERROR'
+  throw err
+}
+
 export async function getStreakRow(userId) {
   const { data, error } = await supabase.from('streaks').select('*').eq('user_id', userId).maybeSingle()
   if (error) throw error

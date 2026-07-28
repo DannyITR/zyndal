@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { signup } from '../../lib/storage'
 import LegalModal from '../legal/LegalModal'
+import SocialLoginButtons from './SocialLoginButtons'
 
 // Bilingual UI strings for this form only (not a general i18n system — see
 // PrivacyPolicyContent/TermsOfServiceContent for the same EN/FR pattern
@@ -142,6 +143,8 @@ export default function SignupForm({ onAuth }) {
           </button>
         </div>
       </div>
+
+      <SocialLoginButtons lang={lang} onError={setError} />
 
       <div className="role-toggle">
         <button

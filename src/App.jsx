@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getCurrentUser, clearSession, setSessionExpiredHandler } from './lib/storage'
 import LandingPage from './components/landing/LandingPage'
 import AuthScreen from './components/auth/AuthScreen'
+import OAuthCallbackScreen from './components/auth/OAuthCallbackScreen'
 import StudentFlow from './components/student/StudentFlow'
 import ParentDashboard from './components/parent/ParentDashboard'
 import InstallPrompt from './components/shared/InstallPrompt'
@@ -12,6 +13,13 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [showLanding, setShowLanding] = useState(false)
   const [authMode, setAuthMode] = useState('login')
+  // No client-side router in this app — /auth/callback is the one path
+  // that has to survive a hard browser navigation (Google/Facebook redirect
+  // the whole page back to it, not a client-side transition), so it's
+  // checked directly against window.location instead of being another
+  // piece of in-memory screen state. See vercel.json for the rewrite that
+  // makes a direct hit on this path serve index.html instead of 404ing.
+  const [isOAuthCallback, setIsOAuthCallback] = useState(() => window.location.pathname === '/auth/callback')
 
   useEffect(() => {
     let cancelled = false
@@ -51,6 +59,24 @@ function App() {
   function goToAuth(mode) {
     setAuthMode(mode)
     setShowLanding(false)
+  }
+
+  // Clears the /auth/callback URL either way (success or cancel) so a
+  // refresh afterward doesn't re-run the OAuth exchange against a
+  // now-consumed/expired code.
+  function finishOAuthCallback(nextUser) {
+    window.history.replaceState({}, '', '/')
+    setIsOAuthCallback(false)
+    if (nextUser) {
+      setUser(nextUser)
+    } else {
+      setShowLanding(false)
+      setAuthMode('login')
+    }
+  }
+
+  if (isOAuthCallback) {
+    return <OAuthCallbackScreen onAuth={finishOAuthCallback} onCancel={() => finishOAuthCallback(null)} />
   }
 
   if (loading) {

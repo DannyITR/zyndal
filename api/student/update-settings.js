@@ -1,6 +1,7 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
-import { sanitizeString, sanitizeEmail, sanitizeGrade } from '../_lib/sanitize.js'
+import { generateUniqueParentCode } from '../_lib/db.js'
+import { sanitizeString, sanitizeEmail, sanitizeGrade, sanitizeAccountType } from '../_lib/sanitize.js'
 
 const LANGUAGE_PREFERENCES = new Set(['English', 'French'])
 
@@ -41,21 +42,55 @@ function validate(body) {
     return { field: 'language_preference', message: "language_preference must be 'English' or 'French'." }
   }
 
+  // Only meaningful right after a social-login signup (see
+  // OAuthOnboardingScreen.jsx) — api/auth/oauth-callback.js always creates
+  // new accounts as 'student', and onboarding lets the person say "actually
+  // I'm a parent" before ever reaching the app. Not exposed anywhere in the
+  // regular Settings UI (SettingsScreen.jsx never sends this field), so an
+  // established account switching its own account_type on a whim isn't a
+  // flow this endpoint is meant to serve — just one it doesn't prevent.
+  if (body.account_type !== undefined && body.account_type !== null) {
+    const accountType = sanitizeAccountType(body.account_type)
+    if (!accountType) {
+      return { field: 'account_type', message: "account_type must be 'student' or 'parent'." }
+    }
+    body.account_type = accountType
+  }
+
   return null
 }
 
 async function handle({ userId, body }) {
-  const { display_name, email, school, avatar, grade, language_preference } = body
+  const { display_name, email, school, avatar, grade, language_preference, account_type: accountType } = body
+
+  const updates = {
+    display_name: display_name || null,
+    email: email || null,
+    school: school || null,
+    avatar: avatar || null,
+    grade: grade ?? null,
+    language_preference,
+  }
+
+  // A brand-new OAuth-onboarding parent needs a parent_code the moment they
+  // become a parent, or every parent-linking feature (StudentCard, the
+  // signup parent-code field, ParentDashboard) silently has nothing to show
+  // them. Only generated once — an existing parent_code from before is left
+  // alone.
+  if (accountType === 'parent') {
+    const { data: current, error: currentError } = await supabase.from('users').select('parent_code').eq('id', userId).maybeSingle()
+    if (currentError) throw currentError
+    updates.account_type = 'parent'
+    if (!current?.parent_code) {
+      updates.parent_code = await generateUniqueParentCode()
+    }
+  } else if (accountType === 'student') {
+    updates.account_type = 'student'
+  }
+
   const { data, error } = await supabase
     .from('users')
-    .update({
-      display_name: display_name || null,
-      email: email || null,
-      school: school || null,
-      avatar: avatar || null,
-      grade: grade ?? null,
-      language_preference,
-    })
+    .update(updates)
     .eq('id', userId)
     .select(
       'id, username, account_type, grade, parent_code, created_at, display_name, email, school, avatar, wallet_balance_cents, total_added_cents, total_paid_out_cents, coin_to_dollar_rate, milestone_settings, is_premium, language_preference'

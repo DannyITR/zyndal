@@ -414,6 +414,73 @@ div.zyndal-logo {
   margin-top: 6px;
 }
 
+.social-login {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 14.5px;
+}
+
+.social-btn--google {
+  background: #fff;
+  color: #1f1f1f;
+  border: 1.5px solid var(--border-strong);
+}
+
+.social-btn--google:not(:disabled):hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.social-btn--facebook {
+  background: #1877f2;
+  color: #fff;
+}
+
+.social-btn--facebook:not(:disabled):hover {
+  box-shadow: 0 10px 30px rgba(24, 119, 242, 0.4);
+}
+
+.social-btn--snapchat {
+  background: #fffc00;
+  color: #1a1a1a;
+}
+
+.social-login-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin: 2px 0;
+}
+
+.oauth-onboarding-title {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  margin-top: 8px;
+}
+
+.oauth-use-different-email {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-top: 14px;
+}
+
 .role-toggle {
   display: flex;
   gap: 8px;

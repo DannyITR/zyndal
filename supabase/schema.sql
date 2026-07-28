@@ -30,7 +30,12 @@ create table if not exists users (
   -- timestamp on self-delete; data is retained 90 days from this date to
   -- allow restoration (email hello@zyndal.com), then permanently removed —
   -- manually for now, no automated purge job yet.
-  deleted_at timestamptz
+  deleted_at timestamptz,
+  -- Social login (see api/auth/oauth-callback.js). True for accounts
+  -- auto-created from a verified Google/Facebook identity (the provider
+  -- already confirmed the email); false/default for ordinary
+  -- username/password signups, which never verify email ownership today.
+  email_verified boolean not null default false
 );
 
 create table if not exists streaks (
@@ -264,6 +269,28 @@ create table if not exists curriculum_outlines (
   unique (subject, grade)
 );
 
+-- Links a Zyndal account to a Google/Facebook identity for social login
+-- (see api/auth/oauth-callback.js and api/auth/oauth-merge.js). Supabase
+-- Auth itself only brokers the OAuth handshake and verifies the resulting
+-- token server-side — it is never the source of truth for who a user is in
+-- this app; this table plus the existing `users` row is. The
+-- (provider, provider_user_id) unique constraint is what makes "does this
+-- Google/Facebook account already have a Zyndal login" a safe, race-free
+-- check. One user can link more than one provider (no uniqueness on
+-- user_id), but a given provider identity can only ever point at one user.
+create table if not exists oauth_identities (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  provider text not null check (provider in ('google', 'facebook')),
+  provider_user_id text not null,
+  provider_email text not null,
+  provider_name text,
+  created_at timestamptz not null default now(),
+  unique (provider, provider_user_id)
+);
+create index if not exists oauth_identities_user_id_idx on oauth_identities(user_id);
+create index if not exists oauth_identities_provider_user_id_idx on oauth_identities(provider, provider_user_id);
+
 -- Custom-auth session tokens (Zyndal doesn't use Supabase Auth). Issued on
 -- login/signup, sent as the X-Session-Token header on every Supabase
 -- request (see supabaseClient.js), and deleted on logout. This is prep
@@ -279,6 +306,21 @@ create table if not exists sessions (
 create index if not exists sessions_token_idx on sessions(token);
 create index if not exists sessions_user_id_idx on sessions(user_id);
 
+-- oauth_identities is the one table created after Session 5's RLS rollout
+-- (see api/_lib/auth.js) — every /api/* function already authenticates the
+-- caller itself and uses the service-role key, which bypasses RLS
+-- regardless, so this has no policies defined; enabling RLS here only
+-- matters for blocking the anon key from reading it directly, matching
+-- every other table's actual (if not accurately reflected below) state.
+alter table oauth_identities enable row level security;
+
+-- NOTE: the block below predates Session 5 and is stale — every table it
+-- lists actually has RLS enabled in the live database today (see
+-- api/_lib/auth.js's comment on the service-role client). Left as-is rather
+-- than rewritten here since this file is a running log of statements to
+-- run, not applied automatically; re-running "disable" on an
+-- already-RLS-enabled table would be a real, destructive change and isn't
+-- part of this feature.
 -- No auth system yet, so RLS is off for all tables.
 alter table users disable row level security;
 alter table streaks disable row level security;
