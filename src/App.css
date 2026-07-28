@@ -2187,8 +2187,10 @@ div.zyndal-logo {
 .share-card-top {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   z-index: 1;
+  align-self: center;
 }
 
 .share-card-bolt {
@@ -2241,6 +2243,14 @@ div.zyndal-logo {
   color: var(--purple-bright);
   font-weight: 800;
   margin: 6px 0 0;
+  text-align: center;
+}
+
+.share-download-btn {
+  width: 50%;
+  align-self: center;
+  padding: 8px 14px;
+  font-size: 13px;
 }
 
 /* ---------- Finance dashboard ---------- */
@@ -3830,6 +3840,64 @@ div.zyndal-logo {
 .share-flame--shared {
   filter: none;
   opacity: 1;
+}
+
+.share-friend-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.modal-card--friend-picker {
+  max-width: 420px;
+}
+
+.friend-picker-search {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.friend-picker-search:focus {
+  border-color: var(--purple);
+  outline: none;
+}
+
+.friend-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.friend-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card-2);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.friend-picker-shared {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--green);
 }
 
 /* ---------- Install prompt ---------- */

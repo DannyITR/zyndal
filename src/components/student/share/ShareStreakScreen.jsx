@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { getFriendsWithStreaks, getStreakSharesForUser, getTodaysReceivedShares, shareStreakWithFriend } from '../../../lib/storage'
 import { hasSharedToday, computeShareStreak } from '../../../lib/streakShare'
 import TopBar from '../../shared/TopBar'
+import FriendSharePickerModal from './FriendSharePickerModal'
 
 // Index 0-6 maps to today's correct-answer count — red at 0, full green at 6.
 const SCORE_COLORS = ['#ff5c7a', '#ff8c42', '#ffab5e', '#ffe066', '#d4e157', '#8bc34a', '#34e0a1']
@@ -12,6 +13,7 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
   const [receivedToday, setReceivedToday] = useState(null)
   const [sendingToId, setSendingToId] = useState(null)
   const [error, setError] = useState('')
+  const [showFriendPicker, setShowFriendPicker] = useState(false)
 
   const cardRef = useRef(null)
   const [generating, setGenerating] = useState(false)
@@ -141,6 +143,9 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
 
       <h3 className="section-heading">Share with Friends</h3>
       {error && <p className="form-error">{error}</p>}
+      <button type="button" className="btn btn-primary btn-block" onClick={() => setShowFriendPicker(true)}>
+        👥 Share with Friends
+      </button>
       {!friends ? (
         <p className="loading-text">Loading…</p>
       ) : friends.length === 0 ? (
@@ -156,13 +161,7 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
             // otherwise it looks like nothing happened.
             const waitingOnFriend = sharedToday && !friendSharedBackToday
             return (
-              <button
-                key={friend.id}
-                type="button"
-                className="share-friend-row"
-                disabled={sharedToday || sendingToId === friend.id}
-                onClick={() => handleShareWithFriend(friend.id)}
-              >
+              <div key={friend.id} className="share-friend-summary-row">
                 <span className="share-friend-avatar">{friend.avatar || '👤'}</span>
                 <div className="share-friend-info">
                   <p className="share-friend-name">@{friend.username}</p>
@@ -176,10 +175,21 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
                 <span className={`share-flame ${sharedToday ? 'share-flame--shared' : 'share-flame--pending'}`}>
                   🔥
                 </span>
-              </button>
+              </div>
             )
           })}
         </div>
+      )}
+
+      {showFriendPicker && (
+        <FriendSharePickerModal
+          user={user}
+          friends={friends || []}
+          shares={shares}
+          sendingToId={sendingToId}
+          onShare={handleShareWithFriend}
+          onClose={() => setShowFriendPicker(false)}
+        />
       )}
 
       <h3 className="section-heading">Share to Other Platforms</h3>
@@ -205,7 +215,7 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
 
       {cardError && <p className="form-error">{cardError}</p>}
 
-      <button type="button" className="btn btn-primary btn-block" onClick={handleShareCard} disabled={generating}>
+      <button type="button" className="btn btn-primary share-download-btn" onClick={handleShareCard} disabled={generating}>
         {generating ? 'Generating…' : 'Share / Download'}
       </button>
     </div>
