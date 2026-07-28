@@ -189,9 +189,7 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
         <div className="share-card-glow share-card-glow--2" />
 
         <div className="share-card-top">
-          <svg className="share-card-bolt" viewBox="3 2 18 20" aria-hidden="true">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-          </svg>
+          <span className="share-card-bolt">⚡</span>
           <span className="share-card-brand">Zyndal</span>
         </div>
 
