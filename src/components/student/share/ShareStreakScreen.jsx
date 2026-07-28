@@ -3,6 +3,9 @@ import { getFriendsWithStreaks, getStreakSharesForUser, getTodaysReceivedShares,
 import { hasSharedToday, computeShareStreak } from '../../../lib/streakShare'
 import TopBar from '../../shared/TopBar'
 
+// Index 0-6 maps to today's correct-answer count — red at 0, full green at 6.
+const SCORE_COLORS = ['#ff5c7a', '#ff8c42', '#ffab5e', '#ffe066', '#d4e157', '#8bc34a', '#34e0a1']
+
 export default function ShareStreakScreen({ user, streak, xp, todayScore, today, onBack, onLogout, onLogoClick }) {
   const [friends, setFriends] = useState(null)
   const [shares, setShares] = useState(null)
@@ -27,6 +30,8 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
   // too would be redundant nagging rather than a nudge to start one.
   const receivedToShow =
     receivedToday && shares ? receivedToday.filter((r) => computeShareStreak(shares, user.id, r.senderId) === 0) : []
+
+  const scoreColor = SCORE_COLORS[Math.min(Math.max(todayScore, 0), 6)]
 
   useEffect(() => {
     let cancelled = false
@@ -190,7 +195,9 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
 
         <div className="share-card-middle">
           <p className="share-card-date">{formattedDate}</p>
-          <p className="share-card-score">{todayScore}/6 ✓</p>
+          <p className="share-card-score" style={{ color: scoreColor }}>
+            {todayScore}/6
+          </p>
           <p className="share-card-username">@{user.username}</p>
           <p className="share-card-xp">⚡ {xp} XP</p>
         </div>

@@ -10,10 +10,6 @@ export default function SubjectDashboard({
   const completedCount = completedSubjectIds.size
   const totalCount = SUBJECTS.length
   const allDone = completedCount === totalCount
-  // "Answered" (attempted, right or wrong) rather than "completed"
-  // (correct) — the score box shows up the moment the student has done
-  // anything today, even if their only attempt so far was wrong.
-  const answeredCount = completedCount + incorrectSubjectIds.size
 
   return (
     <div className="subject-dashboard">
@@ -21,13 +17,17 @@ export default function SubjectDashboard({
         {allDone ? '✅ All 6 done for today!' : `${completedCount}/${totalCount} completed today — answer all 6`}
       </p>
 
-      {answeredCount > 0 && (
-        <div className={`daily-score-box ${allDone ? 'daily-score-box--celebrate' : ''}`}>
+      {allDone && (
+        <div className="daily-score-box daily-score-box--celebrate">
           <span className="daily-score-box-text">
             Today's score: {completedCount}/{totalCount} ✓
           </span>
           <button type="button" className="daily-score-box-share" onClick={onShareClick} aria-label="Share daily score">
-            📤
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+              <polyline points="16 6 12 2 8 6" />
+              <line x1="12" y1="2" x2="12" y2="15" />
+            </svg>
             {receivedShareCount > 0 && <span className="notification-badge">{receivedShareCount}</span>}
           </button>
         </div>

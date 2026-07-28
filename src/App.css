@@ -865,12 +865,13 @@ div.zyndal-logo {
 .daily-score-box-share {
   position: relative;
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+  width: 48px;
+  height: 48px;
   border-radius: 999px;
   border: none;
-  background: var(--card-2);
-  font-size: 16px;
+  background: var(--gradient-primary);
+  color: var(--text);
+  box-shadow: var(--shadow-glow);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2147,13 +2148,12 @@ div.zyndal-logo {
 .share-card {
   position: relative;
   width: 320px;
-  aspect-ratio: 3 / 4;
   border-radius: 28px;
-  padding: 30px 24px;
+  padding: 22px 24px 26px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  gap: 16px;
   text-align: center;
   background: linear-gradient(160deg, #1a0b33 0%, #3a0f7a 50%, #12081f 100%);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -2191,13 +2191,13 @@ div.zyndal-logo {
 }
 
 .share-card-bolt {
-  font-size: 22px;
+  font-size: 32px;
 }
 
 .share-card-brand {
   font-family: var(--font-heading);
   font-weight: 800;
-  font-size: 22px;
+  font-size: 30px;
   color: var(--text);
   letter-spacing: 0.5px;
 }
@@ -2213,9 +2213,9 @@ div.zyndal-logo {
 .share-card-date {
   font-family: var(--font-heading);
   font-weight: 800;
-  font-size: 22px;
+  font-size: 20px;
   color: var(--text);
-  margin: 0 0 8px;
+  margin: 0 0 4px;
 }
 
 .share-card-score {
@@ -2223,7 +2223,7 @@ div.zyndal-logo {
   font-weight: 800;
   font-size: 54px;
   line-height: 1;
-  margin: 0 0 16px;
+  margin: 0 0 6px;
   color: var(--gold);
 }
 
@@ -2236,10 +2236,10 @@ div.zyndal-logo {
 }
 
 .share-card-xp {
-  font-size: 14px;
+  font-size: 22px;
   color: var(--purple-bright);
-  font-weight: 700;
-  margin: 4px 0 0;
+  font-weight: 800;
+  margin: 6px 0 0;
 }
 
 /* ---------- Finance dashboard ---------- */
