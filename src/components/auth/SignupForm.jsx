@@ -2,7 +2,68 @@ import { useState } from 'react'
 import { signup } from '../../lib/storage'
 import LegalModal from '../legal/LegalModal'
 
+// Bilingual UI strings for this form only (not a general i18n system — see
+// PrivacyPolicyContent/TermsOfServiceContent for the same EN/FR pattern
+// applied to the legal pages). Server-side validation error messages
+// (thrown from signup()) are shown as-is, in whatever language the API
+// returned them in, since the API itself is English-only today.
+const STRINGS = {
+  en: {
+    student: '🎓 Student',
+    parent: '👪 Parent',
+    username: 'Username',
+    password: 'Password',
+    confirmPassword: 'Confirm password',
+    grade: 'Grade (optional)',
+    selectGrade: 'Select grade',
+    parentCode: 'Parent code (optional)',
+    parentCodePlaceholder: 'e.g. 7F3K9Q',
+    parentCodeHint: 'Ask your parent for the code on their dashboard.',
+    agreeToPrefix: 'I agree to the',
+    termsOfService: 'Terms of Service',
+    and: 'and',
+    privacyPolicy: 'Privacy Policy',
+    ageConfirmation: 'I confirm I am 14 or older, or my parent has given permission',
+    createAccount: 'Create Account',
+    creatingAccount: 'Creating account…',
+    errorUsername: 'Username must be at least 3 characters.',
+    errorPassword: 'Password must be at least 4 characters.',
+    errorPasswordMatch: 'Passwords do not match.',
+    errorAgreeTerms: 'You must agree to the Terms of Service and Privacy Policy to create an account.',
+    errorAgeConfirmation: 'Please confirm the age/parental permission statement below.',
+    errorFallback: 'Something went wrong. Please try again.',
+  },
+  fr: {
+    student: '🎓 Élève',
+    parent: '👪 Parent',
+    username: "Nom d'utilisateur",
+    password: 'Mot de passe',
+    confirmPassword: 'Confirmer le mot de passe',
+    grade: 'Niveau scolaire (optionnel)',
+    selectGrade: 'Sélectionner un niveau',
+    parentCode: 'Code parent (optionnel)',
+    parentCodePlaceholder: 'ex. 7F3K9Q',
+    parentCodeHint: 'Demandez à votre parent le code sur son tableau de bord.',
+    agreeToPrefix: "J'accepte les",
+    termsOfService: "Conditions d'utilisation",
+    and: 'et la',
+    privacyPolicy: 'Politique de confidentialité',
+    ageConfirmation: "Je confirme que j'ai 14 ans ou plus, ou que mon parent m'a donné sa permission",
+    createAccount: 'Créer un compte',
+    creatingAccount: 'Création du compte…',
+    errorUsername: "Le nom d'utilisateur doit contenir au moins 3 caractères.",
+    errorPassword: 'Le mot de passe doit contenir au moins 4 caractères.',
+    errorPasswordMatch: 'Les mots de passe ne correspondent pas.',
+    errorAgreeTerms: "Vous devez accepter les Conditions d'utilisation et la Politique de confidentialité pour créer un compte.",
+    errorAgeConfirmation: 'Veuillez confirmer la déclaration d\'âge/permission parentale ci-dessous.',
+    errorFallback: 'Une erreur est survenue. Veuillez réessayer.',
+  },
+}
+
 export default function SignupForm({ onAuth }) {
+  const [lang, setLang] = useState('en')
+  const t = STRINGS[lang]
+
   const [role, setRole] = useState('student')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -24,23 +85,23 @@ export default function SignupForm({ onAuth }) {
 
     const trimmedUsername = username.trim()
     if (trimmedUsername.length < 3) {
-      setError('Username must be at least 3 characters.')
+      setError(t.errorUsername)
       return
     }
     if (password.length < 4) {
-      setError('Password must be at least 4 characters.')
+      setError(t.errorPassword)
       return
     }
     if (password !== confirmPassword) {
-      setError('Passwords do not match.')
+      setError(t.errorPasswordMatch)
       return
     }
     if (!agreedToTerms) {
-      setError('You must agree to the Terms of Service and Privacy Policy to create an account.')
+      setError(t.errorAgreeTerms)
       return
     }
     if (needsAgeConfirmation && !confirmedAge) {
-      setError('Please confirm the age/parental permission statement below.')
+      setError(t.errorAgeConfirmation)
       return
     }
 
@@ -55,7 +116,7 @@ export default function SignupForm({ onAuth }) {
       })
       onAuth(newUser)
     } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.')
+      setError(err.message || t.errorFallback)
     } finally {
       setSubmitting(false)
     }
@@ -63,25 +124,44 @@ export default function SignupForm({ onAuth }) {
 
   return (
     <form className="auth-form" onSubmit={handleSubmit}>
+      <div className="signup-lang-toggle" role="group" aria-label="Language">
+        <div className="lang-toggle">
+          <button
+            type="button"
+            className={`lang-toggle-btn ${lang === 'en' ? 'lang-toggle-btn--active' : ''}`}
+            onClick={() => setLang('en')}
+          >
+            English
+          </button>
+          <button
+            type="button"
+            className={`lang-toggle-btn ${lang === 'fr' ? 'lang-toggle-btn--active' : ''}`}
+            onClick={() => setLang('fr')}
+          >
+            Français
+          </button>
+        </div>
+      </div>
+
       <div className="role-toggle">
         <button
           type="button"
           className={`role-btn ${role === 'student' ? 'role-btn--active' : ''}`}
           onClick={() => setRole('student')}
         >
-          🎓 Student
+          {t.student}
         </button>
         <button
           type="button"
           className={`role-btn ${role === 'parent' ? 'role-btn--active' : ''}`}
           onClick={() => setRole('parent')}
         >
-          👪 Parent
+          {t.parent}
         </button>
       </div>
 
       <div className="field">
-        <label htmlFor="signup-username">Username</label>
+        <label htmlFor="signup-username">{t.username}</label>
         <input
           id="signup-username"
           value={username}
@@ -90,7 +170,7 @@ export default function SignupForm({ onAuth }) {
         />
       </div>
       <div className="field">
-        <label htmlFor="signup-password">Password</label>
+        <label htmlFor="signup-password">{t.password}</label>
         <input
           id="signup-password"
           type="password"
@@ -100,7 +180,7 @@ export default function SignupForm({ onAuth }) {
         />
       </div>
       <div className="field">
-        <label htmlFor="signup-confirm">Confirm password</label>
+        <label htmlFor="signup-confirm">{t.confirmPassword}</label>
         <input
           id="signup-confirm"
           type="password"
@@ -113,9 +193,9 @@ export default function SignupForm({ onAuth }) {
       {role === 'student' && (
         <>
           <div className="field">
-            <label htmlFor="signup-grade">Grade (optional)</label>
+            <label htmlFor="signup-grade">{t.grade}</label>
             <select id="signup-grade" value={grade} onChange={(e) => setGrade(e.target.value)}>
-              <option value="">Select grade</option>
+              <option value="">{t.selectGrade}</option>
               <option value="7">7</option>
               <option value="8">8</option>
               <option value="9">9</option>
@@ -124,15 +204,15 @@ export default function SignupForm({ onAuth }) {
             </select>
           </div>
           <div className="field">
-            <label htmlFor="signup-parent-code">Parent code (optional)</label>
+            <label htmlFor="signup-parent-code">{t.parentCode}</label>
             <input
               id="signup-parent-code"
               value={parentCode}
               onChange={(e) => setParentCode(e.target.value.toUpperCase())}
-              placeholder="e.g. 7F3K9Q"
+              placeholder={t.parentCodePlaceholder}
               maxLength={6}
             />
-            <p className="field-hint">Ask your parent for the code on their dashboard.</p>
+            <p className="field-hint">{t.parentCodeHint}</p>
           </div>
         </>
       )}
@@ -140,7 +220,7 @@ export default function SignupForm({ onAuth }) {
       <label className="checkbox-field">
         <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} />
         <span>
-          I agree to the{' '}
+          {t.agreeToPrefix}{' '}
           <button
             type="button"
             onClick={(e) => {
@@ -148,9 +228,9 @@ export default function SignupForm({ onAuth }) {
               setOpenLegal('terms')
             }}
           >
-            Terms of Service
+            {t.termsOfService}
           </button>{' '}
-          and{' '}
+          {t.and}{' '}
           <button
             type="button"
             onClick={(e) => {
@@ -158,7 +238,7 @@ export default function SignupForm({ onAuth }) {
               setOpenLegal('privacy')
             }}
           >
-            Privacy Policy
+            {t.privacyPolicy}
           </button>
         </span>
       </label>
@@ -166,13 +246,13 @@ export default function SignupForm({ onAuth }) {
       {needsAgeConfirmation && (
         <label className="checkbox-field">
           <input type="checkbox" checked={confirmedAge} onChange={(e) => setConfirmedAge(e.target.checked)} />
-          <span>I confirm I am 14 or older, or my parent has given permission</span>
+          <span>{t.ageConfirmation}</span>
         </label>
       )}
 
       {error && <p className="form-error">{error}</p>}
       <button type="submit" className="btn btn-primary btn-block" disabled={!canSubmit}>
-        {submitting ? 'Creating account…' : 'Create Account'}
+        {submitting ? t.creatingAccount : t.createAccount}
       </button>
 
       {openLegal && <LegalModal type={openLegal} onClose={() => setOpenLegal(null)} />}

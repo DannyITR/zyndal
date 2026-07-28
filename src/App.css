@@ -1157,6 +1157,12 @@ div.zyndal-logo {
   padding: 3px;
 }
 
+.signup-lang-toggle {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
 .lang-toggle-btn {
   background: transparent;
   border: none;
