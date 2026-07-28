@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1'
+const CACHE_VERSION = 'v2'
 const SHELL_CACHE = `zyndal-shell-${CACHE_VERSION}`
 const RUNTIME_CACHE = `zyndal-runtime-${CACHE_VERSION}`
 
@@ -39,8 +39,23 @@ self.addEventListener('activate', (event) => {
   )
 })
 
+// Bug fix: this only ever matched supabase.co/anthropic.com — true before
+// the RLS migration, when the client queried Supabase directly, but every
+// data call has gone through this app's own same-origin /api/* endpoints
+// since (see api/_lib/auth.js). Same-origin GET /api/* calls (e.g.
+// get-daily-progress, get-progress) matched none of this function's checks
+// and fell through to the generic cache-first handler at the bottom of the
+// fetch listener instead — meaning the very first time a browser ever
+// fetched a given /api/* GET URL, that response was cached FOREVER and
+// never re-fetched, regardless of what the server started returning after
+// a deploy. This is why a timezone/date-logic fix that was provably
+// correct server-side could still show stale "answered today" state in an
+// already-visited browser: it was reading a frozen response from before
+// the fix, not live data. CACHE_VERSION was bumped alongside this change
+// so any already-cached stale /api/* responses are dropped on activate,
+// not just newly-fixed-routing ones going forward.
 function isApiRequest(url) {
-  return url.hostname.includes('supabase.co') || url.hostname.includes('anthropic.com')
+  return url.pathname.startsWith('/api/') || url.hostname.includes('supabase.co') || url.hostname.includes('anthropic.com')
 }
 
 function isStaticAsset(url) {
