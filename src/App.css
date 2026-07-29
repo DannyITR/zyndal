@@ -654,6 +654,16 @@ div.zyndal-logo {
   min-width: 0;
 }
 
+.stats-row > *:nth-child(1) {
+  flex: 1.15;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.stats-row > *:nth-child(2) {
+  flex: 0.85;
+}
+
 .streak-pill--lit {
   border-color: rgba(255, 158, 68, 0.5);
   background: linear-gradient(160deg, rgba(255, 158, 68, 0.15), var(--card) 60%);
@@ -692,7 +702,15 @@ div.zyndal-logo {
 .stat-label {
   font-size: 11px;
   color: var(--text-faint);
+}
+
+.stat-label {
   white-space: nowrap;
+}
+
+.streak-label {
+  white-space: normal;
+  line-height: 1.15;
 }
 
 @keyframes flame-pulse {
