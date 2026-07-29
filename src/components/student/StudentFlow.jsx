@@ -9,13 +9,12 @@ import {
   cancelStudyPlan,
 } from '../../lib/storage'
 import { getSubject } from '../../lib/questions'
-import { getEffectiveStreak, todayStr } from '../../lib/streak'
+import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
 import TopBar from '../shared/TopBar'
 import SubjectDashboard from './SubjectDashboard'
 import StudentHome from './StudentHome'
 import CalendarScreen from './CalendarScreen'
-import DayReviewScreen from './DayReviewScreen'
 import Leaderboard from '../shared/Leaderboard'
 import SettingsScreen from '../shared/SettingsScreen'
 import ShareStreakScreen from './share/ShareStreakScreen'
@@ -82,11 +81,11 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [showGrades, setShowGrades] = useState(false)
   const [showCurriculum, setShowCurriculum] = useState(false)
   const [showCalendar, setShowCalendar] = useState(false)
-  // null = home screen's calendar icon (all subjects combined); a subject
-  // object = opened via a specific subject screen's "My Calendar" button
-  // (StudentHome.jsx), filtered to just that subject — see CalendarScreen.jsx.
-  const [calendarSubject, setCalendarSubject] = useState(null)
-  const [reviewDate, setReviewDate] = useState(null) // YYYY-MM-DD | null — takes priority over showCalendar when set
+  // The date the home screen's subject grid and score box are showing —
+  // defaults to today, steps via the date-nav bar's arrows, or jumps
+  // straight to a tapped day in CalendarScreen. Persists across opening and
+  // closing a subject screen so "back" returns to the same browsed date.
+  const [selectedDate, setSelectedDate] = useState(today)
 
   // user.linked_parent_deleted comes from login/get-profile (see
   // api/_lib/db.js's isLinkedParentDeleted) — shown once per mount, then
@@ -114,7 +113,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     setShowGrades(false)
     setShowCurriculum(false)
     setShowCalendar(false)
-    setReviewDate(null)
+    setSelectedDate(today)
     setPickedSubjectId(null)
   }
 
@@ -164,11 +163,12 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     getDailyProgress().then(setDailyProgress)
   }
 
-  // DayReviewScreen.jsx calls this after a late (past-day) answer —
-  // api/student/submit-late-answer.js already enforced XP-only/no-streak
-  // server-side, so this just appends the entry and adds its XP locally,
-  // matching that exactly. Never touches coins/streak/dailyProgress: a past
-  // day's answer was never "today" and shouldn't move any of those.
+  // StudentHome.jsx calls this after a past-date "Answer now" catch-up
+  // answer — api/student/submit-late-answer.js already enforced
+  // XP-only/no-streak server-side, so this just appends the entry and adds
+  // its XP locally, matching that exactly. Never touches coins/streak/
+  // dailyProgress: a past day's answer was never "today" and shouldn't move
+  // any of those.
   function handleLateAnswered(entry) {
     setProgress((prev) => ({
       ...prev,
@@ -204,12 +204,23 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     setPendingFriendRequests(list)
   }
 
-  // Sourced from dailyProgress (api/student/get-daily-progress.js), not
-  // derived from progress.history locally — see handleProgressChange above
-  // for why the grid trusts the server's own local-timezone "today" rather
-  // than recomputing it client-side.
-  const completedSubjectIds = useMemo(() => new Set(dailyProgress?.completed_subjects ?? []), [dailyProgress])
-  const incorrectSubjectIds = useMemo(() => new Set(dailyProgress?.incorrect_subjects ?? []), [dailyProgress])
+  const isViewingToday = selectedDate === today
+
+  // Today's grid state is sourced from dailyProgress (api/student/get-daily-
+  // progress.js), not derived from progress.history locally — see
+  // handleProgressChange above for why the grid trusts the server's own
+  // local-timezone "today" rather than recomputing it client-side. A past
+  // date has no such ambiguity (it's already a fixed, resolved day), so it's
+  // computed client-side from the already-fully-loaded progress.history via
+  // the same logic get-daily-progress.js uses server-side for today.
+  const todayCompletedIds = useMemo(() => new Set(dailyProgress?.completed_subjects ?? []), [dailyProgress])
+  const todayIncorrectIds = useMemo(() => new Set(dailyProgress?.incorrect_subjects ?? []), [dailyProgress])
+  const pastDayState = useMemo(
+    () => (isViewingToday || !progress ? null : computeDayState(progress.history, selectedDate)),
+    [isViewingToday, progress, selectedDate]
+  )
+  const completedSubjectIds = isViewingToday ? todayCompletedIds : (pastDayState?.completedIds ?? new Set())
+  const incorrectSubjectIds = isViewingToday ? todayIncorrectIds : (pastDayState?.incorrectIds ?? new Set())
 
   // Only worth warning about if there's an actual streak in progress to
   // lose, the student hasn't gotten a single correct answer yet today (one
@@ -383,28 +394,16 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     )
   }
 
-  if (reviewDate) {
-    return (
-      <DayReviewScreen
-        user={user}
-        date={reviewDate}
-        progress={progress}
-        onAnswered={handleLateAnswered}
-        onBack={() => setReviewDate(null)}
-        onLogout={onLogout}
-        onLogoClick={handleLogoClick}
-      />
-    )
-  }
-
   if (showCalendar) {
     return (
       <CalendarScreen
         user={user}
         progress={progress}
-        subject={calendarSubject}
         today={today}
-        onSelectDay={setReviewDate}
+        onSelectDay={(d) => {
+          setSelectedDate(d)
+          setShowCalendar(false)
+        }}
         onBack={() => setShowCalendar(false)}
         onLogout={onLogout}
         onLogoClick={handleLogoClick}
@@ -469,15 +468,30 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowFriends(true)}>
             👥 Friends
           </button>
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowCalendar(true)}>
+            📅 Calendar
+          </button>
+        </div>
+
+        <div className="calendar-nav">
           <button
             type="button"
-            className="btn btn-secondary btn-small"
-            onClick={() => {
-              setCalendarSubject(null)
-              setShowCalendar(true)
-            }}
+            className="calendar-nav-arrow"
+            onClick={() => setSelectedDate(addDaysStr(selectedDate, -1))}
+            disabled={selectedDate <= LAUNCH_DATE}
+            aria-label="Previous day"
           >
-            📅 Calendar
+            ←
+          </button>
+          <span className="calendar-nav-label">{formatLongDate(selectedDate)}</span>
+          <button
+            type="button"
+            className="calendar-nav-arrow"
+            onClick={() => setSelectedDate(addDaysStr(selectedDate, 1))}
+            disabled={selectedDate >= today}
+            aria-label="Next day"
+          >
+            →
           </button>
         </div>
 
@@ -492,6 +506,8 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           incorrectSubjectIds={incorrectSubjectIds}
           onSelectSubject={setPickedSubjectId}
           onShareClick={() => setShowShareScreen(true)}
+          date={selectedDate}
+          isToday={isViewingToday}
         />
 
         {infoModalKey && (
@@ -512,6 +528,8 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       subject={activeSubject}
       progress={progress}
       onProgressChange={handleProgressChange}
+      date={selectedDate}
+      onLateAnswered={handleLateAnswered}
       activePlan={activePlan}
       isPremium={user.is_premium}
       onOpenTestPrep={() => setShowTestPrepSetup(true)}
@@ -524,10 +542,6 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       onOpenPractice={() => setShowPractice(true)}
       onOpenGrades={() => setShowGrades(true)}
       onOpenCurriculum={() => setShowCurriculum(true)}
-      onOpenCalendar={() => {
-        setCalendarSubject(activeSubject)
-        setShowCalendar(true)
-      }}
       onBack={() => setPickedSubjectId(null)}
       onLogout={onLogout}
       onLogoClick={handleLogoClick}

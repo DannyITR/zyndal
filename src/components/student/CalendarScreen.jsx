@@ -14,17 +14,13 @@ function pad(n) {
 // Every color state this screen needs already lives in the already-loaded
 // progress.history (see StudentFlow.jsx's getProgress() call) — one entry
 // per subject per day ever answered, each with its own .date, .subjectId
-// and .correct. No new endpoint needed just to color a month grid.
-//
-// subjectId filters to a single subject's own history (StudentHome.jsx's
-// "My Calendar" button) — at most one entry per day then, so hasCorrect and
-// hasIncorrect are mutually exclusive and the "mixed" state below never
-// applies. Omitting it (the home screen's calendar icon) combines all
-// subjects, where a day can genuinely have both.
-function computeDayStates(history, subjectId) {
+// and .correct. No new endpoint needed just to color a month grid. Always
+// combines all subjects — a day can genuinely have both a correct and an
+// incorrect entry (the "mixed" state below) since different subjects are
+// answered independently.
+function computeDayStates(history) {
   const map = {}
   for (const entry of history) {
-    if (subjectId && entry.subjectId !== subjectId) continue
     const state = map[entry.date] || { hasCorrect: false, hasIncorrect: false }
     if (entry.correct) state.hasCorrect = true
     else state.hasIncorrect = true
@@ -41,7 +37,7 @@ function colorClassFor(state, isFuture) {
   return 'calendar-day--wrong'
 }
 
-export default function CalendarScreen({ user, progress, subject, today, onSelectDay, onBack, onLogout, onLogoClick }) {
+export default function CalendarScreen({ user, progress, today, onSelectDay, onBack, onLogout, onLogoClick }) {
   const [todayYear, todayMonth] = today.split('-').map(Number)
   const [viewYear, setViewYear] = useState(todayYear)
   const [viewMonth, setViewMonth] = useState(todayMonth)
@@ -71,7 +67,7 @@ export default function CalendarScreen({ user, progress, subject, today, onSelec
     }
   }
 
-  const dayStates = useMemo(() => computeDayStates(progress.history, subject?.id), [progress.history, subject?.id])
+  const dayStates = useMemo(() => computeDayStates(progress.history), [progress.history])
 
   const monthLabel = useMemo(
     () =>
@@ -91,8 +87,8 @@ export default function CalendarScreen({ user, progress, subject, today, onSelec
   return (
     <div className="screen student-screen">
       <TopBar
-        title={subject ? `${subject.icon} ${subject.name} Calendar` : '📅 Calendar'}
-        subtitle={subject ? undefined : 'All subjects'}
+        title="📅 Calendar"
+        subtitle="All subjects"
         username={user.username}
         onBack={onBack}
         onLogout={onLogout}
@@ -103,13 +99,11 @@ export default function CalendarScreen({ user, progress, subject, today, onSelec
         <span className="calendar-legend-item">
           <span className="calendar-legend-dot calendar-legend-dot--correct" /> Correct
         </span>
-        {!subject && (
-          <span className="calendar-legend-item">
-            <span className="calendar-legend-dot calendar-legend-dot--mixed" /> Mixed
-          </span>
-        )}
         <span className="calendar-legend-item">
-          <span className="calendar-legend-dot calendar-legend-dot--wrong" /> {subject ? 'Incorrect' : 'Wrong'}
+          <span className="calendar-legend-dot calendar-legend-dot--mixed" /> Mixed
+        </span>
+        <span className="calendar-legend-item">
+          <span className="calendar-legend-dot calendar-legend-dot--wrong" /> Wrong
         </span>
         <span className="calendar-legend-item">
           <span className="calendar-legend-dot calendar-legend-dot--empty" /> No activity

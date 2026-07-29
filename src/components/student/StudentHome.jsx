@@ -1,12 +1,10 @@
 import { useMemo, useState } from 'react'
-import { submitAnswer } from '../../lib/storage'
+import { submitAnswer, submitLateAnswer } from '../../lib/storage'
 import { getDailyQuestion } from '../../lib/questions'
-import { getEffectiveStreak, countCorrectSubjectsToday, todayStr, TOTAL_SUBJECTS } from '../../lib/streak'
+import { getEffectiveStreak, countCorrectSubjectsToday, todayStr, TOTAL_SUBJECTS, formatLongDate } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
 import { countdownLabel, computeReadiness } from '../../lib/testprep'
 import TopBar from '../shared/TopBar'
-import HistoryList from '../shared/HistoryList'
-import AnswerDetail from '../shared/AnswerDetail'
 import StreakFlame from './StreakFlame'
 import StatPill from './StatPill'
 import QuestionCard from './QuestionCard'
@@ -20,6 +18,8 @@ export default function StudentHome({
   subject,
   progress,
   onProgressChange,
+  date,
+  onLateAnswered,
   activePlan,
   isPremium,
   onOpenTestPrep,
@@ -32,12 +32,14 @@ export default function StudentHome({
   onOpenPractice,
   onOpenGrades,
   onOpenCurriculum,
-  onOpenCalendar,
   onBack,
   onLogout,
   onLogoClick,
 }) {
   const today = todayStr(new Date(), getUserTimeZone())
+  const isToday = date === today
+
+  // Today's question/retry/milestone state — only relevant when isToday.
   const question = useMemo(() => getDailyQuestion(subject.id), [subject.id])
   // The scored first attempt persisted this session: { selectedIndex, correct, coinsEarned, xpEarned }
   const [justAnswered, setJustAnswered] = useState(null)
@@ -45,11 +47,23 @@ export default function StudentHome({
   const [retryAttempt, setRetryAttempt] = useState(null)
   const [milestone, setMilestone] = useState(null)
   const [perfectWeekBonus, setPerfectWeekBonus] = useState(null) // dollars, or null
-  const [viewingEntry, setViewingEntry] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [showPremiumModal, setShowPremiumModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
+
+  // Past-date "Answer now" catch-up flow — only relevant when !isToday. Earns
+  // XP only via api/student/submit-late-answer.js (see StudentFlow.jsx's
+  // handleLateAnswered for why coins/streak never move).
+  const [answeringPast, setAnsweringPast] = useState(false)
+  const [pastSelectedIndex, setPastSelectedIndex] = useState(null)
+  const [pastSubmitting, setPastSubmitting] = useState(false)
+  const [pastSubmitError, setPastSubmitError] = useState('')
+  const pastQuestion = useMemo(
+    () => (isToday ? null : getDailyQuestion(subject.id, new Date(`${date}T12:00:00Z`))),
+    [isToday, subject.id, date]
+  )
+  const activeQuestion = isToday ? question : pastQuestion
 
   const planForThisSubject = activePlan && activePlan.subject === subject.id ? activePlan : null
 
@@ -133,23 +147,32 @@ export default function StudentHome({
     }
   }
 
-  if (viewingEntry) {
-    return (
-      <AnswerDetail
-        entry={viewingEntry}
-        username={user.username}
-        onBack={() => setViewingEntry(null)}
-        onLogout={onLogout}
-        onLogoClick={onLogoClick}
-      />
-    )
+  // The already-answered entry for the browsed past date, if any — read-only
+  // once it exists, no re-answering.
+  const dateEntry = !isToday ? progress.history.find((h) => h.date === date && h.subjectId === subject.id) : null
+
+  async function handlePastSelect(index) {
+    if (pastSubmitting) return
+    setPastSelectedIndex(index)
+    setPastSubmitting(true)
+    setPastSubmitError('')
+    try {
+      const result = await submitLateAnswer({ subject: subject.id, selectedIndex: index, date })
+      onLateAnswered(result.entry)
+      setAnsweringPast(false)
+    } catch (err) {
+      setPastSubmitError(err.message || "Couldn't save your answer. Please try again.")
+      setPastSelectedIndex(null)
+    } finally {
+      setPastSubmitting(false)
+    }
   }
 
   return (
     <div className="screen student-screen">
       <TopBar
-        title={`${subject.icon} ${subject.name}`}
-        subtitle={`Grade ${question.grade} • ${question.topic}`}
+        title={`${subject.icon} ${subject.name} — ${formatLongDate(date)}`}
+        subtitle={`Grade ${activeQuestion.grade} • ${activeQuestion.topic}`}
         username={user.username}
         onLogout={onLogout}
         onBack={onBack}
@@ -162,55 +185,89 @@ export default function StudentHome({
         <StatPill icon="🪙" label="Coins" value={progress.coins} />
       </div>
 
-      <div className={`daily-status-banner ${firstAttemptMade ? 'daily-status-banner--done' : 'daily-status-banner--pending'}`}>
-        {firstAttemptMade ? "✅ Today's question answered" : "🕐 Today's question not answered yet"}
-      </div>
+      {isToday ? (
+        <>
+          <div className={`daily-status-banner ${firstAttemptMade ? 'daily-status-banner--done' : 'daily-status-banner--pending'}`}>
+            {firstAttemptMade ? "✅ Today's question answered" : "🕐 Today's question not answered yet"}
+          </div>
 
-      <button type="button" className="btn btn-secondary btn-block" onClick={onOpenCalendar}>
-        📅 My Calendar
-      </button>
+          <QuestionCard
+            question={question}
+            answered={displaySelectedIndex !== null}
+            locked={locked}
+            selectedIndex={displaySelectedIndex}
+            celebrate={Boolean(justAnswered?.correct)}
+            onSelect={handleSelect}
+          />
 
-      <QuestionCard
-        question={question}
-        answered={displaySelectedIndex !== null}
-        locked={locked}
-        selectedIndex={displaySelectedIndex}
-        celebrate={Boolean(justAnswered?.correct)}
-        onSelect={handleSelect}
-      />
+          {submitError && <p className="form-error">{submitError}</p>}
 
-      {submitError && <p className="form-error">{submitError}</p>}
+          {firstAttemptMade && (
+            <div
+              className={`result-banner ${
+                firstAttempt.correct
+                  ? 'result-banner--correct'
+                  : solvedByRetry
+                    ? 'result-banner--neutral'
+                    : 'result-banner--wrong'
+              }`}
+            >
+              {firstAttempt.correct ? (
+                <>
+                  <p className="result-headline">
+                    Correct! +{coinsEarnedDisplay} coins · +{xpEarnedDisplay} XP
+                  </p>
+                  <p className="result-next">
+                    {subjectsLeftToday === 0
+                      ? '✅ All 6 done for today!'
+                      : `🔥 Streak saved for today! ${subjectsLeftToday} more subject${subjectsLeftToday === 1 ? '' : 's'} left for extra XP and coins.`}
+                  </p>
+                </>
+              ) : solvedByRetry ? (
+                <>
+                  <p className="result-headline">Nice — that's the right answer.</p>
+                  <p className="result-next">Retries don't earn coins, XP, or streak credit. New question tomorrow.</p>
+                </>
+              ) : (
+                <p className="result-headline">No coins earned — try again to learn the answer.</p>
+              )}
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <div className={`daily-status-banner ${dateEntry ? 'daily-status-banner--done' : 'daily-status-banner--pending'}`}>
+            {dateEntry ? '✅ Answered' : '🕐 Not answered yet'}
+          </div>
 
-      {firstAttemptMade && (
-        <div
-          className={`result-banner ${
-            firstAttempt.correct
-              ? 'result-banner--correct'
-              : solvedByRetry
-                ? 'result-banner--neutral'
-                : 'result-banner--wrong'
-          }`}
-        >
-          {firstAttempt.correct ? (
+          {dateEntry ? (
+            <QuestionCard
+              question={pastQuestion}
+              answered
+              locked
+              selectedIndex={dateEntry.selectedIndex}
+              celebrate={false}
+              onSelect={() => {}}
+            />
+          ) : answeringPast ? (
             <>
-              <p className="result-headline">
-                Correct! +{coinsEarnedDisplay} coins · +{xpEarnedDisplay} XP
-              </p>
-              <p className="result-next">
-                {subjectsLeftToday === 0
-                  ? '✅ All 6 done for today!'
-                  : `🔥 Streak saved for today! ${subjectsLeftToday} more subject${subjectsLeftToday === 1 ? '' : 's'} left for extra XP and coins.`}
-              </p>
-            </>
-          ) : solvedByRetry ? (
-            <>
-              <p className="result-headline">Nice — that's the right answer.</p>
-              <p className="result-next">Retries don't earn coins, XP, or streak credit. New question tomorrow.</p>
+              <p className="late-answer-notice">Late answer — earns XP only, does not count toward streak.</p>
+              <QuestionCard
+                question={pastQuestion}
+                answered={pastSelectedIndex !== null}
+                locked={pastSubmitting || pastSelectedIndex !== null}
+                selectedIndex={pastSelectedIndex}
+                celebrate={false}
+                onSelect={handlePastSelect}
+              />
+              {pastSubmitError && <p className="form-error">{pastSubmitError}</p>}
             </>
           ) : (
-            <p className="result-headline">No coins earned — try again to learn the answer.</p>
+            <button type="button" className="btn btn-secondary btn-small" onClick={() => setAnsweringPast(true)}>
+              Answer now
+            </button>
           )}
-        </div>
+        </>
       )}
 
       {planForThisSubject && (
@@ -273,11 +330,6 @@ export default function StudentHome({
           📖 Curriculum
         </button>
       </div>
-
-      <section className="history-section">
-        <h3 className="section-heading">Recent Answers</h3>
-        <HistoryList history={progress.history} limit={5} onSelectEntry={setViewingEntry} />
-      </section>
 
       <MilestoneModal milestone={milestone} onClose={() => setMilestone(null)} />
       {perfectWeekBonus !== null && (

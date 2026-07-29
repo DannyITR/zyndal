@@ -80,6 +80,45 @@ function diffDays(laterStr, earlierStr) {
   return Math.round((later - earlier) / 86400000)
 }
 
+// The day Zyndal launched — also the ← bound on the home screen's date-nav
+// bar, so a student can't navigate into dates with no possible data.
+export const LAUNCH_DATE = '2026-07-22'
+
+// Same UTC-midnight string-math pattern as mondayOfWeek below.
+export function addDaysStr(dateStr, delta) {
+  const d = new Date(dateStr + 'T00:00:00Z')
+  d.setUTCDate(d.getUTCDate() + delta)
+  return d.toISOString().slice(0, 10)
+}
+
+// Client-side equivalent of api/student/get-daily-progress.js's
+// computeDailyState — reused for past dates, whose data never changes and
+// is already fully loaded in progress.history, so no extra API round trip
+// is needed the way "today" needs one (see get-daily-progress.js's header
+// comment on why today's own bucketing must be server-computed instead).
+export function computeDayState(history, date) {
+  const completedIds = new Set()
+  const attemptedIds = new Set()
+  for (const entry of history) {
+    if (entry.date !== date) continue
+    attemptedIds.add(entry.subjectId)
+    if (entry.correct) completedIds.add(entry.subjectId)
+  }
+  const incorrectIds = new Set([...attemptedIds].filter((id) => !completedIds.has(id)))
+  return { completedIds, incorrectIds }
+}
+
+// "July 28, 2026" — shared by the date-nav bar, the subject screen header,
+// and the share card.
+export function formatLongDate(dateStr) {
+  return new Date(`${dateStr}T00:00:00Z`).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+}
+
 // Number of daily subjects — still used for the "X/6 completed today"
 // display and score box, but no longer gates the day streak itself (see
 // applyDailyAnswer below: one correct first-attempt answer, in any subject,

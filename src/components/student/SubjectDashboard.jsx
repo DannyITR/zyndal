@@ -1,38 +1,50 @@
 import { SUBJECTS } from '../../lib/questions'
+import { formatLongDate } from '../../lib/streak'
 
 export default function SubjectDashboard({
   completedSubjectIds,
   incorrectSubjectIds = new Set(),
   onSelectSubject,
   onShareClick,
+  date,
+  isToday,
 }) {
   const correctCount = completedSubjectIds.size
   const totalCount = SUBJECTS.length
-  // "Completed" for the progress text and score box means attempted today,
-  // right or wrong — the box's own score line is the only place that cares
-  // about correctness.
+  // "Completed" for the progress text and score box means attempted that
+  // day, right or wrong — the box's own score line is the only place that
+  // cares about correctness.
   const attemptedCount = correctCount + incorrectSubjectIds.size
   const allAttempted = attemptedCount === totalCount
+  const longDate = formatLongDate(date)
 
   return (
     <div className="subject-dashboard">
       <p className={`subject-dashboard-lead ${allAttempted ? 'subject-dashboard-lead--done' : ''}`}>
-        {allAttempted ? '✅ All 6 done for today!' : `${attemptedCount}/${totalCount} completed today — answer all 6`}
+        {allAttempted
+          ? isToday
+            ? '✅ All 6 done for today!'
+            : `✅ All 6 done on ${longDate}!`
+          : isToday
+            ? `${attemptedCount}/${totalCount} completed today — answer all 6`
+            : `${attemptedCount}/${totalCount} completed on ${longDate}`}
       </p>
 
       {allAttempted && (
         <div className="daily-score-box daily-score-box--celebrate">
           <span className="daily-score-box-text">
-            Today's score: {correctCount}/{totalCount} ✓
+            {isToday ? `Today's score: ${correctCount}/${totalCount} ✓` : `Score on ${longDate}: ${correctCount}/${totalCount} ✓`}
           </span>
-          <button type="button" className="daily-score-box-share" onClick={onShareClick} aria-label="Share daily score">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-              <polyline points="16 6 12 2 8 6" />
-              <line x1="12" y1="2" x2="12" y2="15" />
-            </svg>
-            Share
-          </button>
+          {isToday && (
+            <button type="button" className="daily-score-box-share" onClick={onShareClick} aria-label="Share daily score">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                <polyline points="16 6 12 2 8 6" />
+                <line x1="12" y1="2" x2="12" y2="15" />
+              </svg>
+              Share
+            </button>
+          )}
         </div>
       )}
 

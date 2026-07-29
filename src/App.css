@@ -1090,65 +1090,7 @@ div.zyndal-logo {
   box-shadow: 0 0 0 2px rgba(155, 77, 255, 0.25);
 }
 
-/* ---------- Day review screen ---------- */
-
-.day-review-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.day-review-subject {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.day-review-subject-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.day-review-subject-icon {
-  font-size: 20px;
-}
-
-.day-review-subject-name {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 15px;
-  flex: 1;
-}
-
-.day-review-subject-badge {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 3px 8px;
-  border-radius: 999px;
-}
-
-.day-review-subject-badge--correct {
-  background: rgba(52, 224, 161, 0.18);
-  color: var(--green);
-}
-
-.day-review-subject-badge--wrong {
-  background: rgba(255, 92, 122, 0.18);
-  color: var(--red);
-}
-
-.day-review-answer-now {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+/* ---------- Late answer notice ---------- */
 
 .late-answer-notice {
   font-size: 12px;

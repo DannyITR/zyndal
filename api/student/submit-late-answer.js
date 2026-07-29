@@ -4,8 +4,9 @@ import { getProgressForUser, getStreakRow, syncUserTimezone } from '../_lib/db.j
 import { todayStr, isValidTimeZone, DEFAULT_TIMEZONE, localNoonUtc, XP_PER_CORRECT } from '../../src/lib/streak.js'
 import { getDailyQuestion, SUBJECTS } from '../../src/lib/questions.js'
 
-// Backs the Calendar → Day Review "Answer now" flow (DayReviewScreen.jsx) —
-// catching up on a subject that was never answered on a PAST day. Award
+// Backs the home screen's date-nav bar → past date → "Answer now" flow
+// (StudentHome.jsx) — catching up on a subject that was never answered on a
+// PAST day. Award
 // rules are deliberately narrower than the regular daily flow
 // (submit-answer.js): XP only, no coins, and it never touches the streaks
 // table's streak/lastCorrectDate fields at all, so a late answer can never

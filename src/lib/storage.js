@@ -373,8 +373,9 @@ export async function submitAnswer(progress, question, selectedIndex, subjectId,
   }
 }
 
-// Catching up on a subject that was never answered on a PAST day (Calendar
-// → Day Review → "Answer now" — see DayReviewScreen.jsx). Deliberately a
+// Catching up on a subject that was never answered on a PAST day (the home
+// screen's date-nav bar → a past date → "Answer now" — see
+// StudentHome.jsx). Deliberately a
 // separate endpoint/call from submitAnswer above, not the same one with a
 // date override: XP only, no coins, no streak credit — see
 // api/student/submit-late-answer.js's header comment. Returns just
