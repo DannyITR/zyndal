@@ -690,6 +690,11 @@ div.zyndal-logo {
   min-width: 0;
 }
 
+.streak-text {
+  align-items: center;
+  text-align: center;
+}
+
 .streak-count,
 .stat-value {
   font-family: var(--font-heading);
