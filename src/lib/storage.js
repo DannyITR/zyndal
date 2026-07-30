@@ -79,6 +79,10 @@ function callCurriculumApi(method, endpoint, body) {
   return callApi('/api/curriculum', method, endpoint, body)
 }
 
+function callQuestionsApi(method, endpoint, body) {
+  return callApi('/api/questions', method, endpoint, body)
+}
+
 // Session 4: ParentDashboard and FinanceScreen each already fetch several
 // small, always-together pieces on mount via Promise.all (students,
 // wallet, study plans, pending bonuses, payout history, per-student
@@ -336,6 +340,16 @@ export async function getStudentPracticeSessions(parentId, studentId) {
 export async function getStudentGrades(parentId, studentId) {
   const dash = await fetchParentDashboard(parentId)
   return dash.students.find((s) => s.id === studentId)?.grades ?? []
+}
+
+// StudentHome.jsx's source of "today's question" — fetched from the server
+// rather than computed locally, since resolveDailyQuestion's selection (a
+// generated-pool hash pick, or a grade-filtered hardcoded fallback) depends
+// on server-side state (the student's own grade, the generated_questions
+// pool, this month's answered questions) the client has no direct access
+// to. See api/questions/get-daily-question.js.
+export async function getTodayQuestion(subject, timezone = getUserTimeZone()) {
+  return callQuestionsApi('GET', `get-daily-question?subject=${encodeURIComponent(subject)}&timezone=${encodeURIComponent(timezone)}`)
 }
 
 // Computes the result of answering today's question and persists both the

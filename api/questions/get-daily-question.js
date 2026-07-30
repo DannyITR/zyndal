@@ -1,16 +1,17 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
-import { getDailyQuestion, SUBJECTS } from '../../src/lib/questions.js'
-import { todayStr } from '../../src/lib/streak.js'
+import { resolveDailyQuestion } from '../_lib/dailyQuestion.js'
+import { SUBJECTS } from '../../src/lib/questions.js'
+import { todayStr, isValidTimeZone, DEFAULT_TIMEZONE } from '../../src/lib/streak.js'
 
-// grade is accepted (per the request shape) but, matching current behavior
-// exactly (StudentHome.jsx calls getDailyQuestion(subject.id) with no grade
-// argument — the daily rotation isn't grade-filtered), it doesn't affect
-// which question comes back. Not wired into any existing client call site:
-// StudentHome.jsx already gets its question from the client-side bundled
-// bank instantly with no round trip, and switching it to fetch here would
-// be a larger change (see get-hardcoded-bank.js's note on why the answer
-// key still ships to the client today).
+// The real, authoritative daily-question endpoint — StudentHome.jsx fetches
+// from here instead of computing the question purely client-side, since
+// resolveDailyQuestion's selection (a generated-pool hash pick, or a
+// grade-filtered hardcoded fallback) depends on server-side state
+// (generated_questions, the student's own grade, this month's answered
+// questions) the client has no direct access to. submit-answer.js calls the
+// same resolver to stay the scoring authority, so both always agree on
+// exactly which question "today's" is for a given student+subject.
 function validate(body) {
   if (!body.subject || !SUBJECTS.some((s) => s.id === body.subject)) return 'subject is required and must be a valid subject id.'
   return null
@@ -18,15 +19,11 @@ function validate(body) {
 
 async function handle({ userId, body }) {
   const { subject } = body
-  const question = getDailyQuestion(subject)
-  if (!question) {
-    const err = new Error('Unknown subject.')
-    err.status = 400
-    err.code = 'VALIDATION_ERROR'
-    throw err
-  }
+  const timezone = isValidTimeZone(body.timezone) ? body.timezone : DEFAULT_TIMEZONE
 
-  const today = todayStr()
+  const question = await resolveDailyQuestion({ userId, subject, timezone })
+
+  const today = todayStr(new Date(), timezone)
   const { data: existing, error } = await supabase
     .from('answers')
     .select('id')
@@ -44,6 +41,11 @@ async function handle({ userId, body }) {
     already_answered: Boolean(existing),
     subject,
     grade: question.grade,
+    unit_number: question.unitNumber ?? null,
+    unit_title: question.unitTitle ?? null,
+    topic_title: question.topicTitle ?? null,
+    topic: question.topic ?? null,
+    source: question.source,
   }
 }
 

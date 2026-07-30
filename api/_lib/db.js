@@ -68,6 +68,29 @@ export async function getStreakRow(userId) {
   return created
 }
 
+// A stored answer's question_text might match a generated_questions row
+// instead of the hardcoded bank (findQuestionByPrompt only ever searches
+// the latter) — this batch-fetches every generated question for the
+// subjects actually present in a set of answer rows, keyed by its own
+// question text, so rowToEntry can fall back to it. Wrapped defensively:
+// the generated_questions table is a new addition the operator runs via a
+// separate SQL migration, so a request landing before that migration has
+// run must not break every progress-related endpoint — treat a missing
+// table (or any other lookup failure) as "no generated questions yet"
+// rather than throwing.
+async function buildGeneratedQuestionsMap(answerRows) {
+  const subjects = [...new Set(answerRows.map((r) => r.subject))]
+  if (subjects.length === 0) return new Map()
+  try {
+    const { data, error } = await supabase.from('generated_questions').select('question, options, correct').in('subject', subjects)
+    if (error) throw error
+    return new Map((data || []).map((row) => [row.question, row]))
+  } catch (err) {
+    console.error('[db] failed to load generated_questions for history lookup:', err)
+    return new Map()
+  }
+}
+
 // Mirrors rowToEntry in storage.js exactly, plus timezone-aware date
 // bucketing (storage.js's version predates the timezone feature and isn't
 // used for any date comparison itself — see its own comment).
@@ -83,8 +106,19 @@ export async function getStreakRow(userId) {
 // now passes a timezone (see getProgressForUser below); the undefined
 // fallback exists only as a defensive default, not because anything
 // intentionally omits one.
-function rowToEntry(row, timezone) {
-  const match = findQuestionByPrompt(row.subject, row.question_text)
+//
+// generatedByText (Map<questionText, {options, correct}>, optional) is the
+// second lookup source for a generated-pool question — see
+// buildGeneratedQuestionsMap above. Checked only when findQuestionByPrompt
+// (the hardcoded bank) comes back empty, so a stored answer's question can
+// come from either source and still render correctly everywhere history is
+// shown (streak calc, Day Review, share cards).
+function rowToEntry(row, timezone, generatedByText) {
+  let match = findQuestionByPrompt(row.subject, row.question_text)
+  if (!match && generatedByText) {
+    const generated = generatedByText.get(row.question_text)
+    if (generated) match = { options: generated.options, correctIndex: generated.correct }
+  }
   const selectedIndex = match ? match.options.indexOf(row.selected_answer) : -1
   return {
     id: row.id,
@@ -103,7 +137,7 @@ function rowToEntry(row, timezone) {
 }
 
 // Mirrors toProgress + getProgress in storage.js exactly.
-export function toProgress(streakRow, answerRows, timezone) {
+export function toProgress(streakRow, answerRows, timezone, generatedByText) {
   return {
     studentId: streakRow.user_id,
     streak: streakRow.current_streak,
@@ -111,7 +145,7 @@ export function toProgress(streakRow, answerRows, timezone) {
     xp: streakRow.total_xp,
     coins: streakRow.coin_balance,
     lastCorrectDate: streakRow.last_answered_date,
-    history: answerRows.map((row) => rowToEntry(row, timezone)),
+    history: answerRows.map((row) => rowToEntry(row, timezone, generatedByText)),
   }
 }
 
@@ -123,7 +157,37 @@ export async function getProgressForUser(userId, timezone) {
     .eq('user_id', userId)
     .order('answered_at', { ascending: true })
   if (error) throw error
-  return toProgress(streakRow, answerRows || [], timezone)
+  const generatedByText = await buildGeneratedQuestionsMap(answerRows || [])
+  return toProgress(streakRow, answerRows || [], timezone, generatedByText)
+}
+
+// Used by api/_lib/dailyQuestion.js's resolveDailyQuestion to read the
+// student's own grade — no existing helper does a plain "get user by id"
+// lookup, so this follows the same targeted-query style as getLinkedParent
+// below rather than pulling in the full SAFE_USER_COLUMNS set.
+export async function getUserGrade(userId) {
+  const { data, error } = await supabase.from('users').select('grade').eq('id', userId).maybeSingle()
+  if (error) throw error
+  return data?.grade ?? null
+}
+
+// This month's answered question texts for a subject, in the given
+// timezone — used by resolveDailyQuestion to skip a pool question the
+// student already answered this month. Scoped by a UTC-range query on
+// answered_at rather than a client-side date-string filter (matching how
+// get-daily-question.js's existing "already answered today" check already
+// queries answers directly), since this only needs question_text/date, not
+// the full progress-history reconstruction getProgressForUser does.
+export async function getAnswersThisMonth(userId, subject, timezone) {
+  const monthStart = todayStr(new Date(), timezone).slice(0, 7) + '-01'
+  const { data, error } = await supabase
+    .from('answers')
+    .select('question_text')
+    .eq('user_id', userId)
+    .eq('subject', subject)
+    .gte('answered_at', `${monthStart}T00:00:00.000Z`)
+  if (error) throw error
+  return new Set((data || []).map((row) => row.question_text))
 }
 
 // Mirrors getLinkedParent in storage.js exactly.

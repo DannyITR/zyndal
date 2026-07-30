@@ -1,8 +1,9 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { getProgressForUser, getLinkedParent, normalizeMilestoneBonuses, recordPerfectWeekAchievement, syncUserTimezone } from '../_lib/db.js'
+import { resolveDailyQuestion } from '../_lib/dailyQuestion.js'
 import { applyDailyAnswer, getWeeklyCorrectCount, PERFECT_WEEK_TARGET, todayStr, isValidTimeZone, DEFAULT_TIMEZONE } from '../../src/lib/streak.js'
-import { getDailyQuestion, SUBJECTS } from '../../src/lib/questions.js'
+import { SUBJECTS } from '../../src/lib/questions.js'
 
 // Deliberately NOT the request shape originally specified
 // ({ subject, question_text, selected_answer, correct, is_first_attempt }).
@@ -15,8 +16,9 @@ import { getDailyQuestion, SUBJECTS } from '../../src/lib/questions.js'
 // architecture (submitAnswer in src/lib/storage.js): the client sends only
 // { subject, selected_index }, and the server looks up today's question and
 // determines correctness itself using the exact same applyDailyAnswer logic
-// the client used to run locally — see api/_lib/db.js's header comment for
-// why that's imported directly rather than duplicated.
+// the client used to run locally — resolveDailyQuestion (api/_lib/
+// dailyQuestion.js) is the same resolver api/questions/get-daily-question.js
+// uses for display, so both always agree on which question "today's" is.
 function validate(body) {
   if (!body.subject || !SUBJECTS.some((s) => s.id === body.subject)) return 'subject is required and must be a valid subject id.'
   if (!Number.isInteger(body.selected_index) || body.selected_index < 0) return 'selected_index is required and must be a non-negative integer.'
@@ -35,13 +37,7 @@ async function handle({ userId, body }) {
   const today = todayStr(new Date(), timezone)
   await syncUserTimezone(userId, timezone)
 
-  const question = getDailyQuestion(subject)
-  if (!question) {
-    const err = new Error('Unknown subject.')
-    err.status = 400
-    err.code = 'VALIDATION_ERROR'
-    throw err
-  }
+  const question = await resolveDailyQuestion({ userId, subject, timezone })
 
   const progress = await getProgressForUser(userId, timezone)
 

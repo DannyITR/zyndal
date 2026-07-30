@@ -828,6 +828,36 @@ export function getDailyQuestion(subjectId, date = new Date()) {
   return list[index]
 }
 
+// Grade-filtered rotation — used by resolveDailyQuestion (api/_lib/
+// dailyQuestion.js) as the hardcoded fallback so a student only ever sees
+// questions tagged for their own grade. Falls back to the full unfiltered
+// list only if literally zero questions exist for that exact grade, so this
+// can never return null for a valid subjectId. Grades 9-11 currently have
+// only 2 hardcoded questions each per subject (vs 5 for grades 7-8), so the
+// rotation for those grades alternates between just 2 questions until a
+// generated pool exists for them — a data-volume limitation, not a bug.
+export function getDailyQuestionForGrade(subjectId, grade, date = new Date()) {
+  const list = QUESTIONS_BY_SUBJECT[subjectId]
+  if (!list) return null
+  const gradeList = list.filter((q) => q.grade === grade)
+  const effectiveList = gradeList.length > 0 ? gradeList : list
+  const index = daysSinceEpoch(date) % effectiveList.length
+  return effectiveList[index]
+}
+
+// The subtitle shown below the subject name on the daily question screen.
+// Describes the question actually shown, not the seasonal schedule's
+// aspirational target — a generated-pool question carries its own real
+// unit/topic tags, but a hardcoded-fallback question's unit/topic have no
+// relation to whatever unit the schedule currently points at, so showing
+// the rich label over it would be misleading.
+export function formatQuestionSubtitle(question) {
+  if (question.source === 'generated') {
+    return `Grade ${question.grade} • Unit ${question.unitNumber}: ${question.unitTitle} • ${question.topicTitle}`
+  }
+  return `Grade ${question.grade} • ${question.topic}`
+}
+
 // Answers loaded back from Supabase only store subject + question text, so
 // history detail views look up the full question (options, correct answer)
 // by matching the prompt against the static bank.

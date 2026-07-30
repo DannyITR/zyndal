@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
-import { submitAnswer, submitLateAnswer } from '../../lib/storage'
-import { getDailyQuestion } from '../../lib/questions'
+import { useEffect, useMemo, useState } from 'react'
+import { submitAnswer, submitLateAnswer, getTodayQuestion } from '../../lib/storage'
+import { getDailyQuestion, formatQuestionSubtitle } from '../../lib/questions'
 import { getEffectiveStreak, countCorrectSubjectsToday, todayStr, TOTAL_SUBJECTS, formatLongDate } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
 import { countdownLabel, computeReadiness } from '../../lib/testprep'
@@ -39,8 +39,41 @@ export default function StudentHome({
   const today = todayStr(new Date(), getUserTimeZone())
   const isToday = date === today
 
-  // Today's question/retry/milestone state — only relevant when isToday.
-  const question = useMemo(() => getDailyQuestion(subject.id), [subject.id])
+  // Today's question — fetched from the server rather than computed
+  // locally, since resolveDailyQuestion's selection (a generated-pool hash
+  // pick, or a grade-filtered hardcoded fallback) depends on server-side
+  // state (the student's own grade, the generated_questions pool, this
+  // month's answered questions) the client has no direct access to. null
+  // while loading; only relevant when isToday.
+  const [question, setQuestion] = useState(null)
+  const [questionError, setQuestionError] = useState('')
+  useEffect(() => {
+    if (!isToday) return
+    let cancelled = false
+    setQuestion(null)
+    setQuestionError('')
+    getTodayQuestion(subject.id)
+      .then((data) => {
+        if (cancelled) return
+        setQuestion({
+          prompt: data.question,
+          options: data.options,
+          correctIndex: data.correct,
+          grade: data.grade,
+          topic: data.topic,
+          unitNumber: data.unit_number,
+          unitTitle: data.unit_title,
+          topicTitle: data.topic_title,
+          source: data.source,
+        })
+      })
+      .catch(() => {
+        if (!cancelled) setQuestionError("Couldn't load today's question. Please check your connection and try again.")
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [isToday, subject.id])
   // The scored first attempt persisted this session: { selectedIndex, correct, coinsEarned, xpEarned }
   const [justAnswered, setJustAnswered] = useState(null)
   // The most recent retry pick after a wrong first attempt — local only, never persisted or rewarded.
@@ -172,7 +205,7 @@ export default function StudentHome({
     <div className="screen student-screen">
       <TopBar
         title={`${subject.icon} ${subject.name} — ${formatLongDate(date)}`}
-        subtitle={`Grade ${activeQuestion.grade} • ${activeQuestion.topic}`}
+        subtitle={activeQuestion ? formatQuestionSubtitle(activeQuestion) : 'Loading…'}
         username={user.username}
         onLogout={onLogout}
         onBack={onBack}
@@ -187,18 +220,25 @@ export default function StudentHome({
 
       {isToday ? (
         <>
-          <div className={`daily-status-banner ${firstAttemptMade ? 'daily-status-banner--done' : 'daily-status-banner--pending'}`}>
-            {firstAttemptMade ? "✅ Today's question answered" : "🕐 Today's question not answered yet"}
-          </div>
+          {!question && !questionError && <p className="loading-text">Loading today's question…</p>}
+          {questionError && <p className="form-error">{questionError}</p>}
 
-          <QuestionCard
-            question={question}
-            answered={displaySelectedIndex !== null}
-            locked={locked}
-            selectedIndex={displaySelectedIndex}
-            celebrate={Boolean(justAnswered?.correct)}
-            onSelect={handleSelect}
-          />
+          {question && (
+            <>
+              <div className={`daily-status-banner ${firstAttemptMade ? 'daily-status-banner--done' : 'daily-status-banner--pending'}`}>
+                {firstAttemptMade ? "✅ Today's question answered" : "🕐 Today's question not answered yet"}
+              </div>
+
+              <QuestionCard
+                question={question}
+                answered={displaySelectedIndex !== null}
+                locked={locked}
+                selectedIndex={displaySelectedIndex}
+                celebrate={Boolean(justAnswered?.correct)}
+                onSelect={handleSelect}
+              />
+            </>
+          )}
 
           {submitError && <p className="form-error">{submitError}</p>}
 

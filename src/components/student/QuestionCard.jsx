@@ -1,11 +1,11 @@
+import { formatQuestionSubtitle } from '../../lib/questions'
+
 const LETTERS = ['A', 'B', 'C', 'D']
 
 export default function QuestionCard({ question, answered, locked, selectedIndex, celebrate, onSelect }) {
   return (
     <div className={`question-card ${celebrate ? 'question-card--celebrate' : ''}`}>
-      <p className="question-meta">
-        Grade {question.grade} • {question.topic}
-      </p>
+      <p className="question-meta">{formatQuestionSubtitle(question)}</p>
       <h2 className="question-prompt">{question.prompt}</h2>
       <div className="options">
         {question.options.map((option, i) => {

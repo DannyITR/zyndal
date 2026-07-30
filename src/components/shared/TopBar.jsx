@@ -13,7 +13,7 @@ export default function TopBar({ title, subtitle, username, onLogout, onBack, on
               ←
             </button>
           )}
-          <div>
+          <div className="topbar-title-block">
             {title && <p className="topbar-title">{title}</p>}
             {subtitle && <p className="topbar-subtitle">{subtitle}</p>}
           </div>

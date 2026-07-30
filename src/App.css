@@ -566,6 +566,11 @@ div.zyndal-logo {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+}
+
+.topbar-title-block {
+  min-width: 0;
 }
 
 .topbar-back {
@@ -599,6 +604,9 @@ div.zyndal-logo {
   font-size: 13px;
   color: var(--text-faint);
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .topbar-actions {
@@ -1120,6 +1128,9 @@ div.zyndal-logo {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--purple-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .question-prompt {
