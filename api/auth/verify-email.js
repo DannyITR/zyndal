@@ -43,7 +43,32 @@ async function handle({ body }) {
     if (userError) throw userError
   }
 
-  return { success: true }
+  // Auto-login is a bonus on top of verification, not a requirement for
+  // it — the person already proved control of their account by having
+  // this token, so a failure here (session insert, profile fetch) must
+  // never turn an otherwise-successful verification into an error
+  // response. token/user are simply absent if this fails; the client
+  // falls back to a manual "Log In" prompt (see VerifyEmailScreen.jsx).
+  const result = { success: true }
+  try {
+    const token = crypto.randomUUID()
+    const { error: sessionError } = await supabase.from('sessions').insert({ user_id: row.user_id, token })
+    if (sessionError) throw sessionError
+
+    const { data: user, error: userFetchError } = await supabase
+      .from('users')
+      .select('id, username, account_type, grade, avatar')
+      .eq('id', row.user_id)
+      .maybeSingle()
+    if (userFetchError) throw userFetchError
+
+    result.token = token
+    result.user = user
+  } catch (err) {
+    console.error('[verify-email] auto-login failed:', err)
+  }
+
+  return result
 }
 
 export default createPublicHandler({ method: 'GET', validate, handle })

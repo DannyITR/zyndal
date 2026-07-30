@@ -279,12 +279,34 @@ export async function exportMyData() {
 // attached automatically if one happens to exist (callApi always does
 // this), but api/auth/verify-email.js ignores it entirely — it's
 // token-only, not session-authenticated.
+//
+// api/auth/verify-email.js returns a minimal user shape (id, username,
+// account_type, grade, avatar) just for its own response size — if it
+// also returned a session token (successful auto-login), that's swapped
+// out here for a full profile via the same trusted getCurrentUser() path
+// login/signup/OAuth all use, so the app's `user` state never runs on a
+// partial shape the rest of the app has never had to handle.
 export async function verifyEmail(token) {
-  return callApi('/api/auth', 'GET', `verify-email?token=${encodeURIComponent(token)}`)
+  const data = await callApi('/api/auth', 'GET', `verify-email?token=${encodeURIComponent(token)}`)
+  if (data.token) {
+    storeSession(data.token)
+    data.user = await getCurrentUser()
+  }
+  return data
 }
 
 export async function resendVerificationEmail() {
   return callAuthApi('resend-verification', {})
+}
+
+// Public counterpart to resendVerificationEmail above — used from the
+// /verify page itself (VerifyEmailScreen.jsx) when the token has expired,
+// where the visitor almost certainly has no session yet.
+// api/auth/resend-expired-verification.js doesn't require or look at
+// X-Session-Token either way, so this is a plain callAuthApi call like
+// every other POST /api/auth/* endpoint.
+export async function resendExpiredVerification(token) {
+  return callAuthApi('resend-expired-verification', { token })
 }
 
 export async function getCurrentUser() {

@@ -25,7 +25,7 @@ function App() {
   // has to survive a hard browser navigation too, and most people clicking
   // it aren't logged in on that device, so this is checked (and rendered)
   // before anything waits on getCurrentUser().
-  const [isVerifyPage] = useState(() => window.location.pathname === '/verify')
+  const [isVerifyPage, setIsVerifyPage] = useState(() => window.location.pathname === '/verify')
 
   useEffect(() => {
     let cancelled = false
@@ -75,14 +75,35 @@ function App() {
     setIsOAuthCallback(false)
     if (nextUser) {
       setUser(nextUser)
+      // The mount effect's getCurrentUser() call runs regardless of which
+      // screen is shown, including while this callback screen is up — for
+      // a brand-new account it resolves quickly (no session existed yet)
+      // and sets showLanding=true well before this callback fires. Render
+      // order checks showLanding before user, so without resetting it
+      // here too, a successful sign-in would still land on the marketing
+      // page instead of the dashboard. See finishVerify below for the
+      // same fix, needed for the same reason.
+      setShowLanding(false)
     } else {
       setShowLanding(false)
       setAuthMode('login')
     }
   }
 
+  // Same shape as finishOAuthCallback above, for the /verify path — see
+  // its comment for why setShowLanding(false) is required whenever a real
+  // user is being set, not just for the "no user" branch.
+  function finishVerify(nextUser) {
+    window.history.replaceState({}, '', '/')
+    setIsVerifyPage(false)
+    if (nextUser) {
+      setUser(nextUser)
+      setShowLanding(false)
+    }
+  }
+
   if (isVerifyPage) {
-    return <VerifyEmailScreen />
+    return <VerifyEmailScreen onVerified={finishVerify} />
   }
 
   if (isOAuthCallback) {
