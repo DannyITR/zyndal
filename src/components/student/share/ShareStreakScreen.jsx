@@ -5,7 +5,7 @@ import { SCORE_COLORS, TOTAL_SUBJECTS } from '../../../lib/streak'
 import TopBar from '../../shared/TopBar'
 import FriendSharePickerModal from './FriendSharePickerModal'
 
-export default function ShareStreakScreen({ user, streak, xp, todayScore, today, onBack, onLogout, onLogoClick }) {
+export default function ShareStreakScreen({ user, streak, xp, todayScore, subjectsAttemptedToday, today, onBack, onLogout, onLogoClick }) {
   const [friends, setFriends] = useState(null)
   const [shares, setShares] = useState(null)
   const [receivedToday, setReceivedToday] = useState(null)
@@ -189,7 +189,12 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
           shares={shares}
           today={today}
           sendingToId={sendingToId}
-          canShareToday={todayScore >= TOTAL_SUBJECTS}
+          // Gates on subjects ATTEMPTED today, not subjects answered
+          // CORRECTLY (that's todayScore, used for the share card itself) —
+          // submit-answer.js allows exactly one attempt per subject per day,
+          // so a wrong answer still finishes that subject for the day and
+          // should count toward "done for today" here.
+          canShareToday={subjectsAttemptedToday >= TOTAL_SUBJECTS}
           onShare={handleShareWithFriend}
           onClose={() => setShowFriendPicker(false)}
         />
