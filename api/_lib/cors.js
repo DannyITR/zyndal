@@ -1,8 +1,22 @@
-// Shared CORS handling for every /api/generate-* function. Only these two
-// origins are allowed to call the API — the deployed app and the local dev
-// server; everything else gets no Access-Control-Allow-Origin header, which
-// the browser then blocks.
-const ALLOWED_ORIGINS = new Set(['https://zyndal.vercel.app', 'http://localhost:5173'])
+// Shared CORS handling for every API endpoint (via publicHandler.js,
+// studentHandler.js, parentHandler.js, and handler.js). Only these origins
+// are allowed to call the API — everything else gets no
+// Access-Control-Allow-Origin header, which the browser then blocks.
+//
+// Both www.zyndal.ca and bare zyndal.ca are listed even though the apex
+// redirects to www (see `vercel domains inspect zyndal.ca`) — the browser
+// sends the Origin header of whichever host actually served the page
+// making the request, so a stray direct fetch from the apex before the
+// redirect completes would otherwise be blocked. zyndal.vercel.app is kept
+// too (not just during the zyndal.ca migration — it's Vercel's permanent
+// preview/production URL for this project, always reachable regardless of
+// custom-domain DNS status).
+const ALLOWED_ORIGINS = new Set([
+  'https://zyndal.ca',
+  'https://www.zyndal.ca',
+  'https://zyndal.vercel.app',
+  'http://localhost:5173',
+])
 
 // Applies CORS headers and answers an OPTIONS preflight directly. Returns
 // true if the caller should stop (preflight already answered), false to

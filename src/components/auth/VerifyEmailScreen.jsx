@@ -2,13 +2,10 @@ import { useEffect, useState } from 'react'
 import { verifyEmail } from '../../lib/storage'
 import Logo from '../shared/Logo'
 
-// zyndal.ca isn't attached as a Vercel domain yet (as of this writing —
-// see `vercel domains ls`), just verified as a Resend sending domain, so
-// it may not resolve. Probed on success below; falls back to the
-// guaranteed-working .vercel.app URL if zyndal.ca doesn't answer in time.
-const PRIMARY_URL = 'https://zyndal.ca'
-const FALLBACK_URL = 'https://zyndal.vercel.app'
-const PROBE_TIMEOUT_MS = 2500
+// zyndal.ca is now attached to the Vercel project (both the apex and
+// www.zyndal.ca — see api/_lib/cors.js) and live, so this can link there
+// directly rather than probing for reachability first.
+const GO_TO_URL = 'https://zyndal.ca'
 
 // Rendered by App.jsx for the /verify path — the second (after
 // /auth/callback) URL this router-less app checks window.location for
@@ -16,7 +13,6 @@ const PROBE_TIMEOUT_MS = 2500
 // See vercel.json for the rewrite that serves index.html for this path.
 export default function VerifyEmailScreen() {
   const [status, setStatus] = useState('verifying') // verifying | success | expired | invalid
-  const [goToUrl, setGoToUrl] = useState(FALLBACK_URL)
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get('token')
@@ -39,30 +35,6 @@ export default function VerifyEmailScreen() {
     }
   }, [])
 
-  // mode: 'no-cors' resolves for anything that answers (even an opaque
-  // cross-origin response) and rejects on a real network/DNS failure —
-  // exactly the "does this domain currently resolve" check needed here,
-  // without caring what it actually returns.
-  useEffect(() => {
-    if (status !== 'success') return
-    let cancelled = false
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS)
-    fetch(PRIMARY_URL, { mode: 'no-cors', signal: controller.signal })
-      .then(() => {
-        if (!cancelled) setGoToUrl(PRIMARY_URL)
-      })
-      .catch(() => {
-        // zyndal.ca not reachable yet — stick with the fallback already set.
-      })
-      .finally(() => clearTimeout(timeout))
-    return () => {
-      cancelled = true
-      controller.abort()
-      clearTimeout(timeout)
-    }
-  }, [status])
-
   const content = {
     verifying: { icon: null, text: 'Verifying your email…' },
     success: { icon: '✅', text: 'Email verified! Your Zyndal account is ready.' },
@@ -79,7 +51,7 @@ export default function VerifyEmailScreen() {
           {content.text}
         </p>
         {status === 'success' && (
-          <a href={goToUrl} className="btn btn-primary btn-block">
+          <a href={GO_TO_URL} className="btn btn-primary btn-block">
             Go to Zyndal →
           </a>
         )}

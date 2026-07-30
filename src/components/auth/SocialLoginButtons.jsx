@@ -14,9 +14,12 @@ const STRINGS = {
   fr: { google: 'Continuer avec Google', email: 'Continuer avec e-mail', redirecting: 'Redirection…' },
 }
 
-// See https://zyndal.vercel.app/auth/callback — App.jsx renders
-// OAuthCallbackScreen for this exact path (no client-side router in this
-// app; see App.jsx's window.location.pathname check).
+// See https://zyndal.ca/auth/callback — App.jsx renders OAuthCallbackScreen
+// for this exact path (no client-side router in this app; see App.jsx's
+// window.location.pathname check). REDIRECT_URL below is built from
+// window.location.origin at runtime, not hardcoded, so this works
+// identically whether reached via zyndal.ca, zyndal.vercel.app, or
+// localhost — this comment just documents the production case.
 const REDIRECT_URL = `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/callback`
 
 function GoogleIcon() {

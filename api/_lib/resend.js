@@ -13,7 +13,7 @@ function getResendClient() {
   return client
 }
 
-const VERIFY_BASE_URL = 'https://zyndal.vercel.app/verify'
+const VERIFY_BASE_URL = 'https://zyndal.ca/verify'
 
 // Minimal inline-styled HTML — email clients don't load external
 // stylesheets — using the app's real theme colors (src/index.css :root)
