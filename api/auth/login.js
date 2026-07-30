@@ -45,7 +45,7 @@ function accountDeletedError() {
   const err = new Error('Account deactivated')
   err.status = 401
   err.code = 'ACCOUNT_DELETED'
-  err.userMessage = 'This account has been deleted. Email hello@zyndal.com within 90 days to restore it.'
+  err.userMessage = 'This account has been deleted. Email hello@zyndal.ca within 90 days to restore it.'
   return err
 }
 

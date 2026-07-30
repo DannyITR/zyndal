@@ -57,7 +57,8 @@ export async function sendVerificationEmail({ email, token, languagePreference }
   const resend = getResendClient()
   const { subject, html } = verificationEmailContent(token, languagePreference)
   const { error } = await resend.emails.send({
-    from: 'Zyndal <hello@zyndal.com>',
+    from: 'Zyndal <hello@zyndal.ca>',
+    replyTo: 'hello@zyndal.ca',
     to: email,
     subject,
     html,

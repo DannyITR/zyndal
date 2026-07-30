@@ -76,7 +76,7 @@ function EnglishContent() {
         We can suspend or terminate an account that violates these Terms, without advance notice
         if the violation is serious (e.g. attempting to access another user's account). You can
         stop using Zyndal, or ask us to delete your account, at any time — see our{' '}
-        <a href="mailto:privacy@zyndal.com">Privacy Policy</a> for how.
+        <a href="mailto:hello@zyndal.ca">Privacy Policy</a> for how.
       </p>
 
       <h3>Limitation of liability</h3>
@@ -97,7 +97,7 @@ function EnglishContent() {
 
       <h3>Contact us</h3>
       <p>
-        Questions about these Terms: <a href="mailto:legal@zyndal.com">legal@zyndal.com</a>.
+        Questions about these Terms: <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>.
       </p>
     </div>
   )
@@ -181,7 +181,7 @@ function FrenchContent() {
         la violation est grave (par exemple, une tentative d'accès au compte d'un autre
         utilisateur). Vous pouvez cesser d'utiliser Zyndal, ou nous demander de supprimer votre
         compte, en tout temps — consultez notre{' '}
-        <a href="mailto:privacy@zyndal.com">Politique de confidentialité</a> pour savoir comment
+        <a href="mailto:hello@zyndal.ca">Politique de confidentialité</a> pour savoir comment
         faire.
       </p>
 
@@ -204,7 +204,7 @@ function FrenchContent() {
 
       <h3>Nous contacter</h3>
       <p>
-        Questions à propos de ces Conditions : <a href="mailto:legal@zyndal.com">legal@zyndal.com</a>.
+        Questions à propos de ces Conditions : <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>.
       </p>
     </div>
   )

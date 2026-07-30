@@ -36,7 +36,7 @@ export default function LandingPage({ onSignUp, onLogIn }) {
           <button type="button" onClick={() => setOpenLegal('terms')}>
             Terms of Service
           </button>
-          <a href="mailto:hello@zyndal.com">hello@zyndal.com</a>
+          <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>
         </div>
         <p className="landing-footer-copyright">© 2026 Zyndal. All rights reserved.</p>
       </footer>

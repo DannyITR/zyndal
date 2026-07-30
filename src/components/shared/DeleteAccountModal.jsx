@@ -28,7 +28,7 @@ export default function DeleteAccountModal({ onConfirm, onClose }) {
         <p className="modal-subtitle">
           This will deactivate your account and schedule all your data for permanent deletion in
           90 days. You can restore your account within 90 days by emailing{' '}
-          <a href="mailto:hello@zyndal.com">hello@zyndal.com</a>.
+          <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>.
         </p>
 
         <div className="field">

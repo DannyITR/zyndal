@@ -51,7 +51,7 @@ export function createPublicHandler({ method = 'POST', validate, handle }) {
       // err.userMessage carries an optional longer, more actionable message
       // alongside the short err.message label (e.g. api/auth/login.js's
       // ACCOUNT_DELETED: error="Account deactivated", message="This account
-      // has been deleted. Email hello@zyndal.com...") — most thrown errors
+      // has been deleted. Email hello@zyndal.ca...") — most thrown errors
       // don't set it, so `message` is simply omitted for those.
       const body = { error: err.message || 'Something went wrong. Please try again.', code: err.code || 'SERVER_ERROR' }
       if (err.userMessage) body.message = err.userMessage

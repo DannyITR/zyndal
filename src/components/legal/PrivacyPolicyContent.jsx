@@ -9,7 +9,7 @@
 // especially minors — a Quebec-licensed lawyer should review this page,
 // confirm the data-residency claim below is actually accurate for the
 // Supabase project in use, and confirm a named Privacy Officer is on file
-// (Law 25 requires one; "privacy@zyndal.com" is a placeholder inbox, not a
+// (Law 25 requires one; "hello@zyndal.ca" is a placeholder inbox, not a
 // substitute for designating a specific responsible person).
 
 const LAST_UPDATED = 'July 2026'
@@ -28,7 +28,7 @@ function EnglishContent() {
         1-5) and their parents. This page explains what personal information we collect, why we
         collect it, and what rights you have over it. We've tried to write it in plain language —
         if anything is unclear, email us at{' '}
-        <a href="mailto:privacy@zyndal.com">privacy@zyndal.com</a> and we'll explain it properly.
+        <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a> and we'll explain it properly.
       </p>
 
       <h3>What data we collect</h3>
@@ -84,7 +84,7 @@ function EnglishContent() {
         <li>Ask us to delete your account and personal information</li>
       </ul>
       <p>
-        To make any of these requests, email <a href="mailto:privacy@zyndal.com">privacy@zyndal.com</a>.
+        To make any of these requests, email <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>.
         We'll respond within a reasonable time, as required by law.
       </p>
 
@@ -94,7 +94,7 @@ function EnglishContent() {
         Account</strong>. This is a deactivation, not an instant erasure: your account is
         immediately signed out everywhere and can no longer be logged into, but your data is kept
         for <strong>90 days</strong> in case you want it back. To restore a deactivated account
-        within that window, email <a href="mailto:hello@zyndal.com">hello@zyndal.com</a>. After 90
+        within that window, email <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>. After 90
         days, everything is <strong>permanently and irreversibly deleted</strong>. This process is
         in place specifically to comply with Quebec's Law 25.
       </p>
@@ -107,8 +107,8 @@ function EnglishContent() {
 
       <h3>Contact us</h3>
       <p>
-        Questions, concerns, or a request about your data: <a href="mailto:privacy@zyndal.com">privacy@zyndal.com</a>.
-        To restore a deactivated account: <a href="mailto:hello@zyndal.com">hello@zyndal.com</a>.
+        Questions, concerns, or a request about your data: <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>.
+        To restore a deactivated account: <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>.
       </p>
     </div>
   )
@@ -124,7 +124,7 @@ function FrenchContent() {
         de la 7e à la 11e année (secondaire 1 à 5) et à leurs parents. Cette page explique quels renseignements
         personnels nous recueillons, pourquoi nous les recueillons, et quels droits vous avez à
         leur égard. Nous avons voulu l'écrire en langage clair — si quelque chose n'est pas clair,
-        écrivez-nous à <a href="mailto:privacy@zyndal.com">privacy@zyndal.com</a> et nous vous
+        écrivez-nous à <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a> et nous vous
         l'expliquerons.
       </p>
 
@@ -183,7 +183,7 @@ function FrenchContent() {
         <li>Demander la suppression de votre compte et de vos renseignements personnels</li>
       </ul>
       <p>
-        Pour faire l'une de ces demandes, écrivez à <a href="mailto:privacy@zyndal.com">privacy@zyndal.com</a>.
+        Pour faire l'une de ces demandes, écrivez à <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>.
         Nous répondrons dans un délai raisonnable, tel que requis par la loi.
       </p>
 
@@ -194,7 +194,7 @@ function FrenchContent() {
         instantané : votre compte est immédiatement déconnecté partout et ne peut plus être utilisé
         pour vous connecter, mais vos données sont conservées pendant <strong>90 jours</strong> au
         cas où vous souhaiteriez les récupérer. Pour restaurer un compte désactivé pendant cette
-        période, écrivez à <a href="mailto:hello@zyndal.com">hello@zyndal.com</a>. Après 90 jours,
+        période, écrivez à <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>. Après 90 jours,
         tout est <strong>supprimé de façon permanente et irréversible</strong>. Ce processus est en
         place spécifiquement pour se conformer à la Loi 25 du Québec.
       </p>
@@ -212,8 +212,8 @@ function FrenchContent() {
       <h3>Nous contacter</h3>
       <p>
         Questions, préoccupations ou demande concernant vos données :{' '}
-        <a href="mailto:privacy@zyndal.com">privacy@zyndal.com</a>. Pour restaurer un compte
-        désactivé : <a href="mailto:hello@zyndal.com">hello@zyndal.com</a>.
+        <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>. Pour restaurer un compte
+        désactivé : <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>.
       </p>
     </div>
   )

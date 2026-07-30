@@ -34,7 +34,7 @@ create table if not exists users (
   -- Soft delete (Quebec Law 25 right-to-deletion flow — see
   -- api/auth/delete-account.js). Null = active account. Set to the deletion
   -- timestamp on self-delete; data is retained 90 days from this date to
-  -- allow restoration (email hello@zyndal.com), then permanently removed —
+  -- allow restoration (email hello@zyndal.ca), then permanently removed —
   -- manually for now, no automated purge job yet.
   deleted_at timestamptz,
   -- Social login (see api/auth/oauth-callback.js). True for accounts

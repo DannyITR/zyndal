@@ -4,7 +4,7 @@ import { supabase } from '../_lib/auth.js'
 // Quebec Law 25 right-to-deletion: soft delete only — sets deleted_at and
 // (for a parent) zeroes their linked students' coin balances, but doesn't
 // touch anything else. Data is retained 90 days for restoration (email
-// hello@zyndal.com) before a manual permanent purge — see
+// hello@zyndal.ca) before a manual permanent purge — see
 // supabase/schema.sql's deleted_at column comment. Lives under api/auth/
 // (matching the requested path) but, unlike login/signup/logout, this
 // requires a real authenticated session — createStudentHandler, not
