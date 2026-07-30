@@ -50,7 +50,12 @@ async function callApi(basePath, method, endpoint, body) {
     throw new Error(data?.message || data?.error || 'Your session has expired. Please log in again.')
   }
   if (!response.ok) {
-    throw new Error(data?.message || data?.error || `Request to ${endpoint} failed (${response.status}).`)
+    const err = new Error(data?.message || data?.error || `Request to ${endpoint} failed (${response.status}).`)
+    // Additive — nothing reads .code today, but VerifyEmailScreen needs to
+    // tell an expired token apart from an invalid one without string-
+    // matching err.message.
+    if (data?.code) err.code = data.code
+    throw err
   }
   return data
 }
@@ -264,6 +269,22 @@ export async function deleteAccount() {
 // fetch()-based, header-authenticated request.
 export async function exportMyData() {
   return callApi('/api/auth', 'GET', 'export-data')
+}
+
+// ---------- Email verification ----------
+
+// Public (no session required — someone clicking an email link on a fresh
+// device won't have one) — GET bypasses the POST-only callAuthApi wrapper
+// the same way exportMyData does above. A session token still gets
+// attached automatically if one happens to exist (callApi always does
+// this), but api/auth/verify-email.js ignores it entirely — it's
+// token-only, not session-authenticated.
+export async function verifyEmail(token) {
+  return callApi('/api/auth', 'GET', `verify-email?token=${encodeURIComponent(token)}`)
+}
+
+export async function resendVerificationEmail() {
+  return callAuthApi('resend-verification', {})
 }
 
 export async function getCurrentUser() {

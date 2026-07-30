@@ -1,7 +1,8 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
-import { generateUniqueParentCode } from '../_lib/db.js'
+import { generateUniqueParentCode, SAFE_USER_COLUMNS } from '../_lib/db.js'
 import { sanitizeString, sanitizeEmail, sanitizeGrade, sanitizeAccountType } from '../_lib/sanitize.js'
+import { createAndSendVerificationEmail } from '../_lib/verification.js'
 
 const LANGUAGE_PREFERENCES = new Set(['English', 'French'])
 
@@ -72,14 +73,25 @@ async function handle({ userId, body }) {
     language_preference,
   }
 
+  // One pre-fetch covers both the existing parent-code lookup and the new
+  // email-change check below, instead of two separate queries.
+  const { data: current, error: currentError } = await supabase.from('users').select('parent_code, email').eq('id', userId).maybeSingle()
+  if (currentError) throw currentError
+
+  // A changed email hasn't been proven to belong to this user yet, even if
+  // the account was previously OAuth-verified (api/auth/oauth-callback.js)
+  // or already verified a *different* email — re-verify from scratch.
+  const emailChanged = (updates.email || null) !== (current?.email || null)
+  if (emailChanged) {
+    updates.email_verified = false
+  }
+
   // A brand-new OAuth-onboarding parent needs a parent_code the moment they
   // become a parent, or every parent-linking feature (StudentCard, the
   // signup parent-code field, ParentDashboard) silently has nothing to show
   // them. Only generated once — an existing parent_code from before is left
   // alone.
   if (accountType === 'parent') {
-    const { data: current, error: currentError } = await supabase.from('users').select('parent_code').eq('id', userId).maybeSingle()
-    if (currentError) throw currentError
     updates.account_type = 'parent'
     if (!current?.parent_code) {
       updates.parent_code = await generateUniqueParentCode()
@@ -88,15 +100,18 @@ async function handle({ userId, body }) {
     updates.account_type = 'student'
   }
 
-  const { data, error } = await supabase
-    .from('users')
-    .update(updates)
-    .eq('id', userId)
-    .select(
-      'id, username, account_type, grade, parent_code, created_at, display_name, email, school, avatar, wallet_balance_cents, total_added_cents, total_paid_out_cents, coin_to_dollar_rate, milestone_settings, is_premium, language_preference'
-    )
-    .single()
+  const { data, error } = await supabase.from('users').update(updates).eq('id', userId).select(SAFE_USER_COLUMNS).single()
   if (error) throw error
+
+  if (emailChanged && updates.email) {
+    // Awaited (matches insertNotification call sites elsewhere) — a
+    // serverless function's event loop can freeze right after the response
+    // is sent, so a true fire-and-forget call risks never actually running.
+    // createAndSendVerificationEmail is itself best-effort/non-throwing, so
+    // this still can't fail the settings save.
+    await createAndSendVerificationEmail({ userId, email: updates.email, languagePreference: data.language_preference })
+  }
+
   return data
 }
 

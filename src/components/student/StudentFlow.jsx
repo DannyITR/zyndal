@@ -10,6 +10,7 @@ import {
   getIncomingShares,
   markShareSeen,
   getNotifications,
+  resendVerificationEmail,
 } from '../../lib/storage'
 import { getSubject } from '../../lib/questions'
 import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE } from '../../lib/streak'
@@ -113,6 +114,27 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     const timer = setTimeout(() => setShowParentDeletedBanner(false), 5000)
     return () => clearTimeout(timer)
   }, [user.linked_parent_deleted])
+
+  // Shown once per mount, dismissed only by the ✕ (no auto-dismiss timer,
+  // unlike the parent-deleted banner above) — only seeded true when there's
+  // an actual unverified email; an account with no email at all shouldn't
+  // be nagged to verify one it never set.
+  const [showVerifyBanner, setShowVerifyBanner] = useState(Boolean(user.email && !user.email_verified))
+  const [resendState, setResendState] = useState('idle') // idle | sending | sent | error
+  const [resendError, setResendError] = useState('')
+
+  async function handleResendVerification() {
+    if (resendState === 'sending') return
+    setResendState('sending')
+    setResendError('')
+    try {
+      await resendVerificationEmail()
+      setResendState('sent')
+    } catch (err) {
+      setResendState('error')
+      setResendError(err.message || "Couldn't send the email. Please try again.")
+    }
+  }
 
   // The logo always resets to this subject-selection home view for a logged-in
   // student — StudentHome/AnswerDetail unmount as a side effect of clearing
@@ -501,6 +523,30 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
               type="button"
               className="parent-deleted-banner-close"
               onClick={() => setShowParentDeletedBanner(false)}
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {showVerifyBanner && (
+          <div className="verify-email-banner">
+            <span>
+              📧 Please verify your email — check your inbox.{' '}
+              {resendState === 'sent' ? (
+                'Sent!'
+              ) : (
+                <button type="button" className="verify-email-banner-resend" onClick={handleResendVerification} disabled={resendState === 'sending'}>
+                  {resendState === 'sending' ? 'Sending…' : 'Resend email'}
+                </button>
+              )}
+              {resendState === 'error' && <span className="verify-email-banner-error"> {resendError}</span>}
+            </span>
+            <button
+              type="button"
+              className="verify-email-banner-close"
+              onClick={() => setShowVerifyBanner(false)}
               aria-label="Dismiss"
             >
               ✕

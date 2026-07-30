@@ -22,7 +22,7 @@ import { findQuestionByPrompt } from '../../src/lib/questions.js'
 // endpoints (login/signup return the same shape get-profile.js does, so the
 // client's `user` object looks identical regardless of which call produced it).
 export const SAFE_USER_COLUMNS =
-  'id, username, account_type, grade, parent_code, created_at, display_name, email, school, avatar, wallet_balance_cents, total_added_cents, total_paid_out_cents, coin_to_dollar_rate, milestone_settings, is_premium, language_preference'
+  'id, username, account_type, grade, parent_code, created_at, display_name, email, school, avatar, wallet_balance_cents, total_added_cents, total_paid_out_cents, coin_to_dollar_rate, milestone_settings, is_premium, language_preference, email_verified'
 
 // Deliberately duplicated from the local (unexported) generateUniqueParentCode
 // in api/auth/signup.js rather than importing it from there — signup.js is

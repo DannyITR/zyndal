@@ -3,6 +3,7 @@ import { getCurrentUser, clearSession, setSessionExpiredHandler } from './lib/st
 import LandingPage from './components/landing/LandingPage'
 import AuthScreen from './components/auth/AuthScreen'
 import OAuthCallbackScreen from './components/auth/OAuthCallbackScreen'
+import VerifyEmailScreen from './components/auth/VerifyEmailScreen'
 import StudentFlow from './components/student/StudentFlow'
 import ParentDashboard from './components/parent/ParentDashboard'
 import InstallPrompt from './components/shared/InstallPrompt'
@@ -20,6 +21,11 @@ function App() {
   // piece of in-memory screen state. See vercel.json for the rewrite that
   // makes a direct hit on this path serve index.html instead of 404ing.
   const [isOAuthCallback, setIsOAuthCallback] = useState(() => window.location.pathname === '/auth/callback')
+  // Same rationale as isOAuthCallback above — an email verification link
+  // has to survive a hard browser navigation too, and most people clicking
+  // it aren't logged in on that device, so this is checked (and rendered)
+  // before anything waits on getCurrentUser().
+  const [isVerifyPage] = useState(() => window.location.pathname === '/verify')
 
   useEffect(() => {
     let cancelled = false
@@ -73,6 +79,10 @@ function App() {
       setShowLanding(false)
       setAuthMode('login')
     }
+  }
+
+  if (isVerifyPage) {
+    return <VerifyEmailScreen />
   }
 
   if (isOAuthCallback) {

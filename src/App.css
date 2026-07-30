@@ -821,6 +821,52 @@ div.zyndal-logo {
   opacity: 1;
 }
 
+.verify-email-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 158, 68, 0.12);
+  border: 1.5px solid rgba(255, 158, 68, 0.4);
+  color: #ffb066;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.verify-email-banner span {
+  flex: 1;
+}
+
+.verify-email-banner-resend {
+  background: none;
+  border: none;
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  padding: 0;
+  cursor: pointer;
+}
+
+.verify-email-banner-error {
+  opacity: 0.85;
+}
+
+.verify-email-banner-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  padding: 4px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.verify-email-banner-close:hover {
+  opacity: 1;
+}
+
 .subject-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
