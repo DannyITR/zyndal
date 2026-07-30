@@ -33,6 +33,16 @@
   cursor: not-allowed;
 }
 
+/* <button> already renders inline-block by default in every browser this
+   app supports, so this only actually changes anything for a <button>-less
+   .btn usage — an <a className="btn ..."> link (e.g. VerifyEmailScreen's
+   "Go to Zyndal" button), which is otherwise inline and ignores width. */
+a.btn {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+}
+
 .btn-block {
   width: 100%;
 }
