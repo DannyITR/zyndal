@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { hasSharedToday, computeShareStreak } from '../../../lib/streakShare'
 
-export default function FriendSharePickerModal({ user, friends, shares, sendingToId, onShare, onClose }) {
+export default function FriendSharePickerModal({ user, friends, shares, today, sendingToId, canShareToday, onShare, onClose }) {
   const [query, setQuery] = useState('')
 
   const filtered = friends.filter(
@@ -28,8 +28,13 @@ export default function FriendSharePickerModal({ user, friends, shares, sendingT
         ) : (
           <div className="friend-picker-list">
             {filtered.map((friend) => {
-              const sharedToday = shares ? hasSharedToday(shares, user.id, friend.id) : false
-              const shareStreak = shares ? computeShareStreak(shares, user.id, friend.id) : 0
+              const sharedToday = shares ? hasSharedToday(shares, user.id, friend.id, today) : false
+              const shareStreak = shares ? computeShareStreak(shares, user.id, friend.id, today) : 0
+              // A friend who already shared with ME today is always
+              // shareable back, regardless of my own completion state —
+              // the "complete today's questions first" gate below only
+              // applies to starting a share, not reciprocating one.
+              const friendAlreadyShared = shares ? hasSharedToday(shares, friend.id, user.id, today) : false
               return (
                 <div key={friend.id} className="friend-picker-row">
                   <span className="share-friend-avatar">{friend.avatar || '👤'}</span>
@@ -39,6 +44,8 @@ export default function FriendSharePickerModal({ user, friends, shares, sendingT
                   </div>
                   {sharedToday ? (
                     <span className="friend-picker-shared">✅ Shared today</span>
+                  ) : !friendAlreadyShared && !canShareToday ? (
+                    <p className="field-hint friend-picker-hint">Complete today's questions to share with @{friend.username}</p>
                   ) : (
                     <button
                       type="button"

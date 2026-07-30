@@ -6,47 +6,75 @@ import {
   respondToFriendRequest,
   getFriendsWithStreaks,
   getStreakSharesForUser,
+  getIncomingShares,
+  markShareSeen,
 } from '../../../lib/storage'
 import { computeShareStreak } from '../../../lib/streakShare'
+import { todayStr } from '../../../lib/streak'
+import { getUserTimeZone } from '../../../lib/timezone'
 import TopBar from '../../shared/TopBar'
 import FriendRequestBanner from './FriendRequestBanner'
+import FriendScoreCardModal from '../share/FriendScoreCardModal'
 
 export default function FriendsScreen({ user, onBack, onLogout, onLogoClick }) {
   const [pendingRequests, setPendingRequests] = useState(null)
   const [friends, setFriends] = useState(null)
   const [shares, setShares] = useState(null)
+  const [incomingShares, setIncomingShares] = useState([])
+  const [viewingShare, setViewingShare] = useState(null)
 
   const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
   const [results, setResults] = useState(null)
   const [searchError, setSearchError] = useState('')
+
+  // Timezone-aware "today", passed explicitly to hasSharedToday/computeShareStreak
+  // since their default UTC-only todayStr() would mismatch share-score.js's
+  // timezone-aware share_date storage in the evening for zones behind UTC.
+  const today = todayStr(new Date(), getUserTimeZone())
   const [requestStatusById, setRequestStatusById] = useState({}) // studentId -> 'sending' | 'sent' | error message
 
   async function refreshFriendsData() {
-    const [pending, friendList, shareRows] = await Promise.all([
+    const [pending, friendList, shareRows, incoming] = await Promise.all([
       getPendingFriendRequests(user.id),
       getFriendsWithStreaks(user.id),
       getStreakSharesForUser(user.id),
+      getIncomingShares(),
     ])
     setPendingRequests(pending)
     setFriends(friendList)
     setShares(shareRows)
+    setIncomingShares(incoming)
   }
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([getPendingFriendRequests(user.id), getFriendsWithStreaks(user.id), getStreakSharesForUser(user.id)]).then(
-      ([pending, friendList, shareRows]) => {
-        if (cancelled) return
-        setPendingRequests(pending)
-        setFriends(friendList)
-        setShares(shareRows)
-      }
-    )
+    Promise.all([
+      getPendingFriendRequests(user.id),
+      getFriendsWithStreaks(user.id),
+      getStreakSharesForUser(user.id),
+      getIncomingShares(),
+    ]).then(([pending, friendList, shareRows, incoming]) => {
+      if (cancelled) return
+      setPendingRequests(pending)
+      setFriends(friendList)
+      setShares(shareRows)
+      setIncomingShares(incoming)
+    })
     return () => {
       cancelled = true
     }
   }, [user.id])
+
+  async function handleViewShare(share) {
+    setIncomingShares((prev) => prev.filter((s) => s.id !== share.id))
+    setViewingShare(share)
+    try {
+      await markShareSeen(share.id)
+    } catch (err) {
+      console.error('[Friends] failed to mark share seen:', err)
+    }
+  }
 
   async function handleSearch(e) {
     e.preventDefault()
@@ -151,23 +179,43 @@ export default function FriendsScreen({ user, onBack, onLogout, onLogoClick }) {
         ) : (
           <div className="finance-student-list">
             {friends.map((friend) => {
-              const shareStreak = shares ? computeShareStreak(shares, user.id, friend.id) : 0
-              return (
-                <div key={friend.id} className="finance-student-row">
+              const shareStreak = shares ? computeShareStreak(shares, user.id, friend.id, today) : 0
+              const incoming = incomingShares.find((s) => s.senderId === friend.id)
+              const rowContent = (
+                <>
                   <div>
-                    <p className="finance-student-name">@{friend.username}</p>
+                    <p className="finance-student-name">
+                      @{friend.username}
+                      {incoming && <span className="friend-share-badge">1</span>}
+                    </p>
                     <p className="finance-student-detail">
                       {shareStreak > 0
                         ? `🔥 ${shareStreak} day share streak`
                         : '🔥 Start a share streak — share your daily score!'}
                     </p>
                   </div>
+                </>
+              )
+              return incoming ? (
+                <button
+                  key={friend.id}
+                  type="button"
+                  className="finance-student-row finance-student-row--clickable"
+                  onClick={() => handleViewShare(incoming)}
+                >
+                  {rowContent}
+                </button>
+              ) : (
+                <div key={friend.id} className="finance-student-row">
+                  {rowContent}
                 </div>
               )
             })}
           </div>
         )}
       </div>
+
+      {viewingShare && <FriendScoreCardModal share={viewingShare} onClose={() => setViewingShare(null)} />}
     </div>
   )
 }

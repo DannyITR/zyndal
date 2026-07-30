@@ -1,6 +1,7 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeUsername } from '../_lib/sanitize.js'
+import { insertNotification } from '../_lib/notifications.js'
 
 // Mirrors sendFriendRequest and respondToFriendRequest in storage.js behind
 // one action-based endpoint, as spec'd. 'send' accepts target_user_id
@@ -90,8 +91,23 @@ async function handleSend(userId, body) {
     err.code = 'VALIDATION_ERROR'
     throw err
   }
-  const { error } = await supabase.from('friend_requests').insert({ sender_id: userId, receiver_id: targetId, status: 'pending' })
+  const { data: requestRow, error } = await supabase
+    .from('friend_requests')
+    .insert({ sender_id: userId, receiver_id: targetId, status: 'pending' })
+    .select()
+    .single()
   if (error) throw error
+
+  const { data: sender } = await supabase.from('users').select('username').eq('id', userId).maybeSingle()
+  const senderUsername = sender?.username || 'Someone'
+  await insertNotification({
+    userId: targetId,
+    type: 'friend_request',
+    title: `@${senderUsername} wants to follow you`,
+    body: 'Tap to accept or decline',
+    data: { request_id: requestRow.id, sender_id: userId, sender_username: senderUsername },
+  })
+
   return { sent: true }
 }
 

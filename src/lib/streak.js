@@ -125,6 +125,11 @@ export function formatLongDate(dateStr) {
 // is now enough to keep the streak alive for the day).
 export const TOTAL_SUBJECTS = 6
 
+// Index 0-6 maps to today's correct-answer count — red at 0, full green at
+// 6. Used by the visual share card (ShareStreakScreen.jsx) and the
+// read-only friend score card (FriendScoreCardModal.jsx).
+export const SCORE_COLORS = ['#ff5c7a', '#ff8c42', '#ffab5e', '#ffe066', '#d4e157', '#8bc34a', '#34e0a1']
+
 // 6 subjects × 7 days of first-attempt-correct answers, Monday through Sunday.
 export const PERFECT_WEEK_TARGET = 42
 

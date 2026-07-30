@@ -7,6 +7,9 @@ import {
   getActiveStudyPlan,
   completeStudyPlan,
   cancelStudyPlan,
+  getIncomingShares,
+  markShareSeen,
+  getNotifications,
 } from '../../lib/storage'
 import { getSubject } from '../../lib/questions'
 import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE } from '../../lib/streak'
@@ -18,11 +21,13 @@ import CalendarScreen from './CalendarScreen'
 import Leaderboard from '../shared/Leaderboard'
 import SettingsScreen from '../shared/SettingsScreen'
 import ShareStreakScreen from './share/ShareStreakScreen'
+import FriendScoreCardModal from './share/FriendScoreCardModal'
 import StreakFlame from './StreakFlame'
 import StatPill from './StatPill'
 import InfoModal from './InfoModal'
 import FriendsScreen from './friends/FriendsScreen'
 import FriendRequestBanner from './friends/FriendRequestBanner'
+import NotificationsScreen from './notifications/NotificationsScreen'
 import TestPrepSetupScreen from './testprep/TestPrepSetupScreen'
 import StudyPlanScreen from './testprep/StudyPlanScreen'
 import StudyGuideScreen from './testprep/StudyGuideScreen'
@@ -81,6 +86,18 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [showGrades, setShowGrades] = useState(false)
   const [showCurriculum, setShowCurriculum] = useState(false)
   const [showCalendar, setShowCalendar] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  // Shares received today that the student hasn't marked seen yet — powers
+  // the home-screen notification box (below). Friends screen fetches its
+  // own independent copy for its badge (see FriendsScreen.jsx) rather than
+  // sharing this state, matching this codebase's existing per-screen-fetch
+  // convention (it already re-fetches friends/pendingRequests/shares itself
+  // instead of receiving StudentFlow's own copies).
+  const [incomingShares, setIncomingShares] = useState([])
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
+  // The share currently shown in the read-only friend-score-card modal,
+  // opened from the home-screen notification box below.
+  const [viewingShare, setViewingShare] = useState(null)
   // The date the home screen's subject grid and score box are showing —
   // defaults to today, steps via the date-nav bar's arrows, or jumps
   // straight to a tapped day in CalendarScreen. Persists across opening and
@@ -113,6 +130,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     setShowGrades(false)
     setShowCurriculum(false)
     setShowCalendar(false)
+    setShowNotifications(false)
     setSelectedDate(today)
     setPickedSubjectId(null)
   }
@@ -186,6 +204,39 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       cancelled = true
     }
   }, [user.id])
+
+  // Refreshes incomingShares/unreadNotificationCount — called on mount and
+  // again whenever the Friends or Notifications screens are closed, since
+  // this component's own mount effects don't re-run on a screen toggle and
+  // a share/notification could have been marked seen/read while one of
+  // those screens was open.
+  async function refreshNotificationState() {
+    const [incoming, { unreadCount }] = await Promise.all([getIncomingShares(), getNotifications()])
+    setIncomingShares(incoming)
+    setUnreadNotificationCount(unreadCount)
+  }
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([getIncomingShares(), getNotifications()]).then(([incoming, { unreadCount }]) => {
+      if (cancelled) return
+      setIncomingShares(incoming)
+      setUnreadNotificationCount(unreadCount)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [user.id])
+
+  async function handleViewShare(share) {
+    setIncomingShares((prev) => prev.filter((s) => s.id !== share.id))
+    setViewingShare(share)
+    try {
+      await markShareSeen(share.id)
+    } catch (err) {
+      console.error('[StudentFlow] failed to mark share seen:', err)
+    }
+  }
 
   useEffect(() => {
     if (!user.is_premium) return
@@ -281,7 +332,24 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     return (
       <FriendsScreen
         user={user}
-        onBack={() => setShowFriends(false)}
+        onBack={() => {
+          setShowFriends(false)
+          refreshNotificationState()
+        }}
+        onLogout={onLogout}
+        onLogoClick={handleLogoClick}
+      />
+    )
+  }
+
+  if (showNotifications) {
+    return (
+      <NotificationsScreen
+        user={user}
+        onBack={() => {
+          setShowNotifications(false)
+          refreshNotificationState()
+        }}
         onLogout={onLogout}
         onLogoClick={handleLogoClick}
       />
@@ -419,6 +487,8 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           subtitle="Choose today's subject"
           username={user.username}
           onLogout={onLogout}
+          onNotifications={() => setShowNotifications(true)}
+          unreadCount={unreadNotificationCount}
           onSettings={() => setShowSettings(true)}
           onLogoClick={handleLogoClick}
         />
@@ -447,6 +517,21 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           <div className="friend-request-banner-list">
             {pendingFriendRequests.map((request) => (
               <FriendRequestBanner key={request.id} request={request} onRespond={handleRespondToFriendRequest} />
+            ))}
+          </div>
+        )}
+
+        {incomingShares.length > 0 && (
+          <div className="friend-request-banner-list">
+            {incomingShares.map((share) => (
+              <div key={share.id} className="incoming-share-banner">
+                <p className="incoming-share-text">
+                  🔥 <strong>@{share.senderUsername}</strong> shared their daily score with you!
+                </p>
+                <button type="button" className="btn btn-primary btn-small" onClick={() => handleViewShare(share)}>
+                  View Score
+                </button>
+              </div>
             ))}
           </div>
         )}
@@ -518,6 +603,8 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
             onClose={() => setInfoModalKey(null)}
           />
         )}
+
+        {viewingShare && <FriendScoreCardModal share={viewingShare} onClose={() => setViewingShare(null)} />}
       </div>
     )
   }

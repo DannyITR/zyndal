@@ -1,6 +1,6 @@
 import Logo from './Logo'
 
-export default function TopBar({ title, subtitle, username, onLogout, onBack, onSettings, onLogoClick }) {
+export default function TopBar({ title, subtitle, username, onLogout, onBack, onSettings, onNotifications, unreadCount, onLogoClick }) {
   return (
     <header className="topbar">
       <div className="topbar-brand-row">
@@ -21,6 +21,12 @@ export default function TopBar({ title, subtitle, username, onLogout, onBack, on
         <div className="topbar-actions">
           {username && <p className="topbar-username">@{username}</p>}
           <div className="topbar-buttons">
+            {onNotifications && (
+              <button type="button" className="btn btn-ghost btn-icon topbar-icon-btn" onClick={onNotifications} aria-label="Notifications">
+                🔔
+                {unreadCount > 0 && <span className="topbar-badge">{unreadCount}</span>}
+              </button>
+            )}
             {onSettings && (
               <button type="button" className="btn btn-ghost btn-icon" onClick={onSettings} aria-label="Settings">
                 ⚙️

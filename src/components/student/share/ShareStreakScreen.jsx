@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { getFriendsWithStreaks, getStreakSharesForUser, getTodaysReceivedShares, shareStreakWithFriend } from '../../../lib/storage'
 import { hasSharedToday, computeShareStreak } from '../../../lib/streakShare'
+import { SCORE_COLORS, TOTAL_SUBJECTS } from '../../../lib/streak'
 import TopBar from '../../shared/TopBar'
 import FriendSharePickerModal from './FriendSharePickerModal'
-
-// Index 0-6 maps to today's correct-answer count — red at 0, full green at 6.
-const SCORE_COLORS = ['#ff5c7a', '#ff8c42', '#ffab5e', '#ffe066', '#d4e157', '#8bc34a', '#34e0a1']
 
 export default function ShareStreakScreen({ user, streak, xp, todayScore, today, onBack, onLogout, onLogoClick }) {
   const [friends, setFriends] = useState(null)
@@ -30,8 +28,19 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
   // friend yet — once one exists, the active-streak friend list below
   // already shows it every time this screen opens, so repeating it up top
   // too would be redundant nagging rather than a nudge to start one.
+  //
+  // Every hasSharedToday/computeShareStreak call in this file passes the
+  // `today` prop explicitly (this screen's own timezone-aware "today",
+  // matching how share-score.js now stores share_date) rather than relying
+  // on those functions' default `today = todayStr()` parameter, which is
+  // UTC-only — a student browsing in the evening in a zone behind UTC could
+  // otherwise see share_date="today (local)" rows compared against
+  // todayStr()'s "tomorrow (UTC)", silently treating every share as
+  // "not today".
   const receivedToShow =
-    receivedToday && shares ? receivedToday.filter((r) => computeShareStreak(shares, user.id, r.senderId) === 0) : []
+    receivedToday && shares
+      ? receivedToday.filter((r) => computeShareStreak(shares, user.id, r.senderId, today) === 0)
+      : []
 
   const scoreColor = SCORE_COLORS[Math.min(Math.max(todayScore, 0), 6)]
 
@@ -39,7 +48,7 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
   // surfacing as a card here — everyone else is reachable via the picker
   // modal instead of cluttering the main screen with 0-streak friends.
   const activeStreakFriends = friends
-    ? friends.filter((friend) => shares && computeShareStreak(shares, user.id, friend.id) >= 1)
+    ? friends.filter((friend) => shares && computeShareStreak(shares, user.id, friend.id, today) >= 1)
     : []
 
   useEffect(() => {
@@ -148,9 +157,9 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
       {activeStreakFriends.length > 0 && (
         <div className="share-friend-list">
           {activeStreakFriends.map((friend) => {
-            const sharedToday = shares ? hasSharedToday(shares, user.id, friend.id) : false
-            const friendSharedBackToday = shares ? hasSharedToday(shares, friend.id, user.id) : false
-            const shareStreak = shares ? computeShareStreak(shares, user.id, friend.id) : 0
+            const sharedToday = shares ? hasSharedToday(shares, user.id, friend.id, today) : false
+            const friendSharedBackToday = shares ? hasSharedToday(shares, friend.id, user.id, today) : false
+            const shareStreak = shares ? computeShareStreak(shares, user.id, friend.id, today) : 0
             // Mutual-only: the share streak doesn't advance until both sides
             // share the same day, so a one-sided share needs to say so —
             // otherwise it looks like nothing happened.
@@ -178,7 +187,9 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
           user={user}
           friends={friends || []}
           shares={shares}
+          today={today}
           sendingToId={sendingToId}
+          canShareToday={todayScore >= TOTAL_SUBJECTS}
           onShare={handleShareWithFriend}
           onClose={() => setShowFriendPicker(false)}
         />

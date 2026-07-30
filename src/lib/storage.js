@@ -83,6 +83,10 @@ function callQuestionsApi(method, endpoint, body) {
   return callApi('/api/questions', method, endpoint, body)
 }
 
+function callNotificationsApi(method, endpoint, body) {
+  return callApi('/api/notifications', method, endpoint, body)
+}
+
 // Session 4: ParentDashboard and FinanceScreen each already fetch several
 // small, always-together pieces on mount via Promise.all (students,
 // wallet, study plans, pending bonuses, payout history, per-student
@@ -753,8 +757,9 @@ export async function respondToFriendRequest(requestId, accept) {
 // value (see api/social/share-score.js) — but stays in the signature since
 // ShareStreakScreen.jsx calls this positionally.
 export async function shareStreakWithFriend(senderId, receiverId, _senderStreak) {
-  await callSocialApi('POST', 'share-score', { receiver_id: receiverId })
+  const result = await callSocialApi('POST', 'share-score', { receiver_id: receiverId, timezone: getUserTimeZone() })
   invalidateFriendsDashboard()
+  return result
 }
 
 // Every share involving this user, in either direction — used client-side to
@@ -770,6 +775,33 @@ export async function getStreakSharesForUser(userId) {
 export async function getTodaysReceivedShares(userId) {
   const dash = await fetchFriendsDashboard(userId)
   return dash.receivedToday
+}
+
+// ---------- Notifications ----------
+// Unlike getTodaysReceivedShares above (which reads from the cached
+// friends-dashboard fetch and includes every share regardless of seen_at,
+// feeding ShareStreakScreen's unrelated "start a streak" nudge),
+// getIncomingShares is a plain uncached call scoped to unseen shares only —
+// backs the home-screen notification box and the Friends screen's badge.
+// Call volume doesn't warrant a cache layer here.
+export async function getIncomingShares() {
+  return callSocialApi('GET', `get-incoming-shares?timezone=${encodeURIComponent(getUserTimeZone())}`)
+}
+
+export async function markShareSeen(shareId) {
+  return callNotificationsApi('POST', 'mark-share-seen', { share_id: shareId })
+}
+
+export async function getNotifications() {
+  return callNotificationsApi('GET', 'get-notifications')
+}
+
+export async function markNotificationRead(notificationId) {
+  return callNotificationsApi('POST', 'mark-read', { notification_id: notificationId })
+}
+
+export async function markAllNotificationsRead() {
+  return callNotificationsApi('POST', 'mark-read', { mark_all: true })
 }
 
 // ---------- Curriculum outlines ----------

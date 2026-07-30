@@ -7,7 +7,14 @@
 // algorithm stays byte-identical between client and server — only the
 // Supabase I/O glue is duplicated here.
 import { supabase } from './auth.js'
-import { DEFAULT_MILESTONE_BONUSES, PERFECT_WEEK_TARGET, mondayOfWeek, todayStr } from '../../src/lib/streak.js'
+import {
+  DEFAULT_MILESTONE_BONUSES,
+  PERFECT_WEEK_TARGET,
+  TOTAL_SUBJECTS,
+  mondayOfWeek,
+  todayStr,
+  countCorrectSubjectsToday,
+} from '../../src/lib/streak.js'
 import { findQuestionByPrompt } from '../../src/lib/questions.js'
 
 // Every column a user is allowed to see on their OWN row — everything
@@ -159,6 +166,16 @@ export async function getProgressForUser(userId, timezone) {
   if (error) throw error
   const generatedByText = await buildGeneratedQuestionsMap(answerRows || [])
   return toProgress(streakRow, answerRows || [], timezone, generatedByText)
+}
+
+// Used by api/social/share-score.js (its response + the score_share
+// notification body) and api/social/get-incoming-shares.js (per-sender,
+// batched) — "today's" correct-answer count out of TOTAL_SUBJECTS, in the
+// caller's own timezone.
+export async function getTodayScore(userId, timezone) {
+  const progress = await getProgressForUser(userId, timezone)
+  const today = todayStr(new Date(), timezone)
+  return { correct: countCorrectSubjectsToday(progress.history, today), total: TOTAL_SUBJECTS }
 }
 
 // Used by api/_lib/dailyQuestion.js's resolveDailyQuestion to read the
