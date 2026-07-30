@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { signup, updateUserProfile } from '../../lib/storage'
 import LegalModal from '../legal/LegalModal'
-import SocialLoginButtons from './SocialLoginButtons'
 import AccountTypeSelector from './AccountTypeSelector'
 
 // Bilingual UI strings for this form only (not a general i18n system — see
@@ -14,6 +13,7 @@ import AccountTypeSelector from './AccountTypeSelector'
 // today.
 const STRINGS = {
   en: {
+    back: '← Back',
     username: 'Username',
     email: 'Email',
     password: 'Password',
@@ -39,6 +39,7 @@ const STRINGS = {
     errorFallback: 'Something went wrong. Please try again.',
   },
   fr: {
+    back: '← Retour',
     username: "Nom d'utilisateur",
     email: 'Courriel',
     password: 'Mot de passe',
@@ -67,11 +68,9 @@ const STRINGS = {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-export default function SignupForm({ onAuth }) {
-  const [lang, setLang] = useState('en')
+export default function SignupForm({ lang, onLangChange, onAuth, onBack }) {
   const t = STRINGS[lang]
 
-  const [showEmailForm, setShowEmailForm] = useState(false)
   const [accountType, setAccountType] = useState('student')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
@@ -160,136 +159,136 @@ export default function SignupForm({ onAuth }) {
 
   return (
     <form className="auth-form" onSubmit={handleSubmit}>
+      <div className="auth-back-row">
+        <button type="button" className="auth-link-btn" onClick={onBack}>
+          {t.back}
+        </button>
+      </div>
+
       <div className="signup-lang-toggle" role="group" aria-label="Language">
         <div className="lang-toggle">
           <button
             type="button"
             className={`lang-toggle-btn ${lang === 'en' ? 'lang-toggle-btn--active' : ''}`}
-            onClick={() => setLang('en')}
+            onClick={() => onLangChange('en')}
           >
             English
           </button>
           <button
             type="button"
             className={`lang-toggle-btn ${lang === 'fr' ? 'lang-toggle-btn--active' : ''}`}
-            onClick={() => setLang('fr')}
+            onClick={() => onLangChange('fr')}
           >
             Français
           </button>
         </div>
       </div>
 
-      <SocialLoginButtons lang={lang} onError={setError} onContinueWithEmail={() => setShowEmailForm(true)} />
+      <AccountTypeSelector value={accountType} onChange={setAccountType} lang={lang} />
 
-      {showEmailForm && (
+      <div className="field">
+        <label htmlFor="signup-username">{t.username}</label>
+        <input
+          id="signup-username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          autoComplete="username"
+        />
+      </div>
+      <div className="field">
+        <label htmlFor="signup-email">{t.email}</label>
+        <input
+          id="signup-email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
+        />
+      </div>
+      <div className="field">
+        <label htmlFor="signup-password">{t.password}</label>
+        <input
+          id="signup-password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="new-password"
+        />
+      </div>
+      <div className="field">
+        <label htmlFor="signup-confirm">{t.confirmPassword}</label>
+        <input
+          id="signup-confirm"
+          type="password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          autoComplete="new-password"
+        />
+      </div>
+
+      {accountType === 'student' && (
         <>
-          <AccountTypeSelector value={accountType} onChange={setAccountType} lang={lang} />
-
           <div className="field">
-            <label htmlFor="signup-username">{t.username}</label>
-            <input
-              id="signup-username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
-            />
+            <label htmlFor="signup-grade">{t.grade}</label>
+            <select id="signup-grade" value={grade} onChange={(e) => setGrade(e.target.value)}>
+              <option value="">{t.selectGrade}</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+            </select>
           </div>
           <div className="field">
-            <label htmlFor="signup-email">{t.email}</label>
+            <label htmlFor="signup-parent-code">{t.parentCode}</label>
             <input
-              id="signup-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
+              id="signup-parent-code"
+              value={parentCode}
+              onChange={(e) => setParentCode(e.target.value.toUpperCase())}
+              placeholder={t.parentCodePlaceholder}
+              maxLength={6}
             />
+            <p className="field-hint">{t.parentCodeHint}</p>
           </div>
-          <div className="field">
-            <label htmlFor="signup-password">{t.password}</label>
-            <input
-              id="signup-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="signup-confirm">{t.confirmPassword}</label>
-            <input
-              id="signup-confirm"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-          </div>
-
-          {accountType === 'student' && (
-            <>
-              <div className="field">
-                <label htmlFor="signup-grade">{t.grade}</label>
-                <select id="signup-grade" value={grade} onChange={(e) => setGrade(e.target.value)}>
-                  <option value="">{t.selectGrade}</option>
-                  <option value="7">7</option>
-                  <option value="8">8</option>
-                  <option value="9">9</option>
-                  <option value="10">10</option>
-                  <option value="11">11</option>
-                </select>
-              </div>
-              <div className="field">
-                <label htmlFor="signup-parent-code">{t.parentCode}</label>
-                <input
-                  id="signup-parent-code"
-                  value={parentCode}
-                  onChange={(e) => setParentCode(e.target.value.toUpperCase())}
-                  placeholder={t.parentCodePlaceholder}
-                  maxLength={6}
-                />
-                <p className="field-hint">{t.parentCodeHint}</p>
-              </div>
-            </>
-          )}
-
-          <label className="checkbox-field">
-            <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} />
-            <span>
-              {t.agreeToPrefix}{' '}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault()
-                  setOpenLegal('terms')
-                }}
-              >
-                {t.termsOfService}
-              </button>{' '}
-              {t.and}{' '}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault()
-                  setOpenLegal('privacy')
-                }}
-              >
-                {t.privacyPolicy}
-              </button>
-            </span>
-          </label>
-
-          {needsAgeConfirmation && (
-            <label className="checkbox-field">
-              <input type="checkbox" checked={confirmedAge} onChange={(e) => setConfirmedAge(e.target.checked)} />
-              <span>{t.ageConfirmation}</span>
-            </label>
-          )}
-
-          <button type="submit" className="btn btn-primary btn-block" disabled={!canSubmit}>
-            {submitting ? t.creatingAccount : t.createAccount}
-          </button>
         </>
       )}
+
+      <label className="checkbox-field">
+        <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} />
+        <span>
+          {t.agreeToPrefix}{' '}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              setOpenLegal('terms')
+            }}
+          >
+            {t.termsOfService}
+          </button>{' '}
+          {t.and}{' '}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              setOpenLegal('privacy')
+            }}
+          >
+            {t.privacyPolicy}
+          </button>
+        </span>
+      </label>
+
+      {needsAgeConfirmation && (
+        <label className="checkbox-field">
+          <input type="checkbox" checked={confirmedAge} onChange={(e) => setConfirmedAge(e.target.checked)} />
+          <span>{t.ageConfirmation}</span>
+        </label>
+      )}
+
+      <button type="submit" className="btn btn-primary btn-block" disabled={!canSubmit}>
+        {submitting ? t.creatingAccount : t.createAccount}
+      </button>
 
       {error && <p className="form-error">{error}</p>}
 

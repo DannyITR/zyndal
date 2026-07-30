@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { supabaseAuth } from '../../lib/supabaseAuthClient'
 
-// Shared by LoginForm.jsx and SignupForm.jsx. Google is the only live OAuth
-// provider (Facebook and Snapchat were removed — neither is active yet, and
-// showing disabled/dead buttons wasn't worth the confusion). "Continue with
-// Email" isn't OAuth at all — it just tells the parent form to reveal its
-// own username/password fields, which are hidden by default now; see
-// onContinueWithEmail below and showEmailForm in LoginForm/SignupForm.
+// Shared by LoginForm.jsx and SignupChooser.jsx. Google is the only live
+// OAuth provider (Facebook and Snapchat were removed — neither is active
+// yet, and showing disabled/dead buttons wasn't worth the confusion).
+// "Continue with Email" isn't OAuth at all — it just tells the parent to
+// move to the next step (see onContinueWithEmail below). LoginForm shows
+// its username/password fields immediately rather than gating them behind
+// a "choose" step, so it doesn't pass onContinueWithEmail — that button
+// only renders when the prop is actually given (SignupChooser.jsx).
 const STRINGS = {
   en: { google: 'Continue with Google', email: 'Continue with Email', redirecting: 'Redirecting…' },
   fr: { google: 'Continuer avec Google', email: 'Continuer avec e-mail', redirecting: 'Redirection…' },
@@ -61,10 +63,12 @@ export default function SocialLoginButtons({ lang = 'en', onError, onContinueWit
         <GoogleIcon />
         {redirecting ? t.redirecting : t.google}
       </button>
-      <button type="button" className="btn social-btn social-btn--email" onClick={onContinueWithEmail}>
-        <EmailIcon />
-        {t.email}
-      </button>
+      {onContinueWithEmail && (
+        <button type="button" className="btn social-btn social-btn--email" onClick={onContinueWithEmail}>
+          <EmailIcon />
+          {t.email}
+        </button>
+      )}
     </div>
   )
 }
