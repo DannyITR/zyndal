@@ -191,6 +191,22 @@ export async function signup({ username, password, accountType, grade = null, pa
   return user
 }
 
+// ---------- Password reset ----------
+// Public — a signed-out visitor who forgot their password has no session,
+// by definition. Mirrors the email-verification wrappers' shape/rationale.
+
+export async function requestPasswordReset(email) {
+  return callAuthApi('request-password-reset', { email })
+}
+
+export async function validateResetToken(token) {
+  return callApi('/api/auth', 'GET', `validate-reset-token?token=${encodeURIComponent(token)}`)
+}
+
+export async function resetPassword(token, newPassword) {
+  return callAuthApi('reset-password', { token, new_password: newPassword })
+}
+
 // Public — no session exists yet at this point in the signup flow. Called
 // by SignupForm.jsx right before signup() runs; throws (via callApi) with
 // code EMAIL_EXISTS if taken, same as every other endpoint's error shape.

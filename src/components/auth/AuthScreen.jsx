@@ -3,6 +3,7 @@ import Logo from '../shared/Logo'
 import LoginForm from './LoginForm'
 import SignupChooser from './SignupChooser'
 import SignupForm from './SignupForm'
+import ForgotPasswordScreen from './ForgotPasswordScreen'
 
 // Owns the auth flow's step state so each step can show only what belongs
 // to it — the Log In/Sign Up tabs, in particular, only make sense while
@@ -35,7 +36,15 @@ export default function AuthScreen({ initialMode = 'login', onAuth, onLogoClick 
           </div>
         )}
 
-        {view === 'login' && <LoginForm onAuth={onAuth} onSwitchToSignup={() => setView('signupChoose')} />}
+        {view === 'login' && (
+          <LoginForm
+            onAuth={onAuth}
+            onSwitchToSignup={() => setView('signupChoose')}
+            onForgotPassword={() => setView('forgotPassword')}
+          />
+        )}
+
+        {view === 'forgotPassword' && <ForgotPasswordScreen onBack={() => setView('login')} />}
 
         {view === 'signupChoose' && (
           <SignupChooser lang={lang} onLangChange={setLang} onContinueWithEmail={() => setView('signupForm')} />

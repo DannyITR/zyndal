@@ -9,12 +9,11 @@ import SocialLoginButtons from './SocialLoginButtons'
 // available below the fields for existing Google-linked accounts; see
 // AuthScreen.jsx's `view` state machine for how this fits into the wider
 // login/signup-choice/signup-form/Google-onboarding flow.
-export default function LoginForm({ onAuth, onSwitchToSignup }) {
+export default function LoginForm({ onAuth, onSwitchToSignup, onForgotPassword }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [showForgotNote, setShowForgotNote] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -54,11 +53,10 @@ export default function LoginForm({ onAuth, onSwitchToSignup }) {
       </div>
 
       <div className="auth-forgot-row">
-        <button type="button" className="auth-link-btn" onClick={() => setShowForgotNote(true)}>
+        <button type="button" className="auth-link-btn" onClick={onForgotPassword}>
           Forgot password?
         </button>
       </div>
-      {showForgotNote && <p className="auth-forgot-note">Password reset isn't available yet — please contact support.</p>}
 
       <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
         {submitting ? 'Logging in…' : 'Log In'}

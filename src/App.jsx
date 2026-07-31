@@ -4,6 +4,7 @@ import LandingPage from './components/landing/LandingPage'
 import AuthScreen from './components/auth/AuthScreen'
 import OAuthCallbackScreen from './components/auth/OAuthCallbackScreen'
 import VerifyEmailScreen from './components/auth/VerifyEmailScreen'
+import ResetPasswordScreen from './components/auth/ResetPasswordScreen'
 import StudentFlow from './components/student/StudentFlow'
 import ParentDashboard from './components/parent/ParentDashboard'
 import InstallPrompt from './components/shared/InstallPrompt'
@@ -26,6 +27,11 @@ function App() {
   // it aren't logged in on that device, so this is checked (and rendered)
   // before anything waits on getCurrentUser().
   const [isVerifyPage, setIsVerifyPage] = useState(() => window.location.pathname === '/verify')
+  // No setter — unlike isVerifyPage/isOAuthCallback, nothing here ever
+  // calls back into App's own state; ResetPasswordScreen never logs
+  // anyone in (see its own comment), so there's no user object to hand
+  // back and no reason to leave this page programmatically.
+  const [isResetPasswordPage] = useState(() => window.location.pathname === '/reset-password')
 
   useEffect(() => {
     let cancelled = false
@@ -100,6 +106,10 @@ function App() {
       setUser(nextUser)
       setShowLanding(false)
     }
+  }
+
+  if (isResetPasswordPage) {
+    return <ResetPasswordScreen />
   }
 
   if (isVerifyPage) {
