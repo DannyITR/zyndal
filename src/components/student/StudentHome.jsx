@@ -65,6 +65,7 @@ export default function StudentHome({
           unitTitle: data.unit_title,
           topicTitle: data.topic_title,
           source: data.source,
+          explanation: data.explanation,
         })
       })
       .catch(() => {
@@ -76,8 +77,6 @@ export default function StudentHome({
   }, [isToday, subject.id])
   // The scored first attempt persisted this session: { selectedIndex, correct, coinsEarned, xpEarned }
   const [justAnswered, setJustAnswered] = useState(null)
-  // The most recent retry pick after a wrong first attempt — local only, never persisted or rewarded.
-  const [retryAttempt, setRetryAttempt] = useState(null)
   const [milestone, setMilestone] = useState(null)
   const [perfectWeekBonus, setPerfectWeekBonus] = useState(null) // dollars, or null
   const [submitting, setSubmitting] = useState(false)
@@ -131,30 +130,21 @@ export default function StudentHome({
         }
       : null)
   const firstAttemptMade = Boolean(firstAttempt)
-  const firstAttemptWrong = firstAttemptMade && !firstAttempt.correct
-  const solvedByRetry = Boolean(retryAttempt?.correct)
-  const canRetry = firstAttemptWrong && !solvedByRetry
-  const locked = firstAttemptMade && (firstAttempt.correct || solvedByRetry)
-
-  // The most recent retry pick takes over the display once one exists;
-  // otherwise fall back to the scored first attempt.
-  const activeAttempt = retryAttempt ?? firstAttempt
-  const displaySelectedIndex = activeAttempt?.selectedIndex ?? null
+  // Wordle-style: the first attempt is final, correct or not — no retry.
+  const locked = firstAttemptMade
+  const displaySelectedIndex = firstAttempt?.selectedIndex ?? null
   const coinsEarnedDisplay = firstAttempt?.coinsEarned ?? 0
   const xpEarnedDisplay = firstAttempt?.xpEarned ?? 0
+  const correctAnswerText = question ? question.options[question.correctIndex] : ''
 
   const displayStreak = getEffectiveStreak(progress, today)
   const subjectsLeftToday = TOTAL_SUBJECTS - countCorrectSubjectsToday(progress.history, today)
 
   async function handleSelect(index) {
     if (submitting) return
-
-    if (firstAttemptMade) {
-      // Retry path: local feedback only, never touches Supabase, coins, XP, or streak.
-      if (!canRetry) return
-      setRetryAttempt({ selectedIndex: index, correct: index === question.correctIndex })
-      return
-    }
+    // The first attempt is final — QuestionCard already disables the
+    // options once locked, but this is the authoritative guard.
+    if (firstAttemptMade) return
 
     setSubmitting(true)
     setSubmitError('')
@@ -243,15 +233,7 @@ export default function StudentHome({
           {submitError && <p className="form-error">{submitError}</p>}
 
           {firstAttemptMade && (
-            <div
-              className={`result-banner ${
-                firstAttempt.correct
-                  ? 'result-banner--correct'
-                  : solvedByRetry
-                    ? 'result-banner--neutral'
-                    : 'result-banner--wrong'
-              }`}
-            >
+            <div className={`result-banner ${firstAttempt.correct ? 'result-banner--correct' : 'result-banner--wrong'}`}>
               {firstAttempt.correct ? (
                 <>
                   <p className="result-headline">
@@ -263,13 +245,12 @@ export default function StudentHome({
                       : `🔥 Streak saved for today! ${subjectsLeftToday} more subject${subjectsLeftToday === 1 ? '' : 's'} left for extra XP and coins.`}
                   </p>
                 </>
-              ) : solvedByRetry ? (
-                <>
-                  <p className="result-headline">Nice — that's the right answer.</p>
-                  <p className="result-next">Retries don't earn coins, XP, or streak credit. New question tomorrow.</p>
-                </>
               ) : (
-                <p className="result-headline">No coins earned — try again to learn the answer.</p>
+                <>
+                  <p className="result-headline">Not this time — the correct answer was {correctAnswerText}.</p>
+                  <p className="result-next">Come back tomorrow for a new question!</p>
+                  {question?.explanation && <p className="result-explanation">{question.explanation}</p>}
+                </>
               )}
             </div>
           )}

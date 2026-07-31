@@ -41,7 +41,7 @@ export default function AnswerDetail({ entry, username, onBack, onLogout, onLogo
 
       <div className={`result-banner ${entry.correct ? 'result-banner--correct' : 'result-banner--wrong'}`}>
         <p className="result-headline">
-          {entry.correct ? `Correct! +${entry.coinsEarned} coins · +${entry.xpEarned} XP` : "Not quite — you'll get it next time."}
+          {entry.correct ? `Correct! +${entry.coinsEarned} coins · +${entry.xpEarned} XP` : 'Not this time — the correct answer is shown above.'}
         </p>
       </div>
     </div>

@@ -1366,11 +1366,6 @@ div.zyndal-logo {
   border-color: rgba(255, 92, 122, 0.3);
 }
 
-.result-banner--neutral {
-  background: var(--card-2);
-  border-color: var(--border-strong);
-}
-
 .result-headline {
   font-family: var(--font-heading);
   font-weight: 700;
@@ -1381,6 +1376,15 @@ div.zyndal-logo {
 .result-next {
   font-size: 13px;
   color: var(--text-faint);
+}
+
+.result-explanation {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  line-height: 1.5;
 }
 
 @keyframes rise-in {

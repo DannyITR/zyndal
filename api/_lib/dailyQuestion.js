@@ -130,7 +130,10 @@ export async function resolveDailyQuestion({ userId, subject, timezone }) {
   if (pool.length === 0) {
     if (scheduledUnits.length > 0) triggerBackgroundGeneration(subject, effectiveGrade, scheduledUnits)
     const hardcoded = getDailyQuestionForGrade(subject, effectiveGrade, new Date(`${today}T12:00:00Z`))
-    return { ...hardcoded, source: 'hardcoded' }
+    // The hardcoded bank has no authored explanation text (unlike
+    // AI-generated pool questions below) — explicitly null rather than
+    // absent, so callers can rely on the field always being present.
+    return { ...hardcoded, source: 'hardcoded', explanation: null }
   }
 
   const index = simpleHash(`${userId}:${today}:${subject}`) % pool.length
@@ -160,5 +163,6 @@ export async function resolveDailyQuestion({ userId, subject, timezone }) {
     unitTitle: selected.unit_title,
     topicTitle: selected.topic_title,
     source: 'generated',
+    explanation: selected.explanation ?? null,
   }
 }

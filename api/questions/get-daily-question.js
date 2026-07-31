@@ -46,6 +46,7 @@ async function handle({ userId, body }) {
     topic_title: question.topicTitle ?? null,
     topic: question.topic ?? null,
     source: question.source,
+    explanation: question.explanation ?? null,
   }
 }
 
