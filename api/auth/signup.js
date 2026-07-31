@@ -77,9 +77,10 @@ async function handle({ body }) {
     .maybeSingle()
   if (existingError) throw existingError
   if (existing) {
-    const err = new Error('That username is already taken.')
+    const err = new Error('Username already taken')
     err.status = 400
-    err.code = 'VALIDATION_ERROR'
+    err.code = 'USERNAME_TAKEN'
+    err.userMessage = 'This username is already in use. Please choose a different one.'
     throw err
   }
 

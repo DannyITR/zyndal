@@ -42,7 +42,13 @@ export default function AuthScreen({ initialMode = 'login', onAuth, onLogoClick 
         )}
 
         {view === 'signupForm' && (
-          <SignupForm lang={lang} onLangChange={setLang} onAuth={onAuth} onBack={() => setView('signupChoose')} />
+          <SignupForm
+            lang={lang}
+            onLangChange={setLang}
+            onAuth={onAuth}
+            onBack={() => setView('signupChoose')}
+            onSwitchToLogin={() => setView('login')}
+          />
         )}
       </div>
     </div>

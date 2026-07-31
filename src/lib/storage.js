@@ -191,6 +191,13 @@ export async function signup({ username, password, accountType, grade = null, pa
   return user
 }
 
+// Public — no session exists yet at this point in the signup flow. Called
+// by SignupForm.jsx right before signup() runs; throws (via callApi) with
+// code EMAIL_EXISTS if taken, same as every other endpoint's error shape.
+export async function checkEmailAvailable(email) {
+  return callApi('/api/auth', 'GET', `check-email?email=${encodeURIComponent(email)}`)
+}
+
 // ---------- Social login (Google/Facebook) ----------
 // See OAuthCallbackScreen.jsx / OAuthMergeScreen.jsx for the flow this
 // backs. Both calls hit api/auth/oauth-callback.js and

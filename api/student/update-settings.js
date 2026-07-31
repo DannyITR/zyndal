@@ -86,6 +86,27 @@ async function handle({ userId, body }) {
     updates.email_verified = false
   }
 
+  // Authoritative duplicate-email guard — api/auth/check-email.js is only
+  // a pre-check SignupForm.jsx calls before signup() runs, which can't
+  // catch a race against another signup, and doesn't cover this endpoint's
+  // other caller (SettingsScreen.jsx's own "change your email" field).
+  if (emailChanged && updates.email) {
+    const { data: emailOwner, error: emailOwnerError } = await supabase
+      .from('users')
+      .select('id')
+      .ilike('email', updates.email)
+      .neq('id', userId)
+      .maybeSingle()
+    if (emailOwnerError) throw emailOwnerError
+    if (emailOwner) {
+      const err = new Error('Email already registered')
+      err.status = 400
+      err.code = 'EMAIL_EXISTS'
+      err.userMessage = 'An account with this email already exists. Try logging in instead.'
+      throw err
+    }
+  }
+
   // A brand-new OAuth-onboarding parent needs a parent_code the moment they
   // become a parent, or every parent-linking feature (StudentCard, the
   // signup parent-code field, ParentDashboard) silently has nothing to show

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { signup, updateUserProfile } from '../../lib/storage'
+import { signup, updateUserProfile, checkEmailAvailable } from '../../lib/storage'
 import LegalModal from '../legal/LegalModal'
 import AccountTypeSelector from './AccountTypeSelector'
 
@@ -37,6 +37,7 @@ const STRINGS = {
     errorAgreeTerms: 'You must agree to the Terms of Service and Privacy Policy to create an account.',
     errorAgeConfirmation: 'Please confirm the age/parental permission statement below.',
     errorFallback: 'Something went wrong. Please try again.',
+    logInInstead: 'Log in instead',
   },
   fr: {
     back: '← Retour',
@@ -63,12 +64,13 @@ const STRINGS = {
     errorAgreeTerms: "Vous devez accepter les Conditions d'utilisation et la Politique de confidentialité pour créer un compte.",
     errorAgeConfirmation: 'Veuillez confirmer la déclaration d\'âge/permission parentale ci-dessous.',
     errorFallback: 'Une erreur est survenue. Veuillez réessayer.',
+    logInInstead: 'Se connecter plutôt',
   },
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-export default function SignupForm({ lang, onLangChange, onAuth, onBack }) {
+export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitchToLogin }) {
   const t = STRINGS[lang]
 
   const [accountType, setAccountType] = useState('student')
@@ -81,6 +83,7 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack }) {
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [confirmedAge, setConfirmedAge] = useState(false)
   const [error, setError] = useState('')
+  const [errorCode, setErrorCode] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [openLegal, setOpenLegal] = useState(null) // null | 'privacy' | 'terms'
 
@@ -90,6 +93,7 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack }) {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    setErrorCode('')
 
     const trimmedUsername = username.trim()
     if (trimmedUsername.length < 3) {
@@ -120,6 +124,15 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack }) {
 
     setSubmitting(true)
     try {
+      // Checked here, before signup() creates the account, rather than
+      // only in the follow-up updateUserProfile call below — signup.js
+      // never collects email itself (see that call's comment), so without
+      // this pre-check a duplicate email would only surface after an
+      // account already exists with no email attached. update-settings.js
+      // still re-checks authoritatively (catches the rare race against
+      // another signup finishing in between).
+      await checkEmailAvailable(trimmedEmail)
+
       const newUser = await signup({
         username: trimmedUsername,
         password,
@@ -152,6 +165,7 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack }) {
       onAuth(finalUser)
     } catch (err) {
       setError(err.message || t.errorFallback)
+      setErrorCode(err.code || '')
     } finally {
       setSubmitting(false)
     }
@@ -290,7 +304,19 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack }) {
         {submitting ? t.creatingAccount : t.createAccount}
       </button>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && (
+        <p className="form-error">
+          {error}
+          {errorCode === 'EMAIL_EXISTS' && (
+            <>
+              {' '}
+              <button type="button" className="auth-link-btn" onClick={onSwitchToLogin}>
+                {t.logInInstead}
+              </button>
+            </>
+          )}
+        </p>
+      )}
 
       {openLegal && <LegalModal type={openLegal} onClose={() => setOpenLegal(null)} />}
     </form>
