@@ -12,6 +12,7 @@ import FriendScoreCardModal from '../share/FriendScoreCardModal'
 const TYPE_ICON = {
   score_share: '🔥',
   friend_request: '👋',
+  friend_accepted: '🎉',
   perfect_week: '🏆',
   grade_bonus: '🏆',
   streak_reminder: '⚠️',

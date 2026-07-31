@@ -154,6 +154,33 @@ async function handleRespond(userId, body) {
       { user_id: request.receiver_id, friend_id: request.sender_id },
     ])
     if (friendError && friendError.code !== '23505') throw friendError
+
+    // Notify the original requester that their request was accepted —
+    // distinct type from 'friend_request' (not just different copy)
+    // because NotificationsScreen.jsx renders Accept/Decline buttons for
+    // that type, which makes no sense here; there's nothing left to act on.
+    const { data: responder } = await supabase.from('users').select('username').eq('id', userId).maybeSingle()
+    const responderUsername = responder?.username || 'Someone'
+    await insertNotification({
+      userId: request.sender_id,
+      type: 'friend_accepted',
+      title: `@${responderUsername} accepted your friend request`,
+      body: 'You are now friends on Zyndal!',
+      data: { responder_id: userId, responder_username: responderUsername },
+    })
+
+    // Reuses the 'friend_request' preference key — this app's Settings
+    // page only exposes one friend-request-related toggle ("When someone
+    // sends me a friend request"), and an "accepted" notification is the
+    // same lifecycle, not a separate concern worth its own toggle/SQL
+    // column addition.
+    await sendPushToUser({
+      userId: request.sender_id,
+      type: 'friend_request',
+      title: `🎉 @${responderUsername} accepted your friend request!`,
+      body: "You're now friends on Zyndal — share your score to start a streak!",
+      url: 'https://zyndal.ca',
+    })
   }
   return { accepted: accept }
 }
