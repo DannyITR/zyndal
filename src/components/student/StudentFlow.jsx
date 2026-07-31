@@ -15,6 +15,7 @@ import {
 import { getSubject } from '../../lib/questions'
 import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
+import { isPushSupported, subscribeToPush } from '../../lib/push'
 import TopBar from '../shared/TopBar'
 import SubjectDashboard from './SubjectDashboard'
 import StudentHome from './StudentHome'
@@ -36,6 +37,14 @@ import UploadsFlow from './uploads/UploadsFlow'
 import PracticeFlow from './practice/PracticeFlow'
 import GradesScreen from './grades/GradesScreen'
 import CurriculumOutlineScreen from './curriculum/CurriculumOutlineScreen'
+
+// Push-permission banner dismissal cooldown — see showPushBanner below.
+// localStorage (not the server) is the right place for this: permission
+// state is inherently per-device/per-browser, not per-account, so a
+// server-side "dismissed" flag would incorrectly suppress the prompt on a
+// different device that's never actually been asked.
+const PUSH_BANNER_DISMISS_KEY = 'zyndal_push_banner_dismissed_at'
+const PUSH_BANNER_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000
 
 // Explanations shown by the "?" info badges on the home screen's stats and
 // action buttons — keyed to match the setInfoModalKey() calls below.
@@ -134,6 +143,45 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       setResendState('error')
       setResendError(err.message || "Couldn't send the email. Please try again.")
     }
+  }
+
+  // Shown once per session while the browser hasn't been asked yet
+  // (Notification.permission === 'default' is the actual source of truth
+  // here, not new server state) and no "Not now" dismissal is still
+  // within its 7-day cooldown.
+  const [showPushBanner, setShowPushBanner] = useState(() => {
+    if (!isPushSupported() || typeof Notification === 'undefined' || Notification.permission !== 'default') return false
+    try {
+      const dismissedAt = Number(localStorage.getItem(PUSH_BANNER_DISMISS_KEY) || 0)
+      if (Date.now() - dismissedAt < PUSH_BANNER_COOLDOWN_MS) return false
+    } catch {
+      // localStorage inaccessible (e.g. private browsing) — fall through to showing it.
+    }
+    return true
+  })
+  const [pushRequesting, setPushRequesting] = useState(false)
+
+  async function handleAllowPush() {
+    if (pushRequesting) return
+    setPushRequesting(true)
+    try {
+      const permission = await Notification.requestPermission()
+      if (permission === 'granted') await subscribeToPush()
+    } catch (err) {
+      console.error('[push] permission request failed:', err)
+    } finally {
+      setPushRequesting(false)
+      setShowPushBanner(false)
+    }
+  }
+
+  function handleDismissPushBanner() {
+    try {
+      localStorage.setItem(PUSH_BANNER_DISMISS_KEY, String(Date.now()))
+    } catch {
+      // ignore — worst case the banner just reappears next session
+    }
+    setShowPushBanner(false)
   }
 
   // The logo always resets to this subject-selection home view for a logged-in
@@ -547,6 +595,26 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
               type="button"
               className="verify-email-banner-close"
               onClick={() => setShowVerifyBanner(false)}
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {showPushBanner && (
+          <div className="verify-email-banner">
+            <span>Stay in the loop — allow Zyndal to notify you when friends share their score</span>
+            <button type="button" className="verify-email-banner-resend" onClick={handleAllowPush} disabled={pushRequesting}>
+              {pushRequesting ? 'Requesting…' : 'Allow notifications'}
+            </button>
+            <button type="button" className="auth-link-btn" onClick={handleDismissPushBanner}>
+              Not now
+            </button>
+            <button
+              type="button"
+              className="verify-email-banner-close"
+              onClick={handleDismissPushBanner}
               aria-label="Dismiss"
             >
               ✕

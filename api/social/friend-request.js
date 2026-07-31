@@ -2,6 +2,7 @@ import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeUsername } from '../_lib/sanitize.js'
 import { insertNotification } from '../_lib/notifications.js'
+import { sendPushToUser } from '../_lib/push.js'
 
 // Mirrors sendFriendRequest and respondToFriendRequest in storage.js behind
 // one action-based endpoint, as spec'd. 'send' accepts target_user_id
@@ -106,6 +107,14 @@ async function handleSend(userId, body) {
     title: `@${senderUsername} wants to follow you`,
     body: 'Tap to accept or decline',
     data: { request_id: requestRow.id, sender_id: userId, sender_username: senderUsername },
+  })
+
+  await sendPushToUser({
+    userId: targetId,
+    type: 'friend_request',
+    title: `👋 @${senderUsername} wants to follow you on Zyndal`,
+    body: 'Tap to accept or decline',
+    url: 'https://zyndal.ca',
   })
 
   return { sent: true }

@@ -14,6 +14,7 @@ const TYPE_ICON = {
   friend_request: '👋',
   perfect_week: '🏆',
   grade_bonus: '🏆',
+  streak_reminder: '⚠️',
 }
 
 function formatDateTime(iso) {

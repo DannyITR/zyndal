@@ -5,6 +5,8 @@ import TopBar from './TopBar'
 import LegalModal from '../legal/LegalModal'
 import DeleteAccountModal from './DeleteAccountModal'
 
+const DEFAULT_NOTIFICATION_PREFERENCES = { enabled: true, score_share: true, friend_request: true, streak_reminder: true }
+
 export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogoClick }) {
   const isStudent = user.account_type === 'student'
 
@@ -27,6 +29,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
   const [schoolName, setSchoolName] = useState(user.school || '')
   const [grade, setGrade] = useState(user.grade ? String(user.grade) : '')
   const [languagePreference, setLanguagePreference] = useState(user.language_preference || 'English')
+  const [notificationPrefs, setNotificationPrefs] = useState({ ...DEFAULT_NOTIFICATION_PREFERENCES, ...(user.notification_preferences || {}) })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -69,6 +72,10 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
     }
   }
 
+  function toggleNotificationPref(key) {
+    setNotificationPrefs((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
   async function handleDeleteAccount() {
     await deleteAccount()
     setShowDeleteModal(false)
@@ -88,6 +95,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
         avatar,
         grade: isStudent ? (grade ? Number(grade) : null) : user.grade,
         languagePreference: isStudent ? languagePreference : user.language_preference,
+        notificationPreferences: isStudent ? notificationPrefs : user.notification_preferences,
       })
       onSaved(updated)
       setSuccess('Saved!')
@@ -210,6 +218,46 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
               <option value="French">French</option>
             </select>
             <p className="field-hint">Used for AI-generated study guide and test prep questions when you're not studying from your own uploads.</p>
+          </div>
+        )}
+
+        {isStudent && (
+          <div className="field">
+            <h3 className="section-heading">Notifications</h3>
+            <p className="field-hint">
+              These control push alerts only — notifications always still appear in the app's bell icon regardless of these settings.
+            </p>
+            <label className="checkbox-field">
+              <input type="checkbox" checked={notificationPrefs.enabled} onChange={() => toggleNotificationPref('enabled')} />
+              <span>Push notifications</span>
+            </label>
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                checked={notificationPrefs.score_share}
+                onChange={() => toggleNotificationPref('score_share')}
+                disabled={!notificationPrefs.enabled}
+              />
+              <span>When a friend shares their score with me</span>
+            </label>
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                checked={notificationPrefs.friend_request}
+                onChange={() => toggleNotificationPref('friend_request')}
+                disabled={!notificationPrefs.enabled}
+              />
+              <span>When someone sends me a friend request</span>
+            </label>
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                checked={notificationPrefs.streak_reminder}
+                onChange={() => toggleNotificationPref('streak_reminder')}
+                disabled={!notificationPrefs.enabled}
+              />
+              <span>Streak at risk reminder (9pm if not answered today)</span>
+            </label>
           </div>
         )}
 

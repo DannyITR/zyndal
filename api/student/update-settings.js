@@ -5,6 +5,7 @@ import { sanitizeString, sanitizeEmail, sanitizeGrade, sanitizeAccountType } fro
 import { createAndSendVerificationEmail } from '../_lib/verification.js'
 
 const LANGUAGE_PREFERENCES = new Set(['English', 'French'])
+const NOTIFICATION_PREFERENCE_KEYS = ['enabled', 'score_share', 'friend_request', 'streak_reminder']
 
 // Backs updateUserProfile() in src/lib/storage.js. grade and
 // language_preference are only meaningful for students, but this endpoint
@@ -43,6 +44,18 @@ function validate(body) {
     return { field: 'language_preference', message: "language_preference must be 'English' or 'French'." }
   }
 
+  if (body.notification_preferences !== undefined && body.notification_preferences !== null) {
+    const prefs = body.notification_preferences
+    if (typeof prefs !== 'object' || Array.isArray(prefs)) {
+      return { field: 'notification_preferences', message: 'notification_preferences must be an object.' }
+    }
+    for (const key of NOTIFICATION_PREFERENCE_KEYS) {
+      if (prefs[key] !== undefined && typeof prefs[key] !== 'boolean') {
+        return { field: 'notification_preferences', message: `notification_preferences.${key} must be a boolean.` }
+      }
+    }
+  }
+
   // Only meaningful right after a social-login signup (see
   // OAuthOnboardingScreen.jsx) — api/auth/oauth-callback.js always creates
   // new accounts as 'student', and onboarding lets the person say "actually
@@ -62,7 +75,7 @@ function validate(body) {
 }
 
 async function handle({ userId, body }) {
-  const { display_name, email, school, avatar, grade, language_preference, account_type: accountType } = body
+  const { display_name, email, school, avatar, grade, language_preference, notification_preferences, account_type: accountType } = body
 
   const updates = {
     display_name: display_name || null,
@@ -71,6 +84,7 @@ async function handle({ userId, body }) {
     avatar: avatar || null,
     grade: grade ?? null,
     language_preference,
+    notification_preferences,
   }
 
   // One pre-fetch covers both the existing parent-code lookup and the new

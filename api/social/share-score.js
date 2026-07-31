@@ -2,6 +2,7 @@ import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { getStreakRow, getTodayScore } from '../_lib/db.js'
 import { insertNotification } from '../_lib/notifications.js'
+import { sendPushToUser } from '../_lib/push.js'
 import { getEffectiveStreak, todayStr, isValidTimeZone, DEFAULT_TIMEZONE } from '../../src/lib/streak.js'
 import { computeShareStreak } from '../../src/lib/streakShare.js'
 
@@ -50,6 +51,18 @@ async function handle({ userId, body }) {
       title: `@${senderUsername} shared their score`,
       body: `@${senderUsername} got ${senderScore.correct}/${senderScore.total} today`,
       data: { share_id: shareRow.id, sender_id: userId, sender_username: senderUsername, sender_score: senderScore },
+    })
+
+    // Push is a second, independent alert layer — the notifications-table
+    // write above always happens regardless of push settings/subscription
+    // state; sendPushToUser handles its own "skip silently" cases
+    // (disabled, no subscription, etc.) and never throws.
+    await sendPushToUser({
+      userId: body.receiver_id,
+      type: 'score_share',
+      title: `🔥 @${senderUsername} shared their score with you!`,
+      body: `They got ${senderScore.correct}/${senderScore.total} today — share yours back to keep your streak alive`,
+      url: 'https://zyndal.ca',
     })
   }
 

@@ -256,7 +256,7 @@ export async function oauthMerge({ provider, supabaseAccessToken, existingUserna
 // userId isn't sent — the server derives who's editing from the session
 // token (see api/student/update-settings.js) — but stays in the signature
 // since SettingsScreen.jsx calls this positionally.
-export async function updateUserProfile(userId, { displayName, email, schoolName, avatar, grade, languagePreference }) {
+export async function updateUserProfile(userId, { displayName, email, schoolName, avatar, grade, languagePreference, notificationPreferences }) {
   return callStudentApi('POST', 'update-settings', {
     display_name: displayName,
     email,
@@ -264,6 +264,7 @@ export async function updateUserProfile(userId, { displayName, email, schoolName
     avatar,
     grade,
     language_preference: languagePreference,
+    notification_preferences: notificationPreferences,
   })
 }
 
@@ -868,6 +869,10 @@ export async function markNotificationRead(notificationId) {
 
 export async function markAllNotificationsRead() {
   return callNotificationsApi('POST', 'mark-read', { mark_all: true })
+}
+
+export async function subscribeToPushNotifications(subscription) {
+  return callNotificationsApi('POST', 'subscribe', { subscription })
 }
 
 // ---------- Curriculum outlines ----------
