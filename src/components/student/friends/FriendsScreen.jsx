@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   searchStudentsByUsername,
   sendFriendRequest,
@@ -23,16 +23,86 @@ export default function FriendsScreen({ user, onBack, onLogout, onLogoClick }) {
   const [incomingShares, setIncomingShares] = useState([])
   const [viewingShare, setViewingShare] = useState(null)
 
+  // Live autocomplete search — query.length >= 2 triggers a debounced
+  // (300ms) search-users.js call; skipNextSearchRef suppresses the search
+  // that would otherwise re-fire when handleSelectResult programmatically
+  // sets `query` to the picked username.
   const [query, setQuery] = useState('')
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [dropdownResults, setDropdownResults] = useState(null) // null = no search yet, [] = no matches, [...] = matches
   const [searching, setSearching] = useState(false)
-  const [results, setResults] = useState(null)
   const [searchError, setSearchError] = useState('')
+  const [requestStatus, setRequestStatus] = useState('') // '' | 'sending' | 'sent' | error message
+  const searchContainerRef = useRef(null)
+  const skipNextSearchRef = useRef(false)
 
   // Timezone-aware "today", passed explicitly to hasSharedToday/computeShareStreak
   // since their default UTC-only todayStr() would mismatch share-score.js's
   // timezone-aware share_date storage in the evening for zones behind UTC.
   const today = todayStr(new Date(), getUserTimeZone())
-  const [requestStatusById, setRequestStatusById] = useState({}) // studentId -> 'sending' | 'sent' | error message
+
+  useEffect(() => {
+    if (skipNextSearchRef.current) {
+      skipNextSearchRef.current = false
+      return
+    }
+    setSelectedUser(null)
+    setRequestStatus('')
+    const trimmed = query.trim()
+    if (trimmed.length < 2) {
+      setDropdownResults(null)
+      setDropdownOpen(false)
+      setSearching(false)
+      setSearchError('')
+      return
+    }
+    setSearchError('')
+    let cancelled = false
+    const timer = setTimeout(() => {
+      if (cancelled) return
+      setSearching(true)
+      setDropdownOpen(true)
+      searchStudentsByUsername(trimmed, user.id)
+        .then((list) => {
+          if (cancelled) return
+          setDropdownResults(list)
+        })
+        .catch(() => {
+          if (cancelled) return
+          setSearchError("Couldn't search right now. Please try again.")
+          setDropdownOpen(false)
+          setDropdownResults(null)
+        })
+        .finally(() => {
+          if (!cancelled) setSearching(false)
+        })
+    }, 300)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [query, user.id])
+
+  // Closes the dropdown on any click outside the input+dropdown container —
+  // doesn't clear the query or results, so refocusing the input can still
+  // reopen it via the onFocus handler below.
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  function handleSelectResult(result) {
+    skipNextSearchRef.current = true
+    setQuery(result.username)
+    setSelectedUser(result)
+    setDropdownOpen(false)
+  }
 
   async function refreshFriendsData() {
     const [pending, friendList, shareRows, incoming] = await Promise.all([
@@ -76,28 +146,14 @@ export default function FriendsScreen({ user, onBack, onLogout, onLogoClick }) {
     }
   }
 
-  async function handleSearch(e) {
-    e.preventDefault()
-    if (!query.trim() || searching) return
-    setSearching(true)
-    setSearchError('')
+  async function handleSendRequest() {
+    if (!selectedUser || requestStatus === 'sending' || requestStatus === 'sent') return
+    setRequestStatus('sending')
     try {
-      const list = await searchStudentsByUsername(query, user.id)
-      setResults(list)
-    } catch {
-      setSearchError("Couldn't search right now. Please try again.")
-    } finally {
-      setSearching(false)
-    }
-  }
-
-  async function handleAddFriend(studentId) {
-    setRequestStatusById((prev) => ({ ...prev, [studentId]: 'sending' }))
-    try {
-      await sendFriendRequest(user.id, studentId)
-      setRequestStatusById((prev) => ({ ...prev, [studentId]: 'sent' }))
+      await sendFriendRequest(user.id, selectedUser.id)
+      setRequestStatus('sent')
     } catch (err) {
-      setRequestStatusById((prev) => ({ ...prev, [studentId]: err.message || 'Failed' }))
+      setRequestStatus(err.message || 'Failed')
     }
   }
 
@@ -127,45 +183,62 @@ export default function FriendsScreen({ user, onBack, onLogout, onLogoClick }) {
 
       <div className="finance-section-card">
         <h3 className="section-heading">Find Students</h3>
-        <form className="friend-search-form" onSubmit={handleSearch}>
+        <div className="friend-search-input-wrap" ref={searchContainerRef}>
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by username"
+            onFocus={() => {
+              if (dropdownResults !== null) setDropdownOpen(true)
+            }}
+            placeholder="Search friends by username..."
           />
-          <button type="submit" className="btn btn-secondary btn-small" disabled={searching}>
-            {searching ? 'Searching…' : 'Search'}
-          </button>
-        </form>
+
+          {dropdownOpen && (
+            <div className="friend-search-dropdown">
+              {searching ? (
+                <p className="friend-search-dropdown-empty">Searching…</p>
+              ) : dropdownResults && dropdownResults.length === 0 ? (
+                <p className="friend-search-dropdown-empty">No users found with that username</p>
+              ) : (
+                dropdownResults?.map((result) => (
+                  <button
+                    key={result.id}
+                    type="button"
+                    className="friend-search-dropdown-item"
+                    onClick={() => handleSelectResult(result)}
+                  >
+                    <span className="friend-search-dropdown-avatar">{result.avatar || '👤'}</span>
+                    <span className="friend-search-dropdown-info">
+                      <span className="friend-search-dropdown-username">@{result.username}</span>
+                      {result.grade && <span className="friend-search-dropdown-grade">Grade {result.grade}</span>}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
         {searchError && <p className="form-error">{searchError}</p>}
 
-        {results && results.length === 0 && <p className="field-hint">No students found.</p>}
-
-        {results && results.length > 0 && (
-          <div className="friend-search-results">
-            {results.map((student) => {
-              const status = requestStatusById[student.id]
-              const isPendingOrSent = status === 'sending' || status === 'sent'
-              return (
-                <div key={student.id} className="friend-search-row">
-                  <span className="friend-search-name">@{student.username}</span>
-                  {status === 'sent' ? (
-                    <span className="friend-search-status">Requested ✓</span>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-small"
-                      disabled={isPendingOrSent}
-                      onClick={() => handleAddFriend(student.id)}
-                    >
-                      {status === 'sending' ? 'Sending…' : '+ Add Friend'}
-                    </button>
-                  )}
-                  {status && !isPendingOrSent && <p className="friend-search-error">{status}</p>}
-                </div>
-              )
-            })}
+        {selectedUser && (
+          <div className="friend-search-row">
+            <span className="friend-search-name">@{selectedUser.username}</span>
+            {requestStatus === 'sent' ? (
+              <span className="friend-search-status">Requested ✓</span>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-secondary btn-small"
+                disabled={requestStatus === 'sending'}
+                onClick={handleSendRequest}
+              >
+                {requestStatus === 'sending' ? 'Sending…' : 'Send Friend Request'}
+              </button>
+            )}
+            {requestStatus && requestStatus !== 'sending' && requestStatus !== 'sent' && (
+              <p className="friend-search-error">{requestStatus}</p>
+            )}
           </div>
         )}
       </div>

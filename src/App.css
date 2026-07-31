@@ -2932,13 +2932,13 @@ div.zyndal-logo {
   min-width: 160px;
 }
 
-.friend-search-form {
-  display: flex;
-  gap: 8px;
+.friend-search-input-wrap {
+  position: relative;
+  width: 100%;
 }
 
-.friend-search-form input {
-  flex: 1;
+.friend-search-input-wrap input {
+  width: 100%;
   background: var(--bg-elevated);
   border: 1.5px solid var(--border);
   border-radius: 12px;
@@ -2947,16 +2947,69 @@ div.zyndal-logo {
   color: var(--text);
 }
 
-.friend-search-form input:focus {
+.friend-search-input-wrap input:focus {
   border-color: var(--purple);
   outline: none;
 }
 
-.friend-search-results {
+.friend-search-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--card-2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.friend-search-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 10px 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.friend-search-dropdown-item:hover {
+  background: var(--bg-elevated);
+}
+
+.friend-search-dropdown-avatar {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.friend-search-dropdown-info {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 4px;
+  gap: 2px;
+  min-width: 0;
+}
+
+.friend-search-dropdown-username {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.friend-search-dropdown-grade {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.friend-search-dropdown-empty {
+  padding: 12px;
+  font-size: 12.5px;
+  color: var(--text-faint);
 }
 
 .friend-search-row {
