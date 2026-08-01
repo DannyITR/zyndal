@@ -8,6 +8,7 @@ import ResetPasswordScreen from './components/auth/ResetPasswordScreen'
 import StudentFlow from './components/student/StudentFlow'
 import ParentDashboard from './components/parent/ParentDashboard'
 import InstallPrompt from './components/shared/InstallPrompt'
+import AdminApp from './components/admin/AdminApp'
 import './App.css'
 
 function App() {
@@ -32,6 +33,11 @@ function App() {
   // anyone in (see its own comment), so there's no user object to hand
   // back and no reason to leave this page programmatically.
   const [isResetPasswordPage] = useState(() => window.location.pathname === '/reset-password')
+  // /admin is a fully separate auth surface (admin token, not a user
+  // session — see src/lib/adminApi.js) and never appears in the main app's
+  // navigation. Checked first, before the regular getCurrentUser()/loading
+  // flow even starts rendering anything for it.
+  const [isAdminPage] = useState(() => window.location.pathname === '/admin')
 
   useEffect(() => {
     let cancelled = false
@@ -106,6 +112,10 @@ function App() {
       setUser(nextUser)
       setShowLanding(false)
     }
+  }
+
+  if (isAdminPage) {
+    return <AdminApp />
   }
 
   if (isResetPasswordPage) {
