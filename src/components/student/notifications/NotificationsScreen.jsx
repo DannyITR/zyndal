@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   getNotifications,
   markNotificationRead,
@@ -40,6 +40,12 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
   const [respondingId, setRespondingId] = useState(null)
   const [resolvedRequestIds, setResolvedRequestIds] = useState({}) // notification id -> 'accepted' | 'declined'
   const [viewingShare, setViewingShare] = useState(null)
+  // Guards the auto-mark-as-read effect below so it only ever schedules its
+  // one 2-second timer once per page visit — without this, refresh() calls
+  // triggered by the user's own actions (accepting a request, viewing a
+  // share) would change `notifications` and re-run the effect, restarting
+  // the countdown instead of leaving it tied to when the page was opened.
+  const autoMarkScheduledRef = useRef(false)
 
   async function refresh() {
     try {
@@ -63,6 +69,25 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
       cancelled = true
     }
   }, [user.id])
+
+  // Auto-marks everything read 2 seconds after the list first loads, so a
+  // student still gets a moment to see which notifications were unread
+  // (the highlighted background) before they lose that highlight — without
+  // needing to press "Mark all as read" (still available below for anyone
+  // who wants to clear it immediately). Runs once per page visit: see
+  // autoMarkScheduledRef's comment above.
+  useEffect(() => {
+    if (!notifications || autoMarkScheduledRef.current) return
+    const hasUnread = notifications.some((n) => !n.readAt)
+    if (!hasUnread) return
+    autoMarkScheduledRef.current = true
+    const timer = setTimeout(() => {
+      markAllNotificationsRead()
+        .then(refresh)
+        .catch((err) => console.error('[Notifications] failed to auto-mark all as read:', err))
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [notifications])
 
   async function handleMarkAllRead() {
     try {
@@ -139,28 +164,41 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
                 )}
 
                 {n.type === 'friend_request' &&
-                  (resolved ? (
-                    <p className="field-hint">{resolved === 'accepted' ? 'Accepted ✓' : 'Declined'}</p>
-                  ) : (
-                    <div className="notification-item-actions">
-                      <button
-                        type="button"
-                        className="btn btn-primary btn-small"
-                        disabled={respondingId === n.id}
-                        onClick={() => handleRespond(n, true)}
-                      >
-                        Accept
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-small"
-                        disabled={respondingId === n.id}
-                        onClick={() => handleRespond(n, false)}
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  ))}
+                  (() => {
+                    // `resolved` (local, set immediately on click) takes
+                    // priority over `requestStatus` (from the server, as of
+                    // the last load) purely so the UI updates instantly on
+                    // this screen without waiting on the refresh() that
+                    // follows — both end up showing the same thing once
+                    // that refresh lands. `requestStatus` is what makes this
+                    // correct on a fresh page load/reload, when `resolved`
+                    // is always empty regardless of what already happened
+                    // to the request (e.g. accepted from the Friends
+                    // screen's banner instead of from here).
+                    const status = resolved || n.requestStatus
+                    if (status === 'accepted') return <p className="notification-item-status notification-item-status--accepted">✓ Now friends</p>
+                    if (status === 'declined') return <p className="notification-item-status notification-item-status--declined">Declined</p>
+                    return (
+                      <div className="notification-item-actions">
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-small"
+                          disabled={respondingId === n.id}
+                          onClick={() => handleRespond(n, true)}
+                        >
+                          Accept
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-small"
+                          disabled={respondingId === n.id}
+                          onClick={() => handleRespond(n, false)}
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    )
+                  })()}
               </div>
             )
           })}

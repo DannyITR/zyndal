@@ -4143,6 +4143,20 @@ div.zyndal-logo {
   margin-top: 10px;
 }
 
+.notification-item-status {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.notification-item-status--accepted {
+  color: var(--green);
+}
+
+.notification-item-status--declined {
+  color: var(--text-faint);
+}
+
 /* ---------- Install prompt ---------- */
 
 .install-prompt {
