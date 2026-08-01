@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v2'
+const CACHE_VERSION = 'v3'
 const SHELL_CACHE = `zyndal-shell-${CACHE_VERSION}`
 const RUNTIME_CACHE = `zyndal-runtime-${CACHE_VERSION}`
 
@@ -106,17 +106,44 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Page navigations: network first so the student always gets the latest
-  // build when online, falling back to the cached shell (or the offline
-  // page as a last resort) when there's no connection.
+  // build when online, falling back to a cached shell (or the offline page
+  // as a last resort) when there's no connection.
+  //
+  // Bug fix: this used to always cache under (and fall back to) the literal
+  // key '/', regardless of which path was actually being navigated to.
+  // Every deep link — /auth/callback, /verify, /reset-password, /admin —
+  // is a real, distinct navigation this same branch handles, since they're
+  // all served by the same index.html rewrite (see vercel.json). Caching
+  // them all under '/' isn't wrong by itself (they're byte-identical
+  // responses), but falling back to '/' on a fetch failure could serve a
+  // stale index.html from a PREVIOUS deploy — one that references JS/CSS
+  // bundle filenames a new deployment no longer has, since Vite hashes
+  // those per build. That combination (old shell HTML + already-gone
+  // hashed assets) is exactly what produces a blank white page: the static
+  // HTML loads, but its <script>/<link> tags 404, so React never mounts
+  // and even index.css's splash styling never applies. OAuth's redirect
+  // (Google → Supabase → here) is a real cross-origin round trip with more
+  // failure surface than an in-app navigation, and it's often the first
+  // navigation-type request in a while for a given device — exactly the
+  // profile of a request likely to hit this fallback path while carrying a
+  // stale cache. Caching/falling back under the request's own URL first
+  // (keyed identically to how it was actually fetched) avoids ever mixing
+  // an old shell with a URL it wasn't captured for, while '/' stays as a
+  // last-resort shell if this exact URL was never cached at all.
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then((response) => {
           const copy = response.clone()
-          caches.open(SHELL_CACHE).then((cache) => cache.put('/', copy))
+          caches.open(SHELL_CACHE).then((cache) => cache.put(request, copy))
           return response
         })
-        .catch(() => caches.match('/').then((cached) => cached || caches.match('/offline.html')))
+        .catch(() =>
+          caches
+            .match(request)
+            .then((cached) => cached || caches.match('/'))
+            .then((cached) => cached || caches.match('/offline.html'))
+        )
     )
     return
   }
