@@ -116,6 +116,10 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [homework, setHomework] = useState([])
   const [activeHomework, setActiveHomework] = useState(null)
+  // Which assignment ids the Notifications screen's "Open Homework" button
+  // can actually act on — anything already completed has no questions left
+  // to answer (see get-homework.js), so the button just wouldn't be shown.
+  const openHomeworkIds = useMemo(() => new Set(homework.filter((h) => !h.completed).map((h) => h.id)), [homework])
   const [studentClasses, setStudentClasses] = useState([])
   const [showClasses, setShowClasses] = useState(false)
   // The share currently shown in the read-only friend-score-card modal,
@@ -458,6 +462,14 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         }}
         onLogout={onLogout}
         onLogoClick={handleLogoClick}
+        openHomeworkIds={openHomeworkIds}
+        onOpenHomework={(assignmentId) => {
+          const found = homework.find((h) => h.id === assignmentId)
+          if (found && found.questions) {
+            setShowNotifications(false)
+            setActiveHomework(found)
+          }
+        }}
       />
     )
   }

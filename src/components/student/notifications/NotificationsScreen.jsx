@@ -16,6 +16,8 @@ const TYPE_ICON = {
   perfect_week: '🏆',
   grade_bonus: '🏆',
   streak_reminder: '⚠️',
+  homework_assigned: '📚',
+  homework_reminder: '📚',
 }
 
 function formatDateTime(iso) {
@@ -34,7 +36,7 @@ function formatDateTime(iso) {
 // recordPerfectWeekAchievement call (api/_lib/db.js), which today only
 // records the parent-side bonus-payout row, not a student-facing
 // notification.
-export default function NotificationsScreen({ user, onBack, onLogout, onLogoClick }) {
+export default function NotificationsScreen({ user, onBack, onLogout, onLogoClick, openHomeworkIds, onOpenHomework }) {
   const [notifications, setNotifications] = useState(null)
   const [error, setError] = useState('')
   const [respondingId, setRespondingId] = useState(null)
@@ -160,6 +162,18 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
                 {n.type === 'score_share' && (
                   <button type="button" className="btn btn-secondary btn-small" onClick={() => handleViewShare(n)}>
                     View
+                  </button>
+                )}
+
+                {(n.type === 'homework_assigned' || n.type === 'homework_reminder') &&
+                  n.data?.assignment_id &&
+                  openHomeworkIds?.has(n.data.assignment_id) && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-small"
+                    onClick={() => onOpenHomework(n.data.assignment_id)}
+                  >
+                    Open Homework
                   </button>
                 )}
 
