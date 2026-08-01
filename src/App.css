@@ -4635,6 +4635,32 @@ div.zyndal-logo {
   padding: 14px 16px;
 }
 
+.teacher-recent-homework-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.teacher-recent-homework-row {
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.teacher-recent-homework-row:hover {
+  border-color: var(--purple);
+}
+
 .teacher-assignment-students {
   display: flex;
   flex-direction: column;

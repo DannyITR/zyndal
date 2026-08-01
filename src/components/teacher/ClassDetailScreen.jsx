@@ -9,7 +9,7 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC' })
 }
 
-export default function ClassDetailScreen({ user, classId, onBack, onLogout, onLogoClick }) {
+export default function ClassDetailScreen({ user, classId, onBack, onLogout, onLogoClick, onAssignHomework }) {
   const [detail, setDetail] = useState(null)
   const [error, setError] = useState('')
   const [expandedAssignmentId, setExpandedAssignmentId] = useState(null)
@@ -79,6 +79,10 @@ export default function ClassDetailScreen({ user, classId, onBack, onLogout, onL
           </button>
         </div>
       </div>
+
+      <button type="button" className="btn btn-primary btn-block" onClick={() => onAssignHomework(detail.class)}>
+        📚 Assign Homework
+      </button>
 
       <div className="finance-section-card">
         <p className="field-hint">Currently studying</p>

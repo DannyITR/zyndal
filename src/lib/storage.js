@@ -960,6 +960,10 @@ export async function getTeacherStats() {
   return callTeacherApi('GET', 'get-stats')
 }
 
+export async function getRecentHomework() {
+  return callTeacherApi('GET', 'get-recent-homework')
+}
+
 // ---------- Teacher: classes ----------
 
 export async function getTeacherClasses() {

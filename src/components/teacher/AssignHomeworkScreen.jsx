@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { getTeacherClasses, createHomework, getBankQuestions } from '../../lib/storage'
+import { useState } from 'react'
+import { createHomework, getBankQuestions } from '../../lib/storage'
 import { processUploadedDocument } from '../../lib/ai'
 import { validateUploadFile } from '../../lib/imageUtils'
 import { SUBJECTS } from '../../lib/questions'
@@ -7,10 +7,12 @@ import TopBar from '../shared/TopBar'
 
 const GRADES = [7, 8, 9, 10, 11]
 
-export default function AssignHomeworkScreen({ user, onBack, onLogout, onLogoClick, onCreated }) {
+// Always scoped to the one class the teacher opened this from (see
+// ClassDetailScreen's "Assign Homework" button) — no more class multi-select,
+// per the decision to move this screen from a top-level teacher-home action
+// into each class's own detail page.
+export default function AssignHomeworkScreen({ user, classId, className, onBack, onLogout, onLogoClick, onCreated }) {
   const [tab, setTab] = useState('upload') // upload | bank
-  const [classes, setClasses] = useState(null)
-  const [selectedClassIds, setSelectedClassIds] = useState([])
   const [title, setTitle] = useState('')
   const [subject, setSubject] = useState(SUBJECTS[0].id)
   const [dueDate, setDueDate] = useState('')
@@ -40,16 +42,6 @@ export default function AssignHomeworkScreen({ user, onBack, onLogout, onLogoCli
 
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
-
-  useEffect(() => {
-    getTeacherClasses()
-      .then((data) => setClasses(data.classes))
-      .catch(() => setClasses([]))
-  }, [])
-
-  function toggleClass(id) {
-    setSelectedClassIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]))
-  }
 
   function handleFilesSelected(e) {
     const selected = Array.from(e.target.files || [])
@@ -164,14 +156,13 @@ export default function AssignHomeworkScreen({ user, onBack, onLogout, onLogoCli
     setSubmitError('')
     if (!title.trim()) return setSubmitError('Title is required.')
     if (!dueDate) return setSubmitError('Due date is required.')
-    if (selectedClassIds.length === 0) return setSubmitError('Select at least one class.')
 
     const finalQuestions = tab === 'upload' ? questions : buildBankQuestionsPayload()
     if (finalQuestions.length === 0) return setSubmitError('Add at least one question.')
 
     setSubmitting(true)
     try {
-      await createHomework({ title: title.trim(), subject, dueDate, classIds: selectedClassIds, questions: finalQuestions })
+      await createHomework({ title: title.trim(), subject, dueDate, classIds: [classId], questions: finalQuestions })
       onCreated()
     } catch (err) {
       setSubmitError(err.message || "Couldn't create the assignment. Please try again.")
@@ -182,7 +173,7 @@ export default function AssignHomeworkScreen({ user, onBack, onLogout, onLogoCli
 
   return (
     <div className="screen">
-      <TopBar title="📚 Assign Homework" username={user.username} onBack={onBack} onLogout={onLogout} onLogoClick={onLogoClick} />
+      <TopBar title="📚 Assign Homework" subtitle={className} username={user.username} onBack={onBack} onLogout={onLogout} onLogoClick={onLogoClick} />
 
       <div className="auth-tabs">
         <button type="button" className={`auth-tab ${tab === 'upload' ? 'auth-tab--active' : ''}`} onClick={() => setTab('upload')}>
@@ -320,22 +311,6 @@ export default function AssignHomeworkScreen({ user, onBack, onLogout, onLogoCli
           <label htmlFor="hw-due-date">Due date</label>
           <input id="hw-due-date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
         </div>
-        <div className="field">
-          <label>Assign to</label>
-          {!classes ? (
-            <p className="field-hint">Loading your classes…</p>
-          ) : classes.length === 0 ? (
-            <p className="field-hint">Create a class first (My Classes → Create Class).</p>
-          ) : (
-            classes.map((c) => (
-              <label key={c.id} className="checkbox-field">
-                <input type="checkbox" checked={selectedClassIds.includes(c.id)} onChange={() => toggleClass(c.id)} />
-                <span>{c.name}</span>
-              </label>
-            ))
-          )}
-        </div>
-
         {submitError && <p className="form-error">{submitError}</p>}
         <button type="button" className="btn btn-primary btn-block" onClick={handleSubmit} disabled={submitting}>
           {submitting ? 'Creating…' : 'Assign Homework'}

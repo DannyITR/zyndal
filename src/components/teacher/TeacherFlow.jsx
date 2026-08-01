@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getTeacherStats } from '../../lib/storage'
+import { getTeacherStats, getRecentHomework } from '../../lib/storage'
 import TopBar from '../shared/TopBar'
 import SettingsScreen from '../shared/SettingsScreen'
 import MyClassesScreen from './MyClassesScreen'
@@ -17,8 +17,11 @@ const SHARE_URL_BASE = 'https://zyndal.ca'
 export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
   const [stats, setStats] = useState(null)
   const [statsError, setStatsError] = useState('')
+  const [recentHomework, setRecentHomework] = useState(null)
+  const [recentHomeworkError, setRecentHomeworkError] = useState('')
   const [view, setView] = useState('home') // home | classes | class-detail | assign-homework | leaderboard | settings
   const [selectedClassId, setSelectedClassId] = useState(null)
+  const [assignHomeworkClass, setAssignHomeworkClass] = useState(null) // { id, name } — the class Assign Homework was opened from
   const [shareStatus, setShareStatus] = useState('') // '' | 'copied'
 
   function loadStats() {
@@ -27,17 +30,33 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
       .catch((err) => setStatsError(err.message || 'Failed to load stats.'))
   }
 
-  useEffect(loadStats, [])
+  function loadRecentHomework() {
+    getRecentHomework()
+      .then((data) => setRecentHomework(data.homework))
+      .catch((err) => setRecentHomeworkError(err.message || 'Failed to load recent homework.'))
+  }
+
+  useEffect(() => {
+    loadStats()
+    loadRecentHomework()
+  }, [])
 
   function goHome() {
     setView('home')
     setSelectedClassId(null)
+    setAssignHomeworkClass(null)
     loadStats()
+    loadRecentHomework()
   }
 
   function handleOpenClass(classId) {
     setSelectedClassId(classId)
     setView('class-detail')
+  }
+
+  function handleAssignHomework(classRow) {
+    setAssignHomeworkClass({ id: classRow.id, name: classRow.name })
+    setView('assign-homework')
   }
 
   async function handleShare() {
@@ -70,16 +89,16 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
     return <TeacherLeaderboardScreen user={user} onBack={goHome} onLogout={onLogout} onLogoClick={goHome} />
   }
 
-  if (view === 'assign-homework') {
+  if (view === 'assign-homework' && assignHomeworkClass) {
     return (
       <AssignHomeworkScreen
         user={user}
-        onBack={goHome}
+        classId={assignHomeworkClass.id}
+        className={assignHomeworkClass.name}
+        onBack={() => setView('class-detail')}
         onLogout={onLogout}
         onLogoClick={goHome}
-        onCreated={() => {
-          setView('classes')
-        }}
+        onCreated={() => setView('class-detail')}
       />
     )
   }
@@ -92,6 +111,7 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
         onBack={() => setView('classes')}
         onLogout={onLogout}
         onLogoClick={goHome}
+        onAssignHomework={handleAssignHomework}
       />
     )
   }
@@ -147,9 +167,6 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
         <button type="button" className="btn btn-secondary btn-small" onClick={() => setView('classes')}>
           🏫 My Classes
         </button>
-        <button type="button" className="btn btn-secondary btn-small" onClick={() => setView('assign-homework')}>
-          📚 Assign Homework
-        </button>
         <button type="button" className="btn btn-secondary btn-small" onClick={() => setView('leaderboard')}>
           🏆 Leaderboard
         </button>
@@ -158,6 +175,33 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
       <button type="button" className="btn btn-primary btn-block" onClick={handleShare}>
         {shareStatus === 'copied' ? 'Link copied!' : '📣 Share Zyndal with Students'}
       </button>
+
+      <h3 className="section-heading">Recent Homework</h3>
+      {recentHomeworkError && <p className="form-error">{recentHomeworkError}</p>}
+      {!recentHomework && !recentHomeworkError && <p className="loading-text">Loading…</p>}
+      {recentHomework && recentHomework.length === 0 && (
+        <p className="field-hint">No homework assigned yet — open a class to assign your first one.</p>
+      )}
+      {recentHomework && recentHomework.length > 0 && (
+        <div className="teacher-recent-homework-list">
+          {recentHomework.map((h) => (
+            <button
+              key={h.id}
+              type="button"
+              className="teacher-recent-homework-row"
+              onClick={() => handleOpenClass(h.classId)}
+            >
+              <p className="teacher-class-name">
+                {h.className} — {h.title}
+              </p>
+              <p className="teacher-class-detail">
+                Due {new Date(`${h.dueDate}T00:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC' })} · {h.completedCount}/
+                {h.totalEnrolled} students completed
+              </p>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
