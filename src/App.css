@@ -2371,6 +2371,10 @@ div.zyndal-logo {
   align-self: center;
   padding: 8px 14px;
   font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 /* ---------- Finance dashboard ---------- */
@@ -3945,6 +3949,10 @@ div.zyndal-logo {
 }
 
 .shared-with-you-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   font-size: 13px;
   color: var(--text-dim);
   line-height: 1.5;
@@ -3952,6 +3960,14 @@ div.zyndal-logo {
 
 .shared-with-you-row strong {
   color: var(--text);
+}
+
+.shared-with-you-text {
+  margin: 0;
+}
+
+.shared-with-you-back-btn {
+  flex-shrink: 0;
 }
 
 .share-friend-list {

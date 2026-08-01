@@ -141,10 +141,19 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, subjec
           <h3 className="section-heading">Shared with you today</h3>
           <div className="shared-with-you-list">
             {receivedToShow.map((r) => (
-              <p key={r.id} className="shared-with-you-row">
-                {r.senderAvatar ? `${r.senderAvatar} ` : ''}
-                <strong>@{r.senderUsername}</strong> shared their {r.senderStreak} day streak with you 🔥
-              </p>
+              <div key={r.id} className="shared-with-you-row">
+                <p className="shared-with-you-text">
+                  <strong>@{r.senderUsername}</strong> shared their score with you
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-small shared-with-you-back-btn"
+                  disabled={sendingToId === r.senderId}
+                  onClick={() => handleShareWithFriend(r.senderId)}
+                >
+                  {sendingToId === r.senderId ? 'Sharing…' : 'Share back'}
+                </button>
+              </div>
             ))}
           </div>
         </div>
@@ -152,7 +161,7 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, subjec
 
       {error && <p className="form-error">{error}</p>}
       <button type="button" className="btn btn-primary btn-block" onClick={() => setShowFriendPicker(true)}>
-        👥 Share with more friends
+        👥 Share with friends
       </button>
       {activeStreakFriends.length > 0 && (
         <div className="share-friend-list">
@@ -228,7 +237,12 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, subjec
       {cardError && <p className="form-error">{cardError}</p>}
 
       <button type="button" className="btn btn-primary share-download-btn" onClick={handleShareCard} disabled={generating}>
-        {generating ? 'Generating…' : 'Share / Download'}
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+          <polyline points="16 6 12 2 8 6" />
+          <line x1="12" y1="2" x2="12" y2="15" />
+        </svg>
+        {generating ? 'Generating…' : 'Share externally'}
       </button>
     </div>
   )
