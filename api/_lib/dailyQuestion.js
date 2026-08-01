@@ -40,7 +40,10 @@ export function simpleHash(str) {
 // hardcoded, don't auto-trigger curriculum generation as a side effect of a
 // daily question request" — curriculum generation is CurriculumOutlineScreen's
 // own separate on-demand flow.
-async function getScheduledUnits(subject, grade, timezone) {
+// Exported for api/teacher/get-bank-questions.js's "Add random questions"
+// convenience action, which needs the same "what unit(s) is this
+// subject/grade on right now" resolution the daily question does.
+export async function getScheduledUnits(subject, grade, timezone) {
   const today = todayStr(new Date(), timezone)
   const month = today.slice(5, 7)
   const scheduled = SEASONAL_UNIT_SCHEDULE[month] || [1]

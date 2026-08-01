@@ -88,6 +88,10 @@ function callQuestionsApi(method, endpoint, body) {
   return callApi('/api/questions', method, endpoint, body)
 }
 
+function callTeacherApi(method, endpoint, body) {
+  return callApi('/api/teacher', method, endpoint, body)
+}
+
 function callNotificationsApi(method, endpoint, body) {
   return callApi('/api/notifications', method, endpoint, body)
 }
@@ -900,4 +904,79 @@ export async function subscribeToPushNotifications(subscription) {
 // change.
 export async function getOrGenerateCurriculumOutline(subject, grade) {
   return callCurriculumApi('GET', `get-outline?subject=${encodeURIComponent(subject)}&grade=${encodeURIComponent(grade)}`)
+}
+
+// ---------- Classes (student side) ----------
+
+export async function getMyClasses() {
+  return callStudentApi('GET', 'get-my-classes')
+}
+
+export async function joinClass(teacherCode) {
+  return callStudentApi('POST', 'join-class', { teacher_code: teacherCode })
+}
+
+// ---------- Homework (student side) ----------
+
+export async function getMyHomework() {
+  return callStudentApi('GET', `get-homework?timezone=${encodeURIComponent(getUserTimeZone())}`)
+}
+
+export async function submitHomework(assignmentId, selectedIndexes) {
+  return callStudentApi('POST', 'submit-homework', {
+    assignment_id: assignmentId,
+    selected_indexes: selectedIndexes,
+    timezone: getUserTimeZone(),
+  })
+}
+
+// ---------- Teacher: stats ----------
+
+export async function getTeacherStats() {
+  return callTeacherApi('GET', 'get-stats')
+}
+
+// ---------- Teacher: classes ----------
+
+export async function getTeacherClasses() {
+  return callTeacherApi('GET', 'get-classes')
+}
+
+export async function createClass({ name, grade, school }) {
+  return callTeacherApi('POST', 'create-class', { name, grade, school })
+}
+
+export async function getClassDetail(classId) {
+  return callTeacherApi('GET', `get-class-detail?class_id=${encodeURIComponent(classId)}`)
+}
+
+export async function getSubmissionDetail(assignmentId, studentId) {
+  return callTeacherApi(
+    'GET',
+    `get-submission-detail?assignment_id=${encodeURIComponent(assignmentId)}&student_id=${encodeURIComponent(studentId)}`
+  )
+}
+
+// ---------- Teacher: homework ----------
+
+export async function getBankQuestions({ subject, grade, randomCount }) {
+  const params = new URLSearchParams({ subject, grade: String(grade) })
+  if (randomCount) params.set('random_count', String(randomCount))
+  return callTeacherApi('GET', `get-bank-questions?${params.toString()}`)
+}
+
+export async function createHomework({ title, subject, dueDate, classIds, questions }) {
+  return callTeacherApi('POST', 'create-homework', {
+    title,
+    subject,
+    due_date: dueDate,
+    class_ids: classIds,
+    questions,
+  })
+}
+
+// ---------- Teacher: leaderboard ----------
+
+export async function getTeacherLeaderboard(classId) {
+  return callTeacherApi('GET', `get-leaderboard${classId ? `?class_id=${encodeURIComponent(classId)}` : ''}`)
 }

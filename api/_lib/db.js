@@ -14,6 +14,7 @@ import {
   mondayOfWeek,
   todayStr,
   countCorrectSubjectsToday,
+  getEffectiveStreak,
 } from '../../src/lib/streak.js'
 import { findQuestionByPrompt } from '../../src/lib/questions.js'
 
@@ -49,6 +50,22 @@ export async function generateUniqueParentCode() {
     if (!data) return code
   }
   const err = new Error('Could not generate a unique parent code. Please try again.')
+  err.status = 500
+  err.code = 'SERVER_ERROR'
+  throw err
+}
+
+// Same alphabet/length/retry pattern as generateUniqueParentCode above,
+// checked against classes.teacher_code instead of users.parent_code —
+// used only by api/teacher/create-class.js.
+export async function generateUniqueTeacherCode() {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const code = randomParentCode()
+    const { data, error } = await supabase.from('classes').select('id').eq('teacher_code', code).maybeSingle()
+    if (error) throw error
+    if (!data) return code
+  }
+  const err = new Error('Could not generate a unique class code. Please try again.')
   err.status = 500
   err.code = 'SERVER_ERROR'
   throw err
@@ -286,4 +303,32 @@ export async function recordPerfectWeekAchievement(studentId, parentId, perfectW
     throw error
   }
   return data
+}
+
+// Shared by api/social/get-leaderboard.js (global/friends) and
+// api/teacher/get-leaderboard.js (global/per-class) — same ranked-by-XP
+// query either way, just scoped to a different userIds set (or none, for
+// the unscoped global board). Deleted accounts and non-student rows (a
+// teacher's or parent's own streaks row, if one exists) are filtered out
+// here so neither caller has to repeat that logic.
+export async function fetchLeaderboardRows(userIds) {
+  let query = supabase
+    .from('streaks')
+    .select('current_streak, total_xp, last_answered_date, user_id, users:user_id(username, grade, account_type, deleted_at)')
+    .order('total_xp', { ascending: false })
+  if (userIds) query = query.in('user_id', userIds)
+
+  const { data, error } = await query
+  if (error) throw error
+
+  const today = todayStr()
+  return (data || [])
+    .filter((row) => row.users?.account_type === 'student' && !row.users?.deleted_at)
+    .map((row) => ({
+      userId: row.user_id,
+      username: row.users.username,
+      grade: row.users.grade,
+      xp: row.total_xp,
+      streak: getEffectiveStreak({ streak: row.current_streak, lastCorrectDate: row.last_answered_date }, today),
+    }))
 }

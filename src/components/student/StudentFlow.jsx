@@ -11,6 +11,7 @@ import {
   markShareSeen,
   getNotifications,
   resendVerificationEmail,
+  getMyHomework,
 } from '../../lib/storage'
 import { getSubject } from '../../lib/questions'
 import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE, TOTAL_SUBJECTS } from '../../lib/streak'
@@ -37,6 +38,7 @@ import UploadsFlow from './uploads/UploadsFlow'
 import PracticeFlow from './practice/PracticeFlow'
 import GradesScreen from './grades/GradesScreen'
 import CurriculumOutlineScreen from './curriculum/CurriculumOutlineScreen'
+import HomeworkFlow from './homework/HomeworkFlow'
 
 // Push-permission banner dismissal cooldown — see showPushBanner below.
 // localStorage (not the server) is the right place for this: permission
@@ -110,6 +112,8 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   // instead of receiving StudentFlow's own copies).
   const [incomingShares, setIncomingShares] = useState([])
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
+  const [homework, setHomework] = useState([])
+  const [activeHomework, setActiveHomework] = useState(null)
   // The share currently shown in the read-only friend-score-card modal,
   // opened from the home-screen notification box below.
   const [viewingShare, setViewingShare] = useState(null)
@@ -206,6 +210,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     setShowCurriculum(false)
     setShowCalendar(false)
     setShowNotifications(false)
+    setActiveHomework(null)
     setSelectedDate(today)
     setPickedSubjectId(null)
   }
@@ -301,6 +306,16 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     return () => {
       cancelled = true
     }
+  }, [user.id])
+
+  function refreshHomework() {
+    getMyHomework()
+      .then((data) => setHomework(data.homework))
+      .catch(() => {})
+  }
+
+  useEffect(() => {
+    refreshHomework()
   }, [user.id])
 
   async function handleViewShare(share) {
@@ -548,6 +563,21 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     )
   }
 
+  if (activeHomework) {
+    return (
+      <HomeworkFlow
+        user={user}
+        assignment={activeHomework}
+        onExit={() => {
+          setActiveHomework(null)
+          refreshHomework()
+        }}
+        onLogout={onLogout}
+        onLogoClick={handleLogoClick}
+      />
+    )
+  }
+
   if (showCalendar) {
     return (
       <CalendarScreen
@@ -663,6 +693,24 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
                 </button>
               </div>
             ))}
+          </div>
+        )}
+
+        {homework.length > 0 && (
+          <div className="friend-request-banner-list">
+            {homework.map((hw) =>
+              hw.completed ? (
+                <div key={hw.id} className="homework-banner homework-banner--done">
+                  <p className="homework-banner-text">✅ {hw.title} — completed</p>
+                </div>
+              ) : (
+                <button key={hw.id} type="button" className="homework-banner" onClick={() => setActiveHomework(hw)}>
+                  <p className="homework-banner-text">
+                    📚 Homework due {formatLongDate(hw.dueDate)}: {hw.title}
+                  </p>
+                </button>
+              )
+            )}
           </div>
         )}
 

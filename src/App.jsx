@@ -7,6 +7,7 @@ import VerifyEmailScreen from './components/auth/VerifyEmailScreen'
 import ResetPasswordScreen from './components/auth/ResetPasswordScreen'
 import StudentFlow from './components/student/StudentFlow'
 import ParentDashboard from './components/parent/ParentDashboard'
+import TeacherFlow from './components/teacher/TeacherFlow'
 import InstallPrompt from './components/shared/InstallPrompt'
 import AdminApp from './components/admin/AdminApp'
 import './App.css'
@@ -155,10 +156,16 @@ function App() {
     return <AuthScreen initialMode={authMode} onAuth={setUser} onLogoClick={() => setShowLanding(true)} />
   }
 
-  // Teacher accounts share ParentDashboard with parent accounts for now —
-  // see api/_lib/parentHandler.js, which authorizes both the same way.
-  // Class-specific teacher features are a future session.
-  if (user.account_type === 'parent' || user.account_type === 'teacher') {
+  if (user.account_type === 'teacher') {
+    return (
+      <>
+        <TeacherFlow user={user} onLogout={handleLogout} onUserUpdate={setUser} />
+        <InstallPrompt />
+      </>
+    )
+  }
+
+  if (user.account_type === 'parent') {
     return (
       <>
         <ParentDashboard user={user} onLogout={handleLogout} onUserUpdate={setUser} />

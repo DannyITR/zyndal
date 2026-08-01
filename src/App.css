@@ -4466,6 +4466,331 @@ div.zyndal-logo {
   padding-top: 4px;
 }
 
+/* ---------- Teacher dashboard ---------- */
+
+.teacher-stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.teacher-stat-card {
+  flex: 1 1 calc(50% - 5px);
+  min-width: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.teacher-stat-value {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.teacher-stat-label {
+  font-size: 11px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.teacher-class-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.teacher-class-card {
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.teacher-class-card:hover {
+  border-color: var(--purple);
+}
+
+.teacher-class-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.teacher-class-name {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.teacher-class-code {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--purple-bright);
+  background: rgba(155, 77, 255, 0.14);
+  border-radius: 8px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.teacher-class-detail {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.teacher-code-display {
+  font-family: var(--font-heading);
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-align: center;
+  color: var(--purple-bright);
+  background: rgba(155, 77, 255, 0.14);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.teacher-student-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.teacher-assignment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.teacher-assignment-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.teacher-assignment-card-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 14px 16px;
+}
+
+.teacher-assignment-students {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+/* ---------- Homework (student home banners + answers review) ---------- */
+
+.homework-banner {
+  width: 100%;
+  text-align: left;
+  background: linear-gradient(160deg, rgba(66, 133, 244, 0.16), var(--card) 60%);
+  border: 1px solid rgba(66, 133, 244, 0.4);
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.homework-banner--done {
+  background: var(--card);
+  border-color: var(--border);
+  cursor: default;
+}
+
+.homework-banner-text {
+  font-size: 14px;
+  flex: 1;
+  min-width: 160px;
+}
+
+.answer-review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding-right: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.answer-review-row {
+  background: var(--bg-elevated);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.answer-review-question {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.answer-review-correct {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--green);
+}
+
+.answer-review-wrong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--red);
+}
+
+.modal-card--wide {
+  max-width: 560px;
+}
+
+/* ---------- Assign Homework screen ---------- */
+
+.homework-question-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.homework-question-editor {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.homework-question-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.homework-question-editor textarea {
+  width: 100%;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--text);
+  resize: vertical;
+}
+
+.homework-question-option-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.homework-question-option-row input[type='radio'] {
+  accent-color: var(--purple);
+  flex-shrink: 0;
+}
+
+.homework-question-option-row input[type='text'] {
+  flex: 1;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--text);
+}
+
+.homework-question-explanation {
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.homework-bank-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.homework-bank-filters select {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--text);
+}
+
+.homework-bank-question-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--bg-elevated);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.homework-bank-question-row input[type='checkbox'] {
+  margin-top: 2px;
+  accent-color: var(--purple);
+  flex-shrink: 0;
+}
+
+.homework-random-count-input {
+  width: 60px;
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  font: inherit;
+  color: var(--text);
+  text-align: center;
+}
+
 /* ---------- Responsive ---------- */
 
 @media (min-width: 540px) {

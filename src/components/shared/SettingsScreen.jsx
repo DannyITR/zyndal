@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { updateUserProfile, changePassword, getFriendCount, exportMyData, deleteAccount } from '../../lib/storage'
+import { updateUserProfile, changePassword, getFriendCount, exportMyData, deleteAccount, getMyClasses, joinClass } from '../../lib/storage'
 import { AVATARS } from '../../lib/avatars'
 import TopBar from './TopBar'
 import LegalModal from '../legal/LegalModal'
@@ -22,6 +22,38 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
       cancelled = true
     }
   }, [isStudent, user.id])
+
+  const [joinedClasses, setJoinedClasses] = useState(null)
+  const [teacherCodeInput, setTeacherCodeInput] = useState('')
+  const [joinSaving, setJoinSaving] = useState(false)
+  const [joinError, setJoinError] = useState('')
+
+  function loadJoinedClasses() {
+    getMyClasses()
+      .then((data) => setJoinedClasses(data.classes))
+      .catch(() => setJoinedClasses([]))
+  }
+
+  useEffect(() => {
+    if (!isStudent) return
+    loadJoinedClasses()
+  }, [isStudent])
+
+  async function handleJoinClass(e) {
+    e.preventDefault()
+    setJoinError('')
+    if (!teacherCodeInput.trim()) return
+    setJoinSaving(true)
+    try {
+      await joinClass(teacherCodeInput.trim())
+      setTeacherCodeInput('')
+      loadJoinedClasses()
+    } catch (err) {
+      setJoinError(err.message || "Couldn't join that class. Please check the code and try again.")
+    } finally {
+      setJoinSaving(false)
+    }
+  }
 
   const [avatar, setAvatar] = useState(user.avatar || AVATARS[0])
   const [displayName, setDisplayName] = useState(user.display_name || '')
@@ -296,6 +328,44 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
           {passwordSaving ? 'Updating…' : 'Change Password'}
         </button>
       </form>
+
+      {isStudent && (
+        <div className="finance-section-card">
+          <h3 className="section-heading">Join a Class</h3>
+          <p className="field-hint">Enter the 6-character code your teacher shared with you. You can join more than one class.</p>
+          <form className="auth-form" onSubmit={handleJoinClass}>
+            <div className="field">
+              <label htmlFor="settings-teacher-code">Class code</label>
+              <input
+                id="settings-teacher-code"
+                value={teacherCodeInput}
+                onChange={(e) => setTeacherCodeInput(e.target.value.toUpperCase())}
+                placeholder="ABC123"
+                maxLength={6}
+              />
+            </div>
+            {joinError && <p className="form-error">{joinError}</p>}
+            <button type="submit" className="btn btn-secondary btn-block" disabled={joinSaving}>
+              {joinSaving ? 'Joining…' : 'Join Class'}
+            </button>
+          </form>
+
+          {joinedClasses && joinedClasses.length > 0 && (
+            <div className="teacher-student-list">
+              {joinedClasses.map((c) => (
+                <div key={c.id} className="finance-student-row">
+                  <div>
+                    <p className="finance-student-name">{c.name}</p>
+                    <p className="finance-student-detail">
+                      Grade {c.grade} · {c.school} · Taught by @{c.teacherUsername}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="settings-legal-links">
         <button type="button" onClick={() => setOpenLegal('privacy')}>
