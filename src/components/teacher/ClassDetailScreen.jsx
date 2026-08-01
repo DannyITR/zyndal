@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getClassDetail } from '../../lib/storage'
 import TopBar from '../shared/TopBar'
 import SubmissionDetailModal from './SubmissionDetailModal'
+import SetCurrentUnitModal from './SetCurrentUnitModal'
 
 function formatDate(value) {
   if (!value) return '—'
@@ -14,6 +15,7 @@ export default function ClassDetailScreen({ user, classId, onBack, onLogout, onL
   const [expandedAssignmentId, setExpandedAssignmentId] = useState(null)
   const [viewingSubmission, setViewingSubmission] = useState(null) // { assignmentId, studentId, username }
   const [copied, setCopied] = useState(false)
+  const [showSetUnit, setShowSetUnit] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -76,6 +78,17 @@ export default function ClassDetailScreen({ user, classId, onBack, onLogout, onL
             {copied ? 'Copied!' : 'Copy'}
           </button>
         </div>
+      </div>
+
+      <div className="finance-section-card">
+        <p className="field-hint">Currently studying</p>
+        <p className="teacher-current-unit">
+          📖 Unit {detail.class.current_unit_number ?? 1}
+          {detail.class.current_unit_title ? ` — ${detail.class.current_unit_title}` : ''}
+        </p>
+        <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowSetUnit(true)}>
+          Set Current Unit
+        </button>
       </div>
 
       <h3 className="section-heading">Students ({detail.students.length})</h3>
@@ -172,6 +185,15 @@ export default function ClassDetailScreen({ user, classId, onBack, onLogout, onL
           studentId={viewingSubmission.studentId}
           username={viewingSubmission.username}
           onClose={() => setViewingSubmission(null)}
+        />
+      )}
+
+      {showSetUnit && (
+        <SetCurrentUnitModal
+          classId={detail.class.id}
+          classGrade={detail.class.grade}
+          onSaved={(updatedClass) => setDetail((prev) => ({ ...prev, class: updatedClass }))}
+          onClose={() => setShowSetUnit(false)}
         />
       )}
     </div>

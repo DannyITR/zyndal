@@ -7,7 +7,12 @@ export default function HomeworkResultsScreen({ user, assignment, result, onDone
     <div className="screen student-screen">
       <TopBar title="📚 Homework Submitted" subtitle={assignment.title} username={user.username} onLogout={onLogout} onLogoClick={onLogoClick} />
 
-      <div className="testprep-header-card practice-results-card">
+      <div className="testprep-header-card practice-results-card homework-results-card">
+        <div className="milestone-confetti" aria-hidden="true">
+          {Array.from({ length: 24 }).map((_, i) => (
+            <span key={i} className="confetti-piece" style={{ '--i': i }} />
+          ))}
+        </div>
         <p className="practice-results-score">{scorePercentage}% correct</p>
         <p className="practice-results-coins">
           ⚡ +{xpEarned} XP{coinsEarned > 0 ? ` · 🪙 +${coinsEarned} coins` : ''}

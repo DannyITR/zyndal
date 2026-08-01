@@ -12,6 +12,7 @@ import {
   getNotifications,
   resendVerificationEmail,
   getMyHomework,
+  getStudentClasses,
 } from '../../lib/storage'
 import { getSubject } from '../../lib/questions'
 import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE, TOTAL_SUBJECTS } from '../../lib/streak'
@@ -39,6 +40,7 @@ import PracticeFlow from './practice/PracticeFlow'
 import GradesScreen from './grades/GradesScreen'
 import CurriculumOutlineScreen from './curriculum/CurriculumOutlineScreen'
 import HomeworkFlow from './homework/HomeworkFlow'
+import ClassesFlow from './classes/ClassesFlow'
 
 // Push-permission banner dismissal cooldown — see showPushBanner below.
 // localStorage (not the server) is the right place for this: permission
@@ -114,6 +116,8 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [homework, setHomework] = useState([])
   const [activeHomework, setActiveHomework] = useState(null)
+  const [studentClasses, setStudentClasses] = useState([])
+  const [showClasses, setShowClasses] = useState(false)
   // The share currently shown in the read-only friend-score-card modal,
   // opened from the home-screen notification box below.
   const [viewingShare, setViewingShare] = useState(null)
@@ -211,6 +215,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     setShowCalendar(false)
     setShowNotifications(false)
     setActiveHomework(null)
+    setShowClasses(false)
     setSelectedDate(today)
     setPickedSubjectId(null)
   }
@@ -316,6 +321,12 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
 
   useEffect(() => {
     refreshHomework()
+  }, [user.id])
+
+  useEffect(() => {
+    getStudentClasses()
+      .then((data) => setStudentClasses(data.classes))
+      .catch(() => {})
   }, [user.id])
 
   async function handleViewShare(share) {
@@ -563,6 +574,10 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     )
   }
 
+  if (showClasses) {
+    return <ClassesFlow user={user} onExit={() => setShowClasses(false)} onLogout={onLogout} onLogoClick={handleLogoClick} />
+  }
+
   if (activeHomework) {
     return (
       <HomeworkFlow
@@ -734,6 +749,11 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowCalendar(true)}>
             📅 Calendar
           </button>
+          {studentClasses.length > 0 && (
+            <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowClasses(true)}>
+              🏫 Classes
+            </button>
+          )}
         </div>
 
         <div className="calendar-nav">

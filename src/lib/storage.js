@@ -92,6 +92,10 @@ function callTeacherApi(method, endpoint, body) {
   return callApi('/api/teacher', method, endpoint, body)
 }
 
+function callClassesApi(method, endpoint, body) {
+  return callApi('/api/classes', method, endpoint, body)
+}
+
 function callNotificationsApi(method, endpoint, body) {
   return callApi('/api/notifications', method, endpoint, body)
 }
@@ -930,6 +934,26 @@ export async function submitHomework(assignmentId, selectedIndexes) {
   })
 }
 
+export async function getHomeworkSubmission(assignmentId) {
+  return callStudentApi('GET', `get-homework-submission?assignment_id=${encodeURIComponent(assignmentId)}`)
+}
+
+// ---------- Classes (student side, with current unit + calendar) ----------
+
+export async function getStudentClasses() {
+  return callClassesApi('GET', 'get-student-classes')
+}
+
+export async function getClassHomeworkCalendar(classId, month, year) {
+  const params = new URLSearchParams({
+    class_id: classId,
+    month: String(month),
+    year: String(year),
+    timezone: getUserTimeZone(),
+  })
+  return callClassesApi('GET', `get-class-homework-calendar?${params.toString()}`)
+}
+
 // ---------- Teacher: stats ----------
 
 export async function getTeacherStats() {
@@ -948,6 +972,14 @@ export async function createClass({ name, grade, school }) {
 
 export async function getClassDetail(classId) {
   return callTeacherApi('GET', `get-class-detail?class_id=${encodeURIComponent(classId)}`)
+}
+
+export async function setCurrentUnit(classId, unitNumber, unitTitle) {
+  return callTeacherApi('POST', 'set-current-unit', {
+    class_id: classId,
+    current_unit_number: unitNumber,
+    current_unit_title: unitTitle,
+  })
 }
 
 export async function getSubmissionDetail(assignmentId, studentId) {
