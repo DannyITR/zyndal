@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getOrGenerateCurriculumOutline } from '../../../lib/storage'
 import { gradeToSecondary } from '../../../lib/questions'
 import TopBar from '../../shared/TopBar'
@@ -30,13 +30,14 @@ function writeCache(subjectId, grade, payload) {
   }
 }
 
-export default function CurriculumOutlineScreen({ user, subject, onBack, onLogout, onLogoClick }) {
+export default function CurriculumOutlineScreen({ user, subject, initialUnitNumber, initialTopicTitle, onBack, onLogout, onLogoClick }) {
   const grade = user.grade || 9
   const [outline, setOutline] = useState(null)
   const [generatedAt, setGeneratedAt] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [isOfflineCopy, setIsOfflineCopy] = useState(false)
+  const unitListRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
@@ -77,6 +78,42 @@ export default function CurriculumOutlineScreen({ user, subject, onBack, onLogou
     }
   }, [subject.id, subject.name, grade])
 
+  // Deep-link from the daily question screen's curriculum box (see
+  // QuestionCard.jsx/StudentFlow.jsx) — auto-expands the matching unit and
+  // topic's <details> and scrolls to them. Matched by comparing
+  // dataset values in JS (not a CSS attribute selector) so a topic title
+  // containing quotes or other selector-special characters can't break the
+  // lookup. Runs once per outline load/target pair — re-collapsing a
+  // student's own manual expand/collapse elsewhere on the page never
+  // re-triggers this, since neither dependency changes from that.
+  useEffect(() => {
+    if (!outline || !initialUnitNumber) return
+    const container = unitListRef.current
+    if (!container) return
+
+    const unitEl = [...container.querySelectorAll('details[data-unit-number]')].find(
+      (el) => Number(el.dataset.unitNumber) === Number(initialUnitNumber)
+    )
+    if (!unitEl) return
+    unitEl.open = true
+
+    let scrollTarget = unitEl
+    if (initialTopicTitle) {
+      const topicEl = [...unitEl.querySelectorAll('details[data-topic-title]')].find(
+        (el) => el.dataset.topicTitle === initialTopicTitle
+      )
+      if (topicEl) {
+        topicEl.open = true
+        scrollTarget = topicEl
+      }
+    }
+
+    // Let the newly-opened <details> content lay out before scrolling, so
+    // the target lands at its real (expanded) position instead of its
+    // stale collapsed one.
+    requestAnimationFrame(() => scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }, [outline, initialUnitNumber, initialTopicTitle])
+
   return (
     <div className="screen student-screen">
       <TopBar
@@ -101,9 +138,9 @@ export default function CurriculumOutlineScreen({ user, subject, onBack, onLogou
         <>
           {isOfflineCopy && <p className="field-hint">📴 You're offline — showing the last saved copy.</p>}
 
-          <div className="curriculum-unit-list">
+          <div className="curriculum-unit-list" ref={unitListRef}>
             {outline.units.map((unit) => (
-              <details key={unit.unit_number} className="curriculum-unit">
+              <details key={unit.unit_number} className="curriculum-unit" data-unit-number={unit.unit_number}>
                 <summary className="curriculum-unit-summary">
                   <span className="curriculum-unit-title">
                     Unit {unit.unit_number}: {unit.unit_title}
@@ -115,7 +152,7 @@ export default function CurriculumOutlineScreen({ user, subject, onBack, onLogou
 
                 <div className="curriculum-topic-list">
                   {unit.topics.map((topic, i) => (
-                    <details key={i} className="curriculum-topic">
+                    <details key={i} className="curriculum-topic" data-topic-title={topic.topic_title}>
                       <summary className="curriculum-topic-summary">{topic.topic_title}</summary>
                       <div className="curriculum-topic-body">
                         <p className="curriculum-explanation">{topic.explanation}</p>

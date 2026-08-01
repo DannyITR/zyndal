@@ -32,6 +32,7 @@ export default function StudentHome({
   onOpenPractice,
   onOpenGrades,
   onOpenCurriculum,
+  onOpenCurriculumTopic,
   onBack,
   onLogout,
   onLogoClick,
@@ -226,6 +227,7 @@ export default function StudentHome({
                 selectedIndex={displaySelectedIndex}
                 celebrate={Boolean(justAnswered?.correct)}
                 onSelect={handleSelect}
+                onOpenCurriculumTopic={onOpenCurriculumTopic}
               />
             </>
           )}

@@ -2,7 +2,7 @@ import { waitUntil } from '@vercel/functions'
 import { supabase } from './auth.js'
 import { getUserGrade, getAnswersThisMonth } from './db.js'
 import { todayStr } from '../../src/lib/streak.js'
-import { getDailyQuestionForGrade } from '../../src/lib/questions.js'
+import { getDailyQuestionForGrade, findQuestionByPrompt } from '../../src/lib/questions.js'
 import { generateQuestionPoolIfMissing } from '../questions/generate-question-pool.js'
 
 // TODO: As students upload school materials, learn actual curriculum pacing
@@ -98,6 +98,55 @@ function triggerBackgroundGeneration(subject, grade, scheduledUnits) {
   }
 }
 
+// Bug fix: a wide-enough (36h, same margin api/cron/streak-reminder.js
+// uses) UTC lookback, narrowed to the caller's own local calendar day in JS
+// — a plain UTC day-boundary query (what api/questions/get-daily-question.js
+// used to do for its own separate `already_answered` flag) is wrong for any
+// timezone behind/ahead of UTC.
+async function getTodayAnswerRow(userId, subject, timezone, today) {
+  const lookback = new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString()
+  const { data, error } = await supabase
+    .from('answers')
+    .select('question_text, answered_at')
+    .eq('user_id', userId)
+    .eq('subject', subject)
+    .gte('answered_at', lookback)
+  if (error) throw error
+  return (data || []).find((row) => todayStr(new Date(row.answered_at), timezone) === today) || null
+}
+
+// Reconstructs the full question (options, correct index, unit/topic tags)
+// from just the stored question_text of an answer already submitted today —
+// the same hardcoded-bank-then-generated-pool lookup order db.js's
+// rowToEntry/buildGeneratedQuestionsMap already use for history entries.
+// Returns null only if the text can't be matched anywhere (e.g. the
+// hardcoded bank changed since it was answered), in which case the caller
+// falls back to normal pool selection rather than failing outright.
+async function resolveAnsweredQuestion(subject, questionText) {
+  const hardcodedMatch = findQuestionByPrompt(subject, questionText)
+  if (hardcodedMatch) return { ...hardcodedMatch, source: 'hardcoded', explanation: null }
+
+  const { data, error } = await supabase.from('generated_questions').select('*').eq('subject', subject).eq('question', questionText).maybeSingle()
+  if (error) {
+    console.error('[dailyQuestion] failed to look up already-answered generated question:', error)
+    return null
+  }
+  if (!data) return null
+
+  return {
+    id: data.id,
+    prompt: data.question,
+    options: data.options,
+    correctIndex: data.correct,
+    grade: data.grade,
+    unitNumber: data.unit_number,
+    unitTitle: data.unit_title,
+    topicTitle: data.topic_title,
+    source: 'generated',
+    explanation: data.explanation ?? null,
+  }
+}
+
 // Shared by api/questions/get-daily-question.js (client display) and
 // api/student/submit-answer.js (scoring) so both always agree on exactly
 // which question is "today's" for a given student+subject — the server
@@ -110,6 +159,21 @@ export async function resolveDailyQuestion({ userId, subject, timezone }) {
   // student whose grade was never set.
   const effectiveGrade = grade ?? 9
   const today = todayStr(new Date(), timezone)
+
+  // Bug fix: once a subject's been answered today, THAT question — not a
+  // fresh pool pick — has to stay "today's question" for the rest of the
+  // day. Without this early return, a page reload after answering re-runs
+  // the pool-selection loop below with `answeredThisMonth` now including
+  // today's own answer; the loop treats that as "already used this month,
+  // skip it" and silently swaps in a different, still-unanswered-looking
+  // pool question — see api/questions/get-daily-question.js's own comment
+  // on why this broke the subject screen (locked, but showing the wrong
+  // question with a selectedIndex that doesn't match its options).
+  const todayAnswer = await getTodayAnswerRow(userId, subject, timezone, today)
+  if (todayAnswer) {
+    const resolved = await resolveAnsweredQuestion(subject, todayAnswer.question_text)
+    if (resolved) return resolved
+  }
 
   let scheduledUnits = []
   try {

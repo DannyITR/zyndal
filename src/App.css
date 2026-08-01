@@ -1216,6 +1216,31 @@ div.zyndal-logo {
   line-height: 1.35;
 }
 
+.curriculum-topic-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: rgba(155, 77, 255, 0.08);
+  border: 1px solid rgba(155, 77, 255, 0.3);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.curriculum-topic-link:hover {
+  background: rgba(155, 77, 255, 0.14);
+  border-color: rgba(155, 77, 255, 0.45);
+}
+
+.curriculum-topic-link:active {
+  transform: scale(0.99);
+}
+
 .options {
   display: flex;
   flex-direction: column;

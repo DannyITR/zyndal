@@ -95,6 +95,11 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [showPractice, setShowPractice] = useState(false)
   const [showGrades, setShowGrades] = useState(false)
   const [showCurriculum, setShowCurriculum] = useState(false)
+  // Set only when the curriculum screen is opened from the daily question
+  // screen's "Read about this topic" box — tells CurriculumOutlineScreen
+  // which unit/topic to auto-expand and scroll to. null for the plain
+  // "📖 Curriculum" nav button, which opens the full reference as before.
+  const [curriculumFocus, setCurriculumFocus] = useState(null)
   const [showCalendar, setShowCalendar] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   // Shares received today that the student hasn't marked seen yet — powers
@@ -526,7 +531,12 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       <CurriculumOutlineScreen
         user={user}
         subject={activeSubject}
-        onBack={() => setShowCurriculum(false)}
+        initialUnitNumber={curriculumFocus?.unitNumber}
+        initialTopicTitle={curriculumFocus?.topicTitle}
+        onBack={() => {
+          setShowCurriculum(false)
+          setCurriculumFocus(null)
+        }}
         onLogout={onLogout}
         onLogoClick={handleLogoClick}
       />
@@ -744,6 +754,10 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       onOpenPractice={() => setShowPractice(true)}
       onOpenGrades={() => setShowGrades(true)}
       onOpenCurriculum={() => setShowCurriculum(true)}
+      onOpenCurriculumTopic={(focus) => {
+        setCurriculumFocus(focus)
+        setShowCurriculum(true)
+      }}
       onBack={() => setPickedSubjectId(null)}
       onLogout={onLogout}
       onLogoClick={handleLogoClick}
