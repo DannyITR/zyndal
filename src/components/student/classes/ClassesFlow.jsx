@@ -15,11 +15,13 @@ export default function ClassesFlow({ user, onExit, onLogout, onLogoClick }) {
   const [activeAssignment, setActiveAssignment] = useState(null)
   const [startError, setStartError] = useState('')
 
-  useEffect(() => {
+  function loadClasses() {
     getStudentClasses()
       .then((data) => setClasses(data.classes))
       .catch(() => setClasses([]))
-  }, [])
+  }
+
+  useEffect(loadClasses, [])
 
   function handleOpenClass(classId) {
     setSelectedClassId(classId)
@@ -94,5 +96,15 @@ export default function ClassesFlow({ user, onExit, onLogout, onLogoClick }) {
     )
   }
 
-  return <MyClassesScreen user={user} classes={classes} onBack={onExit} onLogout={onLogout} onLogoClick={onLogoClick} onOpenClass={handleOpenClass} />
+  return (
+    <MyClassesScreen
+      user={user}
+      classes={classes}
+      onBack={onExit}
+      onLogout={onLogout}
+      onLogoClick={onLogoClick}
+      onOpenClass={handleOpenClass}
+      onJoined={loadClasses}
+    />
+  )
 }

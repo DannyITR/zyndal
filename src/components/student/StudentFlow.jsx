@@ -12,7 +12,6 @@ import {
   getNotifications,
   resendVerificationEmail,
   getMyHomework,
-  getStudentClasses,
 } from '../../lib/storage'
 import { getSubject } from '../../lib/questions'
 import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE, TOTAL_SUBJECTS } from '../../lib/streak'
@@ -120,7 +119,6 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   // can actually act on — anything already completed has no questions left
   // to answer (see get-homework.js), so the button just wouldn't be shown.
   const openHomeworkIds = useMemo(() => new Set(homework.filter((h) => !h.completed).map((h) => h.id)), [homework])
-  const [studentClasses, setStudentClasses] = useState([])
   const [showClasses, setShowClasses] = useState(false)
   // The share currently shown in the read-only friend-score-card modal,
   // opened from the home-screen notification box below.
@@ -325,12 +323,6 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
 
   useEffect(() => {
     refreshHomework()
-  }, [user.id])
-
-  useEffect(() => {
-    getStudentClasses()
-      .then((data) => setStudentClasses(data.classes))
-      .catch(() => {})
   }, [user.id])
 
   async function handleViewShare(share) {
@@ -761,11 +753,9 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowCalendar(true)}>
             📅 Calendar
           </button>
-          {studentClasses.length > 0 && (
-            <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowClasses(true)}>
-              🏫 Classes
-            </button>
-          )}
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowClasses(true)}>
+            🏫 Classes
+          </button>
         </div>
 
         <div className="calendar-nav">
