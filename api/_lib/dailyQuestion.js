@@ -126,7 +126,26 @@ async function resolveAnsweredQuestion(subject, questionText) {
   const hardcodedMatch = findQuestionByPrompt(subject, questionText)
   if (hardcodedMatch) return { ...hardcodedMatch, source: 'hardcoded', explanation: null }
 
-  const { data, error } = await supabase.from('generated_questions').select('*').eq('subject', subject).eq('question', questionText).maybeSingle()
+  // Bug fix: generate-question-pool.js's generation runs aren't guaranteed
+  // unique on (subject, question) — re-running generation for a
+  // unit/topic that already has rows (e.g. across repeated testing) can
+  // leave duplicate question text behind, and math's pool has picked up
+  // several. .maybeSingle() errors (PGRST116, "multiple rows returned")
+  // the moment more than one row matches, which this function used to
+  // treat as "no match" and fall through to the pool-selection logic
+  // above — silently swapping in a fresh, unanswered-looking question for
+  // a subject that already had one answered today. .limit(1) caps the
+  // query itself to a single (deterministic, lowest-id) row first, so
+  // .maybeSingle() only ever sees 0 or 1 rows and this always resolves
+  // the already-answered question correctly regardless of duplicates.
+  const { data, error } = await supabase
+    .from('generated_questions')
+    .select('*')
+    .eq('subject', subject)
+    .eq('question', questionText)
+    .order('id', { ascending: true })
+    .limit(1)
+    .maybeSingle()
   if (error) {
     console.error('[dailyQuestion] failed to look up already-answered generated question:', error)
     return null
