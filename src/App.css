@@ -4024,6 +4024,24 @@ div.zyndal-logo {
   font-size: 14px;
 }
 
+/* Same look as .share-friend-name, but a real <button> — used when a
+   friend has an unseen incoming share to view (see FriendsScreen.jsx),
+   which needs its own click target separate from the row's Share button. */
+.share-friend-name-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 14px;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
 .share-friend-stat {
   font-size: 12px;
   margin-top: 2px;

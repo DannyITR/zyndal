@@ -40,7 +40,7 @@ export default function FriendSharePickerModal({ user, friends, shares, today, s
                   <span className="share-friend-avatar">{friend.avatar || '👤'}</span>
                   <div className="share-friend-info">
                     <p className="share-friend-name">@{friend.username}</p>
-                    <p className="share-friend-stat share-friend-stat--share">↔️ {shareStreak} day share streak</p>
+                    {shareStreak > 0 && <p className="share-friend-stat share-friend-stat--share">🔥 {shareStreak} day share streak</p>}
                   </div>
                   {sharedToday ? (
                     <span className="friend-picker-shared">✅ Shared today</span>

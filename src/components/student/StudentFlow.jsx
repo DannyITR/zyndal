@@ -13,7 +13,7 @@ import {
   resendVerificationEmail,
 } from '../../lib/storage'
 import { getSubject } from '../../lib/questions'
-import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE } from '../../lib/streak'
+import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE, TOTAL_SUBJECTS } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
 import { isPushSupported, subscribeToPush } from '../../lib/push'
 import TopBar from '../shared/TopBar'
@@ -407,6 +407,11 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     return (
       <FriendsScreen
         user={user}
+        // Same "complete today's questions first" gate the Share Daily
+        // Score screen's own friend picker enforces (see
+        // FriendSharePickerModal.jsx) — this screen now offers the same
+        // direct Share action per friend, so it needs the same rule.
+        canShareToday={(dailyProgress?.completed_subjects?.length ?? 0) + (dailyProgress?.incorrect_subjects?.length ?? 0) >= TOTAL_SUBJECTS}
         onBack={() => {
           setShowFriends(false)
           refreshNotificationState()

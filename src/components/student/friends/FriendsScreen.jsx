@@ -8,20 +8,23 @@ import {
   getStreakSharesForUser,
   getIncomingShares,
   markShareSeen,
+  shareStreakWithFriend,
 } from '../../../lib/storage'
-import { computeShareStreak } from '../../../lib/streakShare'
+import { hasSharedToday, computeShareStreak } from '../../../lib/streakShare'
 import { todayStr } from '../../../lib/streak'
 import { getUserTimeZone } from '../../../lib/timezone'
 import TopBar from '../../shared/TopBar'
 import FriendRequestBanner from './FriendRequestBanner'
 import FriendScoreCardModal from '../share/FriendScoreCardModal'
 
-export default function FriendsScreen({ user, onBack, onLogout, onLogoClick }) {
+export default function FriendsScreen({ user, canShareToday, onBack, onLogout, onLogoClick }) {
   const [pendingRequests, setPendingRequests] = useState(null)
   const [friends, setFriends] = useState(null)
   const [shares, setShares] = useState(null)
   const [incomingShares, setIncomingShares] = useState([])
   const [viewingShare, setViewingShare] = useState(null)
+  const [sendingToId, setSendingToId] = useState(null)
+  const [shareError, setShareError] = useState('')
 
   // Live autocomplete search — query.length >= 2 triggers a debounced
   // (300ms) search-users.js call; skipNextSearchRef suppresses the search
@@ -162,6 +165,26 @@ export default function FriendsScreen({ user, onBack, onLogout, onLogoClick }) {
     await refreshFriendsData()
   }
 
+  // Mirrors ShareStreakScreen.jsx's own handleShareWithFriend — this screen
+  // now offers the same direct per-friend Share action (see the redesigned
+  // "Your Friends" list below) instead of only being reachable through that
+  // screen's separate friend-picker modal.
+  async function handleShareWithFriend(friendId) {
+    if (sendingToId) return
+    setSendingToId(friendId)
+    setShareError('')
+    try {
+      await shareStreakWithFriend(user.id, friendId)
+      const shareRows = await getStreakSharesForUser(user.id)
+      setShares(shareRows)
+    } catch (err) {
+      console.error('[Friends] streak share failed:', err)
+      setShareError("Couldn't share your score. Please try again.")
+    } finally {
+      setSendingToId(null)
+    }
+  }
+
   return (
     <div className="screen student-screen">
       <TopBar
@@ -245,42 +268,49 @@ export default function FriendsScreen({ user, onBack, onLogout, onLogoClick }) {
 
       <div className="finance-section-card">
         <h3 className="section-heading">Your Friends</h3>
+        {shareError && <p className="form-error">{shareError}</p>}
         {!friends ? (
           <p className="loading-text">Loading…</p>
         ) : friends.length === 0 ? (
           <p className="field-hint">No friends yet — search above to follow someone.</p>
         ) : (
-          <div className="finance-student-list">
+          <div className="friend-picker-list">
             {friends.map((friend) => {
               const shareStreak = shares ? computeShareStreak(shares, user.id, friend.id, today) : 0
+              const sharedToday = shares ? hasSharedToday(shares, user.id, friend.id, today) : false
+              // A friend who already shared with ME today is always
+              // shareable back, regardless of my own completion state —
+              // matches FriendSharePickerModal.jsx's own gate exactly.
+              const friendAlreadyShared = shares ? hasSharedToday(shares, friend.id, user.id, today) : false
               const incoming = incomingShares.find((s) => s.senderId === friend.id)
-              const rowContent = (
-                <>
-                  <div>
-                    <p className="finance-student-name">
-                      @{friend.username}
-                      {incoming && <span className="friend-share-badge">1</span>}
-                    </p>
-                    <p className="finance-student-detail">
-                      {shareStreak > 0
-                        ? `🔥 ${shareStreak} day share streak`
-                        : '🔥 Start a share streak — share your daily score!'}
-                    </p>
+              return (
+                <div key={friend.id} className="friend-picker-row">
+                  <span className="share-friend-avatar">{friend.avatar || '👤'}</span>
+                  <div className="share-friend-info">
+                    {incoming ? (
+                      <button type="button" className="share-friend-name-btn" onClick={() => handleViewShare(incoming)}>
+                        @{friend.username}
+                        <span className="friend-share-badge">1</span>
+                      </button>
+                    ) : (
+                      <p className="share-friend-name">@{friend.username}</p>
+                    )}
+                    {shareStreak > 0 && <p className="share-friend-stat share-friend-stat--share">🔥 {shareStreak} day share streak</p>}
                   </div>
-                </>
-              )
-              return incoming ? (
-                <button
-                  key={friend.id}
-                  type="button"
-                  className="finance-student-row finance-student-row--clickable"
-                  onClick={() => handleViewShare(incoming)}
-                >
-                  {rowContent}
-                </button>
-              ) : (
-                <div key={friend.id} className="finance-student-row">
-                  {rowContent}
+                  {sharedToday ? (
+                    <span className="friend-picker-shared">✅ Shared today</span>
+                  ) : !friendAlreadyShared && !canShareToday ? (
+                    <p className="field-hint friend-picker-hint">Complete today's questions to share with @{friend.username}</p>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-small"
+                      disabled={sendingToId === friend.id}
+                      onClick={() => handleShareWithFriend(friend.id)}
+                    >
+                      {sendingToId === friend.id ? 'Sharing…' : 'Share 🔥'}
+                    </button>
+                  )}
                 </div>
               )
             })}
