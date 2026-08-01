@@ -339,10 +339,26 @@ export async function getCurrentUser() {
   try {
     return await callStudentApi('GET', 'get-profile')
   } catch {
-    // Invalid/expired session (already cleared by callApi on a 401) or a
-    // network hiccup — either way, treat it as logged out.
-    clearSession()
-    return null
+    // callApi already clears the session (and deletes it server-side) on a
+    // genuine 401 — if the token is already gone, that's what happened and
+    // there's nothing left to retry. Any other failure (offline, DNS not
+    // resolved yet, the network stack still spinning up) leaves the token
+    // untouched, so it's worth one short retry before giving up.
+    //
+    // Bug fix: this used to call clearSession() unconditionally here,
+    // which — for anything other than a real 401 — deleted a perfectly
+    // valid session over nothing more than a transient network hiccup.
+    // That's exactly what made tapping a push notification (which cold-
+    // starts the app before the network/service worker stack is fully up)
+    // bounce straight to the login screen: the very first get-profile call
+    // would fail, and this would log the user out for real in response.
+    if (!getSessionToken()) return null
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    try {
+      return await callStudentApi('GET', 'get-profile')
+    } catch {
+      return null
+    }
   }
 }
 

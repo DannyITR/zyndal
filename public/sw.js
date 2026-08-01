@@ -133,19 +133,54 @@ self.addEventListener('push', (event) => {
       body: data.body || '',
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
-      data: { url: data.url || '/' },
+      data: { url: data.url || 'https://zyndal.ca' },
     })
   )
 })
 
+// Bug fix: this used to compare `client.url === url` — an exact string
+// match against 'https://zyndal.ca' with no path. A client's `url` almost
+// never comes back exactly that (browsers normalize the root path to a
+// trailing slash, and the app can be sitting on any other in-app screen
+// state), so this NEVER matched an already-open window and always fell
+// through to openWindow(), reloading the whole app fresh on every tap even
+// when it was already running in the foreground. Matching on origin
+// instead finds any already-open Zyndal window regardless of its exact
+// path, and only navigates it if its current URL actually differs from the
+// notification's target — so tapping a notification while already on the
+// right screen just focuses the window without losing in-memory state.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const url = event.notification.data?.url || '/'
+  const url = event.notification.data?.url || 'https://zyndal.ca'
+
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
-      for (const client of list) {
-        if (client.url === url && 'focus' in client) return client.focus()
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (list) => {
+      let targetOrigin
+      try {
+        targetOrigin = new URL(url).origin
+      } catch {
+        targetOrigin = null
       }
+
+      const existing = list.find((client) => {
+        try {
+          return targetOrigin && new URL(client.url).origin === targetOrigin
+        } catch {
+          return false
+        }
+      })
+
+      if (existing) {
+        if ('focus' in existing) await existing.focus()
+        if ('navigate' in existing && existing.url !== url) {
+          // Older/non-Chromium engines may not support WindowClient.navigate
+          // — focusing the existing window is still strictly better than
+          // opening a duplicate one, so a failure here is a soft no-op.
+          await existing.navigate(url).catch(() => {})
+        }
+        return
+      }
+
       if (self.clients.openWindow) return self.clients.openWindow(url)
     })
   )
