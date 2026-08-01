@@ -4,7 +4,8 @@
     { "source": "/auth/callback", "destination": "/index.html" },
     { "source": "/verify", "destination": "/index.html" },
     { "source": "/reset-password", "destination": "/index.html" },
-    { "source": "/admin", "destination": "/index.html" }
+    { "source": "/admin", "destination": "/index.html" },
+    { "source": "/admin/(.*)", "destination": "/index.html" }
   ],
   "crons": [{ "path": "/api/cron/streak-reminder", "schedule": "0 * * * *" }]
 }

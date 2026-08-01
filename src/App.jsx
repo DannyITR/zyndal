@@ -37,7 +37,10 @@ function App() {
   // session — see src/lib/adminApi.js) and never appears in the main app's
   // navigation. Checked first, before the regular getCurrentUser()/loading
   // flow even starts rendering anything for it.
-  const [isAdminPage] = useState(() => window.location.pathname === '/admin')
+  // Prefix match (not exact) — the admin panel now has its own sub-routes
+  // (e.g. /admin/users/:id for the Edit User page), all handled by
+  // AdminApp's own internal routing, not this component's.
+  const [isAdminPage] = useState(() => window.location.pathname.startsWith('/admin'))
 
   useEffect(() => {
     let cancelled = false

@@ -90,3 +90,23 @@ export function updateAdminUser(payload) {
 export function deleteAdminUser(payload) {
   return callAdminApi('POST', 'delete-user', payload)
 }
+
+export function setAdminUserPassword(payload) {
+  return callAdminApi('POST', 'set-user-password', payload)
+}
+
+export function adjustAdminXpCoins(payload) {
+  return callAdminApi('POST', 'adjust-xp-coins', payload)
+}
+
+export function getAdminUploadQuestions(uploadId) {
+  return callAdminApi('GET', `get-upload-questions?upload_id=${encodeURIComponent(uploadId)}`)
+}
+
+export function deleteAdminUpload(payload) {
+  return callAdminApi('POST', 'delete-upload', payload)
+}
+
+export function deleteAdminGrade(payload) {
+  return callAdminApi('POST', 'delete-grade', payload)
+}

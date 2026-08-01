@@ -1,5 +1,6 @@
 import { createAdminHandler } from '../_lib/adminHandler.js'
 import { supabase } from '../_lib/auth.js'
+import { getProgressForUser } from '../_lib/db.js'
 import { usernameLookup } from '../_lib/parentDb.js'
 import { sanitizeUuid } from '../_lib/sanitize.js'
 
@@ -31,8 +32,7 @@ async function handle({ body }) {
   }
 
   const [
-    { data: streak },
-    { data: answers, error: answersError },
+    progress,
     { data: grades, error: gradesError },
     { data: uploads, error: uploadsError },
     { data: studyPlans, error: studyPlansError },
@@ -41,8 +41,12 @@ async function handle({ body }) {
     { data: friendRows, error: friendsError },
     { data: notifications, error: notificationsError },
   ] = await Promise.all([
-    supabase.from('streaks').select('*').eq('user_id', userId).maybeSingle(),
-    supabase.from('answers').select('*').eq('user_id', userId).order('answered_at', { ascending: false }),
+    // Reuses the exact same student-facing progress builder (hardcoded-bank/
+    // generated-pool question lookup, timezone-aware date bucketing) instead
+    // of re-querying answers directly — the Edit User page's calendar and
+    // day-detail view need the same enriched shape (correctAnswer, options,
+    // local date) StudentHome.jsx's own history already relies on.
+    getProgressForUser(userId, user.timezone),
     supabase.from('grades').select('*').eq('user_id', userId).order('test_date', { ascending: false }),
     supabase.from('uploads').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
     supabase.from('study_plans').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
@@ -51,7 +55,6 @@ async function handle({ body }) {
     supabase.from('friends').select('friend_id, created_at').eq('user_id', userId),
     supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(100),
   ])
-  if (answersError) throw answersError
   if (gradesError) throw gradesError
   if (uploadsError) throw uploadsError
   if (studyPlansError) throw studyPlansError
@@ -72,10 +75,25 @@ async function handle({ body }) {
   ]
   const usernameById = await usernameLookup([...new Set(relatedIds)])
 
+  const totalAnswered = progress.history.length
+  const totalCorrect = progress.history.filter((h) => h.correct).length
+
   return {
     user,
-    streak: streak || null,
-    answers: answers || [],
+    stats: {
+      currentStreak: progress.streak,
+      longestStreak: progress.longestStreak,
+      totalXp: progress.xp,
+      coinBalance: progress.coins,
+      totalAnswered,
+      totalCorrect,
+      accuracyPercent: totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0,
+      memberSince: user.created_at,
+      // progress.history is ordered ascending by answered_at, so the last
+      // entry is the most recent.
+      lastActive: totalAnswered > 0 ? progress.history[totalAnswered - 1].date : null,
+    },
+    answerHistory: progress.history,
     grades: grades || [],
     uploads: uploads || [],
     studyPlans: studyPlans || [],

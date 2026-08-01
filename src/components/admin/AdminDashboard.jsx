@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { getAdminStats, getAdminUsers, updateAdminUser, deleteAdminUser } from '../../lib/adminApi'
-import AdminUserDetailModal from './AdminUserDetailModal'
 import AdminConfirmDeleteModal from './AdminConfirmDeleteModal'
 
 function formatDate(value) {
@@ -16,7 +15,7 @@ const STAT_CARDS = [
   { key: 'questionsToday', label: 'Questions Answered Today', get: (s) => s.questionsAnsweredToday },
 ]
 
-export default function AdminDashboard({ onLogout }) {
+export default function AdminDashboard({ onLogout, onEditUser, refreshKey }) {
   const [stats, setStats] = useState(null)
   const [statsError, setStatsError] = useState('')
 
@@ -34,7 +33,6 @@ export default function AdminDashboard({ onLogout }) {
   const [isPremium, setIsPremium] = useState('')
 
   const [busyUserId, setBusyUserId] = useState(null)
-  const [detailUserId, setDetailUserId] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null) // { id, username, hardDelete }
   const [actionError, setActionError] = useState('')
 
@@ -81,20 +79,13 @@ export default function AdminDashboard({ onLogout }) {
     return () => {
       cancelled = true
     }
-  }, [page, limit, debouncedSearch, accountType, isPremium])
-
-  // Re-runs the current page/filter query directly — used after the detail
-  // modal changes a user, since that doesn't touch any of the effect's own
-  // dependencies and so wouldn't otherwise refire it.
-  function reloadUsers() {
-    getAdminUsers({ page, limit, search: debouncedSearch, accountType, isPremium })
-      .then((data) => {
-        setUsers(data.users)
-        setTotal(data.total)
-        setTotalPages(data.totalPages)
-      })
-      .catch((err) => setUsersError(err.message || 'Failed to load users.'))
-  }
+    // refreshKey is a pure "refetch" signal AdminApp bumps whenever the
+    // admin returns from the Edit User page, since a save there (premium
+    // status, deleted_at, username, ...) could have changed something this
+    // table shows. AdminDashboard is kept mounted (not unmounted) while
+    // that page is open specifically so page/search/filter state survives
+    // the round trip — see AdminApp.jsx.
+  }, [page, limit, debouncedSearch, accountType, isPremium, refreshKey])
 
   async function handleTogglePremium(user) {
     setActionError('')
@@ -239,8 +230,8 @@ export default function AdminDashboard({ onLogout }) {
                     <td>{formatDate(user.created_at)}</td>
                     <td>{formatDate(user.last_active)}</td>
                     <td className="admin-row-actions">
-                      <button type="button" className="admin-btn admin-btn-small" onClick={() => setDetailUserId(user.id)}>
-                        View
+                      <button type="button" className="admin-btn admin-btn-small" onClick={() => onEditUser(user.id)}>
+                        Edit
                       </button>
                       <button
                         type="button"
@@ -298,8 +289,6 @@ export default function AdminDashboard({ onLogout }) {
           </button>
         </div>
       </section>
-
-      {detailUserId && <AdminUserDetailModal userId={detailUserId} onClose={() => setDetailUserId(null)} onChanged={reloadUsers} />}
 
       {deleteTarget && (
         <AdminConfirmDeleteModal
