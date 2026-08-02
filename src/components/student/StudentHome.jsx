@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { submitAnswer, submitLateAnswer, getTodayQuestion, reviewWrongAnswer, logRetryCorrect } from '../../lib/storage'
 import { getDailyQuestion, formatQuestionSubtitle } from '../../lib/questions'
-import { getEffectiveStreak, countCorrectSubjectsToday, todayStr, TOTAL_SUBJECTS, formatLongDate } from '../../lib/streak'
+import {
+  getEffectiveStreak,
+  countCorrectSubjectsToday,
+  todayStr,
+  diffDays,
+  TOTAL_SUBJECTS,
+  LATE_ANSWER_WINDOW_DAYS,
+  formatLongDate,
+} from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
 import { countdownLabel, computeReadiness } from '../../lib/testprep'
 import TopBar from '../shared/TopBar'
@@ -114,6 +122,11 @@ export default function StudentHome({
     [isToday, subject.id, date]
   )
   const activeQuestion = isToday ? question : pastQuestion
+  // Matches api/student/submit-late-answer.js's own server-side window
+  // exactly (both import the same LATE_ANSWER_WINDOW_DAYS constant) — this
+  // is purely for the pre-answer message below, not itself a reward
+  // decision, so it's fine for the client to compute it for display.
+  const withinLateWindow = !isToday && diffDays(today, date) <= LATE_ANSWER_WINDOW_DAYS
 
   const planForThisSubject = activePlan && activePlan.subject === subject.id ? activePlan : null
 
@@ -379,7 +392,11 @@ export default function StudentHome({
             />
           ) : answeringPast ? (
             <>
-              <p className="late-answer-notice">Late answer — earns XP only, does not count toward streak.</p>
+              <p className="late-answer-notice">
+                {withinLateWindow
+                  ? 'Late answer — earns full XP and coins'
+                  : 'You can still answer this question to practice but XP and coins are only awarded within 3 days of the original date'}
+              </p>
               <QuestionCard
                 question={pastQuestion}
                 answered={pastSelectedIndex !== null}

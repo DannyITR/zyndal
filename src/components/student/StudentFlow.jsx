@@ -269,15 +269,16 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   }
 
   // StudentHome.jsx calls this after a past-date "Answer now" catch-up
-  // answer — api/student/submit-late-answer.js already enforced
-  // XP-only/no-streak server-side, so this just appends the entry and adds
-  // its XP locally, matching that exactly. Never touches coins/streak/
-  // dailyProgress: a past day's answer was never "today" and shouldn't move
-  // any of those.
+  // answer — api/student/submit-late-answer.js already enforced the 3-day
+  // XP/coins window and no-streak-effect server-side, so this just appends
+  // the entry and adds its (possibly zero) XP/coins locally, matching that
+  // exactly. Never touches streak/dailyProgress: a past day's answer was
+  // never "today" and shouldn't move either.
   function handleLateAnswered(entry) {
     setProgress((prev) => ({
       ...prev,
       xp: prev.xp + entry.xpEarned,
+      coins: prev.coins + entry.coinsEarned,
       history: [...prev.history, entry],
     }))
   }

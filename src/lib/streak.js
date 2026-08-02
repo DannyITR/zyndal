@@ -2,6 +2,11 @@
 // bonus (added to both) the day a streak milestone is hit.
 export const XP_PER_CORRECT = 1
 export const COINS_PER_CORRECT = 1
+// A late (past-date) correct answer earns full XP/coins only within this
+// many days of the original date — shared by api/student/submit-late-
+// answer.js (the actual enforcement) and StudentHome.jsx (the matching
+// pre-answer message), so the two can never drift out of sync.
+export const LATE_ANSWER_WINDOW_DAYS = 3
 // Parents can override these per-family (see users.milestone_settings); this
 // is the fallback for students with no linked parent or no custom settings.
 export const DEFAULT_MILESTONE_BONUSES = { 7: 10, 14: 20, 30: 50 }
@@ -74,7 +79,7 @@ export function localNoonUtc(dateStr, timeZone) {
   return new Date(guessUtc - offsetMinutes * 60000)
 }
 
-function diffDays(laterStr, earlierStr) {
+export function diffDays(laterStr, earlierStr) {
   const later = new Date(laterStr + 'T00:00:00Z')
   const earlier = new Date(earlierStr + 'T00:00:00Z')
   return Math.round((later - earlier) / 86400000)

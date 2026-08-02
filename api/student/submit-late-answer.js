@@ -1,18 +1,29 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { getProgressForUser, getStreakRow, syncUserTimezone } from '../_lib/db.js'
-import { todayStr, isValidTimeZone, DEFAULT_TIMEZONE, localNoonUtc, XP_PER_CORRECT } from '../../src/lib/streak.js'
+import {
+  todayStr,
+  isValidTimeZone,
+  DEFAULT_TIMEZONE,
+  localNoonUtc,
+  diffDays,
+  XP_PER_CORRECT,
+  COINS_PER_CORRECT,
+  LATE_ANSWER_WINDOW_DAYS,
+} from '../../src/lib/streak.js'
 import { getDailyQuestion, SUBJECTS } from '../../src/lib/questions.js'
 
 // Backs the home screen's date-nav bar → past date → "Answer now" flow
 // (StudentHome.jsx) — catching up on a subject that was never answered on a
-// PAST day. Award
-// rules are deliberately narrower than the regular daily flow
-// (submit-answer.js): XP only, no coins, and it never touches the streaks
-// table's streak/lastCorrectDate fields at all, so a late answer can never
-// retroactively create or extend a streak — see the spec's "Late answer —
-// earns XP only, does not count toward streak" label, shown client-side
-// alongside this.
+// PAST day. It never touches the streaks table's streak/lastCorrectDate
+// fields at all, so a late answer can never retroactively create or extend
+// a streak, regardless of how recent it is.
+//
+// XP/coins are gated on a 3-day window, computed server-side from `date` vs
+// today (in the student's own timezone) — never trust the client for this:
+// within 3 days (yesterday, 2, or 3 days ago), a correct answer earns full
+// XP and coins, same amount as the regular daily flow; older than that,
+// answering is still allowed (for practice) but earns nothing.
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
 function validate(body) {
@@ -57,7 +68,9 @@ async function handle({ userId, body }) {
   }
 
   const correct = selectedIndex === question.correctIndex
-  const xpEarned = correct ? XP_PER_CORRECT : 0
+  const withinLateWindow = diffDays(today, date) <= LATE_ANSWER_WINDOW_DAYS
+  const xpEarned = correct && withinLateWindow ? XP_PER_CORRECT : 0
+  const coinsEarned = correct && withinLateWindow ? COINS_PER_CORRECT : 0
   const answeredAt = localNoonUtc(date, timezone).toISOString()
 
   const { error: answerError } = await supabase.from('answers').insert({
@@ -70,18 +83,20 @@ async function handle({ userId, body }) {
   })
   if (answerError) throw answerError
 
-  if (xpEarned > 0) {
+  if (xpEarned > 0 || coinsEarned > 0) {
     const streakRow = await getStreakRow(userId)
-    const { error: xpError } = await supabase
+    const { error: rewardError } = await supabase
       .from('streaks')
-      .update({ total_xp: streakRow.total_xp + xpEarned })
+      .update({ total_xp: streakRow.total_xp + xpEarned, coin_balance: streakRow.coin_balance + coinsEarned })
       .eq('user_id', userId)
-    if (xpError) throw xpError
+    if (rewardError) throw rewardError
   }
 
   return {
     correct,
     xp_earned: xpEarned,
+    coins_earned: coinsEarned,
+    within_late_window: withinLateWindow,
     entry: {
       date,
       subjectId: subject,
@@ -94,7 +109,7 @@ async function handle({ userId, body }) {
       correctAnswer: question.options[question.correctIndex],
       correct,
       xpEarned,
-      coinsEarned: 0,
+      coinsEarned,
     },
   }
 }
