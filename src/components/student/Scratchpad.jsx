@@ -7,12 +7,44 @@ const PEN_WIDTH = 3
 const ERASER_WIDTH = 22
 const BACKGROUND_COLOR = '#ffffff'
 
+const MIN_HEIGHT = 150
+const MAX_HEIGHT = 500
+const DEFAULT_HEIGHT = 200
+const EXPANDED_HEIGHT = 400
+const HEIGHT_STORAGE_KEY = 'zyndal_scratchpad_height'
+const HINT_SEEN_KEY = 'zyndal_scratchpad_resize_hint_seen'
+
+function clampHeight(h) {
+  return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, h))
+}
+
+// Both localStorage reads are wrapped defensively — a privacy-mode browser
+// with storage disabled should just fall back to the built-in defaults
+// (and never nag with a hint it can't actually remember dismissing) rather
+// than crash the component.
+function loadStoredHeight() {
+  try {
+    const parsed = Number(localStorage.getItem(HEIGHT_STORAGE_KEY))
+    return Number.isFinite(parsed) && parsed > 0 ? clampHeight(parsed) : DEFAULT_HEIGHT
+  } catch {
+    return DEFAULT_HEIGHT
+  }
+}
+
+function loadHintSeen() {
+  try {
+    return localStorage.getItem(HINT_SEEN_KEY) === '1'
+  } catch {
+    return true
+  }
+}
+
 // Coordinates in every stroke are stored in CSS pixels (relative to the
 // canvas's own bounding box), not physical device pixels — that keeps them
-// valid across devicePixelRatio and container-width changes, since the
-// canvas is re-scaled (see setupCanvas) and fully redrawn from `strokes`
-// whenever its size changes, rather than the pixel buffer itself being
-// stretched.
+// valid across devicePixelRatio and container-width/height changes, since
+// the canvas is re-scaled (see setupCanvas) and fully redrawn from
+// `strokes` whenever its size changes (including a resize drag), rather
+// than the pixel buffer itself being stretched.
 function getPoint(e, canvas) {
   const rect = canvas.getBoundingClientRect()
   return { x: e.clientX - rect.left, y: e.clientY - rect.top }
@@ -47,6 +79,15 @@ const Scratchpad = forwardRef(function Scratchpad({ disabled, onDrawingChange },
   const currentStrokeRef = useRef(null) // in-progress stroke, or null
   const [tool, setTool] = useState('pen')
   const [isEmpty, setIsEmpty] = useState(true)
+
+  // Resizable canvas — height is a student preference, remembered across
+  // visits. expanded tracks only the Expand/Collapse button's own toggle
+  // (a temporary jump to EXPANDED_HEIGHT and back), not the persisted
+  // drag-resize preference — dragging the handle always exits it.
+  const [height, setHeight] = useState(loadStoredHeight)
+  const [expanded, setExpanded] = useState(false)
+  const [showResizeHint, setShowResizeHint] = useState(() => !loadHintSeen())
+  const preExpandHeightRef = useRef(height)
 
   function render() {
     const canvas = canvasRef.current
@@ -128,6 +169,55 @@ const Scratchpad = forwardRef(function Scratchpad({ disabled, onDrawingChange },
     updateEmpty()
   }
 
+  function dismissResizeHint() {
+    if (!showResizeHint) return
+    setShowResizeHint(false)
+    try {
+      localStorage.setItem(HINT_SEEN_KEY, '1')
+    } catch {
+      // Best-effort only — the hint just reappears next load, harmless.
+    }
+  }
+
+  // Drag-to-resize — tracked on window (not via setPointerCapture) so the
+  // drag keeps following the pointer even once it leaves the thin handle
+  // strip. latestHeight is a plain closure variable, not React state, so
+  // onPointerUp always sees the true final value rather than a stale one.
+  function handleResizeStart(e) {
+    e.preventDefault()
+    dismissResizeHint()
+    setExpanded(false)
+    const startY = e.clientY
+    const startHeight = height
+    let latestHeight = startHeight
+    function onPointerMove(moveEvent) {
+      latestHeight = clampHeight(startHeight + (moveEvent.clientY - startY))
+      setHeight(latestHeight)
+    }
+    function onPointerUp() {
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', onPointerUp)
+      try {
+        localStorage.setItem(HEIGHT_STORAGE_KEY, String(latestHeight))
+      } catch {
+        // Best-effort persistence only.
+      }
+    }
+    window.addEventListener('pointermove', onPointerMove)
+    window.addEventListener('pointerup', onPointerUp)
+  }
+
+  function handleToggleExpand() {
+    if (expanded) {
+      setHeight(preExpandHeightRef.current)
+      setExpanded(false)
+    } else {
+      preExpandHeightRef.current = height
+      setHeight(EXPANDED_HEIGHT)
+      setExpanded(true)
+    }
+  }
+
   useImperativeHandle(ref, () => ({
     toDataURL: () => canvasRef.current?.toDataURL('image/png'),
     isEmpty: () => strokesRef.current.length === 0,
@@ -135,7 +225,7 @@ const Scratchpad = forwardRef(function Scratchpad({ disabled, onDrawingChange },
 
   return (
     <div className="scratchpad" ref={containerRef}>
-      <div className="scratchpad-canvas-wrap">
+      <div className="scratchpad-canvas-wrap" style={{ height: `${height}px` }}>
         <canvas
           ref={canvasRef}
           className="scratchpad-canvas"
@@ -147,6 +237,16 @@ const Scratchpad = forwardRef(function Scratchpad({ disabled, onDrawingChange },
           onPointerCancel={finishStroke}
         />
         {isEmpty && <p className="scratchpad-placeholder">Show your work here to earn full marks on the question</p>}
+
+        <button type="button" className="scratchpad-expand-btn" onClick={handleToggleExpand}>
+          {expanded ? 'Collapse ↑' : 'Expand ↕'}
+        </button>
+
+        <div className="scratchpad-resize-handle" style={{ touchAction: 'none' }} onPointerDown={handleResizeStart}>
+          <span className="scratchpad-resize-grip" />
+        </div>
+
+        {showResizeHint && <p className="scratchpad-resize-hint">Drag to expand ↕</p>}
       </div>
       <div className="scratchpad-toolbar">
         <button
