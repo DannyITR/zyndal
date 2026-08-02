@@ -1,77 +1,34 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { signup, updateUserProfile, checkEmailAvailable, linkParentByCode } from '../../lib/storage'
 import LegalModal from '../legal/LegalModal'
 import AccountTypeSelector from './AccountTypeSelector'
 
-// Bilingual UI strings for this form only (not a general i18n system — see
-// PrivacyPolicyContent/TermsOfServiceContent for the same EN/FR pattern
-// applied to the legal pages). Account-type copy (student/parent/teacher
-// labels+descriptions) lives in AccountTypeSelector.jsx instead, since that
-// component is shared with OAuthOnboardingScreen. Server-side validation
-// error messages (thrown from signup()) are shown as-is, in whatever
-// language the API returned them in, since the API itself is English-only
-// today.
-const STRINGS = {
-  en: {
-    back: '← Back',
-    username: 'Username',
-    email: 'Email',
-    password: 'Password',
-    confirmPassword: 'Confirm password',
-    grade: 'Grade (optional)',
-    selectGrade: 'Select grade',
-    parentCode: 'Parent code (optional)',
-    parentCodePlaceholder: 'e.g. 7F3K9Q',
-    parentCodeHint: 'Ask your parent for the code on their dashboard.',
-    agreeToPrefix: 'I agree to the',
-    termsOfService: 'Terms of Service',
-    and: 'and',
-    privacyPolicy: 'Privacy Policy',
-    ageConfirmation: 'I confirm I am 14 or older, or my parent has given permission',
-    createAccount: 'Create Account',
-    creatingAccount: 'Creating account…',
-    errorUsername: 'Username must be at least 3 characters.',
-    errorEmail: 'A valid email is required.',
-    errorPassword: 'Password must be at least 4 characters.',
-    errorPasswordMatch: 'Passwords do not match.',
-    errorAgreeTerms: 'You must agree to the Terms of Service and Privacy Policy to create an account.',
-    errorAgeConfirmation: 'Please confirm the age/parental permission statement below.',
-    errorFallback: 'Something went wrong. Please try again.',
-    logInInstead: 'Log in instead',
-  },
-  fr: {
-    back: '← Retour',
-    username: "Nom d'utilisateur",
-    email: 'Courriel',
-    password: 'Mot de passe',
-    confirmPassword: 'Confirmer le mot de passe',
-    grade: 'Niveau scolaire (optionnel)',
-    selectGrade: 'Sélectionner un niveau',
-    parentCode: 'Code parent (optionnel)',
-    parentCodePlaceholder: 'ex. 7F3K9Q',
-    parentCodeHint: 'Demandez à votre parent le code sur son tableau de bord.',
-    agreeToPrefix: "J'accepte les",
-    termsOfService: "Conditions d'utilisation",
-    and: 'et la',
-    privacyPolicy: 'Politique de confidentialité',
-    ageConfirmation: "Je confirme que j'ai 14 ans ou plus, ou que mon parent m'a donné sa permission",
-    createAccount: 'Créer un compte',
-    creatingAccount: 'Création du compte…',
-    errorUsername: "Le nom d'utilisateur doit contenir au moins 3 caractères.",
-    errorEmail: 'Une adresse courriel valide est requise.',
-    errorPassword: 'Le mot de passe doit contenir au moins 4 caractères.',
-    errorPasswordMatch: 'Les mots de passe ne correspondent pas.',
-    errorAgreeTerms: "Vous devez accepter les Conditions d'utilisation et la Politique de confidentialité pour créer un compte.",
-    errorAgeConfirmation: 'Veuillez confirmer la déclaration d\'âge/permission parentale ci-dessous.',
-    errorFallback: 'Une erreur est survenue. Veuillez réessayer.',
-    logInInstead: 'Se connecter plutôt',
-  },
-}
-
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+// This form's own copy comes from the global translation files
+// (auth.signup.*) via react-i18next. The `lang`/`onLangChange` props are
+// kept only for AccountTypeSelector.jsx (shared with OAuthOnboardingScreen,
+// out of scope here — its own OPTIONS object still only has en/fr copy and
+// falls back to English for 'es', a known gap). handleLangChange below
+// drives both: onLangChange keeps AccountTypeSelector in sync, and
+// i18n.changeLanguage keeps this form's own t()-driven text in sync.
 export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitchToLogin, initialParentCode = '', initialEmail = '' }) {
-  const t = STRINGS[lang]
+  const { t, i18n } = useTranslation()
+
+  function handleLangChange(code) {
+    onLangChange(code)
+    i18n.changeLanguage(code)
+  }
+
+  // Covers arriving here with `lang` already set by SignupChooser's own
+  // toggle (which only calls onLangChange, not i18n.changeLanguage) — keeps
+  // this form's own t()-driven text in sync with whatever language its
+  // toggle shows as active, even on first render.
+  useEffect(() => {
+    if (i18n.language !== lang) i18n.changeLanguage(lang)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang])
 
   const [accountType, setAccountType] = useState('student')
   const [username, setUsername] = useState('')
@@ -97,28 +54,28 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
 
     const trimmedUsername = username.trim()
     if (trimmedUsername.length < 3) {
-      setError(t.errorUsername)
+      setError(t('auth.signup.errorUsername'))
       return
     }
     const trimmedEmail = email.trim()
     if (!EMAIL_PATTERN.test(trimmedEmail)) {
-      setError(t.errorEmail)
+      setError(t('auth.signup.errorEmail'))
       return
     }
     if (password.length < 4) {
-      setError(t.errorPassword)
+      setError(t('auth.signup.errorPassword'))
       return
     }
     if (password !== confirmPassword) {
-      setError(t.errorPasswordMatch)
+      setError(t('auth.signup.errorPasswordMatch'))
       return
     }
     if (!agreedToTerms) {
-      setError(t.errorAgreeTerms)
+      setError(t('auth.signup.errorAgreeTerms'))
       return
     }
     if (needsAgeConfirmation && !confirmedAge) {
-      setError(t.errorAgeConfirmation)
+      setError(t('auth.signup.errorAgeConfirmation'))
       return
     }
 
@@ -178,7 +135,7 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
 
       onAuth(finalUser)
     } catch (err) {
-      setError(err.message || t.errorFallback)
+      setError(err.message || t('auth.signup.errorFallback'))
       setErrorCode(err.code || '')
     } finally {
       setSubmitting(false)
@@ -189,7 +146,7 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
     <form className="auth-form" onSubmit={handleSubmit}>
       <div className="auth-back-row">
         <button type="button" className="auth-link-btn" onClick={onBack}>
-          {t.back}
+          {t('auth.signup.back')}
         </button>
       </div>
 
@@ -198,16 +155,23 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
           <button
             type="button"
             className={`lang-toggle-btn ${lang === 'en' ? 'lang-toggle-btn--active' : ''}`}
-            onClick={() => onLangChange('en')}
+            onClick={() => handleLangChange('en')}
           >
             English
           </button>
           <button
             type="button"
             className={`lang-toggle-btn ${lang === 'fr' ? 'lang-toggle-btn--active' : ''}`}
-            onClick={() => onLangChange('fr')}
+            onClick={() => handleLangChange('fr')}
           >
             Français
+          </button>
+          <button
+            type="button"
+            className={`lang-toggle-btn ${lang === 'es' ? 'lang-toggle-btn--active' : ''}`}
+            onClick={() => handleLangChange('es')}
+          >
+            Español
           </button>
         </div>
       </div>
@@ -215,7 +179,7 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
       <AccountTypeSelector value={accountType} onChange={setAccountType} lang={lang} />
 
       <div className="field">
-        <label htmlFor="signup-username">{t.username}</label>
+        <label htmlFor="signup-username">{t('auth.signup.username')}</label>
         <input
           id="signup-username"
           value={username}
@@ -224,7 +188,7 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
         />
       </div>
       <div className="field">
-        <label htmlFor="signup-email">{t.email}</label>
+        <label htmlFor="signup-email">{t('auth.signup.email')}</label>
         <input
           id="signup-email"
           type="email"
@@ -234,7 +198,7 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
         />
       </div>
       <div className="field">
-        <label htmlFor="signup-password">{t.password}</label>
+        <label htmlFor="signup-password">{t('auth.signup.password')}</label>
         <input
           id="signup-password"
           type="password"
@@ -244,7 +208,7 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
         />
       </div>
       <div className="field">
-        <label htmlFor="signup-confirm">{t.confirmPassword}</label>
+        <label htmlFor="signup-confirm">{t('auth.signup.confirmPassword')}</label>
         <input
           id="signup-confirm"
           type="password"
@@ -257,9 +221,9 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
       {accountType === 'student' && (
         <>
           <div className="field">
-            <label htmlFor="signup-grade">{t.grade}</label>
+            <label htmlFor="signup-grade">{t('auth.signup.grade')}</label>
             <select id="signup-grade" value={grade} onChange={(e) => setGrade(e.target.value)}>
-              <option value="">{t.selectGrade}</option>
+              <option value="">{t('auth.signup.selectGrade')}</option>
               <option value="7">7</option>
               <option value="8">8</option>
               <option value="9">9</option>
@@ -268,15 +232,15 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
             </select>
           </div>
           <div className="field">
-            <label htmlFor="signup-parent-code">{t.parentCode}</label>
+            <label htmlFor="signup-parent-code">{t('auth.signup.parentCode')}</label>
             <input
               id="signup-parent-code"
               value={parentCode}
               onChange={(e) => setParentCode(e.target.value.toUpperCase())}
-              placeholder={t.parentCodePlaceholder}
+              placeholder={t('auth.signup.parentCodePlaceholder')}
               maxLength={6}
             />
-            <p className="field-hint">{t.parentCodeHint}</p>
+            <p className="field-hint">{t('auth.signup.parentCodeHint')}</p>
           </div>
         </>
       )}
@@ -284,7 +248,7 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
       <label className="checkbox-field">
         <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} />
         <span>
-          {t.agreeToPrefix}{' '}
+          {t('auth.signup.agreeToPrefix')}{' '}
           <button
             type="button"
             onClick={(e) => {
@@ -292,9 +256,9 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
               setOpenLegal('terms')
             }}
           >
-            {t.termsOfService}
+            {t('auth.signup.termsOfService')}
           </button>{' '}
-          {t.and}{' '}
+          {t('auth.signup.and')}{' '}
           <button
             type="button"
             onClick={(e) => {
@@ -302,7 +266,7 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
               setOpenLegal('privacy')
             }}
           >
-            {t.privacyPolicy}
+            {t('auth.signup.privacyPolicy')}
           </button>
         </span>
       </label>
@@ -310,12 +274,12 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
       {needsAgeConfirmation && (
         <label className="checkbox-field">
           <input type="checkbox" checked={confirmedAge} onChange={(e) => setConfirmedAge(e.target.checked)} />
-          <span>{t.ageConfirmation}</span>
+          <span>{t('auth.signup.ageConfirmation')}</span>
         </label>
       )}
 
       <button type="submit" className="btn btn-primary btn-block" disabled={!canSubmit}>
-        {submitting ? t.creatingAccount : t.createAccount}
+        {submitting ? t('auth.signup.creatingAccount') : t('auth.signup.createAccount')}
       </button>
 
       {error && (
@@ -325,7 +289,7 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
             <>
               {' '}
               <button type="button" className="auth-link-btn" onClick={onSwitchToLogin}>
-                {t.logInInstead}
+                {t('auth.signup.logInInstead')}
               </button>
             </>
           )}

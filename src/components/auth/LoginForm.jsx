@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { login } from '../../lib/storage'
 import SocialLoginButtons from './SocialLoginButtons'
 
@@ -10,6 +11,7 @@ import SocialLoginButtons from './SocialLoginButtons'
 // AuthScreen.jsx's `view` state machine for how this fits into the wider
 // login/signup-choice/signup-form/Google-onboarding flow.
 export default function LoginForm({ onAuth, onSwitchToSignup, onForgotPassword }) {
+  const { t } = useTranslation()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -23,7 +25,7 @@ export default function LoginForm({ onAuth, onSwitchToSignup, onForgotPassword }
       const user = await login(username, password)
       onAuth(user)
     } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.')
+      setError(err.message || t('auth.login.errorFallback'))
     } finally {
       setSubmitting(false)
     }
@@ -32,7 +34,7 @@ export default function LoginForm({ onAuth, onSwitchToSignup, onForgotPassword }
   return (
     <form className="auth-form" onSubmit={handleSubmit}>
       <div className="field">
-        <label htmlFor="login-username">Username</label>
+        <label htmlFor="login-username">{t('auth.login.username')}</label>
         <input
           id="login-username"
           value={username}
@@ -42,7 +44,7 @@ export default function LoginForm({ onAuth, onSwitchToSignup, onForgotPassword }
         />
       </div>
       <div className="field">
-        <label htmlFor="login-password">Password</label>
+        <label htmlFor="login-password">{t('auth.login.password')}</label>
         <input
           id="login-password"
           type="password"
@@ -54,12 +56,12 @@ export default function LoginForm({ onAuth, onSwitchToSignup, onForgotPassword }
 
       <div className="auth-forgot-row">
         <button type="button" className="auth-link-btn" onClick={onForgotPassword}>
-          Forgot password?
+          {t('auth.login.forgotPassword')}
         </button>
       </div>
 
       <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-        {submitting ? 'Logging in…' : 'Log In'}
+        {submitting ? t('auth.login.loggingIn') : t('auth.login.logIn')}
       </button>
 
       <SocialLoginButtons onError={setError} />
@@ -67,9 +69,9 @@ export default function LoginForm({ onAuth, onSwitchToSignup, onForgotPassword }
       {error && <p className="form-error">{error}</p>}
 
       <div className="auth-switch-row">
-        Don't have an account?{' '}
+        {t('auth.login.noAccount')}{' '}
         <button type="button" className="auth-link-btn" onClick={onSwitchToSignup}>
-          Sign Up
+          {t('auth.login.signUp')}
         </button>
       </div>
     </form>

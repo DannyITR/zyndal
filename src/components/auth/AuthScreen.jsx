@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import Logo from '../shared/Logo'
 import LoginForm from './LoginForm'
 import SignupChooser from './SignupChooser'
@@ -19,8 +20,13 @@ export default function AuthScreen({ initialMode = 'login', onAuth, onLogoClick,
   // one), so a student who backs out of this form to try that route
   // instead just loses the prefill, same as if they'd never followed the
   // link.
+  const { i18n } = useTranslation()
   const [view, setView] = useState(inviteParentCode ? 'signupForm' : initialMode === 'signup' ? 'signupChoose' : 'login')
-  const [lang, setLang] = useState('en')
+  // Seeded from i18n.language (already resolved from a returning visitor's
+  // localStorage/browser preference — see src/lib/i18n.js) rather than a
+  // hardcoded 'en', so SignupForm's own toggle starts pre-selected on
+  // whichever language the rest of the app is already showing.
+  const [lang, setLang] = useState(() => i18n.language)
 
   return (
     <div className="auth-screen">

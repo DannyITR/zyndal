@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   getProgress,
   getDailyProgress,
@@ -75,6 +76,7 @@ const INFO_CONTENT = {
 }
 
 export default function StudentFlow({ user, onLogout, onUserUpdate }) {
+  const { t } = useTranslation()
   // The browser's own zone, not UTC — see src/lib/timezone.js. Used for
   // every local derivation from the already-loaded progress object
   // (streak flame, streak-risk banner); the subject grid's own done/wrong
@@ -736,7 +738,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         <div className="home-actions">
           <div className="home-action-wrap">
             <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowLeaderboard(true)}>
-              🏆 Leaderboard
+              {t('nav.leaderboard')}
             </button>
             <button
               type="button"
@@ -748,13 +750,13 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
             </button>
           </div>
           <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowFriends(true)}>
-            👥 Friends
+            {t('nav.friends')}
           </button>
           <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowCalendar(true)}>
-            📅 Calendar
+            {t('nav.calendar')}
           </button>
           <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowClasses(true)}>
-            🏫 Classes
+            {t('nav.classes')}
           </button>
         </div>
 

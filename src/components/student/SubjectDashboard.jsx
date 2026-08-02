@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { SUBJECTS } from '../../lib/questions'
 import { formatLongDate } from '../../lib/streak'
 
@@ -9,6 +10,7 @@ export default function SubjectDashboard({
   date,
   isToday,
 }) {
+  const { t } = useTranslation()
   const correctCount = completedSubjectIds.size
   const totalCount = SUBJECTS.length
   // "Completed" for the progress text and score box means attempted that
@@ -23,26 +25,28 @@ export default function SubjectDashboard({
       <p className={`subject-dashboard-lead ${allAttempted ? 'subject-dashboard-lead--done' : ''}`}>
         {allAttempted
           ? isToday
-            ? '✅ All 6 done for today!'
-            : `✅ All 6 done on ${longDate}!`
+            ? t('home.allDoneToday')
+            : t('home.allDoneOn', { date: longDate })
           : isToday
-            ? `${attemptedCount}/${totalCount} completed today — answer all 6`
-            : `${attemptedCount}/${totalCount} completed on ${longDate}`}
+            ? t('home.progressToday', { attempted: attemptedCount, total: totalCount })
+            : t('home.progressOn', { attempted: attemptedCount, total: totalCount, date: longDate })}
       </p>
 
       {allAttempted && (
         <div className="daily-score-box daily-score-box--celebrate">
           <span className="daily-score-box-text">
-            {isToday ? `Today's score: ${correctCount}/${totalCount} ✓` : `Score on ${longDate}: ${correctCount}/${totalCount} ✓`}
+            {isToday
+              ? t('home.scoreToday', { correct: correctCount, total: totalCount })
+              : t('home.scoreOn', { correct: correctCount, total: totalCount, date: longDate })}
           </span>
           {isToday && (
-            <button type="button" className="daily-score-box-share" onClick={onShareClick} aria-label="Share daily score">
+            <button type="button" className="daily-score-box-share" onClick={onShareClick} aria-label={t('nav.shareDailyScore')}>
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
                 <polyline points="16 6 12 2 8 6" />
                 <line x1="12" y1="2" x2="12" y2="15" />
               </svg>
-              Share
+              {t('nav.share')}
             </button>
           )}
         </div>
@@ -66,9 +70,9 @@ export default function SubjectDashboard({
               onClick={() => onSelectSubject(subject.id)}
             >
               <span className="subject-card-icon">{subject.icon}</span>
-              <span className="subject-card-name">{subject.name}</span>
-              {isCompleted && <span className="subject-card-badge">✓ Done</span>}
-              {isIncorrect && <span className="subject-card-badge subject-card-badge--incorrect">✗ Incorrect</span>}
+              <span className="subject-card-name">{t(`subjects.${subject.id}`)}</span>
+              {isCompleted && <span className="subject-card-badge">{t('home.doneBadge')}</span>}
+              {isIncorrect && <span className="subject-card-badge subject-card-badge--incorrect">{t('home.incorrectBadge')}</span>}
             </button>
           )
         })}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { submitAnswer, submitLateAnswer, getTodayQuestion, reviewWrongAnswer, logRetryCorrect } from '../../lib/storage'
 import { getDailyQuestion, formatQuestionSubtitle } from '../../lib/questions'
 import {
@@ -47,6 +48,7 @@ export default function StudentHome({
   onLogout,
   onLogoClick,
 }) {
+  const { t } = useTranslation()
   const today = todayStr(new Date(), getUserTimeZone())
   const isToday = date === today
 
@@ -80,11 +82,15 @@ export default function StudentHome({
         })
       })
       .catch(() => {
-        if (!cancelled) setQuestionError("Couldn't load today's question. Please check your connection and try again.")
+        if (!cancelled) setQuestionError(t('home.questionLoadError'))
       })
     return () => {
       cancelled = true
     }
+    // t is a stable function for the app's lifetime (see src/lib/i18n.js) —
+    // not a real dependency, and including it would re-fetch on every
+    // language change for no reason.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isToday, subject.id])
   // The scored first attempt persisted this session: { selectedIndex, correct, coinsEarned, xpEarned, answerId }
   const [justAnswered, setJustAnswered] = useState(null)
@@ -204,7 +210,7 @@ export default function StudentHome({
         setPerfectWeekBonus(result.perfectWeek.bonusCents / 100)
       }
     } catch {
-      setSubmitError("Couldn't save your answer. Check your connection and try again.")
+      setSubmitError(t('home.submitError'))
     } finally {
       setSubmitting(false)
     }
@@ -241,7 +247,7 @@ export default function StudentHome({
       }
     } catch (err) {
       setReviewing(false)
-      setReviewError(err.message || "Couldn't check your work — submitting your answer.")
+      setReviewError(err.message || t('home.reviewErrorFallback'))
       await finalizeAnswer(index)
     }
   }
@@ -268,7 +274,7 @@ export default function StudentHome({
       onLateAnswered(result.entry)
       setAnsweringPast(false)
     } catch (err) {
-      setPastSubmitError(err.message || "Couldn't save your answer. Please try again.")
+      setPastSubmitError(err.message || t('home.pastSubmitError'))
       setPastSelectedIndex(null)
     } finally {
       setPastSubmitting(false)
@@ -278,8 +284,8 @@ export default function StudentHome({
   return (
     <div className="screen student-screen">
       <TopBar
-        title={`${subject.icon} ${subject.name} — ${formatLongDate(date)}`}
-        subtitle={activeQuestion ? formatQuestionSubtitle(activeQuestion) : 'Loading…'}
+        title={`${subject.icon} ${t(`subjects.${subject.id}`)} — ${formatLongDate(date)}`}
+        subtitle={activeQuestion ? formatQuestionSubtitle(activeQuestion) : t('home.loading')}
         username={user.username}
         onLogout={onLogout}
         onBack={onBack}
@@ -288,32 +294,32 @@ export default function StudentHome({
 
       <div className="stats-row">
         <StreakFlame streak={displayStreak} />
-        <StatPill icon="⚡" label="XP" value={progress.xp} />
-        <StatPill icon="🪙" label="Coins" value={progress.coins} />
+        <StatPill icon="⚡" label={t('home.xp')} value={progress.xp} />
+        <StatPill icon="🪙" label={t('home.coins')} value={progress.coins} />
       </div>
 
       {isToday ? (
         <>
-          {!question && !questionError && <p className="loading-text">Loading today's question…</p>}
+          {!question && !questionError && <p className="loading-text">{t('home.loadingQuestion')}</p>}
           {questionError && <p className="form-error">{questionError}</p>}
 
           {question && (
             <>
               <div className={`daily-status-banner ${firstAttemptMade ? 'daily-status-banner--done' : 'daily-status-banner--pending'}`}>
                 {firstAttemptMade
-                  ? "✅ Today's question answered"
+                  ? t('home.answered')
                   : retryInfo
-                    ? '✏️ Second attempt — show your corrected work for full marks'
+                    ? t('home.secondAttempt')
                     : reviewing
-                      ? '🔍 Reviewing your work…'
-                      : "🕐 Today's question not answered yet"}
+                      ? t('home.reviewingWork')
+                      : t('home.notAnsweredYet')}
               </div>
 
               {retryInfo && !firstAttemptMade && (
                 <p className="result-next">
                   {retryInfo.onRightTrack
-                    ? `You were on the right track! ${retryInfo.feedback} — fix your work and try again for full marks 💪`
-                    : `${retryInfo.feedback} — try a different approach and give it one more shot!`}
+                    ? t('home.onRightTrack', { feedback: retryInfo.feedback })
+                    : t('home.tryDifferentApproach', { feedback: retryInfo.feedback })}
                 </p>
               )}
 
@@ -351,23 +357,23 @@ export default function StudentHome({
               {firstAttempt.correct ? (
                 <>
                   <p className="result-headline">
-                    Correct! +{coinsEarnedDisplay} coins · +{xpEarnedDisplay} XP
+                    {t('home.correctResult', { coins: coinsEarnedDisplay, xp: xpEarnedDisplay })}
                   </p>
                   <p className="result-next">
                     {subjectsLeftToday === 0
-                      ? '✅ All 6 done for today!'
-                      : `🔥 Streak saved for today! ${subjectsLeftToday} more subject${subjectsLeftToday === 1 ? '' : 's'} left for extra XP and coins.`}
+                      ? t('home.allDoneToday')
+                      : t('home.streakSaved', { count: subjectsLeftToday })}
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="result-headline">Not this time — the correct answer was {correctAnswerText}.</p>
+                  <p className="result-headline">{t('home.wrongResult', { answer: correctAnswerText })}</p>
                   <p className="result-next">
                     {usedRetry
-                      ? "Keep practicing — you'll get it next time!"
+                      ? t('home.keepPracticing')
                       : noWorkHint
-                        ? 'Show your working steps to get a hint on where you went wrong!'
-                        : 'Come back tomorrow for a new question!'}
+                        ? t('home.showWorkHint')
+                        : t('home.comeBackTomorrow')}
                   </p>
                   {question?.explanation && <p className="result-explanation">{question.explanation}</p>}
                 </>
@@ -378,7 +384,7 @@ export default function StudentHome({
       ) : (
         <>
           <div className={`daily-status-banner ${dateEntry ? 'daily-status-banner--done' : 'daily-status-banner--pending'}`}>
-            {dateEntry ? '✅ Answered' : '🕐 Not answered yet'}
+            {dateEntry ? t('home.pastAnswered') : t('home.pastNotAnswered')}
           </div>
 
           {dateEntry ? (
@@ -393,9 +399,7 @@ export default function StudentHome({
           ) : answeringPast ? (
             <>
               <p className="late-answer-notice">
-                {withinLateWindow
-                  ? 'Late answer — earns full XP and coins'
-                  : 'You can still answer this question to practice but XP and coins are only awarded within 3 days of the original date'}
+                {withinLateWindow ? t('home.lateAnswerFull') : t('home.lateAnswerPracticeOnly')}
               </p>
               <QuestionCard
                 question={pastQuestion}
@@ -409,7 +413,7 @@ export default function StudentHome({
             </>
           ) : (
             <button type="button" className="btn btn-secondary btn-small" onClick={() => setAnsweringPast(true)}>
-              Answer now
+              {t('home.answerNow')}
             </button>
           )}
         </>
@@ -436,7 +440,7 @@ export default function StudentHome({
           </button>
           <div className="testprep-home-card-actions">
             <button type="button" className="testprep-icon-btn testprep-icon-btn--done" onClick={onMarkDonePlan}>
-              ✅ Mark as Done
+              {t('home.markAsDone')}
             </button>
             <button
               type="button"
@@ -452,27 +456,27 @@ export default function StudentHome({
 
       <div className="home-actions">
         <button type="button" className="btn btn-secondary btn-small" onClick={handleOpenTestPrep}>
-          📝 Test Prep
+          {t('home.testPrep')}
         </button>
         {!planForThisSubject && (
           <button type="button" className="btn btn-secondary btn-small" onClick={handleOpenStudyGuide}>
-            📚 Study Guide
+            {t('home.studyGuide')}
           </button>
         )}
         <button type="button" className="btn btn-secondary btn-small" onClick={onOpenUpload}>
-          ⬆️ Upload
+          {t('home.upload')}
         </button>
         <button type="button" className="btn btn-secondary btn-small" onClick={onOpenMyUploads}>
-          📁 My Uploads
+          {t('home.myUploads')}
         </button>
         <button type="button" className="btn btn-secondary btn-small" onClick={onOpenPractice}>
-          🎯 Practice
+          {t('home.practice')}
         </button>
         <button type="button" className="btn btn-secondary btn-small" onClick={onOpenGrades}>
-          📊 My Grades
+          {t('home.myGrades')}
         </button>
         <button type="button" className="btn btn-secondary btn-small" onClick={onOpenCurriculum}>
-          📖 Curriculum
+          {t('home.curriculum')}
         </button>
       </div>
 
