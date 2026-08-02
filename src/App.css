@@ -388,6 +388,18 @@ div.zyndal-logo {
   text-align: center;
 }
 
+.auth-invite-banner {
+  background: linear-gradient(160deg, rgba(155, 77, 255, 0.18), var(--card) 60%);
+  border: 1px solid rgba(155, 77, 255, 0.4);
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.5;
+}
+
 .auth-tabs {
   display: flex;
   width: 100%;
@@ -3234,6 +3246,11 @@ div.zyndal-logo {
 .plan-status-badge--cancelled {
   background: rgba(255, 92, 122, 0.18);
   color: var(--red);
+}
+
+.plan-status-badge--pending {
+  background: rgba(255, 158, 68, 0.18);
+  color: #ffb066;
 }
 
 .testprep-header-card {

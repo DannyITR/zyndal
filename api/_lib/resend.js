@@ -113,3 +113,51 @@ export async function sendPasswordResetEmail({ email, token, languagePreference 
   })
   if (error) throw new Error(error.message || 'Failed to send password reset email.')
 }
+
+const SIGNUP_BASE_URL = 'https://zyndal.ca'
+
+function parentInviteEmailContent(parentName, parentCode, email, languagePreference) {
+  const link = `${SIGNUP_BASE_URL}?parent_code=${encodeURIComponent(parentCode)}&email=${encodeURIComponent(email)}`
+  const isFrench = languagePreference === 'French'
+
+  const subject = isFrench ? `${parentName} vous a invité(e) à rejoindre Zyndal!` : `${parentName} invited you to join Zyndal!`
+  const heading = isFrench ? 'Vous êtes invité(e) sur Zyndal!' : "You're invited to Zyndal!"
+  const body = isFrench
+    ? 'Votre parent a créé un compte Zyndal pour suivre votre apprentissage et récompenser vos progrès. Cliquez ci-dessous pour créer votre compte étudiant — cela ne prend qu’une minute.'
+    : 'Your parent has set up a Zyndal account to help track your learning and reward your progress. Click below to create your student account — it only takes a minute.'
+  const button = isFrench ? 'Créer mon compte' : 'Create my account'
+  const altText = isFrench
+    ? `Si vous avez déjà un compte Zyndal, connectez-vous et allez dans Paramètres → Rejoindre un parent pour entrer le code : ${parentCode}`
+    : `If you already have a Zyndal account, log in and go to Settings → Join a Parent to enter code: ${parentCode}`
+
+  const html = `
+    <div style="background:#12081f;padding:40px 20px;font-family:'Segoe UI',Inter,system-ui,sans-serif;">
+      <div style="max-width:420px;margin:0 auto;background:#221336;border-radius:24px;padding:36px 28px;text-align:center;">
+        <div style="font-size:15px;font-weight:700;color:#b983ff;letter-spacing:0.5px;margin-bottom:24px;">
+          ⚡ ZYNDAL
+        </div>
+        <h1 style="color:#ffffff;font-size:20px;margin:0 0 12px;">${heading}</h1>
+        <p style="color:#c9b8e8;font-size:15px;line-height:1.5;margin:0 0 28px;">${body}</p>
+        <a href="${link}" style="display:inline-block;background:linear-gradient(135deg,#8a2be2 0%,#6c3bff 45%,#47bfff 100%);color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:14px 32px;border-radius:14px;">
+          ${button}
+        </a>
+        <p style="color:#8f7ba8;font-size:13px;margin:28px 0 4px;line-height:1.5;">${altText}</p>
+      </div>
+    </div>
+  `.trim()
+
+  return { subject, html }
+}
+
+export async function sendParentInviteEmail({ email, parentName, parentCode, languagePreference }) {
+  const resend = getResendClient()
+  const { subject, html } = parentInviteEmailContent(parentName, parentCode, email, languagePreference)
+  const { error } = await resend.emails.send({
+    from: 'Zyndal <hello@zyndal.ca>',
+    replyTo: 'hello@zyndal.ca',
+    to: email,
+    subject,
+    html,
+  })
+  if (error) throw new Error(error.message || 'Failed to send invitation email.')
+}

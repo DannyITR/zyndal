@@ -6,6 +6,8 @@ import {
   getTestGradesForParent,
   getStudentPracticeSessions,
   getStudentGrades,
+  getPendingInvitationsForParent,
+  getNotifications,
 } from '../../lib/storage'
 import { SUBJECTS, getSubject } from '../../lib/questions'
 import { countdownLabel, computeReadiness } from '../../lib/testprep'
@@ -13,7 +15,9 @@ import TopBar from '../shared/TopBar'
 import AnswerDetail from '../shared/AnswerDetail'
 import Leaderboard from '../shared/Leaderboard'
 import SettingsScreen from '../shared/SettingsScreen'
+import NotificationsScreen from '../student/notifications/NotificationsScreen'
 import FinanceScreen from './finance/FinanceScreen'
+import AddChildScreen from './AddChildScreen'
 import StudentCard from './StudentCard'
 import GradeBadge from '../student/uploads/GradeBadge'
 
@@ -24,11 +28,14 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
   const [testGrades, setTestGrades] = useState(null)
   const [practiceByStudent, setPracticeByStudent] = useState({})
   const [gradesByStudent, setGradesByStudent] = useState({})
-  const [copied, setCopied] = useState(false)
+  const [pendingInvitations, setPendingInvitations] = useState([])
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [viewingEntry, setViewingEntry] = useState(null)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showFinances, setShowFinances] = useState(false)
+  const [showAddChild, setShowAddChild] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
 
   // The logo always resets to the main dashboard view for a logged-in parent.
   function handleLogoClick() {
@@ -36,8 +43,28 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
     setShowLeaderboard(false)
     setShowSettings(false)
     setShowFinances(false)
+    setShowAddChild(false)
+    setShowNotifications(false)
     setViewingEntry(null)
   }
+
+  function refreshPendingInvitations() {
+    getPendingInvitationsForParent(user.id)
+      .then(setPendingInvitations)
+      .catch(() => {})
+  }
+
+  useEffect(refreshPendingInvitations, [user.id])
+
+  useEffect(() => {
+    let cancelled = false
+    getNotifications().then(({ unreadCount }) => {
+      if (!cancelled) setUnreadNotificationCount(unreadCount)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [user.id])
 
   useEffect(() => {
     let cancelled = false
@@ -78,16 +105,6 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
     if (!students || students.length === 0) return
     const pairs = await Promise.all(students.map((s) => getStudentProgress(user.id, s.id).then((p) => [s.id, p])))
     setProgressByStudent(Object.fromEntries(pairs))
-  }
-
-  function handleCopyCode() {
-    navigator.clipboard?.writeText(user.parent_code).then(
-      () => {
-        setCopied(true)
-        setTimeout(() => setCopied(false), 1500)
-      },
-      () => {}
-    )
   }
 
   if (viewingEntry) {
@@ -141,6 +158,32 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
     )
   }
 
+  if (showAddChild) {
+    return (
+      <AddChildScreen
+        user={user}
+        onBack={() => setShowAddChild(false)}
+        onLogout={onLogout}
+        onLogoClick={handleLogoClick}
+        onChanged={refreshPendingInvitations}
+      />
+    )
+  }
+
+  if (showNotifications) {
+    return (
+      <NotificationsScreen
+        user={user}
+        onBack={() => {
+          setShowNotifications(false)
+          getNotifications().then(({ unreadCount }) => setUnreadNotificationCount(unreadCount))
+        }}
+        onLogout={onLogout}
+        onLogoClick={handleLogoClick}
+      />
+    )
+  }
+
   const greetingName = user.display_name || user.username
   const avatarPrefix = user.avatar ? `${user.avatar} ` : ''
 
@@ -151,6 +194,8 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
         subtitle="Parent Dashboard"
         username={user.username}
         onLogout={onLogout}
+        onNotifications={() => setShowNotifications(true)}
+        unreadCount={unreadNotificationCount}
         onSettings={() => setShowSettings(true)}
         onLogoClick={handleLogoClick}
       />
@@ -164,16 +209,23 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
         </button>
       </div>
 
-      <div className="parent-code-card">
-        <p className="parent-code-label">Your parent code</p>
-        <div className="parent-code-value-row">
-          <span className="parent-code-value">{user.parent_code}</span>
-          <button type="button" className="btn btn-secondary btn-small" onClick={handleCopyCode}>
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
+      <button type="button" className="btn btn-primary btn-block" onClick={() => setShowAddChild(true)}>
+        ➕ Add Child
+      </button>
+
+      {pendingInvitations.length > 0 && (
+        <div className="finance-section-card">
+          <h3 className="section-heading">Pending Invitations</h3>
+          <div className="teacher-student-list">
+            {pendingInvitations.map((inv) => (
+              <div key={inv.id} className="finance-student-row">
+                <p className="finance-student-name">{inv.label}</p>
+                <span className="plan-status-badge plan-status-badge--pending">Pending</span>
+              </div>
+            ))}
+          </div>
         </div>
-        <p className="field-hint">Share this with your student so they can link their account.</p>
-      </div>
+      )}
 
       {studyPlans && studyPlans.length > 0 && (
         <>

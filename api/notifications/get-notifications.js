@@ -26,6 +26,23 @@ async function handle({ userId }) {
     statusByRequestId = Object.fromEntries((requestRows || []).map((r) => [r.id, r.status]))
   }
 
+  // Same rationale as friend_request above — a parent_link_request
+  // notification's Accept/Decline buttons need to stop showing once the
+  // underlying parent_invitations row has actually been resolved, even on
+  // a fresh page load.
+  const invitationIds = [
+    ...new Set(notifications.filter((n) => n.type === 'parent_link_request' && n.data?.invitation_id).map((n) => n.data.invitation_id)),
+  ]
+  let statusByInvitationId = {}
+  if (invitationIds.length > 0) {
+    const { data: invitationRows, error: invitationError } = await supabase
+      .from('parent_invitations')
+      .select('id, status')
+      .in('id', invitationIds)
+    if (invitationError) throw invitationError
+    statusByInvitationId = Object.fromEntries((invitationRows || []).map((r) => [r.id, r.status]))
+  }
+
   return {
     notifications: notifications.map((n) => ({
       id: n.id,
@@ -36,6 +53,7 @@ async function handle({ userId }) {
       readAt: n.read_at,
       createdAt: n.created_at,
       requestStatus: n.type === 'friend_request' ? statusByRequestId[n.data?.request_id] || null : null,
+      invitationStatus: n.type === 'parent_link_request' ? statusByInvitationId[n.data?.invitation_id] || null : null,
     })),
     unreadCount: notifications.filter((n) => !n.read_at).length,
   }

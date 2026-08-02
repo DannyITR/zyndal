@@ -27,11 +27,41 @@ function groupBy(rows, key) {
   return grouped
 }
 
+// "Pending" badge on the parent dashboard — sourced live from this table's
+// own status column, which every linking path (link-request.js's send,
+// respond-parent-link.js's accept/decline, link-parent.js's code-entry
+// path — including the auto-call right after a parent-code signup) keeps
+// current. Expired-but-still-'pending' rows are filtered out client-side
+// of this query (an unresolved cron to flip them to 'expired' isn't worth
+// building just to hide a stale badge a bit sooner).
+async function getPendingInvitations(parentId) {
+  const { data: invitations, error } = await supabase
+    .from('parent_invitations')
+    .select('id, student_id, child_email, invite_type, sent_at, expires_at')
+    .eq('parent_id', parentId)
+    .eq('status', 'pending')
+    .gt('expires_at', new Date().toISOString())
+    .order('sent_at', { ascending: false })
+  if (error) throw error
+  if (!invitations || invitations.length === 0) return []
+
+  const studentIds = [...new Set(invitations.filter((i) => i.student_id).map((i) => i.student_id))]
+  const usernameById = studentIds.length ? await usernameLookup(studentIds) : {}
+
+  return invitations.map((i) => ({
+    id: i.id,
+    label: i.student_id ? `@${usernameById[i.student_id] || 'Unknown'}` : i.child_email,
+    inviteType: i.invite_type,
+    sentAt: i.sent_at,
+  }))
+}
+
 async function handle({ parentId }) {
-  const [links, walletRow, payoutHistory] = await Promise.all([
+  const [links, walletRow, payoutHistory, pendingInvitations] = await Promise.all([
     getParentLinks(parentId),
     getParentWalletRow(parentId),
     getPayoutHistoryRows(parentId),
+    getPendingInvitations(parentId),
   ])
   const studentIds = links.map((l) => l.student_id)
   const linkByStudentId = Object.fromEntries(links.map((l) => [l.student_id, l]))
@@ -45,6 +75,7 @@ async function handle({ parentId }) {
       pendingPerfectWeekAchievements: [],
       pendingGradeBonuses: [],
       payoutHistory,
+      pendingInvitations,
     }
   }
 
@@ -151,6 +182,7 @@ async function handle({ parentId }) {
       suggestedBonusCents: r.suggested_bonus_cents,
     })),
     payoutHistory,
+    pendingInvitations,
   }
 }
 

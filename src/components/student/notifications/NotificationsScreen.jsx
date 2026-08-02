@@ -5,6 +5,7 @@ import {
   markAllNotificationsRead,
   markShareSeen,
   respondToFriendRequest,
+  respondToParentLinkRequest,
 } from '../../../lib/storage'
 import TopBar from '../../shared/TopBar'
 import FriendScoreCardModal from '../share/FriendScoreCardModal'
@@ -18,6 +19,10 @@ const TYPE_ICON = {
   streak_reminder: '⚠️',
   homework_assigned: '📚',
   homework_reminder: '📚',
+  parent_link_request: '👨‍👩‍👧',
+  // No entry for parent_link_accepted — its title text already leads with
+  // "✅" (see link-parent.js/respond-parent-link.js), so a TYPE_ICON here
+  // would just render a second checkmark right next to the first one.
 }
 
 function formatDateTime(iso) {
@@ -128,6 +133,21 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
     }
   }
 
+  async function handleRespondParentLink(notification, accept) {
+    if (respondingId) return
+    setRespondingId(notification.id)
+    try {
+      await respondToParentLinkRequest(notification.data.invitation_id, accept)
+      setResolvedRequestIds((prev) => ({ ...prev, [notification.id]: accept ? 'accepted' : 'declined' }))
+      await markNotificationRead(notification.id)
+      await refresh()
+    } catch {
+      setError("Couldn't update this request. Please try again.")
+    } finally {
+      setRespondingId(null)
+    }
+  }
+
   const unreadCount = notifications ? notifications.filter((n) => !n.readAt).length : 0
 
   return (
@@ -176,6 +196,33 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
                     Open Homework
                   </button>
                 )}
+
+                {n.type === 'parent_link_request' &&
+                  (() => {
+                    const status = resolved || n.invitationStatus
+                    if (status === 'accepted') return <p className="notification-item-status notification-item-status--accepted">✓ Linked</p>
+                    if (status === 'declined') return <p className="notification-item-status notification-item-status--declined">Declined</p>
+                    return (
+                      <div className="notification-item-actions">
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-small"
+                          disabled={respondingId === n.id}
+                          onClick={() => handleRespondParentLink(n, true)}
+                        >
+                          Accept
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-small"
+                          disabled={respondingId === n.id}
+                          onClick={() => handleRespondParentLink(n, false)}
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    )
+                  })()}
 
                 {n.type === 'friend_request' &&
                   (() => {

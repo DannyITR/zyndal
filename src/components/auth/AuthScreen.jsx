@@ -11,8 +11,15 @@ import ForgotPasswordScreen from './ForgotPasswordScreen'
 // and SignupForm's own comments). `lang` lives here rather than inside
 // SignupChooser/SignupForm individually so the chosen language survives
 // going back and forth between the signup-choice and signup-form steps.
-export default function AuthScreen({ initialMode = 'login', onAuth, onLogoClick }) {
-  const [view, setView] = useState(initialMode === 'signup' ? 'signupChoose' : 'login')
+export default function AuthScreen({ initialMode = 'login', onAuth, onLogoClick, inviteParentCode, inviteEmail, inviteParentUsername }) {
+  // An invite link skips the OAuth-or-email choice entirely and lands
+  // straight on the form itself, prefilled — see SignupForm's own props
+  // below and App.jsx's inviteParams. Google/Facebook signup has no
+  // parent-code prefill path today (OAuthOnboardingScreen never collects
+  // one), so a student who backs out of this form to try that route
+  // instead just loses the prefill, same as if they'd never followed the
+  // link.
+  const [view, setView] = useState(inviteParentCode ? 'signupForm' : initialMode === 'signup' ? 'signupChoose' : 'login')
   const [lang, setLang] = useState('en')
 
   return (
@@ -24,6 +31,10 @@ export default function AuthScreen({ initialMode = 'login', onAuth, onLogoClick 
       <div className="auth-card">
         <Logo size="large" />
         <p className="auth-tagline">Level up every subject, one day at a time.</p>
+
+        {inviteParentCode && inviteParentUsername && view === 'signupForm' && (
+          <p className="auth-invite-banner">🎉 @{inviteParentUsername} invited you to Zyndal! Create your account below.</p>
+        )}
 
         {view === 'signupChoose' && (
           <div className="auth-tabs">
@@ -57,6 +68,8 @@ export default function AuthScreen({ initialMode = 'login', onAuth, onLogoClick 
             onAuth={onAuth}
             onBack={() => setView('signupChoose')}
             onSwitchToLogin={() => setView('login')}
+            initialParentCode={inviteParentCode || ''}
+            initialEmail={inviteEmail || ''}
           />
         )}
       </div>

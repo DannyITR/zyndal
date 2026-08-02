@@ -222,6 +222,13 @@ export async function checkEmailAvailable(email) {
   return callApi('/api/auth', 'GET', `check-email?email=${encodeURIComponent(email)}`)
 }
 
+// Public — powers the "@[parent] invited you to Zyndal!" banner on the
+// signup screen when arriving via a ?parent_code=... invite link, before
+// any account/session exists.
+export async function lookupParentCode(code) {
+  return callApi('/api/auth', 'GET', `lookup-parent-code?code=${encodeURIComponent(code)}`)
+}
+
 // ---------- Social login (Google/Facebook) ----------
 // See OAuthCallbackScreen.jsx / OAuthMergeScreen.jsx for the flow this
 // backs. Both calls hit api/auth/oauth-callback.js and
@@ -380,6 +387,28 @@ export async function getCurrentUser() {
 export async function getStudentsForParent(parentId) {
   const dash = await fetchParentDashboard(parentId)
   return dash.students.map(({ progress: _progress, recentPracticeSessions: _sessions, grades: _grades, ...student }) => student)
+}
+
+// ---------- Add Child (parent-initiated linking) ----------
+
+export async function searchStudentsForParent(query) {
+  return callParentApi('GET', `search-students?username=${encodeURIComponent(query)}`)
+}
+
+export async function sendParentLinkRequest(studentId) {
+  const result = await callParentApi('POST', 'link-request', { student_id: studentId })
+  invalidateParentDashboard()
+  return result
+}
+
+export async function inviteChildByEmail(childEmail) {
+  const result = await callParentApi('POST', 'invite-email', { child_email: childEmail })
+  invalidateParentDashboard()
+  return result
+}
+
+export function getPendingInvitationsForParent(parentId) {
+  return fetchParentDashboard(parentId).then((dash) => dash.pendingInvitations || [])
 }
 
 export async function updatePerfectWeekBonus(parentId, studentId, amountDollars) {
@@ -910,6 +939,20 @@ export async function getOrGenerateCurriculumOutline(subject, grade) {
   return callCurriculumApi('GET', `get-outline?subject=${encodeURIComponent(subject)}&grade=${encodeURIComponent(grade)}`)
 }
 
+// ---------- Parent linking (student side) ----------
+
+export async function linkParentByCode(parentCode) {
+  return callStudentApi('POST', 'link-parent', { parent_code: parentCode })
+}
+
+export async function getPendingParentRequests() {
+  return callStudentApi('GET', 'get-pending-parent-requests')
+}
+
+export async function respondToParentLinkRequest(invitationId, accept) {
+  return callStudentApi('POST', 'respond-parent-link', { invitation_id: invitationId, action: accept ? 'accept' : 'decline' })
+}
+
 // ---------- Classes (student side) ----------
 
 export async function getMyClasses() {
@@ -1016,3 +1059,4 @@ export async function createHomework({ title, subject, dueDate, classIds, questi
 export async function getTeacherLeaderboard(classId) {
   return callTeacherApi('GET', `get-leaderboard${classId ? `?class_id=${encodeURIComponent(classId)}` : ''}`)
 }
+

@@ -1,5 +1,16 @@
 import { useEffect, useState } from 'react'
-import { updateUserProfile, changePassword, getFriendCount, exportMyData, deleteAccount, getMyClasses, joinClass } from '../../lib/storage'
+import {
+  updateUserProfile,
+  changePassword,
+  getFriendCount,
+  exportMyData,
+  deleteAccount,
+  getMyClasses,
+  joinClass,
+  linkParentByCode,
+  getPendingParentRequests,
+  respondToParentLinkRequest,
+} from '../../lib/storage'
 import { AVATARS } from '../../lib/avatars'
 import TopBar from './TopBar'
 import LegalModal from '../legal/LegalModal'
@@ -52,6 +63,61 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
       setJoinError(err.message || "Couldn't join that class. Please check the code and try again.")
     } finally {
       setJoinSaving(false)
+    }
+  }
+
+  const [parentCodeInput, setParentCodeInput] = useState('')
+  const [linkParentSaving, setLinkParentSaving] = useState(false)
+  const [linkParentError, setLinkParentError] = useState('')
+  const [linkParentSuccess, setLinkParentSuccess] = useState('')
+
+  const [pendingParentRequests, setPendingParentRequests] = useState(null)
+  const [respondingRequestId, setRespondingRequestId] = useState(null)
+  const [respondError, setRespondError] = useState('')
+
+  function loadPendingParentRequests() {
+    getPendingParentRequests()
+      .then((data) => setPendingParentRequests(data.requests))
+      .catch(() => setPendingParentRequests([]))
+  }
+
+  useEffect(() => {
+    if (!isStudent) return
+    loadPendingParentRequests()
+  }, [isStudent])
+
+  async function handleLinkParent(e) {
+    e.preventDefault()
+    setLinkParentError('')
+    setLinkParentSuccess('')
+    if (!parentCodeInput.trim()) return
+    setLinkParentSaving(true)
+    try {
+      const { parent } = await linkParentByCode(parentCodeInput.trim())
+      setParentCodeInput('')
+      setLinkParentSuccess(`✅ Linked to @${parent.username} successfully!`)
+    } catch (err) {
+      setLinkParentError(err.message || "Couldn't link that code. Please check it and try again.")
+    } finally {
+      setLinkParentSaving(false)
+    }
+  }
+
+  async function handleRespondParentRequest(requestId, accept) {
+    if (respondingRequestId) return
+    setRespondError('')
+    setRespondingRequestId(requestId)
+    try {
+      await respondToParentLinkRequest(requestId, accept)
+      if (accept) {
+        const accepted = pendingParentRequests?.find((r) => r.id === requestId)
+        if (accepted) setLinkParentSuccess(`✅ Linked to @${accepted.parentUsername} successfully!`)
+      }
+      loadPendingParentRequests()
+    } catch (err) {
+      setRespondError(err.message || "Couldn't update this request. Please try again.")
+    } finally {
+      setRespondingRequestId(null)
     }
   }
 
@@ -328,6 +394,65 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
           {passwordSaving ? 'Updating…' : 'Change Password'}
         </button>
       </form>
+
+      {isStudent && pendingParentRequests && pendingParentRequests.length > 0 && (
+        <div className="finance-section-card">
+          <h3 className="section-heading">Pending Parent Requests</h3>
+          <p className="field-hint">A parent wants to link their account to yours.</p>
+          {respondError && <p className="form-error">{respondError}</p>}
+          <div className="teacher-student-list">
+            {pendingParentRequests.map((req) => (
+              <div key={req.id} className="finance-student-row">
+                <p className="finance-student-name">
+                  {req.parentAvatar ? `${req.parentAvatar} ` : ''}@{req.parentUsername}
+                </p>
+                <div className="notification-item-actions">
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-small"
+                    disabled={respondingRequestId === req.id}
+                    onClick={() => handleRespondParentRequest(req.id, true)}
+                  >
+                    Accept
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-small"
+                    disabled={respondingRequestId === req.id}
+                    onClick={() => handleRespondParentRequest(req.id, false)}
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {isStudent && (
+        <div className="finance-section-card">
+          <h3 className="section-heading">Link to a Parent</h3>
+          <p className="field-hint">Enter the code your parent shared with you.</p>
+          <form className="auth-form" onSubmit={handleLinkParent}>
+            <div className="field">
+              <label htmlFor="settings-parent-code">Parent code</label>
+              <input
+                id="settings-parent-code"
+                value={parentCodeInput}
+                onChange={(e) => setParentCodeInput(e.target.value.toUpperCase())}
+                placeholder="ABC123"
+                maxLength={6}
+              />
+            </div>
+            {linkParentError && <p className="form-error">{linkParentError}</p>}
+            {linkParentSuccess && <p className="form-success">{linkParentSuccess}</p>}
+            <button type="submit" className="btn btn-secondary btn-block" disabled={linkParentSaving}>
+              {linkParentSaving ? 'Linking…' : 'Link Parent'}
+            </button>
+          </form>
+        </div>
+      )}
 
       {isStudent && (
         <div className="finance-section-card">

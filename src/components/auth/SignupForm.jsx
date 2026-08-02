@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { signup, updateUserProfile, checkEmailAvailable } from '../../lib/storage'
+import { signup, updateUserProfile, checkEmailAvailable, linkParentByCode } from '../../lib/storage'
 import LegalModal from '../legal/LegalModal'
 import AccountTypeSelector from './AccountTypeSelector'
 
@@ -70,16 +70,16 @@ const STRINGS = {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitchToLogin }) {
+export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitchToLogin, initialParentCode = '', initialEmail = '' }) {
   const t = STRINGS[lang]
 
   const [accountType, setAccountType] = useState('student')
   const [username, setUsername] = useState('')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(initialEmail)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [grade, setGrade] = useState('')
-  const [parentCode, setParentCode] = useState('')
+  const [parentCode, setParentCode] = useState(initialParentCode)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [confirmedAge, setConfirmedAge] = useState(false)
   const [error, setError] = useState('')
@@ -162,6 +162,20 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
         console.error('[Signup] failed to save email:', emailErr)
         // Don't block account creation — the user can re-enter it in Settings.
       }
+
+      // signup.js's own parent_code handling above already created the
+      // parent_student link (if any) — this call is purely for the side
+      // effects signup.js can't perform itself (see link-parent.js's own
+      // comment): notifying the parent, and marking a matching email
+      // invitation accepted. Never allowed to block account creation.
+      if (accountType === 'student' && parentCode) {
+        try {
+          await linkParentByCode(parentCode)
+        } catch (linkErr) {
+          console.error('[Signup] parent-link side effects failed:', linkErr)
+        }
+      }
+
       onAuth(finalUser)
     } catch (err) {
       setError(err.message || t.errorFallback)

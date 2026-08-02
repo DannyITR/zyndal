@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getCurrentUser, clearSession, setSessionExpiredHandler } from './lib/storage'
+import { getCurrentUser, clearSession, setSessionExpiredHandler, lookupParentCode } from './lib/storage'
 import LandingPage from './components/landing/LandingPage'
 import AuthScreen from './components/auth/AuthScreen'
 import OAuthCallbackScreen from './components/auth/OAuthCallbackScreen'
@@ -16,7 +16,9 @@ function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showLanding, setShowLanding] = useState(false)
-  const [authMode, setAuthMode] = useState('login')
+  // Defaults straight to the signup form for a visitor arriving via a
+  // parent's invite link (?parent_code=...) — see inviteParams below.
+  const [authMode, setAuthMode] = useState(() => (new URLSearchParams(window.location.search).get('parent_code') ? 'signup' : 'login'))
   // No client-side router in this app — /auth/callback is the one path
   // that has to survive a hard browser navigation (Google/Facebook redirect
   // the whole page back to it, not a client-side transition), so it's
@@ -43,20 +45,49 @@ function App() {
   // AdminApp's own internal routing, not this component's.
   const [isAdminPage] = useState(() => window.location.pathname.startsWith('/admin'))
 
+  // A parent's "Add Child" invite link (Share Code tab, or the invite
+  // email's Create-my-account button) — read once on mount, same pattern
+  // as the other URL-driven states above. inviteParentUsername starts null
+  // and is filled in async (lookup-parent-code.js is public, no session
+  // needed yet) purely for the "@[parent] invited you!" banner text;
+  // signup itself only ever needs the code, not the username.
+  const [inviteParams] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    const parentCode = params.get('parent_code')
+    if (!parentCode) return null
+    return { parentCode, email: params.get('email') || '' }
+  })
+  const [inviteParentUsername, setInviteParentUsername] = useState(null)
+
+  useEffect(() => {
+    if (!inviteParams) return
+    let cancelled = false
+    lookupParentCode(inviteParams.parentCode)
+      .then(({ username }) => {
+        if (!cancelled) setInviteParentUsername(username)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [inviteParams])
+
   useEffect(() => {
     let cancelled = false
     getCurrentUser().then((u) => {
       if (cancelled) return
       setUser(u)
       // A visitor with no session lands on the marketing page first; a
-      // returning logged-in user skips straight to their dashboard.
-      setShowLanding(!u)
+      // returning logged-in user skips straight to their dashboard. A
+      // visitor arriving via a parent's invite link skips the marketing
+      // page too, straight to signup — see inviteParams above.
+      setShowLanding(!u && !inviteParams)
       setLoading(false)
     })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [inviteParams])
 
   // Fires from anywhere a /api/student or /api/questions call gets a 401
   // mid-session (session row deleted or expired while the user was active)
@@ -153,7 +184,16 @@ function App() {
   }
 
   if (!user) {
-    return <AuthScreen initialMode={authMode} onAuth={setUser} onLogoClick={() => setShowLanding(true)} />
+    return (
+      <AuthScreen
+        initialMode={authMode}
+        onAuth={setUser}
+        onLogoClick={() => setShowLanding(true)}
+        inviteParentCode={inviteParams?.parentCode || null}
+        inviteEmail={inviteParams?.email || ''}
+        inviteParentUsername={inviteParentUsername}
+      />
+    )
   }
 
   if (user.account_type === 'teacher') {
