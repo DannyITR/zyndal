@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { todayStr } from '../../../lib/streak'
+import { getErrorMessage } from '../../../lib/errors'
 import { generateStudyGuide, getTodaysGuideSubject } from '../../../lib/ai'
 import { getUploadedContentForSubject } from '../../../lib/storage'
 import {
@@ -40,6 +42,7 @@ function writeCache(userId, subjectId, guide) {
 }
 
 export default function StudyGuideScreen({ user, subject: lockedSubject, onBack, onLogout, onLogoClick }) {
+  const { t } = useTranslation()
   const subject = lockedSubject || getTodaysGuideSubject()
   const [guide, setGuide] = useState(() => readCache(user.id, subject.id))
   // Always shown first, even if today's guide is already cached — picking a
@@ -118,7 +121,7 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
       setStep('guide')
     } catch (err) {
       console.error('[StudyGuide] generation failed:', err)
-      setError(err.message || "Couldn't generate today's study guide. Please try again.")
+      setError(getErrorMessage(err, t))
     } finally {
       setGenerating(false)
     }

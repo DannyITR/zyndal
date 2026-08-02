@@ -2,7 +2,7 @@ import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeUsername } from '../_lib/sanitize.js'
 import { insertNotification } from '../_lib/notifications.js'
-import { notificationText } from '../_lib/notificationText.js'
+import { notificationText, pushNotificationText } from '../_lib/notificationText.js'
 import { sendPushToUser } from '../_lib/push.js'
 
 // Mirrors sendFriendRequest and respondToFriendRequest in storage.js behind
@@ -114,11 +114,12 @@ async function handleSend(userId, body) {
     data: { request_id: requestRow.id, sender_id: userId, sender_username: senderUsername },
   })
 
+  const sendPush = pushNotificationText('friend_request', target?.language_preference, { senderUsername })
   await sendPushToUser({
     userId: targetId,
     type: 'friend_request',
-    title: `👋 @${senderUsername} wants to follow you on Zyndal`,
-    body: 'Tap to accept or decline',
+    title: sendPush.title,
+    body: sendPush.body,
     url: 'https://zyndal.ca',
   })
 
@@ -183,11 +184,12 @@ async function handleRespond(userId, body) {
     // sends me a friend request"), and an "accepted" notification is the
     // same lifecycle, not a separate concern worth its own toggle/SQL
     // column addition.
+    const acceptPush = pushNotificationText('friend_accepted', requester?.language_preference, { username: responderUsername })
     await sendPushToUser({
       userId: request.sender_id,
       type: 'friend_request',
-      title: `🎉 @${responderUsername} accepted your friend request!`,
-      body: "You're now friends on Zyndal — share your score to start a streak!",
+      title: acceptPush.title,
+      body: acceptPush.body,
       url: 'https://zyndal.ca',
     })
   }

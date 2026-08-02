@@ -1,16 +1,19 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getHomeworkSubmission } from '../../../lib/storage'
 import { formatLongDate } from '../../../lib/streak'
+import { getErrorMessage } from '../../../lib/errors'
 import TopBar from '../../shared/TopBar'
 
 function AssignmentAnswers({ assignmentId }) {
+  const { t } = useTranslation()
   const [detail, setDetail] = useState(null)
   const [error, setError] = useState('')
 
   function load() {
     getHomeworkSubmission(assignmentId)
       .then(setDetail)
-      .catch((err) => setError(err.message || "Couldn't load your answers."))
+      .catch((err) => setError(getErrorMessage(err, t)))
   }
 
   if (!detail && !error) {

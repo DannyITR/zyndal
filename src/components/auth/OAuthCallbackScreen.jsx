@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { supabaseAuth } from '../../lib/supabaseAuthClient'
 import { oauthCallback } from '../../lib/storage'
+import { getErrorMessage } from '../../lib/errors'
 import Logo from '../shared/Logo'
 import OAuthMergeScreen from './OAuthMergeScreen'
 import OAuthOnboardingScreen from './OAuthOnboardingScreen'
@@ -45,6 +47,7 @@ function getUrlErrorParams() {
 // api/auth/oauth-callback.js, then handing off to whichever of the three
 // outcomes applies.
 export default function OAuthCallbackScreen({ onAuth, onCancel }) {
+  const { t } = useTranslation()
   const [status, setStatus] = useState('loading') // loading | merge | onboarding | error
   const [mergeInfo, setMergeInfo] = useState(null)
   const [onboardingUser, setOnboardingUser] = useState(null)
@@ -60,7 +63,7 @@ export default function OAuthCallbackScreen({ onAuth, onCancel }) {
       console.error('[OAuthCallback] provider/Supabase returned an error in the redirect URL:', urlError)
       handledRef.current = true
       setStatus('error')
-      setError(urlError.description || `Sign-in failed (${urlError.error || urlError.code || 'unknown error'}).`)
+      setError(urlError.description || t('auth.oauth.signInFailed', { reason: urlError.error || urlError.code || t('auth.oauth.unknownError') }))
       return
     }
 
@@ -74,7 +77,7 @@ export default function OAuthCallbackScreen({ onAuth, onCancel }) {
         console.error('[OAuthCallback] unsupported or missing provider on session:', provider, session.user)
         if (!cancelled) {
           setStatus('error')
-          setError('Unsupported sign-in provider.')
+          setError(t('auth.oauth.unsupportedProvider'))
         }
         return
       }
@@ -101,7 +104,7 @@ export default function OAuthCallbackScreen({ onAuth, onCancel }) {
         console.error('[OAuthCallback] api/auth/oauth-callback failed:', err)
         if (!cancelled) {
           setStatus('error')
-          setError(err.message || "Couldn't finish signing in. Please try again.")
+          setError(getErrorMessage(err, t))
         }
       }
     }
@@ -130,7 +133,7 @@ export default function OAuthCallbackScreen({ onAuth, onCancel }) {
       if (!cancelled && !handledRef.current) {
         console.error('[OAuthCallback] timed out after 10s with no session and no URL error — giving up.')
         setStatus('error')
-        setError('Sign-in did not complete. Please try again.')
+        setError(t('auth.oauth.timedOut'))
       }
     }, 10000)
 
@@ -139,6 +142,9 @@ export default function OAuthCallbackScreen({ onAuth, onCancel }) {
       subscription.unsubscribe()
       clearTimeout(timeout)
     }
+    // t is a stable function for the app's lifetime (see src/lib/i18n.js) —
+    // not a real dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onAuth])
 
   if (status === 'merge' && mergeInfo) {

@@ -47,6 +47,21 @@
       "errorAgeConfirmation": "Please confirm the age/parental permission statement below.",
       "errorFallback": "Something went wrong. Please try again.",
       "logInInstead": "Log in instead"
+    },
+    "forgotPassword": {
+      "invalidEmail": "Please enter a valid email address.",
+      "checkEmail": "If an account exists with that email, you'll receive a reset link shortly.",
+      "backToLogin": "← Back to log in",
+      "sendResetLink": "Send reset link"
+    },
+    "onboarding": {
+      "selectGradeRequired": "Please select your grade."
+    },
+    "oauth": {
+      "timedOut": "Sign-in did not complete. Please try again.",
+      "signInFailed": "Sign-in failed ({{reason}}).",
+      "unknownError": "unknown error",
+      "unsupportedProvider": "Unsupported sign-in provider."
     }
   },
   "subjects": {
@@ -99,7 +114,34 @@
     "myUploads": "📁 My Uploads",
     "practice": "🎯 Practice",
     "myGrades": "📊 My Grades",
-    "curriculum": "📖 Curriculum"
+    "curriculum": "📖 Curriculum",
+    "chooseSubject": "Choose today's subject",
+    "dismiss": "Dismiss",
+    "verifyEmailBanner": "📧 Please verify your email — check your inbox.",
+    "sentBang": "Sent!",
+    "resendEmail": "Resend email",
+    "pushBanner": "Stay in the loop — allow Zyndal to notify you when friends share their score",
+    "requesting": "Requesting…",
+    "allowNotifications": "Allow notifications",
+    "notNow": "Not now",
+    "parentDeletedBanner": "Your parent account was deactivated. Ask a parent to create a new account and re-link.",
+    "previousDay": "Previous day",
+    "nextDay": "Next day",
+    "homeworkCompleted": "✅ {{title}} — completed",
+    "homeworkDue": "📚 Homework due {{date}}: {{title}}",
+    "sharedScoreWithYouBang": "shared their daily score with you!",
+    "viewScore": "View Score",
+    "infoStreakTitle": "Day Streak",
+    "infoStreakText": "Your streak counts how many days in a row you've answered at least one question correctly. Go a full day without a single correct answer and it resets to zero. Keep it alive to earn bonus coins at 7, 14 and 30 days!",
+    "infoXpText": "XP (Experience Points) are your permanent score. They never reset and show how much you've learned. Climb the leaderboard by earning more XP than your friends.",
+    "infoCoinsText": "Coins are your earnings. You earn coins for every correct first attempt. Your parent can convert coins into real money — ask them to set up your reward wallet!",
+    "infoLeaderboardTitle": "Leaderboard",
+    "infoLeaderboardText": "The leaderboard ranks all Zyndal students by XP. See how you stack up against friends and students across Canada. A Friends tab shows only your added friends.",
+    "whatIsLeaderboard": "What is the leaderboard?",
+    "dayStreakLabel": "day streak",
+    "whatIsDayStreak": "What is the day streak?",
+    "whatIsLabel": "What is {{label}}?",
+    "loadingProgress": "Loading your progress…"
   },
   "nav": {
     "leaderboard": "🏆 Leaderboard",
@@ -506,6 +548,53 @@
     "titleLabel": "Title",
     "dueDateLabel": "Due date",
     "leaderboardSubtitle": "All students, ranked by XP",
-    "allClasses": "All Classes"
+    "allClasses": "All Classes",
+    "joinClassTitle": "Join a Class",
+    "enterTeacherCode": "Enter teacher code",
+    "joining": "Joining…",
+    "join": "Join"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "ACCOUNT_DELETED": "This account has been deleted.",
+    "ALREADY_ANSWERED": "You've already answered this question.",
+    "ALREADY_APPROVED": "This has already been approved.",
+    "ALREADY_JOINED": "You've already joined this class.",
+    "ALREADY_LINKED": "This account is already linked.",
+    "ALREADY_PENDING": "A request is already pending.",
+    "ALREADY_RESOLVED": "This request has already been resolved.",
+    "ALREADY_REVIEWED": "This has already been reviewed.",
+    "ALREADY_SUBMITTED": "This has already been submitted.",
+    "ALREADY_VERIFIED": "This email is already verified.",
+    "EMAIL_EXISTS": "An account with this email already exists.",
+    "EXPIRED_TOKEN": "This link has expired.",
+    "FORBIDDEN": "You don't have permission to do that.",
+    "GRADING_FAILED": "Something went wrong while grading. Please try again.",
+    "INCOMPLETE_DAY": "Complete all 6 subjects today before sharing your score.",
+    "INVALID_CREDENTIALS": "Incorrect username or password.",
+    "INVALID_OAUTH_TOKEN": "That sign-in link is invalid or has expired.",
+    "INVALID_PASSWORD": "That password is incorrect.",
+    "INVALID_STATE": "This action isn't available right now.",
+    "INVALID_TOKEN": "This link is invalid.",
+    "METHOD_NOT_ALLOWED": "That action isn't available.",
+    "NO_ATTEMPTS_LEFT": "No attempts left.",
+    "NO_EMAIL": "No email address is on file for this account.",
+    "NOT_CORRECT": "That answer wasn't correct.",
+    "NOT_FOUND": "We couldn't find that.",
+    "NOT_MATH": "This is only available for Math.",
+    "RATE_LIMITED": "Too many attempts. Please wait a moment and try again.",
+    "REVIEW_FAILED": "Something went wrong while reviewing your work. Please try again.",
+    "SERVER_ERROR": "Something went wrong. Please try again.",
+    "UNAUTHENTICATED": "Your session has expired. Please log in again.",
+    "USERNAME_TAKEN": "That username is already taken.",
+    "VALIDATION_ERROR": "Please check your input and try again."
+  },
+  "classes": {
+    "legendHomework": "Homework",
+    "legendCompleted": "Completed",
+    "legendOverdue": "Overdue"
+  },
+  "curriculum": {
+    "lastUpdated": "Last updated: {{date}}"
   }
 }

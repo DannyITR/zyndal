@@ -1,4 +1,7 @@
+import { useTranslation } from 'react-i18next'
+
 export default function StatPill({ icon, label, value, onInfoClick }) {
+  const { t } = useTranslation()
   return (
     <div className="stat-pill">
       <span className="stat-icon">{icon}</span>
@@ -7,7 +10,7 @@ export default function StatPill({ icon, label, value, onInfoClick }) {
         <span className="stat-label">{label}</span>
       </div>
       {onInfoClick && (
-        <button type="button" className="info-badge" onClick={onInfoClick} aria-label={`What is ${label}?`}>
+        <button type="button" className="info-badge" onClick={onInfoClick} aria-label={t('home.whatIsLabel', { label })}>
           i
         </button>
       )}

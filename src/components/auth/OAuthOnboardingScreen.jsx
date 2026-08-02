@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { updateUserProfile } from '../../lib/storage'
+import { getErrorMessage } from '../../lib/errors'
 import Logo from '../shared/Logo'
 import AccountTypeSelector from './AccountTypeSelector'
 
@@ -12,6 +14,7 @@ import AccountTypeSelector from './AccountTypeSelector'
 // time (see that endpoint's comment). Teacher is fully selectable here and
 // treated identically to parent downstream — see App.jsx's comment.
 export default function OAuthOnboardingScreen({ user, onDone }) {
+  const { t } = useTranslation()
   const [grade, setGrade] = useState('')
   const [accountType, setAccountType] = useState('student')
   const [saving, setSaving] = useState(false)
@@ -23,7 +26,7 @@ export default function OAuthOnboardingScreen({ user, onDone }) {
     e.preventDefault()
     setError('')
     if (!canSubmit) {
-      setError('Please select your grade.')
+      setError(t('auth.onboarding.selectGradeRequired'))
       return
     }
     setSaving(true)
@@ -38,7 +41,7 @@ export default function OAuthOnboardingScreen({ user, onDone }) {
       })
       onDone({ ...updated, account_type: accountType })
     } catch (err) {
-      setError(err.message || "Couldn't save your info. Please try again.")
+      setError(getErrorMessage(err, t))
     } finally {
       setSaving(false)
     }

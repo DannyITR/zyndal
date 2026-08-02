@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { signup, updateUserProfile, checkEmailAvailable, linkParentByCode } from '../../lib/storage'
+import { getErrorMessage } from '../../lib/errors'
 import LegalModal from '../legal/LegalModal'
 import AccountTypeSelector from './AccountTypeSelector'
 
@@ -135,7 +136,7 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
 
       onAuth(finalUser)
     } catch (err) {
-      setError(err.message || t('auth.signup.errorFallback'))
+      setError(getErrorMessage(err, t, 'auth.signup.errorFallback'))
       setErrorCode(err.code || '')
     } finally {
       setSubmitting(false)

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { validateResetToken, resetPassword } from '../../lib/storage'
+import { getErrorMessage } from '../../lib/errors'
 import Logo from '../shared/Logo'
 
 // Same domain zyndal.ca is attached to as VerifyEmailScreen.jsx uses.
@@ -13,6 +15,7 @@ const GO_TO_URL = 'https://zyndal.ca'
 // person in (see the success state below); it just points them at
 // zyndal.ca to log in fresh with the new password.
 export default function ResetPasswordScreen() {
+  const { t } = useTranslation()
   const [status, setStatus] = useState('validating') // validating | valid | invalid | success
   const [username, setUsername] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -68,7 +71,7 @@ export default function ResetPasswordScreen() {
       window.history.replaceState({}, '', '/reset-password')
       setStatus('success')
     } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.')
+      setError(getErrorMessage(err, t))
     } finally {
       setSubmitting(false)
     }

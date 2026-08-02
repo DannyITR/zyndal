@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { verifyEmail, resendExpiredVerification, getSessionToken, getCurrentUser } from '../../lib/storage'
+import { getErrorMessage } from '../../lib/errors'
 import Logo from '../shared/Logo'
 
 // zyndal.ca is attached to the Vercel project (both the apex and
@@ -19,6 +21,7 @@ const REDIRECT_DELAY_MS = 1500
 // to log in manually (expired/invalid link, or auto-login failing
 // server-side — see api/auth/verify-email.js's comment on that).
 export default function VerifyEmailScreen({ onVerified }) {
+  const { t } = useTranslation()
   // verifying | success | successManual | expired | invalid
   const [status, setStatus] = useState('verifying')
   const [resendState, setResendState] = useState('idle') // idle | sending | sent | error
@@ -86,7 +89,7 @@ export default function VerifyEmailScreen({ onVerified }) {
       setResendState('sent')
     } catch (err) {
       setResendState('error')
-      setResendError(err.message || "Couldn't send the email. Please try again.")
+      setResendError(getErrorMessage(err, t))
     }
   }
 

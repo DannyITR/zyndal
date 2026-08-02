@@ -1,9 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getClassHomeworkCalendar } from '../../../lib/storage'
-import { todayStr, addDaysStr } from '../../../lib/streak'
+import { todayStr, addDaysStr, formatMonthYear } from '../../../lib/streak'
 import { getUserTimeZone } from '../../../lib/timezone'
+import { getErrorMessage } from '../../../lib/errors'
 
-const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+const WEEKDAY_KEYS = [
+  'calendar.weekdaySun',
+  'calendar.weekdayMon',
+  'calendar.weekdayTue',
+  'calendar.weekdayWed',
+  'calendar.weekdayThu',
+  'calendar.weekdayFri',
+  'calendar.weekdaySat',
+]
 
 function pad(n) {
   return String(n).padStart(2, '0')
@@ -20,6 +30,7 @@ function statusFor(assignmentsForDay) {
 }
 
 export default function HomeworkCalendar({ classId, classCreatedAt, onSelectDay }) {
+  const { t, i18n } = useTranslation()
   const today = todayStr(new Date(), getUserTimeZone())
   const [todayYear, todayMonth] = today.split('-').map(Number)
   const [viewYear, setViewYear] = useState(todayYear)
@@ -36,11 +47,15 @@ export default function HomeworkCalendar({ classId, classCreatedAt, onSelectDay 
         if (!cancelled) setAssignments(data.assignments)
       })
       .catch((err) => {
-        if (!cancelled) setError(err.message || "Couldn't load homework for this month.")
+        if (!cancelled) setError(getErrorMessage(err, t))
       })
     return () => {
       cancelled = true
     }
+    // t is a stable function for the app's lifetime (see src/lib/i18n.js) —
+    // not a real dependency, and including it would refetch on every
+    // language change for no reason.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId, viewMonth, viewYear])
 
   const earliestYearMonth = (classCreatedAt || today).slice(0, 7)
@@ -78,8 +93,12 @@ export default function HomeworkCalendar({ classId, classCreatedAt, onSelectDay 
   }, [assignments])
 
   const monthLabel = useMemo(
-    () => new Date(Date.UTC(viewYear, viewMonth - 1, 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
-    [viewYear, viewMonth]
+    () => formatMonthYear(viewYear, viewMonth),
+    // i18n.language isn't referenced directly (formatMonthYear reads it from
+    // the i18n singleton internally) but must still be a dependency, or a
+    // language switch while this screen is open won't update the label.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [viewYear, viewMonth, i18n.language]
   )
 
   const cells = useMemo(() => {
@@ -95,34 +114,34 @@ export default function HomeworkCalendar({ classId, classCreatedAt, onSelectDay 
     <div className="homework-calendar">
       <div className="calendar-legend">
         <span className="calendar-legend-item">
-          <span className="calendar-legend-dot calendar-legend-dot--assigned" /> Homework
+          <span className="calendar-legend-dot calendar-legend-dot--assigned" /> {t('classes.legendHomework')}
         </span>
         <span className="calendar-legend-item">
-          <span className="calendar-legend-dot calendar-legend-dot--hw-completed" /> Completed
+          <span className="calendar-legend-dot calendar-legend-dot--hw-completed" /> {t('classes.legendCompleted')}
         </span>
         <span className="calendar-legend-item">
-          <span className="calendar-legend-dot calendar-legend-dot--overdue" /> Overdue
+          <span className="calendar-legend-dot calendar-legend-dot--overdue" /> {t('classes.legendOverdue')}
         </span>
       </div>
 
       <div className="calendar-nav">
-        <button type="button" className="calendar-nav-arrow" onClick={goPrevMonth} disabled={isEarliestMonth} aria-label="Previous month">
+        <button type="button" className="calendar-nav-arrow" onClick={goPrevMonth} disabled={isEarliestMonth} aria-label={t('calendar.prevMonth')}>
           ←
         </button>
         <span className="calendar-nav-label">{monthLabel}</span>
-        <button type="button" className="calendar-nav-arrow" onClick={goNextMonth} disabled={isLatestMonth} aria-label="Next month">
+        <button type="button" className="calendar-nav-arrow" onClick={goNextMonth} disabled={isLatestMonth} aria-label={t('calendar.nextMonth')}>
           →
         </button>
       </div>
 
       {error && <p className="form-error">{error}</p>}
-      {!assignments && !error && <p className="loading-text">Loading…</p>}
+      {!assignments && !error && <p className="loading-text">{t('common.loading')}</p>}
 
       {assignments && (
         <div className="calendar-grid">
-          {WEEKDAY_LABELS.map((label, i) => (
+          {WEEKDAY_KEYS.map((key, i) => (
             <div key={`label-${i}`} className="calendar-weekday-label">
-              {label}
+              {t(key)}
             </div>
           ))}
           {cells.map((d, i) => {

@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { gradeWork } from '../../lib/storage'
+import { getErrorMessage } from '../../lib/errors'
 
 // Scratchpad is Math-only — other subjects may be added in future.
 // Shown below the Scratchpad after a correct Math answer — submits the
@@ -9,6 +11,7 @@ import { gradeWork } from '../../lib/storage'
 const MAX_ATTEMPTS = 2
 
 export default function WorkSubmissionPanel({ answerId, canvasRef, canvasHasDrawing, onApproved }) {
+  const { t } = useTranslation()
   const [status, setStatus] = useState('idle') // idle | loading | approved | rejected
   const [attempts, setAttempts] = useState(0)
   const [error, setError] = useState('')
@@ -43,7 +46,7 @@ export default function WorkSubmissionPanel({ answerId, canvasRef, canvasHasDraw
         return
       }
       setStatus(attempts > 0 ? 'rejected' : 'idle')
-      setError(err.message || "Couldn't check your work. Please try again.")
+      setError(getErrorMessage(err, t))
     }
   }
 

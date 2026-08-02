@@ -13,6 +13,7 @@ import {
 } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
 import { countdownLabel, computeReadiness } from '../../lib/testprep'
+import { getErrorMessage } from '../../lib/errors'
 import TopBar from '../shared/TopBar'
 import StreakFlame from './StreakFlame'
 import StatPill from './StatPill'
@@ -247,7 +248,7 @@ export default function StudentHome({
       }
     } catch (err) {
       setReviewing(false)
-      setReviewError(err.message || t('home.reviewErrorFallback'))
+      setReviewError(getErrorMessage(err, t, 'home.reviewErrorFallback'))
       await finalizeAnswer(index)
     }
   }
@@ -274,7 +275,7 @@ export default function StudentHome({
       onLateAnswered(result.entry)
       setAnsweringPast(false)
     } catch (err) {
-      setPastSubmitError(err.message || t('home.pastSubmitError'))
+      setPastSubmitError(getErrorMessage(err, t, 'home.pastSubmitError'))
       setPastSelectedIndex(null)
     } finally {
       setPastSubmitting(false)

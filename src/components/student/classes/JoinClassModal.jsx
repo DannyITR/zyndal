@@ -1,15 +1,15 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { joinClass } from '../../../lib/storage'
+import { getErrorMessage } from '../../../lib/errors'
 
 // Mirrors Settings screen's own "Join a Class" form (still there, untouched)
 // — this is a second entry point straight from My Classes, same endpoint.
-function messageFor(err) {
-  if (err.code === 'NOT_FOUND') return 'Invalid code — check with your teacher and try again.'
-  if (err.code === 'ALREADY_JOINED') return 'You are already in this class.'
-  return err.message || "Couldn't join that class. Please try again."
-}
+// The two known codes already have good generic copy in errors.* (NOT_FOUND,
+// ALREADY_JOINED), so this no longer needs its own messageFor() branching.
 
 export default function JoinClassModal({ onJoined, onClose }) {
+  const { t } = useTranslation()
   const [code, setCode] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -24,7 +24,7 @@ export default function JoinClassModal({ onJoined, onClose }) {
       onJoined(joinedClass)
       onClose()
     } catch (err) {
-      setError(messageFor(err))
+      setError(getErrorMessage(err, t))
     } finally {
       setSaving(false)
     }
@@ -33,10 +33,10 @@ export default function JoinClassModal({ onJoined, onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <h2 className="modal-title">Join a Class</h2>
+        <h2 className="modal-title">{t('teacher.joinClassTitle')}</h2>
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="field">
-            <label htmlFor="join-class-code">Enter teacher code</label>
+            <label htmlFor="join-class-code">{t('teacher.enterTeacherCode')}</label>
             <input
               id="join-class-code"
               value={code}
@@ -49,10 +49,10 @@ export default function JoinClassModal({ onJoined, onClose }) {
           {error && <p className="form-error">{error}</p>}
           <div className="modal-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose} disabled={saving}>
-              Cancel
+              {t('common.cancel')}
             </button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Joining…' : 'Join'}
+              {saving ? t('teacher.joining') : t('teacher.join')}
             </button>
           </div>
         </form>

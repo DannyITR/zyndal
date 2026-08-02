@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { searchStudentsForParent, sendParentLinkRequest, inviteChildByEmail } from '../../lib/storage'
+import { getErrorMessage } from '../../lib/errors'
 import TopBar from '../shared/TopBar'
 
 const SHARE_URL_BASE = 'https://zyndal.ca'
@@ -92,7 +93,7 @@ export default function AddChildScreen({ user, onBack, onLogout, onLogoClick, on
       setRequestStatus('sent')
       onChanged?.()
     } catch (err) {
-      setRequestStatus(err.message || t('addChild.requestFailed'))
+      setRequestStatus(getErrorMessage(err, t, 'addChild.requestFailed'))
     }
   }
 
@@ -118,7 +119,7 @@ export default function AddChildScreen({ user, onBack, onLogout, onLogoClick, on
       setChildEmail('')
       onChanged?.()
     } catch (err) {
-      setEmailError(err.message || t('addChild.sendInviteFailed'))
+      setEmailError(getErrorMessage(err, t, 'addChild.sendInviteFailed'))
     } finally {
       setEmailSending(false)
     }

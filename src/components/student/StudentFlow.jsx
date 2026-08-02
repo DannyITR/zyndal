@@ -18,6 +18,7 @@ import { getSubject } from '../../lib/questions'
 import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE, TOTAL_SUBJECTS } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
 import { isPushSupported, subscribeToPush } from '../../lib/push'
+import { getErrorMessage } from '../../lib/errors'
 import TopBar from '../shared/TopBar'
 import SubjectDashboard from './SubjectDashboard'
 import StudentHome from './StudentHome'
@@ -51,32 +52,21 @@ const PUSH_BANNER_DISMISS_KEY = 'zyndal_push_banner_dismissed_at'
 const PUSH_BANNER_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000
 
 // Explanations shown by the "?" info badges on the home screen's stats and
-// action buttons — keyed to match the setInfoModalKey() calls below.
-const INFO_CONTENT = {
-  streak: {
-    icon: '🔥',
-    title: 'Day Streak',
-    text: "Your streak counts how many days in a row you've answered at least one question correctly. Go a full day without a single correct answer and it resets to zero. Keep it alive to earn bonus coins at 7, 14 and 30 days!",
-  },
-  xp: {
-    icon: '⚡',
-    title: 'XP',
-    text: "XP (Experience Points) are your permanent score. They never reset and show how much you've learned. Climb the leaderboard by earning more XP than your friends.",
-  },
-  coins: {
-    icon: '🪙',
-    title: 'Coins',
-    text: 'Coins are your earnings. You earn coins for every correct first attempt. Your parent can convert coins into real money — ask them to set up your reward wallet!',
-  },
-  leaderboard: {
-    icon: '🏆',
-    title: 'Leaderboard',
-    text: 'The leaderboard ranks all Zyndal students by XP. See how you stack up against friends and students across Canada. A Friends tab shows only your added friends.',
-  },
+// action buttons — keyed to match the setInfoModalKey() calls below. Built
+// from t() inside the component (not a module-level const) since it needs
+// the active language.
+function buildInfoContent(t) {
+  return {
+    streak: { icon: '🔥', title: t('home.infoStreakTitle'), text: t('home.infoStreakText') },
+    xp: { icon: '⚡', title: t('home.xp'), text: t('home.infoXpText') },
+    coins: { icon: '🪙', title: t('home.coins'), text: t('home.infoCoinsText') },
+    leaderboard: { icon: '🏆', title: t('home.infoLeaderboardTitle'), text: t('home.infoLeaderboardText') },
+  }
 }
 
 export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const { t } = useTranslation()
+  const infoContent = buildInfoContent(t)
   // The browser's own zone, not UTC — see src/lib/timezone.js. Used for
   // every local derivation from the already-loaded progress object
   // (streak flame, streak-risk banner); the subject grid's own done/wrong
@@ -158,7 +148,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       setResendState('sent')
     } catch (err) {
       setResendState('error')
-      setResendError(err.message || "Couldn't send the email. Please try again.")
+      setResendError(getErrorMessage(err, t))
     }
   }
 
@@ -392,13 +382,13 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     return (
       <div className="screen student-screen">
         <TopBar
-          title={`${avatarPrefix}Hey, ${greetingName} 👋`}
-          subtitle="Choose today's subject"
+          title={`${avatarPrefix}${t('common.greeting', { name: greetingName })}`}
+          subtitle={t('home.chooseSubject')}
           username={user.username}
           onLogout={onLogout}
           onLogoClick={handleLogoClick}
         />
-        <p className="loading-text">Loading your progress…</p>
+        <p className="loading-text">{t('home.loadingProgress')}</p>
       </div>
     )
   }
@@ -620,8 +610,8 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     return (
       <div className="screen student-screen">
         <TopBar
-          title={`${avatarPrefix}Hey, ${greetingName} 👋`}
-          subtitle="Choose today's subject"
+          title={`${avatarPrefix}${t('common.greeting', { name: greetingName })}`}
+          subtitle={t('home.chooseSubject')}
           username={user.username}
           onLogout={onLogout}
           onNotifications={() => setShowNotifications(true)}
@@ -632,12 +622,12 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
 
         {showParentDeletedBanner && (
           <div className="parent-deleted-banner">
-            <span>Your parent account was deactivated. Ask a parent to create a new account and re-link.</span>
+            <span>{t('home.parentDeletedBanner')}</span>
             <button
               type="button"
               className="parent-deleted-banner-close"
               onClick={() => setShowParentDeletedBanner(false)}
-              aria-label="Dismiss"
+              aria-label={t('home.dismiss')}
             >
               ✕
             </button>
@@ -647,12 +637,12 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         {showVerifyBanner && (
           <div className="verify-email-banner">
             <span>
-              📧 Please verify your email — check your inbox.{' '}
+              {t('home.verifyEmailBanner')}{' '}
               {resendState === 'sent' ? (
-                'Sent!'
+                t('home.sentBang')
               ) : (
                 <button type="button" className="verify-email-banner-resend" onClick={handleResendVerification} disabled={resendState === 'sending'}>
-                  {resendState === 'sending' ? 'Sending…' : 'Resend email'}
+                  {resendState === 'sending' ? t('common.sending') : t('home.resendEmail')}
                 </button>
               )}
               {resendState === 'error' && <span className="verify-email-banner-error"> {resendError}</span>}
@@ -661,7 +651,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
               type="button"
               className="verify-email-banner-close"
               onClick={() => setShowVerifyBanner(false)}
-              aria-label="Dismiss"
+              aria-label={t('home.dismiss')}
             >
               ✕
             </button>
@@ -670,18 +660,18 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
 
         {showPushBanner && (
           <div className="verify-email-banner">
-            <span>Stay in the loop — allow Zyndal to notify you when friends share their score</span>
+            <span>{t('home.pushBanner')}</span>
             <button type="button" className="verify-email-banner-resend" onClick={handleAllowPush} disabled={pushRequesting}>
-              {pushRequesting ? 'Requesting…' : 'Allow notifications'}
+              {pushRequesting ? t('home.requesting') : t('home.allowNotifications')}
             </button>
             <button type="button" className="auth-link-btn" onClick={handleDismissPushBanner}>
-              Not now
+              {t('home.notNow')}
             </button>
             <button
               type="button"
               className="verify-email-banner-close"
               onClick={handleDismissPushBanner}
-              aria-label="Dismiss"
+              aria-label={t('home.dismiss')}
             >
               ✕
             </button>
@@ -690,8 +680,8 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
 
         <div className="stats-row">
           <StreakFlame streak={getEffectiveStreak(progress, today)} onInfoClick={() => setInfoModalKey('streak')} />
-          <StatPill icon="⚡" label="XP" value={progress.xp} onInfoClick={() => setInfoModalKey('xp')} />
-          <StatPill icon="🪙" label="Coins" value={progress.coins} onInfoClick={() => setInfoModalKey('coins')} />
+          <StatPill icon="⚡" label={t('home.xp')} value={progress.xp} onInfoClick={() => setInfoModalKey('xp')} />
+          <StatPill icon="🪙" label={t('home.coins')} value={progress.coins} onInfoClick={() => setInfoModalKey('coins')} />
         </div>
 
         {pendingFriendRequests && pendingFriendRequests.length > 0 && (
@@ -707,10 +697,10 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
             {incomingShares.map((share) => (
               <div key={share.id} className="incoming-share-banner">
                 <p className="incoming-share-text">
-                  🔥 <strong>@{share.senderUsername}</strong> shared their daily score with you!
+                  🔥 <strong>@{share.senderUsername}</strong> {t('home.sharedScoreWithYouBang')}
                 </p>
                 <button type="button" className="btn btn-primary btn-small" onClick={() => handleViewShare(share)}>
-                  View Score
+                  {t('home.viewScore')}
                 </button>
               </div>
             ))}
@@ -722,12 +712,12 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
             {homework.map((hw) =>
               hw.completed ? (
                 <div key={hw.id} className="homework-banner homework-banner--done">
-                  <p className="homework-banner-text">✅ {hw.title} — completed</p>
+                  <p className="homework-banner-text">{t('home.homeworkCompleted', { title: hw.title })}</p>
                 </div>
               ) : (
                 <button key={hw.id} type="button" className="homework-banner" onClick={() => setActiveHomework(hw)}>
                   <p className="homework-banner-text">
-                    📚 Homework due {formatLongDate(hw.dueDate)}: {hw.title}
+                    {t('home.homeworkDue', { date: formatLongDate(hw.dueDate), title: hw.title })}
                   </p>
                 </button>
               )
@@ -744,7 +734,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
               type="button"
               className="info-badge"
               onClick={() => setInfoModalKey('leaderboard')}
-              aria-label="What is the leaderboard?"
+              aria-label={t('home.whatIsLeaderboard')}
             >
               i
             </button>
@@ -766,7 +756,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
             className="calendar-nav-arrow"
             onClick={() => setSelectedDate(addDaysStr(selectedDate, -1))}
             disabled={selectedDate <= LAUNCH_DATE}
-            aria-label="Previous day"
+            aria-label={t('home.previousDay')}
           >
             ←
           </button>
@@ -776,7 +766,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
             className="calendar-nav-arrow"
             onClick={() => setSelectedDate(addDaysStr(selectedDate, 1))}
             disabled={selectedDate >= today}
-            aria-label="Next day"
+            aria-label={t('home.nextDay')}
           >
             →
           </button>
@@ -799,9 +789,9 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
 
         {infoModalKey && (
           <InfoModal
-            icon={INFO_CONTENT[infoModalKey].icon}
-            title={INFO_CONTENT[infoModalKey].title}
-            text={INFO_CONTENT[infoModalKey].text}
+            icon={infoContent[infoModalKey].icon}
+            title={infoContent[infoModalKey].title}
+            text={infoContent[infoModalKey].text}
             onClose={() => setInfoModalKey(null)}
           />
         )}

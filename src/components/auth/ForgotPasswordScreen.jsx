@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { requestPasswordReset } from '../../lib/storage'
+import { getErrorMessage } from '../../lib/errors'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -11,6 +13,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 // malformed email or a real network failure, neither of which leaks
 // whether an account exists.
 export default function ForgotPasswordScreen({ onBack }) {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -22,7 +25,7 @@ export default function ForgotPasswordScreen({ onBack }) {
 
     const trimmedEmail = email.trim()
     if (!EMAIL_PATTERN.test(trimmedEmail)) {
-      setError('Please enter a valid email address.')
+      setError(t('auth.forgotPassword.invalidEmail'))
       return
     }
 
@@ -31,7 +34,7 @@ export default function ForgotPasswordScreen({ onBack }) {
       await requestPasswordReset(trimmedEmail)
       setSubmitted(true)
     } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.')
+      setError(getErrorMessage(err, t))
     } finally {
       setSubmitting(false)
     }
@@ -40,10 +43,10 @@ export default function ForgotPasswordScreen({ onBack }) {
   if (submitted) {
     return (
       <div className="auth-form">
-        <p className="auth-tagline">If an account exists with that email, you'll receive a reset link shortly.</p>
+        <p className="auth-tagline">{t('auth.forgotPassword.checkEmail')}</p>
         <div className="auth-back-row">
           <button type="button" className="auth-link-btn" onClick={onBack}>
-            ← Back to log in
+            {t('auth.forgotPassword.backToLogin')}
           </button>
         </div>
       </div>
@@ -54,12 +57,12 @@ export default function ForgotPasswordScreen({ onBack }) {
     <form className="auth-form" onSubmit={handleSubmit}>
       <div className="auth-back-row">
         <button type="button" className="auth-link-btn" onClick={onBack}>
-          ← Back
+          {t('auth.signup.back')}
         </button>
       </div>
 
       <div className="field">
-        <label htmlFor="forgot-email">Email</label>
+        <label htmlFor="forgot-email">{t('auth.signup.email')}</label>
         <input
           id="forgot-email"
           type="email"
@@ -71,7 +74,7 @@ export default function ForgotPasswordScreen({ onBack }) {
       </div>
 
       <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-        {submitting ? 'Sending…' : 'Send reset link'}
+        {submitting ? t('common.sending') : t('auth.forgotPassword.sendResetLink')}
       </button>
 
       {error && <p className="form-error">{error}</p>}

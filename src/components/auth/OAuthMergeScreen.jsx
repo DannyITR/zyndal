@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { oauthMerge } from '../../lib/storage'
+import { getErrorMessage } from '../../lib/errors'
 import Logo from '../shared/Logo'
 
 const PROVIDER_LABELS = { google: 'Google', facebook: 'Facebook' }
@@ -11,6 +13,7 @@ const PROVIDER_LABELS = { google: 'Google', facebook: 'Facebook' }
 // OAuthCallbackScreen's oauthCallback() call: { existing_username,
 // provider_email, provider, supabaseAccessToken }.
 export default function OAuthMergeScreen({ mergeInfo, onLinked, onCancel }) {
+  const { t } = useTranslation()
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -30,7 +33,7 @@ export default function OAuthMergeScreen({ mergeInfo, onLinked, onCancel }) {
       })
       onLinked(user)
     } catch (err) {
-      setError(err.message || "Couldn't link your accounts. Please try again.")
+      setError(getErrorMessage(err, t))
     } finally {
       setSubmitting(false)
     }

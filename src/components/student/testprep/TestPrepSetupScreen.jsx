@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SUBJECTS, getSubject, gradeToSecondary } from '../../../lib/questions'
 import { todayStr } from '../../../lib/streak'
 import { daysUntil } from '../../../lib/testprep'
@@ -12,10 +13,12 @@ import {
   buildPlanDaysFromUploads,
   mixPlanDays,
 } from '../../../lib/questionSource'
+import { getErrorMessage } from '../../../lib/errors'
 import TopBar from '../../shared/TopBar'
 import QuestionSourceStep from './QuestionSourceStep'
 
 export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreated, onBack, onLogout, onLogoClick }) {
+  const { t } = useTranslation()
   const [step, setStep] = useState('form') // 'form' | 'source'
   const [subjectId, setSubjectId] = useState(lockedSubjectId || 'math')
   const [topic, setTopic] = useState('')
@@ -55,7 +58,7 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
       setStep('source')
     } catch (err) {
       console.error('[TestPrep] could not check uploaded content:', err)
-      setError(err.message || "Couldn't load your uploads. Please try again.")
+      setError(getErrorMessage(err, t))
     }
   }
 
@@ -103,7 +106,7 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
       onPlanCreated(plan)
     } catch (err) {
       console.error('[TestPrep] plan generation failed:', err)
-      setError(err.message || "Couldn't generate your study plan. Please try again.")
+      setError(getErrorMessage(err, t))
       setGenerating(false)
     }
   }

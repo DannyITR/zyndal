@@ -1,12 +1,15 @@
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { submitHomework } from '../../../lib/storage'
 import { todayStr, formatLongDate } from '../../../lib/streak'
 import { getUserTimeZone } from '../../../lib/timezone'
+import { getErrorMessage } from '../../../lib/errors'
 import TopBar from '../../shared/TopBar'
 import HomeworkQuestion from './HomeworkQuestion'
 
 // Scratchpad is Math-only — other subjects may be added in future.
 export default function HomeworkSessionScreen({ user, assignment, onFinished, onBack, onLogout, onLogoClick }) {
+  const { t } = useTranslation()
   const [answers, setAnswers] = useState({}) // questionIndex -> { selectedIndex, correct }
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -38,7 +41,7 @@ export default function HomeworkSessionScreen({ user, assignment, onFinished, on
       onFinished(result)
     } catch (err) {
       console.error('[Homework] submit failed:', err)
-      setError(err.message || "Couldn't submit your homework. Please try again.")
+      setError(getErrorMessage(err, t))
       setSubmitting(false)
     }
   }

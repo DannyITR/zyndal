@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getStudentClasses, getMyHomework } from '../../../lib/storage'
+import { getErrorMessage } from '../../../lib/errors'
 import MyClassesScreen from './MyClassesScreen'
 import ClassHomeScreen from './ClassHomeScreen'
 import HomeworkDetailScreen from './HomeworkDetailScreen'
 import HomeworkFlow from '../homework/HomeworkFlow'
 
 export default function ClassesFlow({ user, onExit, onLogout, onLogoClick }) {
+  const { t } = useTranslation()
   const [view, setView] = useState('list') // list | class-home | day-detail | homework
   const [classes, setClasses] = useState(null)
   const [selectedClassId, setSelectedClassId] = useState(null)
@@ -40,13 +43,13 @@ export default function ClassesFlow({ user, onExit, onLogout, onLogoClick }) {
       const { homework } = await getMyHomework()
       const found = homework.find((h) => h.id === assignmentId)
       if (!found || !found.questions) {
-        setStartError('This homework is no longer available.')
+        setStartError(t('errors.NOT_FOUND'))
         return
       }
       setActiveAssignment(found)
       setView('homework')
     } catch (err) {
-      setStartError(err.message || "Couldn't load this homework. Please try again.")
+      setStartError(getErrorMessage(err, t))
     }
   }
 

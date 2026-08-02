@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getOrGenerateCurriculumOutline } from '../../../lib/storage'
 import { gradeToSecondary } from '../../../lib/questions'
+import { getErrorMessage } from '../../../lib/errors'
+import { LOCALE_FOR_LANGUAGE } from '../../../lib/i18n'
 import TopBar from '../../shared/TopBar'
 
 // The outline is a static reference document generated at most once per
@@ -31,6 +34,7 @@ function writeCache(subjectId, grade, payload) {
 }
 
 export default function CurriculumOutlineScreen({ user, subject, initialUnitNumber, initialTopicTitle, onBack, onLogout, onLogoClick }) {
+  const { t, i18n } = useTranslation()
   const grade = user.grade || 9
   const [outline, setOutline] = useState(null)
   const [generatedAt, setGeneratedAt] = useState(null)
@@ -65,7 +69,7 @@ export default function CurriculumOutlineScreen({ user, subject, initialUnitNumb
           setIsOfflineCopy(true)
         } else {
           console.error('[Curriculum] load failed:', err)
-          setError(err.message || "Couldn't load the curriculum outline. Please try again.")
+          setError(getErrorMessage(err, t))
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -76,6 +80,10 @@ export default function CurriculumOutlineScreen({ user, subject, initialUnitNumb
     return () => {
       cancelled = true
     }
+    // t is a stable function for the app's lifetime (see src/lib/i18n.js) —
+    // not a real dependency, and including it would reload on every
+    // language change for no reason.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subject.id, subject.name, grade])
 
   // Deep-link from the daily question screen's curriculum box (see
@@ -186,7 +194,11 @@ export default function CurriculumOutlineScreen({ user, subject, initialUnitNumb
           </div>
 
           {generatedAt && (
-            <p className="curriculum-updated">Last updated: {new Date(generatedAt).toLocaleDateString()}</p>
+            <p className="curriculum-updated">
+              {t('curriculum.lastUpdated', {
+                date: new Date(generatedAt).toLocaleDateString(LOCALE_FOR_LANGUAGE[i18n.language] || 'en-US'),
+              })}
+            </p>
           )}
         </>
       )}

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createClass } from '../../lib/storage'
+import { getErrorMessage } from '../../lib/errors'
 
 export default function CreateClassModal({ onCreated, onClose }) {
   const { t } = useTranslation()
@@ -20,7 +21,7 @@ export default function CreateClassModal({ onCreated, onClose }) {
       setCreatedClass(newClass)
       onCreated(newClass)
     } catch (err) {
-      setError(err.message || t('teacher.createClassFailed'))
+      setError(getErrorMessage(err, t, 'teacher.createClassFailed'))
     } finally {
       setSaving(false)
     }

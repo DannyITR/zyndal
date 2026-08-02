@@ -47,6 +47,21 @@
       "errorAgeConfirmation": "Veuillez confirmer la déclaration d'âge/permission parentale ci-dessous.",
       "errorFallback": "Une erreur est survenue. Veuillez réessayer.",
       "logInInstead": "Se connecter plutôt"
+    },
+    "forgotPassword": {
+      "invalidEmail": "Veuillez entrer une adresse courriel valide.",
+      "checkEmail": "Si un compte existe avec ce courriel, vous recevrez sous peu un lien de réinitialisation.",
+      "backToLogin": "← Retour à la connexion",
+      "sendResetLink": "Envoyer le lien de réinitialisation"
+    },
+    "onboarding": {
+      "selectGradeRequired": "Veuillez sélectionner votre niveau scolaire."
+    },
+    "oauth": {
+      "timedOut": "La connexion n'a pas abouti. Veuillez réessayer.",
+      "signInFailed": "Échec de la connexion ({{reason}}).",
+      "unknownError": "erreur inconnue",
+      "unsupportedProvider": "Fournisseur de connexion non pris en charge."
     }
   },
   "subjects": {
@@ -99,7 +114,34 @@
     "myUploads": "📁 Mes fichiers",
     "practice": "🎯 Pratique",
     "myGrades": "📊 Mes notes",
-    "curriculum": "📖 Programme"
+    "curriculum": "📖 Programme",
+    "chooseSubject": "Choisissez la matière d'aujourd'hui",
+    "dismiss": "Fermer",
+    "verifyEmailBanner": "📧 Veuillez vérifier votre courriel — consultez votre boîte de réception.",
+    "sentBang": "Envoyé !",
+    "resendEmail": "Renvoyer le courriel",
+    "pushBanner": "Restez informé — autorisez Zyndal à vous notifier quand des amis partagent leur score",
+    "requesting": "Demande en cours…",
+    "allowNotifications": "Autoriser les notifications",
+    "notNow": "Pas maintenant",
+    "parentDeletedBanner": "Le compte de votre parent a été désactivé. Demandez à un parent de créer un nouveau compte et de se relier.",
+    "previousDay": "Jour précédent",
+    "nextDay": "Jour suivant",
+    "homeworkCompleted": "✅ {{title}} — terminé",
+    "homeworkDue": "📚 Devoir à remettre le {{date}} : {{title}}",
+    "sharedScoreWithYouBang": "a partagé son score du jour avec vous !",
+    "viewScore": "Voir le score",
+    "infoStreakTitle": "Série de jours",
+    "infoStreakText": "Votre série compte le nombre de jours consécutifs où vous avez répondu correctement à au moins une question. Passez une journée complète sans une seule bonne réponse et elle revient à zéro. Gardez-la vivante pour gagner des pièces bonus à 7, 14 et 30 jours !",
+    "infoXpText": "Le XP (points d'expérience) est votre score permanent. Il ne se réinitialise jamais et montre combien vous avez appris. Grimpez au classement en gagnant plus de XP que vos amis.",
+    "infoCoinsText": "Les pièces sont vos gains. Vous gagnez des pièces pour chaque première tentative correcte. Votre parent peut convertir les pièces en argent réel — demandez-lui de configurer votre portefeuille de récompenses !",
+    "infoLeaderboardTitle": "Classement",
+    "infoLeaderboardText": "Le classement classe tous les élèves de Zyndal par XP. Voyez comment vous vous comparez à vos amis et aux élèves partout au Canada. Un onglet Amis montre seulement vos amis ajoutés.",
+    "whatIsLeaderboard": "Qu'est-ce que le classement ?",
+    "dayStreakLabel": "série de jours",
+    "whatIsDayStreak": "Qu'est-ce que la série de jours ?",
+    "whatIsLabel": "Qu'est-ce que {{label}} ?",
+    "loadingProgress": "Chargement de vos progrès…"
   },
   "nav": {
     "leaderboard": "🏆 Classement",
@@ -506,6 +548,53 @@
     "titleLabel": "Titre",
     "dueDateLabel": "Date d'échéance",
     "leaderboardSubtitle": "Tous les élèves, classés par XP",
-    "allClasses": "Toutes les classes"
+    "allClasses": "Toutes les classes",
+    "joinClassTitle": "Rejoindre une classe",
+    "enterTeacherCode": "Entrer le code de l'enseignant",
+    "joining": "Adhésion en cours…",
+    "join": "Rejoindre"
+  },
+  "errors": {
+    "generic": "Une erreur est survenue. Veuillez réessayer.",
+    "ACCOUNT_DELETED": "Ce compte a été supprimé.",
+    "ALREADY_ANSWERED": "Vous avez déjà répondu à cette question.",
+    "ALREADY_APPROVED": "Ceci a déjà été approuvé.",
+    "ALREADY_JOINED": "Vous avez déjà rejoint cette classe.",
+    "ALREADY_LINKED": "Ce compte est déjà lié.",
+    "ALREADY_PENDING": "Une demande est déjà en attente.",
+    "ALREADY_RESOLVED": "Cette demande a déjà été résolue.",
+    "ALREADY_REVIEWED": "Ceci a déjà été révisé.",
+    "ALREADY_SUBMITTED": "Ceci a déjà été soumis.",
+    "ALREADY_VERIFIED": "Ce courriel est déjà vérifié.",
+    "EMAIL_EXISTS": "Un compte avec ce courriel existe déjà.",
+    "EXPIRED_TOKEN": "Ce lien a expiré.",
+    "FORBIDDEN": "Vous n'avez pas la permission de faire cela.",
+    "GRADING_FAILED": "Une erreur est survenue lors de la correction. Veuillez réessayer.",
+    "INCOMPLETE_DAY": "Répondez aux 6 matières aujourd'hui avant de partager votre score.",
+    "INVALID_CREDENTIALS": "Nom d'utilisateur ou mot de passe incorrect.",
+    "INVALID_OAUTH_TOKEN": "Ce lien de connexion est invalide ou a expiré.",
+    "INVALID_PASSWORD": "Ce mot de passe est incorrect.",
+    "INVALID_STATE": "Cette action n'est pas disponible pour le moment.",
+    "INVALID_TOKEN": "Ce lien est invalide.",
+    "METHOD_NOT_ALLOWED": "Cette action n'est pas disponible.",
+    "NO_ATTEMPTS_LEFT": "Aucune tentative restante.",
+    "NO_EMAIL": "Aucune adresse courriel n'est enregistrée pour ce compte.",
+    "NOT_CORRECT": "Cette réponse n'était pas correcte.",
+    "NOT_FOUND": "Nous n'avons pas trouvé cela.",
+    "NOT_MATH": "Ceci est disponible uniquement pour les mathématiques.",
+    "RATE_LIMITED": "Trop de tentatives. Veuillez patienter un moment et réessayer.",
+    "REVIEW_FAILED": "Une erreur est survenue lors de la révision de votre travail. Veuillez réessayer.",
+    "SERVER_ERROR": "Une erreur est survenue. Veuillez réessayer.",
+    "UNAUTHENTICATED": "Votre session a expiré. Veuillez vous reconnecter.",
+    "USERNAME_TAKEN": "Ce nom d'utilisateur est déjà pris.",
+    "VALIDATION_ERROR": "Veuillez vérifier vos informations et réessayer."
+  },
+  "classes": {
+    "legendHomework": "Devoir",
+    "legendCompleted": "Terminé",
+    "legendOverdue": "En retard"
+  },
+  "curriculum": {
+    "lastUpdated": "Dernière mise à jour : {{date}}"
   }
 }

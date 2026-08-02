@@ -1,9 +1,12 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SUBJECTS } from '../../../lib/questions'
 import { todayStr } from '../../../lib/streak'
 import { createGrade } from '../../../lib/storage'
+import { getErrorMessage } from '../../../lib/errors'
 
 export default function LogGradeModal({ user, lockedSubjectId, onSaved, onClose }) {
+  const { t } = useTranslation()
   const [subjectId, setSubjectId] = useState(lockedSubjectId || 'math')
   const [testName, setTestName] = useState('')
   const [gradePercentage, setGradePercentage] = useState('')
@@ -37,7 +40,7 @@ export default function LogGradeModal({ user, lockedSubjectId, onSaved, onClose 
       await onSaved()
     } catch (err) {
       console.error('[Grades] log grade failed:', err)
-      setError(err.message || "Couldn't save this grade. Please try again.")
+      setError(getErrorMessage(err, t))
       setSaving(false)
     }
   }

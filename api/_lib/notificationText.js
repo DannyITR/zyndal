@@ -112,3 +112,53 @@ export function notificationText(type, languagePreference, params = {}) {
   const build = templatesForType?.[lang] || templatesForType?.en
   return build(params)
 }
+
+// Push copy is deliberately its own text, distinct from the in-app
+// notification row above (see share-score.js/friend-request.js's own
+// comments) — punchier, written for a lock-screen banner rather than a
+// notifications-list row. Only the types whose push copy actually differs
+// from TEMPLATES above need an entry here; everywhere else (homework,
+// streak reminders, parent-link, work review) already passes the same
+// notificationText() result to both insertNotification and sendPushToUser.
+const PUSH_TEMPLATES = {
+  score_share: {
+    en: ({ senderUsername, correct, total }) => ({
+      title: `🔥 @${senderUsername} shared their score with you!`,
+      body: `They got ${correct}/${total} today — share yours back to keep your streak alive`,
+    }),
+    fr: ({ senderUsername, correct, total }) => ({
+      title: `🔥 @${senderUsername} a partagé son score avec vous !`,
+      body: `Il/Elle a obtenu ${correct}/${total} aujourd'hui — partagez le vôtre pour garder votre flamme allumée`,
+    }),
+    es: ({ senderUsername, correct, total }) => ({
+      title: `🔥 ¡@${senderUsername} compartió su puntaje contigo!`,
+      body: `Obtuvo ${correct}/${total} hoy — comparte el tuyo para mantener tu racha viva`,
+    }),
+  },
+  friend_request: {
+    en: ({ senderUsername }) => ({ title: `👋 @${senderUsername} wants to follow you on Zyndal`, body: 'Tap to accept or decline' }),
+    fr: ({ senderUsername }) => ({ title: `👋 @${senderUsername} souhaite vous suivre sur Zyndal`, body: 'Touchez pour accepter ou refuser' }),
+    es: ({ senderUsername }) => ({ title: `👋 @${senderUsername} quiere seguirte en Zyndal`, body: 'Toca para aceptar o rechazar' }),
+  },
+  friend_accepted: {
+    en: ({ username }) => ({
+      title: `🎉 @${username} accepted your friend request!`,
+      body: "You're now friends on Zyndal — share your score to start a streak!",
+    }),
+    fr: ({ username }) => ({
+      title: `🎉 @${username} a accepté votre demande d'ami !`,
+      body: 'Vous êtes maintenant amis sur Zyndal — partagez votre score pour commencer une série !',
+    }),
+    es: ({ username }) => ({
+      title: `🎉 ¡@${username} aceptó tu solicitud de amistad!`,
+      body: '¡Ahora son amigos en Zyndal — comparte tu puntaje para comenzar una racha!',
+    }),
+  },
+}
+
+export function pushNotificationText(type, languagePreference, params = {}) {
+  const lang = LANG_FOR_PREFERENCE[languagePreference] || 'en'
+  const templatesForType = PUSH_TEMPLATES[type]
+  const build = templatesForType?.[lang] || templatesForType?.en
+  return build(params)
+}

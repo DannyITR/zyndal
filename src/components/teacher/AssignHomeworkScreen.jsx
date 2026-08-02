@@ -4,6 +4,7 @@ import { createHomework, getBankQuestions } from '../../lib/storage'
 import { processUploadedDocument } from '../../lib/ai'
 import { validateUploadFile } from '../../lib/imageUtils'
 import { SUBJECTS } from '../../lib/questions'
+import { getErrorMessage } from '../../lib/errors'
 import TopBar from '../shared/TopBar'
 
 const GRADES = [7, 8, 9, 10, 11]
@@ -87,7 +88,7 @@ export default function AssignHomeworkScreen({ user, classId, className, onBack,
       if (matchedSubject) setSubject(matchedSubject.id)
       if (!title && result.topic) setTitle(result.topic)
     } catch (err) {
-      setExtractError(err.message || t('teacher.readDocumentFailed'))
+      setExtractError(getErrorMessage(err, t, 'teacher.readDocumentFailed'))
     } finally {
       setExtracting(false)
     }
@@ -112,7 +113,7 @@ export default function AssignHomeworkScreen({ user, classId, className, onBack,
       const { questions: rows } = await getBankQuestions({ subject, grade: Number(bankGrade) })
       setBankQuestions(rows)
     } catch (err) {
-      setBankError(err.message || t('teacher.loadQuestionsFailed'))
+      setBankError(getErrorMessage(err, t, 'teacher.loadQuestionsFailed'))
     } finally {
       setBankLoading(false)
     }
@@ -133,7 +134,7 @@ export default function AssignHomeworkScreen({ user, classId, className, onBack,
         return [...(prev || []), ...rows.filter((r) => !existingIds.has(r.id))]
       })
     } catch (err) {
-      setBankError(err.message || t('teacher.loadRandomFailed'))
+      setBankError(getErrorMessage(err, t, 'teacher.loadRandomFailed'))
     } finally {
       setBankLoading(false)
     }
@@ -167,7 +168,7 @@ export default function AssignHomeworkScreen({ user, classId, className, onBack,
       await createHomework({ title: title.trim(), subject, dueDate, classIds: [classId], questions: finalQuestions })
       onCreated()
     } catch (err) {
-      setSubmitError(err.message || t('teacher.createAssignmentFailed'))
+      setSubmitError(getErrorMessage(err, t, 'teacher.createAssignmentFailed'))
     } finally {
       setSubmitting(false)
     }

@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SUBJECTS, getSubject } from '../../../lib/questions'
 import { getRecentPracticeSessions } from '../../../lib/storage'
 import { buildPracticeQuestions } from '../../../lib/practice'
+import { getErrorMessage } from '../../../lib/errors'
 import TopBar from '../../shared/TopBar'
 
 export default function PracticeSetupScreen({ user, lockedSubjectId, onStart, onBack, onLogout, onLogoClick }) {
+  const { t } = useTranslation()
   const [subjectId, setSubjectId] = useState(lockedSubjectId || 'math')
   const [topic, setTopic] = useState('')
   const [loading, setLoading] = useState(false)
@@ -42,7 +45,7 @@ export default function PracticeSetupScreen({ user, lockedSubjectId, onStart, on
       onStart({ subjectId, topic: topic.trim(), questions })
     } catch (err) {
       console.error('[Practice] question build failed:', err)
-      setError(err.message || "Couldn't build your practice set. Please try again.")
+      setError(getErrorMessage(err, t))
       setLoading(false)
     }
   }

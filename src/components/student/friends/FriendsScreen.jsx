@@ -14,6 +14,7 @@ import {
 import { hasSharedToday, computeShareStreak } from '../../../lib/streakShare'
 import { todayStr } from '../../../lib/streak'
 import { getUserTimeZone } from '../../../lib/timezone'
+import { getErrorMessage } from '../../../lib/errors'
 import TopBar from '../../shared/TopBar'
 import FriendRequestBanner from './FriendRequestBanner'
 import FriendScoreCardModal from '../share/FriendScoreCardModal'
@@ -162,7 +163,7 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
       await sendFriendRequest(user.id, selectedUser.id)
       setRequestStatus('sent')
     } catch (err) {
-      setRequestStatus(err.message || t('friends.requestSendFailed'))
+      setRequestStatus(getErrorMessage(err, t, 'friends.requestSendFailed'))
     }
   }
 

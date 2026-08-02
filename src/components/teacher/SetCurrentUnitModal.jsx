@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getOrGenerateCurriculumOutline, setCurrentUnit } from '../../lib/storage'
 import { SUBJECTS } from '../../lib/questions'
+import { getErrorMessage } from '../../lib/errors'
 
 // The `classes` table has no subject column of its own (a class's homework
 // can span any subject — see homework_assignments.subject) — so the teacher
@@ -32,7 +33,7 @@ export default function SetCurrentUnitModal({ classId, classGrade, onSaved, onCl
         if (firstUnit) setUnitNumber(String(firstUnit.unit_number))
       })
       .catch((err) => {
-        if (!cancelled) setOutlineError(err.message || t('teacher.loadOutlineFailed'))
+        if (!cancelled) setOutlineError(getErrorMessage(err, t, 'teacher.loadOutlineFailed'))
       })
       .finally(() => {
         if (!cancelled) setLoadingOutline(false)
@@ -58,7 +59,7 @@ export default function SetCurrentUnitModal({ classId, classGrade, onSaved, onCl
       onSaved(updated)
       onClose()
     } catch (err) {
-      setSaveError(err.message || t('teacher.saveUnitFailed'))
+      setSaveError(getErrorMessage(err, t, 'teacher.saveUnitFailed'))
     } finally {
       setSaving(false)
     }

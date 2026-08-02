@@ -47,6 +47,21 @@
       "errorAgeConfirmation": "Confirma la declaración de edad/permiso parental a continuación.",
       "errorFallback": "Algo salió mal. Inténtalo de nuevo.",
       "logInInstead": "Iniciar sesión en su lugar"
+    },
+    "forgotPassword": {
+      "invalidEmail": "Por favor ingresa una dirección de correo electrónico válida.",
+      "checkEmail": "Si existe una cuenta con ese correo, recibirás un enlace de restablecimiento en breve.",
+      "backToLogin": "← Volver a iniciar sesión",
+      "sendResetLink": "Enviar enlace de restablecimiento"
+    },
+    "onboarding": {
+      "selectGradeRequired": "Por favor selecciona tu grado."
+    },
+    "oauth": {
+      "timedOut": "El inicio de sesión no se completó. Inténtalo de nuevo.",
+      "signInFailed": "Error al iniciar sesión ({{reason}}).",
+      "unknownError": "error desconocido",
+      "unsupportedProvider": "Proveedor de inicio de sesión no compatible."
     }
   },
   "subjects": {
@@ -99,7 +114,34 @@
     "myUploads": "📁 Mis archivos",
     "practice": "🎯 Práctica",
     "myGrades": "📊 Mis notas",
-    "curriculum": "📖 Currículo"
+    "curriculum": "📖 Currículo",
+    "chooseSubject": "Elige la materia de hoy",
+    "dismiss": "Cerrar",
+    "verifyEmailBanner": "📧 Por favor verifica tu correo — revisa tu bandeja de entrada.",
+    "sentBang": "¡Enviado!",
+    "resendEmail": "Reenviar correo",
+    "pushBanner": "Mantente al tanto — permite que Zyndal te notifique cuando tus amigos compartan su puntaje",
+    "requesting": "Solicitando…",
+    "allowNotifications": "Permitir notificaciones",
+    "notNow": "Ahora no",
+    "parentDeletedBanner": "La cuenta de tu padre/madre fue desactivada. Pídele a un padre/madre que cree una nueva cuenta y se vuelva a vincular.",
+    "previousDay": "Día anterior",
+    "nextDay": "Día siguiente",
+    "homeworkCompleted": "✅ {{title}} — completado",
+    "homeworkDue": "📚 Tarea vence el {{date}}: {{title}}",
+    "sharedScoreWithYouBang": "¡compartió su puntaje diario contigo!",
+    "viewScore": "Ver puntaje",
+    "infoStreakTitle": "Racha de días",
+    "infoStreakText": "Tu racha cuenta cuántos días seguidos has respondido correctamente al menos una pregunta. Pasa un día completo sin una sola respuesta correcta y vuelve a cero. ¡Mantenla viva para ganar monedas de bono a los 7, 14 y 30 días!",
+    "infoXpText": "El XP (puntos de experiencia) es tu puntaje permanente. Nunca se reinicia y muestra cuánto has aprendido. Sube en la clasificación ganando más XP que tus amigos.",
+    "infoCoinsText": "Las monedas son tus ganancias. Ganas monedas por cada primer intento correcto. Tu padre/madre puede convertir las monedas en dinero real — ¡pídele que configure tu billetera de recompensas!",
+    "infoLeaderboardTitle": "Clasificación",
+    "infoLeaderboardText": "La clasificación ordena a todos los estudiantes de Zyndal por XP. Mira cómo te comparas con amigos y estudiantes de todo Canadá. Una pestaña de Amigos muestra solo a tus amigos agregados.",
+    "whatIsLeaderboard": "¿Qué es la clasificación?",
+    "dayStreakLabel": "racha de días",
+    "whatIsDayStreak": "¿Qué es la racha de días?",
+    "whatIsLabel": "¿Qué es {{label}}?",
+    "loadingProgress": "Cargando tu progreso…"
   },
   "nav": {
     "leaderboard": "🏆 Clasificación",
@@ -506,6 +548,53 @@
     "titleLabel": "Título",
     "dueDateLabel": "Fecha de vencimiento",
     "leaderboardSubtitle": "Todos los estudiantes, clasificados por XP",
-    "allClasses": "Todas las clases"
+    "allClasses": "Todas las clases",
+    "joinClassTitle": "Unirse a una clase",
+    "enterTeacherCode": "Ingresa el código del profesor",
+    "joining": "Uniéndose…",
+    "join": "Unirse"
+  },
+  "errors": {
+    "generic": "Algo salió mal. Inténtalo de nuevo.",
+    "ACCOUNT_DELETED": "Esta cuenta ha sido eliminada.",
+    "ALREADY_ANSWERED": "Ya respondiste esta pregunta.",
+    "ALREADY_APPROVED": "Esto ya ha sido aprobado.",
+    "ALREADY_JOINED": "Ya te uniste a esta clase.",
+    "ALREADY_LINKED": "Esta cuenta ya está vinculada.",
+    "ALREADY_PENDING": "Ya hay una solicitud pendiente.",
+    "ALREADY_RESOLVED": "Esta solicitud ya ha sido resuelta.",
+    "ALREADY_REVIEWED": "Esto ya ha sido revisado.",
+    "ALREADY_SUBMITTED": "Esto ya ha sido enviado.",
+    "ALREADY_VERIFIED": "Este correo ya está verificado.",
+    "EMAIL_EXISTS": "Ya existe una cuenta con este correo.",
+    "EXPIRED_TOKEN": "Este enlace ha expirado.",
+    "FORBIDDEN": "No tienes permiso para hacer eso.",
+    "GRADING_FAILED": "Algo salió mal al calificar. Inténtalo de nuevo.",
+    "INCOMPLETE_DAY": "Responde las 6 materias hoy antes de compartir tu puntaje.",
+    "INVALID_CREDENTIALS": "Nombre de usuario o contraseña incorrectos.",
+    "INVALID_OAUTH_TOKEN": "Ese enlace de inicio de sesión no es válido o ha expirado.",
+    "INVALID_PASSWORD": "Esa contraseña es incorrecta.",
+    "INVALID_STATE": "Esta acción no está disponible en este momento.",
+    "INVALID_TOKEN": "Este enlace no es válido.",
+    "METHOD_NOT_ALLOWED": "Esa acción no está disponible.",
+    "NO_ATTEMPTS_LEFT": "No quedan intentos.",
+    "NO_EMAIL": "No hay un correo electrónico registrado para esta cuenta.",
+    "NOT_CORRECT": "Esa respuesta no fue correcta.",
+    "NOT_FOUND": "No pudimos encontrar eso.",
+    "NOT_MATH": "Esto solo está disponible para Matemáticas.",
+    "RATE_LIMITED": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
+    "REVIEW_FAILED": "Algo salió mal al revisar tu trabajo. Inténtalo de nuevo.",
+    "SERVER_ERROR": "Algo salió mal. Inténtalo de nuevo.",
+    "UNAUTHENTICATED": "Tu sesión ha expirado. Inicia sesión de nuevo.",
+    "USERNAME_TAKEN": "Ese nombre de usuario ya está en uso.",
+    "VALIDATION_ERROR": "Verifica tu información e inténtalo de nuevo."
+  },
+  "classes": {
+    "legendHomework": "Tarea",
+    "legendCompleted": "Completado",
+    "legendOverdue": "Atrasado"
+  },
+  "curriculum": {
+    "lastUpdated": "Última actualización: {{date}}"
   }
 }

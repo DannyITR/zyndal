@@ -13,6 +13,7 @@ import {
   respondToParentLinkRequest,
 } from '../../lib/storage'
 import { languageCodeForPreference } from '../../lib/i18n'
+import { getErrorMessage } from '../../lib/errors'
 import { AVATARS } from '../../lib/avatars'
 import TopBar from './TopBar'
 import LegalModal from '../legal/LegalModal'
@@ -63,7 +64,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
       setTeacherCodeInput('')
       loadJoinedClasses()
     } catch (err) {
-      setJoinError(err.message || t('settings.joinClassFailed'))
+      setJoinError(getErrorMessage(err, t, 'settings.joinClassFailed'))
     } finally {
       setJoinSaving(false)
     }
@@ -100,7 +101,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
       setParentCodeInput('')
       setLinkParentSuccess(t('settings.linkedSuccess', { username: parent.username }))
     } catch (err) {
-      setLinkParentError(err.message || t('settings.linkParentFailed'))
+      setLinkParentError(getErrorMessage(err, t, 'settings.linkParentFailed'))
     } finally {
       setLinkParentSaving(false)
     }
@@ -118,7 +119,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
       }
       loadPendingParentRequests()
     } catch (err) {
-      setRespondError(err.message || t('settings.respondRequestFailed'))
+      setRespondError(getErrorMessage(err, t, 'settings.respondRequestFailed'))
     } finally {
       setRespondingRequestId(null)
     }
@@ -167,7 +168,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
       URL.revokeObjectURL(url)
     } catch (err) {
       console.error('[Settings] data export failed:', err)
-      setExportError(err.message || t('settings.downloadFailed'))
+      setExportError(getErrorMessage(err, t, 'settings.downloadFailed'))
     } finally {
       setExporting(false)
     }
@@ -212,7 +213,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
       setSuccess(t('settings.saved'))
     } catch (err) {
       console.error('[Settings] profile save failed:', err)
-      setError(err.message ? t('settings.saveFailedWithMessage', { message: err.message }) : t('settings.saveFailed'))
+      setError(getErrorMessage(err, t, 'settings.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -234,7 +235,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
       setPasswordSuccess(t('settings.passwordUpdated'))
     } catch (err) {
       console.error('[Settings] password change failed:', err)
-      setPasswordError(err.message || t('settings.passwordUpdateFailed'))
+      setPasswordError(getErrorMessage(err, t, 'settings.passwordUpdateFailed'))
     } finally {
       setPasswordSaving(false)
     }

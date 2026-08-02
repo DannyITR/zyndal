@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SUBJECTS, getSubject } from '../../../lib/questions'
 import { todayStr } from '../../../lib/streak'
 import { validateUploadFile } from '../../../lib/imageUtils'
 import { MAX_UPLOAD_PAGES } from '../../../lib/uploads'
 import { processUploadedDocument } from '../../../lib/ai'
 import { saveUpload, addPagesToUpload, getUploadDetail } from '../../../lib/storage'
+import { getErrorMessage } from '../../../lib/errors'
 import TopBar from '../../shared/TopBar'
 
 const TYPE_LABEL = { test: 'Test', study_material: 'Study Material' }
@@ -13,6 +15,7 @@ const TYPE_LABEL = { test: 'Test', study_material: 'Study Material' }
 // / topic / grade fields (those already exist on the upload), just capture
 // more pages and merge their extracted questions into the same upload.
 export default function UploadCaptureScreen({ user, uploadType, lockedSubjectId, existingUpload, onSaved, onBack, onLogout, onLogoClick }) {
+  const { t } = useTranslation()
   const [pages, setPages] = useState([]) // [{ id, file, previewUrl }]
   const [subjectId, setSubjectId] = useState(lockedSubjectId || 'math')
   const [topic, setTopic] = useState('')
@@ -105,7 +108,7 @@ export default function UploadCaptureScreen({ user, uploadType, lockedSubjectId,
       }
     } catch (err) {
       console.error('[Uploads] processing failed:', err)
-      setError(err.message || "Couldn't process this document. Please try again.")
+      setError(getErrorMessage(err, t))
       setProcessing(false)
     }
   }

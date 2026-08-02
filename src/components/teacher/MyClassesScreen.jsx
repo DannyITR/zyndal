@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getTeacherClasses } from '../../lib/storage'
+import { getErrorMessage } from '../../lib/errors'
 import TopBar from '../shared/TopBar'
 import CreateClassModal from './CreateClassModal'
 
@@ -14,7 +15,7 @@ export default function MyClassesScreen({ user, onBack, onLogout, onLogoClick, o
     setError('')
     getTeacherClasses()
       .then((data) => setClasses(data.classes))
-      .catch((err) => setError(err.message || t('teacher.loadClassesFailed')))
+      .catch((err) => setError(getErrorMessage(err, t, 'teacher.loadClassesFailed')))
   }
 
   // t is a stable function for the app's lifetime (see src/lib/i18n.js) —

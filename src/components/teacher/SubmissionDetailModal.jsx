@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getSubmissionDetail, reviewWork } from '../../lib/storage'
+import { getErrorMessage } from '../../lib/errors'
 
 // Scratchpad is Math-only — other subjects may be added in future.
 export default function SubmissionDetailModal({ assignmentId, studentId, username, onClose }) {
@@ -16,7 +17,7 @@ export default function SubmissionDetailModal({ assignmentId, studentId, usernam
         if (!cancelled) setDetail(data)
       })
       .catch((err) => {
-        if (!cancelled) setError(err.message || t('teacher.loadAnswersFailed'))
+        if (!cancelled) setError(getErrorMessage(err, t, 'teacher.loadAnswersFailed'))
       })
     return () => {
       cancelled = true
@@ -37,7 +38,7 @@ export default function SubmissionDetailModal({ assignmentId, studentId, usernam
         workSubmissions: prev.workSubmissions.map((w) => (w.id === workSubmissionId ? { ...w, approved } : w)),
       }))
     } catch (err) {
-      setError(err.message || t('teacher.submitReviewFailed'))
+      setError(getErrorMessage(err, t, 'teacher.submitReviewFailed'))
     } finally {
       setReviewingId(null)
     }

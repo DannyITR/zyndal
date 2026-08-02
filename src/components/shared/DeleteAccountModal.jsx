@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { getErrorMessage } from '../../lib/errors'
 
 // Requires typing the literal word "DELETE" (case-sensitive) before the
 // confirm button enables — a higher bar than a plain confirm click, on
@@ -22,7 +23,7 @@ export default function DeleteAccountModal({ onConfirm, onClose }) {
     try {
       await onConfirm()
     } catch (err) {
-      setError(err.message || t('deleteAccount.deleteFailed'))
+      setError(getErrorMessage(err, t, 'deleteAccount.deleteFailed'))
       setDeleting(false)
     }
   }

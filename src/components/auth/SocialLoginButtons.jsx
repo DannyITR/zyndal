@@ -10,8 +10,24 @@ import { supabaseAuth } from '../../lib/supabaseAuthClient'
 // a "choose" step, so it doesn't pass onContinueWithEmail — that button
 // only renders when the prop is actually given (SignupChooser.jsx).
 const STRINGS = {
-  en: { google: 'Continue with Google', email: 'Continue with Email', redirecting: 'Redirecting…' },
-  fr: { google: 'Continuer avec Google', email: 'Continuer avec e-mail', redirecting: 'Redirection…' },
+  en: {
+    google: 'Continue with Google',
+    email: 'Continue with Email',
+    redirecting: 'Redirecting…',
+    error: 'Could not start sign-in. Please try again.',
+  },
+  fr: {
+    google: 'Continuer avec Google',
+    email: 'Continuer avec e-mail',
+    redirecting: 'Redirection…',
+    error: 'Impossible de démarrer la connexion. Veuillez réessayer.',
+  },
+  es: {
+    google: 'Continuar con Google',
+    email: 'Continuar con correo electrónico',
+    redirecting: 'Redirigiendo…',
+    error: 'No se pudo iniciar el inicio de sesión. Inténtalo de nuevo.',
+  },
 }
 
 // See https://zyndal.ca/auth/callback — App.jsx renders OAuthCallbackScreen
@@ -55,7 +71,7 @@ export default function SocialLoginButtons({ lang = 'en', onError, onContinueWit
     })
     if (error) {
       setRedirecting(false)
-      onError?.(error.message || 'Could not start sign-in. Please try again.')
+      onError?.(t.error)
     }
     // On success the browser navigates away to Google immediately — nothing left to do here.
   }

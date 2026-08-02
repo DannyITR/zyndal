@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getTeacherStats, getRecentHomework } from '../../lib/storage'
 import { LOCALE_FOR_LANGUAGE } from '../../lib/i18n'
+import { getErrorMessage } from '../../lib/errors'
 import TopBar from '../shared/TopBar'
 import SettingsScreen from '../shared/SettingsScreen'
 import MyClassesScreen from './MyClassesScreen'
@@ -30,13 +31,13 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
   function loadStats() {
     getTeacherStats()
       .then(setStats)
-      .catch((err) => setStatsError(err.message || t('teacher.loadStatsFailed')))
+      .catch((err) => setStatsError(getErrorMessage(err, t, 'teacher.loadStatsFailed')))
   }
 
   function loadRecentHomework() {
     getRecentHomework()
       .then((data) => setRecentHomework(data.homework))
-      .catch((err) => setRecentHomeworkError(err.message || t('teacher.loadHomeworkFailed')))
+      .catch((err) => setRecentHomeworkError(getErrorMessage(err, t, 'teacher.loadHomeworkFailed')))
   }
 
   useEffect(() => {
