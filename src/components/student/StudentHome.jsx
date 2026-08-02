@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { submitAnswer, submitLateAnswer, getTodayQuestion } from '../../lib/storage'
+import { submitAnswer, submitLateAnswer, getTodayQuestion, reviewWrongAnswer, logRetryCorrect } from '../../lib/storage'
 import { getDailyQuestion, formatQuestionSubtitle } from '../../lib/questions'
 import { getEffectiveStreak, countCorrectSubjectsToday, todayStr, TOTAL_SUBJECTS, formatLongDate } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
@@ -84,6 +84,17 @@ export default function StudentHome({
   const scratchpadRef = useRef(null)
   const [canvasHasDrawing, setCanvasHasDrawing] = useState(false)
   const isMathSubject = subject.id === 'math'
+  // Step-by-step error review for a wrong Math answer with scratchpad work
+  // — see handleSelect below. Only the FINAL selection (whichever pick
+  // ends up submitted) ever reaches submitAnswer, so that flow needs no
+  // changes at all for this: nothing here talks to submit-answer.js until
+  // a pick is truly final.
+  const [reviewing, setReviewing] = useState(false)
+  const [reviewError, setReviewError] = useState('')
+  const [pendingIndex, setPendingIndex] = useState(null) // the wrong pick while its review is in flight
+  const [retryInfo, setRetryInfo] = useState(null) // { feedback, onRightTrack } while a second attempt is offered
+  const [usedRetry, setUsedRetry] = useState(false)
+  const [noWorkHint, setNoWorkHint] = useState(false) // AI reviewed scratchpad content and found no real steps
   const [milestone, setMilestone] = useState(null)
   const [perfectWeekBonus, setPerfectWeekBonus] = useState(null) // dollars, or null
   const [submitting, setSubmitting] = useState(false)
@@ -138,9 +149,11 @@ export default function StudentHome({
         }
       : null)
   const firstAttemptMade = Boolean(firstAttempt)
-  // Wordle-style: the first attempt is final, correct or not — no retry.
-  const locked = firstAttemptMade
-  const displaySelectedIndex = firstAttempt?.selectedIndex ?? null
+  // Wordle-style: the first attempt is final, correct or not — except for
+  // Math with scratchpad work, where a wrong pick can earn one AI-reviewed
+  // retry (see handleSelect) before it's final.
+  const locked = firstAttemptMade || submitting || reviewing
+  const displaySelectedIndex = retryInfo ? null : reviewing ? pendingIndex : (firstAttempt?.selectedIndex ?? null)
   const coinsEarnedDisplay = firstAttempt?.coinsEarned ?? 0
   const xpEarnedDisplay = firstAttempt?.xpEarned ?? 0
   const correctAnswerText = question ? question.options[question.correctIndex] : ''
@@ -148,14 +161,13 @@ export default function StudentHome({
   const displayStreak = getEffectiveStreak(progress, today)
   const subjectsLeftToday = TOTAL_SUBJECTS - countCorrectSubjectsToday(progress.history, today)
 
-  async function handleSelect(index) {
-    if (submitting) return
-    // The first attempt is final — QuestionCard already disables the
-    // options once locked, but this is the authoritative guard.
-    if (firstAttemptMade) return
-
+  // The final, scored submission — only ever called once per subject/day,
+  // whichever pick ends up being the student's last one. submit-answer.js
+  // itself needs no awareness of the retry flow at all.
+  async function finalizeAnswer(index) {
     setSubmitting(true)
     setSubmitError('')
+    setPendingIndex(null)
     try {
       const result = await submitAnswer(progress, question, index, subject.id, today)
       onProgressChange(result.progress)
@@ -166,6 +178,12 @@ export default function StudentHome({
         xpEarned: result.xpEarned,
         answerId: result.answerId,
       })
+      setRetryInfo(null)
+      if (usedRetry && result.correct && result.answerId) {
+        // Best-effort — the parent-dashboard "correct after hint" label is
+        // a nice-to-have, never allowed to block the answer itself.
+        logRetryCorrect(result.answerId, scratchpadRef.current?.toDataURL()).catch(() => {})
+      }
       if (result.milestoneHit) {
         setMilestone({ streak: result.milestoneHit, bonus: result.bonusEarned })
       }
@@ -176,6 +194,42 @@ export default function StudentHome({
       setSubmitError("Couldn't save your answer. Check your connection and try again.")
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function handleSelect(index) {
+    if (submitting || reviewing) return
+    // The first attempt is final — QuestionCard already disables the
+    // options once locked, but this is the authoritative guard.
+    if (firstAttemptMade) return
+
+    const isWrong = index !== question.correctIndex
+    const offerReview = isMathSubject && isWrong && !usedRetry && !scratchpadRef.current?.isEmpty()
+
+    if (!offerReview) {
+      await finalizeAnswer(index)
+      return
+    }
+
+    setPendingIndex(index)
+    setReviewing(true)
+    setReviewError('')
+    try {
+      const dataUrl = scratchpadRef.current.toDataURL()
+      const review = await reviewWrongAnswer(dataUrl)
+      setReviewing(false)
+      if (review.has_work) {
+        setUsedRetry(true)
+        setRetryInfo({ feedback: review.feedback, onRightTrack: review.on_right_track })
+        setPendingIndex(null)
+      } else {
+        setNoWorkHint(true)
+        await finalizeAnswer(index)
+      }
+    } catch (err) {
+      setReviewing(false)
+      setReviewError(err.message || "Couldn't check your work — submitting your answer.")
+      await finalizeAnswer(index)
     }
   }
 
@@ -233,8 +287,22 @@ export default function StudentHome({
           {question && (
             <>
               <div className={`daily-status-banner ${firstAttemptMade ? 'daily-status-banner--done' : 'daily-status-banner--pending'}`}>
-                {firstAttemptMade ? "✅ Today's question answered" : "🕐 Today's question not answered yet"}
+                {firstAttemptMade
+                  ? "✅ Today's question answered"
+                  : retryInfo
+                    ? '✏️ Second attempt — show your corrected work for full marks'
+                    : reviewing
+                      ? '🔍 Reviewing your work…'
+                      : "🕐 Today's question not answered yet"}
               </div>
+
+              {retryInfo && !firstAttemptMade && (
+                <p className="result-next">
+                  {retryInfo.onRightTrack
+                    ? `You were on the right track! ${retryInfo.feedback} — fix your work and try again for full marks 💪`
+                    : `${retryInfo.feedback} — try a different approach and give it one more shot!`}
+                </p>
+              )}
 
               <QuestionCard
                 question={question}
@@ -246,7 +314,7 @@ export default function StudentHome({
                 onOpenCurriculumTopic={onOpenCurriculumTopic}
                 scratchpadSlot={
                   isMathSubject && (!firstAttemptMade || firstAttempt.correct) ? (
-                    <Scratchpad ref={scratchpadRef} disabled={submitting} onDrawingChange={setCanvasHasDrawing} />
+                    <Scratchpad ref={scratchpadRef} disabled={submitting || reviewing} onDrawingChange={setCanvasHasDrawing} />
                   ) : null
                 }
               />
@@ -263,6 +331,7 @@ export default function StudentHome({
           )}
 
           {submitError && <p className="form-error">{submitError}</p>}
+          {reviewError && <p className="form-error">{reviewError}</p>}
 
           {firstAttemptMade && (
             <div className={`result-banner ${firstAttempt.correct ? 'result-banner--correct' : 'result-banner--wrong'}`}>
@@ -280,7 +349,13 @@ export default function StudentHome({
               ) : (
                 <>
                   <p className="result-headline">Not this time — the correct answer was {correctAnswerText}.</p>
-                  <p className="result-next">Come back tomorrow for a new question!</p>
+                  <p className="result-next">
+                    {usedRetry
+                      ? "Keep practicing — you'll get it next time!"
+                      : noWorkHint
+                        ? 'Show your working steps to get a hint on where you went wrong!'
+                        : 'Come back tomorrow for a new question!'}
+                  </p>
                   {question?.explanation && <p className="result-explanation">{question.explanation}</p>}
                 </>
               )}

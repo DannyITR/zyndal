@@ -137,9 +137,13 @@ async function handle({ parentId }) {
       // yet (see get-class-detail.js's pendingWorkReviewCount for that
       // side of it). image_base64 is deliberately not selected — the
       // parent activity feed only needs date/question/status per spec.
+      // feedback_given, when set alongside an approved row, distinguishes
+      // a retry_correct_log entry ("correct after hint") from a normal
+      // correct_work_submission approval — see grade-work.js's comment on
+      // why that column combination is the marker.
       supabase
         .from('work_submissions')
-        .select('id, user_id, question_text, approved, submitted_at')
+        .select('id, user_id, question_text, approved, submitted_at, feedback_given')
         .in('user_id', studentIds)
         .not('approved', 'is', null)
         .order('submitted_at', { ascending: false })
@@ -171,6 +175,7 @@ async function handle({ parentId }) {
         questionText: w.question_text,
         approved: w.approved,
         submittedAt: w.submitted_at,
+        correctAfterHint: Boolean(w.approved && w.feedback_given),
       })),
     }
   })

@@ -108,7 +108,11 @@ export default function StudentCard({ student, progress, practiceSessions = [], 
                   <span className="history-icon">📐</span>
                   <div className="history-body">
                     <p className="history-prompt">{w.questionText}</p>
-                    <p className="history-meta">{formatSubmissionDate(w.submittedAt)}</p>
+                    <p className="history-meta">
+                      {w.correctAfterHint
+                        ? `Correct after hint (+1 XP) · ${formatSubmissionDate(w.submittedAt)}`
+                        : formatSubmissionDate(w.submittedAt)}
+                    </p>
                   </div>
                   <span className={w.approved ? 'answer-review-correct' : 'answer-review-wrong'}>
                     {w.approved ? '✅' : '❌'}

@@ -482,7 +482,24 @@ export async function getTodayQuestion(subject, timezone = getUserTimeZone()) {
 // api/questions/grade-work.js for why question_text/correct_answer are
 // never sent from here.
 export async function gradeWork(answerId, imageDataUrl) {
-  return callQuestionsApi('POST', 'grade-work', { answer_id: answerId, image_base64: imageDataUrl })
+  return callQuestionsApi('POST', 'grade-work', { mode: 'correct_work_submission', answer_id: answerId, image_base64: imageDataUrl })
+}
+
+// Reviews a WRONG Math answer's scratchpad work before anything is
+// submitted — the AI looks for a genuine attempt and points out the first
+// error. Nothing is scored by this call; the server derives today's
+// question itself rather than trusting a client-supplied one (see
+// api/questions/grade-work.js).
+export async function reviewWrongAnswer(imageDataUrl, timezone = getUserTimeZone()) {
+  return callQuestionsApi('POST', 'grade-work', { mode: 'wrong_answer_review', subject: 'math', image_base64: imageDataUrl, timezone })
+}
+
+// Records that a correct second attempt followed an AI-reviewed hint — for
+// the parent dashboard's "correct after hint" distinction only. The XP/coin
+// award itself already happened via submitAnswer's normal flow; this never
+// awards anything on its own.
+export async function logRetryCorrect(answerId, imageDataUrl) {
+  return callQuestionsApi('POST', 'grade-work', { mode: 'retry_correct_log', answer_id: answerId, image_base64: imageDataUrl })
 }
 
 // Computes the result of answering today's question and persists both the
