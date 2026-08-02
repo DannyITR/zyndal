@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getTeacherClasses, getTeacherLeaderboard } from '../../lib/storage'
 import TopBar from '../shared/TopBar'
 
 export default function TeacherLeaderboardScreen({ user, onBack, onLogout, onLogoClick }) {
+  const { t } = useTranslation()
   const [classes, setClasses] = useState(null)
   const [classId, setClassId] = useState('')
   const [rows, setRows] = useState(null)
@@ -23,18 +25,22 @@ export default function TeacherLeaderboardScreen({ user, onBack, onLogout, onLog
         if (!cancelled) setRows(data.leaderboard)
       })
       .catch(() => {
-        if (!cancelled) setError("Couldn't load the leaderboard. Please try again.")
+        if (!cancelled) setError(t('leaderboard.loadError'))
       })
     return () => {
       cancelled = true
     }
+    // t is a stable function for the app's lifetime (see src/lib/i18n.js) —
+    // not a real dependency, and including it would refetch on every
+    // language change for no reason.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId])
 
   return (
     <div className="screen">
       <TopBar
-        title="🏆 Leaderboard"
-        subtitle="All students, ranked by XP"
+        title={t('nav.leaderboard')}
+        subtitle={t('teacher.leaderboardSubtitle')}
         username={user.username}
         onBack={onBack}
         onLogout={onLogout}
@@ -43,7 +49,7 @@ export default function TeacherLeaderboardScreen({ user, onBack, onLogout, onLog
 
       <div className="homework-bank-filters">
         <select value={classId} onChange={(e) => setClassId(e.target.value)}>
-          <option value="">All Classes</option>
+          <option value="">{t('teacher.allClasses')}</option>
           {(classes || []).map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -53,8 +59,8 @@ export default function TeacherLeaderboardScreen({ user, onBack, onLogout, onLog
       </div>
 
       {error && <p className="form-error">{error}</p>}
-      {!error && !rows && <p className="loading-text">Loading leaderboard…</p>}
-      {rows && rows.length === 0 && <p className="loading-text">No students yet.</p>}
+      {!error && !rows && <p className="loading-text">{t('leaderboard.loading')}</p>}
+      {rows && rows.length === 0 && <p className="loading-text">{t('leaderboard.noStudentsYet')}</p>}
 
       {rows && rows.length > 0 && (
         <ol className="leaderboard-list">
@@ -64,7 +70,7 @@ export default function TeacherLeaderboardScreen({ user, onBack, onLogout, onLog
                 <span className={`leaderboard-rank ${i < 3 ? `leaderboard-rank--${i + 1}` : ''}`}>{i + 1}</span>
                 <div className="leaderboard-info">
                   <p className="leaderboard-username">@{row.username}</p>
-                  {row.grade && <p className="leaderboard-grade">Grade {row.grade}</p>}
+                  {row.grade && <p className="leaderboard-grade">{t('common.gradeLabel', { grade: row.grade })}</p>}
                 </div>
                 <div className="leaderboard-stats">
                   <span className="leaderboard-streak">🔥 {row.streak}</span>

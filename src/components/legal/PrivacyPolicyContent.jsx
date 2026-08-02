@@ -15,7 +15,9 @@
 const LAST_UPDATED = 'July 2026'
 
 export default function PrivacyPolicyContent({ lang }) {
-  return lang === 'fr' ? <FrenchContent /> : <EnglishContent />
+  if (lang === 'fr') return <FrenchContent />
+  if (lang === 'es') return <SpanishContent />
+  return <EnglishContent />
 }
 
 function EnglishContent() {
@@ -214,6 +216,111 @@ function FrenchContent() {
         Questions, préoccupations ou demande concernant vos données :{' '}
         <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>. Pour restaurer un compte
         désactivé : <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>.
+      </p>
+    </div>
+  )
+}
+
+function SpanishContent() {
+  return (
+    <div className="legal-content">
+      <p className="legal-updated">Última actualización: {LAST_UPDATED}</p>
+
+      <p>
+        Zyndal ("nosotros", "Zyndal") es una aplicación de estudio diario para estudiantes de 7º a
+        11º grado (Secundaria 1-5) y sus padres. Esta página explica qué información personal
+        recopilamos, por qué la recopilamos y qué derechos tienes sobre ella. Hemos intentado
+        escribirla en lenguaje sencillo — si algo no está claro, escríbenos a{' '}
+        <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a> y te lo explicaremos con gusto.
+      </p>
+
+      <h3>Qué datos recopilamos</h3>
+      <ul>
+        <li>Tu nombre de usuario, contraseña (almacenada cifrada, nunca en texto plano) y tipo de cuenta (estudiante o padre/madre)</li>
+        <li>Para estudiantes: grado escolar, nombre de la escuela (si se proporciona), nombre para mostrar, avatar</li>
+        <li>Tus respuestas a las preguntas diarias, racha, XP y saldo de monedas</li>
+        <li>Fotos o documentos que subas de tus propios trabajos escolares, y cualquier resumen o pregunta de práctica generados por IA a partir de ellos</li>
+        <li>Planes de estudio, resultados de sesiones de práctica y notas registradas manualmente</li>
+        <li>Para padres/madres: el saldo de la billetera de recompensas y el historial de pagos de tu(s) hijo(s) vinculado(s)</li>
+        <li>Datos técnicos básicos necesarios para mantener tu sesión iniciada (un token de sesión) y para prevenir el abuso del servicio (limitación de tasa)</li>
+      </ul>
+
+      <h3>Por qué lo recopilamos</h3>
+      <p>Solo usamos tus datos para operar Zyndal:</p>
+      <ul>
+        <li>Para ofrecer el servicio principal — preguntas diarias, rachas, la clasificación, guías de estudio y preparación de exámenes</li>
+        <li>Para seguir el progreso académico de un estudiante a lo largo del tiempo</li>
+        <li>Para permitir que un padre/madre vinculado supervise el progreso de su hijo/a y administre la billetera de recompensas (actualmente simulada)</li>
+        <li>Para generar contenido de estudio personalizado a partir de los materiales que el estudiante ha subido</li>
+      </ul>
+      <p>Nunca usamos tus datos para publicidad, y nunca los vendemos a nadie.</p>
+
+      <h3>Quién puede verlos</h3>
+      <p>
+        Los datos de un estudiante son visibles para ese estudiante y para la cuenta de padre/madre
+        a la que esté vinculado (si la hay). Los datos de un padre/madre solo son visibles para ese
+        padre/madre. Ningún otro estudiante, padre/madre o tercero puede ver tu información. Un
+        pequeño número de miembros del personal de Zyndal puede acceder a los datos solo cuando sea
+        necesario para resolver un problema técnico — nunca para consultarlos o compartirlos.
+      </p>
+
+      <h3>Dónde se almacenan tus datos</h3>
+      <p>
+        Tus datos se almacenan con Supabase, en servidores ubicados en Canadá. Están cifrados en
+        tránsito, y el acceso a la base de datos subyacente está restringido a los propios sistemas
+        de Zyndal — no es posible el acceso público directo.
+      </p>
+
+      <h3>Menores y consentimiento parental</h3>
+      <p>
+        Zyndal está diseñado para estudiantes, muchos de los cuales son menores de 18 años. Una
+        cuenta de estudiante puede vincularse a una cuenta de padre/madre mediante un código que el
+        padre/madre comparte — crear ese vínculo, así como la cuenta de padre/madre en sí, es la
+        forma en que un padre/madre otorga (y puede demostrar haber otorgado) permiso para que su
+        hijo/a use Zyndal. Un padre/madre puede solicitar en cualquier momento que se eliminen los
+        datos de su hijo/a, incluso si el/la menor ya no tiene acceso a su propia cuenta.
+      </p>
+
+      <h3>Tus derechos bajo la Ley 25 de Quebec</h3>
+      <p>Tú (o, para un menor de 14 años, tu padre/madre) puedes en cualquier momento:</p>
+      <ul>
+        <li>Preguntar qué información personal tenemos sobre ti</li>
+        <li>Pedirnos que corrijamos información incorrecta</li>
+        <li>Pedirnos que eliminemos tu cuenta e información personal</li>
+      </ul>
+      <p>
+        Para hacer cualquiera de estas solicitudes, escribe a{' '}
+        <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>. Responderemos dentro de un plazo
+        razonable, según lo exige la ley.
+      </p>
+
+      <h3>Desactivar tu cuenta</h3>
+      <p>
+        Puedes desactivar tu propia cuenta en cualquier momento desde <strong>Configuración →
+        Eliminar mi cuenta</strong>. Esto es una desactivación, no un borrado instantáneo: tu cuenta
+        se cierra de inmediato en todas partes y ya no se puede usar para iniciar sesión, pero tus
+        datos se conservan durante <strong>90 días</strong> por si deseas recuperarlos. Para
+        restaurar una cuenta desactivada dentro de ese período, escribe a{' '}
+        <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>. Después de 90 días, todo se{' '}
+        <strong>elimina de forma permanente e irreversible</strong>. Este proceso existe
+        específicamente para cumplir con la Ley 25 de Quebec.
+      </p>
+
+      <h3>Sin venta de datos, sin publicidad</h3>
+      <p>
+        No vendemos, alquilamos ni intercambiamos tu información personal con terceros — nunca.
+        Zyndal no tiene publicidad y nunca la tendrá mientras siga siendo una herramienta de estudio
+        para estudiantes.
+      </p>
+
+      <h3>Cambios a esta política</h3>
+      <p>Si hacemos un cambio significativo a esta política, publicaremos la actualización aquí con una nueva fecha de "última actualización".</p>
+
+      <h3>Contáctanos</h3>
+      <p>
+        Preguntas, inquietudes o una solicitud sobre tus datos:{' '}
+        <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>. Para restaurar una cuenta
+        desactivada: <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>.
       </p>
     </div>
   )

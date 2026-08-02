@@ -1,7 +1,9 @@
 import { createTeacherHandler } from '../_lib/teacherHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { insertNotification } from '../_lib/notifications.js'
+import { notificationText } from '../_lib/notificationText.js'
 import { sendPushToUser } from '../_lib/push.js'
+import { sendHomeworkAssignedEmail } from '../_lib/resend.js'
 import { sanitizeString, sanitizeSubject, sanitizeUuid } from '../_lib/sanitize.js'
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
@@ -99,9 +101,19 @@ async function handle({ teacherId, body }) {
     const { data: enrollments, error: enrollError } = await supabase.from('class_students').select('student_id').eq('class_id', classRow.id)
     if (enrollError) throw enrollError
 
-    const notifTitle = `📚 New homework assigned: ${body.title}`
-    const notifBody = `Due ${body.due_date}`
+    const studentIds = (enrollments || []).map((e) => e.student_id)
+    const { data: enrolledStudents, error: studentsError } = studentIds.length
+      ? await supabase.from('users').select('id, language_preference, email, email_verified').in('id', studentIds)
+      : { data: [], error: null }
+    if (studentsError) throw studentsError
+    const studentById = Object.fromEntries((enrolledStudents || []).map((s) => [s.id, s]))
+
     for (const enrollment of enrollments || []) {
+      const student = studentById[enrollment.student_id]
+      const { title: notifTitle, body: notifBody } = notificationText('homework_assigned', student?.language_preference, {
+        title: body.title,
+        dueDate: body.due_date,
+      })
       await insertNotification({
         userId: enrollment.student_id,
         type: 'homework_assigned',
@@ -116,6 +128,27 @@ async function handle({ teacherId, body }) {
         body: notifBody,
         url: 'https://zyndal.ca',
       })
+
+      // Best-effort, like every other side-channel notification here —
+      // an email provider hiccup must never fail the assignment creation
+      // itself. Only sent to students with a verified email on file (an
+      // unverified address may not belong to them at all). Awaited rather
+      // than fire-and-forget — a serverless function's event loop can
+      // freeze right after the response is sent, same reasoning as the
+      // verification-email send in update-settings.js.
+      if (student?.email && student.email_verified) {
+        try {
+          await sendHomeworkAssignedEmail({
+            email: student.email,
+            title: body.title,
+            className: classRow.name,
+            dueDate: body.due_date,
+            languagePreference: student.language_preference,
+          })
+        } catch (err) {
+          console.error('[Homework] assignment email failed:', err)
+        }
+      }
     }
   }
 

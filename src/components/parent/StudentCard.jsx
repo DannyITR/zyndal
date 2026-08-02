@@ -1,16 +1,23 @@
+import { useTranslation } from 'react-i18next'
 import { getEffectiveStreak, getWeeklyCorrectCount, PERFECT_WEEK_TARGET, todayStr } from '../../lib/streak'
 import { getSubject } from '../../lib/questions'
+import { LOCALE_FOR_LANGUAGE } from '../../lib/i18n'
 import { averageGrade, computeSubjectAverages, computeTrend, gradeBand } from '../../lib/grades'
 import HistoryList from '../shared/HistoryList'
 
-const TREND_LABEL = { improving: '📈 Improving', declining: '📉 Needs attention', steady: '➡️ Steady' }
-
-function formatSubmissionDate(iso) {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+function formatSubmissionDate(iso, language) {
+  const locale = LOCALE_FOR_LANGUAGE[language] || 'en-US'
+  return new Date(iso).toLocaleDateString(locale, { month: 'short', day: 'numeric' })
 }
 
 // Scratchpad is Math-only — other subjects may be added in future.
 export default function StudentCard({ student, progress, practiceSessions = [], grades = [], workSubmissions = [], onSelectEntry }) {
+  const { t, i18n } = useTranslation()
+  const TREND_LABEL = {
+    improving: t('studentCard.trendImproving'),
+    declining: t('studentCard.trendDeclining'),
+    steady: t('studentCard.trendSteady'),
+  }
   const streak = getEffectiveStreak(progress, todayStr())
   const weeklyCount = getWeeklyCorrectCount(progress.history)
   const weeklyPct = Math.min(100, Math.round((weeklyCount / PERFECT_WEEK_TARGET) * 100))
@@ -31,46 +38,46 @@ export default function StudentCard({ student, progress, practiceSessions = [], 
       <div className="student-card-stats">
         <div className="mini-stat">
           <span className="mini-stat-value">🔥 {streak}</span>
-          <span className="mini-stat-label">streak</span>
+          <span className="mini-stat-label">{t('studentCard.streak')}</span>
         </div>
         <div className="mini-stat">
           <span className="mini-stat-value">🪙 {progress.coins}</span>
-          <span className="mini-stat-label">coins</span>
+          <span className="mini-stat-label">{t('home.coins')}</span>
         </div>
         <div className="mini-stat">
           <span className="mini-stat-value">⚡ {progress.xp}</span>
-          <span className="mini-stat-label">XP</span>
+          <span className="mini-stat-label">{t('home.xp')}</span>
         </div>
       </div>
 
       <div className="weekly-progress">
         <p className="weekly-progress-label">
-          {displayName} has answered {weeklyCount}/{PERFECT_WEEK_TARGET} questions correctly this week
+          {t('studentCard.weeklyProgress', { name: displayName, count: weeklyCount, target: PERFECT_WEEK_TARGET })}
         </p>
         <div className="weekly-progress-bar">
           <div className="weekly-progress-fill" style={{ width: `${weeklyPct}%` }} />
         </div>
         <p className="weekly-progress-hint">
           {weeklyCount >= PERFECT_WEEK_TARGET
-            ? 'Perfect week complete! 🎉'
-            : `On track to earn $${perfectWeekBonus.toFixed(2)} this week`}
+            ? t('studentCard.perfectWeekComplete')
+            : t('studentCard.onTrackToEarn', { amount: perfectWeekBonus.toFixed(2) })}
         </p>
       </div>
 
       <details className="student-history">
-        <summary>Question history ({progress.history.length})</summary>
+        <summary>{t('studentCard.questionHistory', { count: progress.history.length })}</summary>
         <HistoryList
           history={progress.history}
           limit={20}
-          emptyText="No questions answered yet."
+          emptyText={t('studentCard.noQuestionsAnswered')}
           onSelectEntry={onSelectEntry}
         />
       </details>
 
       <details className="student-history">
-        <summary>Recent Practice ({practiceSessions.length})</summary>
+        <summary>{t('studentCard.recentPractice', { count: practiceSessions.length })}</summary>
         {practiceSessions.length === 0 ? (
-          <p className="history-empty">No practice sessions yet.</p>
+          <p className="history-empty">{t('studentCard.noPracticeSessions')}</p>
         ) : (
           <ul className="history-list">
             {practiceSessions.map((s) => {
@@ -81,10 +88,10 @@ export default function StudentCard({ student, progress, practiceSessions = [], 
                     <span className="history-icon">{subject?.icon || '📘'}</span>
                     <div className="history-body">
                       <p className="history-prompt">
-                        {subject?.name || s.subject} — {s.topic}
+                        {t(`subjects.${s.subject}`)} — {s.topic}
                       </p>
                       <p className="history-meta">
-                        {s.completed_at.slice(0, 10)} · {s.questions_correct}/{s.questions_total} correct
+                        {s.completed_at.slice(0, 10)} · {t('studentCard.correctCount', { correct: s.questions_correct, total: s.questions_total })}
                       </p>
                     </div>
                     <span className="history-reward">🪙 +{s.coins_earned}</span>
@@ -97,9 +104,9 @@ export default function StudentCard({ student, progress, practiceSessions = [], 
       </details>
 
       <details className="student-history">
-        <summary>Math Work Submissions ({workSubmissions.length})</summary>
+        <summary>{t('studentCard.workSubmissions', { count: workSubmissions.length })}</summary>
         {workSubmissions.length === 0 ? (
-          <p className="history-empty">No work submitted yet.</p>
+          <p className="history-empty">{t('studentCard.noWorkSubmitted')}</p>
         ) : (
           <ul className="history-list">
             {workSubmissions.map((w) => (
@@ -110,8 +117,8 @@ export default function StudentCard({ student, progress, practiceSessions = [], 
                     <p className="history-prompt">{w.questionText}</p>
                     <p className="history-meta">
                       {w.correctAfterHint
-                        ? `Correct after hint (+1 XP) · ${formatSubmissionDate(w.submittedAt)}`
-                        : formatSubmissionDate(w.submittedAt)}
+                        ? t('studentCard.correctAfterHint', { date: formatSubmissionDate(w.submittedAt, i18n.language) })
+                        : formatSubmissionDate(w.submittedAt, i18n.language)}
                     </p>
                   </div>
                   <span className={w.approved ? 'answer-review-correct' : 'answer-review-wrong'}>
@@ -125,14 +132,14 @@ export default function StudentCard({ student, progress, practiceSessions = [], 
       </details>
 
       <details className="student-history">
-        <summary>My Grades ({grades.length})</summary>
+        <summary>{t('studentCard.myGrades', { count: grades.length })}</summary>
         {grades.length === 0 ? (
-          <p className="history-empty">No grades logged yet.</p>
+          <p className="history-empty">{t('studentCard.noGradesLogged')}</p>
         ) : (
           <>
             <div className="grades-overall-mini">
               <span>
-                Overall: <strong className={`grade-text--${gradeBand(overallGradeAverage)}`}>{overallGradeAverage}%</strong>
+                {t('studentCard.overallLabel')} <strong className={`grade-text--${gradeBand(overallGradeAverage)}`}>{overallGradeAverage}%</strong>
               </span>
               {gradeTrend && <span className="grades-trend-badge">{TREND_LABEL[gradeTrend]}</span>}
             </div>
@@ -142,9 +149,7 @@ export default function StudentCard({ student, progress, practiceSessions = [], 
                 const subject = getSubject(subjectId)
                 return (
                   <div key={subjectId} className="grades-subject-average-row">
-                    <span>
-                      {subject?.icon} {subject?.name || subjectId} average
-                    </span>
+                    <span>{t('studentCard.subjectAverage', { subject: `${subject?.icon} ${t(`subjects.${subjectId}`)}` })}</span>
                     <span className={`grade-text--${gradeBand(avg)}`}>{avg}%</span>
                   </div>
                 )
@@ -158,7 +163,7 @@ export default function StudentCard({ student, progress, practiceSessions = [], 
                   <li key={g.id} className={`grades-row grades-row--${gradeBand(g.grade_percentage)}`}>
                     <div className="grades-row-info">
                       <p className="grades-row-title">
-                        {subject?.icon} {subject?.name || g.subject} — {g.test_name}
+                        {subject?.icon} {t(`subjects.${g.subject}`)} — {g.test_name}
                       </p>
                       <p className="grades-row-detail">{g.test_date}</p>
                     </div>

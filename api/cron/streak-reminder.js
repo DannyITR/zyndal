@@ -1,5 +1,6 @@
 import { supabase } from '../_lib/auth.js'
 import { insertNotification } from '../_lib/notifications.js'
+import { notificationText } from '../_lib/notificationText.js'
 import { sendPushToUser } from '../_lib/push.js'
 import { todayStr, DEFAULT_TIMEZONE } from '../../src/lib/streak.js'
 
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
   try {
     const { data: users, error: usersError } = await supabase
       .from('users')
-      .select('id, timezone, notification_preferences')
+      .select('id, timezone, notification_preferences, language_preference')
       .is('deleted_at', null)
     if (usersError) throw usersError
 
@@ -90,11 +91,10 @@ export default async function handler(req, res) {
 
     const toRemind = candidates.filter((u) => !answeredTodayUserIds.has(u.id) && !alreadyRemindedIds.has(u.id))
 
-    const title = "⚠️ Don't lose your streak!"
-    const body = "You haven't answered today's questions yet — answer at least one to keep your flame alive 🔥"
     const url = 'https://zyndal.ca'
 
     for (const u of toRemind) {
+      const { title, body } = notificationText('streak_reminder', u.language_preference)
       await insertNotification({ userId: u.id, type: 'streak_reminder', title, body })
       await sendPushToUser({ userId: u.id, type: 'streak_reminder', title, body, url })
     }

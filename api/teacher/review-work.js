@@ -2,6 +2,7 @@ import { createTeacherHandler } from '../_lib/teacherHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeUuid } from '../_lib/sanitize.js'
 import { insertNotification } from '../_lib/notifications.js'
+import { notificationText } from '../_lib/notificationText.js'
 import { sendPushToUser } from '../_lib/push.js'
 
 // Scratchpad is Math-only — other subjects may be added in future.
@@ -81,17 +82,19 @@ async function handle({ teacherId, body }) {
     }
   }
 
-  const notifTitle = body.approved ? '✅ Your work was approved! +1 XP' : 'Your teacher reviewed your work — keep practicing!'
+  const { data: student } = await supabase.from('users').select('language_preference').eq('id', submission.user_id).maybeSingle()
+  const notifType = body.approved ? 'work_approved' : 'work_rejected'
+  const { title: notifTitle } = notificationText(notifType, student?.language_preference)
   await insertNotification({
     userId: submission.user_id,
-    type: body.approved ? 'work_approved' : 'work_rejected',
+    type: notifType,
     title: notifTitle,
     body: submission.question_text,
     data: { assignment_id: submission.assignment_id },
   })
   await sendPushToUser({
     userId: submission.user_id,
-    type: body.approved ? 'work_approved' : 'work_rejected',
+    type: notifType,
     title: notifTitle,
     body: submission.question_text,
     url: 'https://zyndal.ca',

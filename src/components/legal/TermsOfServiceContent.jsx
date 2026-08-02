@@ -6,7 +6,9 @@
 const LAST_UPDATED = 'July 2026'
 
 export default function TermsOfServiceContent({ lang }) {
-  return lang === 'fr' ? <FrenchContent /> : <EnglishContent />
+  if (lang === 'fr') return <FrenchContent />
+  if (lang === 'es') return <SpanishContent />
+  return <EnglishContent />
 }
 
 function EnglishContent() {
@@ -205,6 +207,105 @@ function FrenchContent() {
       <h3>Nous contacter</h3>
       <p>
         Questions à propos de ces Conditions : <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>.
+      </p>
+    </div>
+  )
+}
+
+function SpanishContent() {
+  return (
+    <div className="legal-content">
+      <p className="legal-updated">Última actualización: {LAST_UPDATED}</p>
+
+      <p>
+        Estos Términos de Servicio ("Términos") rigen tu uso de Zyndal. Al crear una cuenta,
+        aceptas estos Términos. Si eres un estudiante menor de 18 años, un padre/madre o tutor
+        también debería leer estos Términos — consulta "Responsabilidad del padre/madre" a
+        continuación.
+      </p>
+
+      <h3>Qué es Zyndal</h3>
+      <p>
+        Zyndal es una herramienta de estudio educativa para estudiantes de 7º a 11º grado
+        (Secundaria 1-5): una pregunta de práctica diaria en seis materias, rachas y una
+        clasificación, guías de estudio y preparación de exámenes asistidas por IA, un lugar para
+        guardar tus propios trabajos escolares subidos, y un sistema de recompensas que los padres
+        pueden usar para motivar a sus hijos. El soporte para grados de primaria llegará pronto. Es
+        una ayuda de estudio, no un sustituto de un profesor, y el contenido generado por IA puede
+        estar equivocado — siempre verifícalo con el material de tu propia clase.
+      </p>
+
+      <h3>Uso aceptable</h3>
+      <p>Zyndal es solo para uso educativo personal. Aceptas no:</p>
+      <ul>
+        <li>Usar la aplicación para algo que no sea tu propio estudio</li>
+        <li>Compartir respuestas de las preguntas diarias con otros estudiantes, o usar respuestas compartidas por otra persona, para evitar aprender realmente el material</li>
+        <li>Suplantar a otra persona, o crear una cuenta con información falsa</li>
+        <li>Intentar interrumpir, sobrecargar u obtener acceso no autorizado a los sistemas de Zyndal</li>
+      </ul>
+
+      <h3>Reglas de la cuenta</h3>
+      <p>
+        Una cuenta por persona. La información que nos proporcionas al crear una cuenta (nombre de
+        usuario, grado, etc.) debe ser precisa. Eres responsable de mantener tu contraseña
+        confidencial — no compartas tu inicio de sesión con nadie más, incluidos amigos.
+      </p>
+
+      <h3>Responsabilidad del padre/madre</h3>
+      <p>
+        Un padre/madre que vincula su cuenta a la de un estudiante es responsable del uso que ese
+        estudiante haga de Zyndal, incluida toda la actividad de la billetera de recompensas —
+        financiarla, establecer la tasa de conversión de monedas a dólares y aprobar los pagos.
+        Zyndal no verifica una relación familiar más allá del código de vinculación; un padre/madre
+        es responsable de compartir su código solo con su propio hijo/a.
+      </p>
+
+      <h3>La billetera de recompensas es simulada — esto es importante</h3>
+      <p>
+        El saldo de la billetera, "agregar fondos" y los pagos que ves hoy en Zyndal son{' '}
+        <strong>simulados</strong>. No se procesa ningún pago real, y ningún dinero real se mueve a
+        través de la aplicación. Un procesamiento de pagos real podría añadirse en el futuro; si
+        ocurre, estos Términos se actualizarán primero y se te pedirá que aceptes los nuevos
+        términos antes de usarlo.
+      </p>
+
+      <h3>Tu material subido</h3>
+      <p>
+        Las fotos y documentos que subas de tus propios trabajos escolares siguen siendo tuyos.
+        Zyndal no reclama la propiedad de nada que subas. Al subirlo, le das permiso a Zyndal para
+        almacenarlo y procesarlo (incluso con IA) con el único fin de brindarte el servicio —
+        construir tus guías de estudio, preguntas de práctica e historial de notas. No usamos tus
+        archivos subidos para nada más.
+      </p>
+
+      <h3>Suspensión y terminación</h3>
+      <p>
+        Podemos suspender o terminar una cuenta que viole estos Términos, sin previo aviso si la
+        violación es grave (por ejemplo, intentar acceder a la cuenta de otro usuario). Puedes
+        dejar de usar Zyndal, o pedirnos que eliminemos tu cuenta, en cualquier momento — consulta
+        nuestra <a href="mailto:hello@zyndal.ca">Política de privacidad</a> para saber cómo hacerlo.
+      </p>
+
+      <h3>Limitación de responsabilidad</h3>
+      <p>
+        Zyndal se proporciona "tal cual", sin garantía de ningún tipo. No garantizamos que la
+        aplicación esté libre de errores, ininterrumpida, o que el contenido generado por IA sea
+        siempre preciso. En la máxima medida permitida por la ley, Zyndal y sus operadores no son
+        responsables de daños indirectos, incidentales o consecuentes derivados de tu uso de la
+        aplicación, incluidos los resultados académicos. Nada en estos Términos limita una
+        responsabilidad que no pueda limitarse legalmente bajo la ley de protección al consumidor
+        de Quebec.
+      </p>
+
+      <h3>Ley aplicable</h3>
+      <p>Estos Términos se rigen por las leyes de la provincia de Quebec y las leyes federales aplicables de Canadá.</p>
+
+      <h3>Cambios a estos Términos</h3>
+      <p>Si hacemos un cambio significativo, publicaremos la actualización aquí con una nueva fecha de "última actualización".</p>
+
+      <h3>Contáctanos</h3>
+      <p>
+        Preguntas sobre estos Términos: <a href="mailto:hello@zyndal.ca">hello@zyndal.ca</a>.
       </p>
     </div>
   )

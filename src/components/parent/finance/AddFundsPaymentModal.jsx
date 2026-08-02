@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 const PRESETS_CENTS = [1000, 2000, 5000, 10000]
 
 export default function AddFundsPaymentModal({ onClose, onFunded }) {
+  const { t } = useTranslation()
   const [presetCents, setPresetCents] = useState(2000)
   const [customAmount, setCustomAmount] = useState('')
   const [method, setMethod] = useState('card')
@@ -28,7 +30,7 @@ export default function AddFundsPaymentModal({ onClose, onFunded }) {
       await onFunded(effectiveAmountCents)
       setPaidAmountCents(effectiveAmountCents)
     } catch {
-      setError("Payment couldn't be processed. Please try again.")
+      setError(t('finance.paymentFailed'))
     } finally {
       setProcessing(false)
     }
@@ -40,11 +42,11 @@ export default function AddFundsPaymentModal({ onClose, onFunded }) {
         <div className="modal-card" onClick={(e) => e.stopPropagation()}>
           <div className="payment-success">
             <p className="payment-success-icon">✅</p>
-            <h2 className="modal-title">Payment Successful</h2>
-            <p className="modal-subtitle">${(paidAmountCents / 100).toFixed(2)} added to your wallet.</p>
+            <h2 className="modal-title">{t('finance.paymentSuccessful')}</h2>
+            <p className="modal-subtitle">{t('finance.addedToWallet', { amount: (paidAmountCents / 100).toFixed(2) })}</p>
           </div>
           <button type="button" className="btn btn-primary btn-block" onClick={onClose}>
-            Done
+            {t('common.done')}
           </button>
         </div>
       </div>
@@ -54,8 +56,8 @@ export default function AddFundsPaymentModal({ onClose, onFunded }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card payment-modal" onClick={(e) => e.stopPropagation()}>
-        <h2 className="modal-title">Add Funds</h2>
-        <p className="modal-subtitle">Simulated payment — no real charge will be made.</p>
+        <h2 className="modal-title">{t('finance.addFundsTitle')}</h2>
+        <p className="modal-subtitle">{t('finance.simulatedPaymentNotice')}</p>
 
         <div className="preset-row">
           {PRESETS_CENTS.map((cents) => (
@@ -74,7 +76,7 @@ export default function AddFundsPaymentModal({ onClose, onFunded }) {
         </div>
 
         <div className="field">
-          <label htmlFor="funds-custom-amount">Custom amount ($)</label>
+          <label htmlFor="funds-custom-amount">{t('finance.customAmount')}</label>
           <input
             id="funds-custom-amount"
             type="number"
@@ -92,21 +94,21 @@ export default function AddFundsPaymentModal({ onClose, onFunded }) {
             className={`payment-method-tab ${method === 'card' ? 'payment-method-tab--active' : ''}`}
             onClick={() => setMethod('card')}
           >
-            💳 Card
+            {t('finance.cardTab')}
           </button>
           <button
             type="button"
             className={`payment-method-tab ${method === 'paypal' ? 'payment-method-tab--active' : ''}`}
             onClick={() => setMethod('paypal')}
           >
-            🅿️ PayPal
+            {t('finance.paypalTab')}
           </button>
         </div>
 
         {method === 'card' ? (
           <form className="payment-form" onSubmit={handlePay}>
             <div className="field">
-              <label htmlFor="card-number">Card number</label>
+              <label htmlFor="card-number">{t('finance.cardNumber')}</label>
               <input
                 id="card-number"
                 value={cardNumber}
@@ -118,7 +120,7 @@ export default function AddFundsPaymentModal({ onClose, onFunded }) {
             </div>
             <div className="payment-form-row">
               <div className="field">
-                <label htmlFor="card-expiry">Expiry</label>
+                <label htmlFor="card-expiry">{t('finance.expiry')}</label>
                 <input
                   id="card-expiry"
                   value={expiry}
@@ -128,7 +130,7 @@ export default function AddFundsPaymentModal({ onClose, onFunded }) {
                 />
               </div>
               <div className="field">
-                <label htmlFor="card-cvv">CVV</label>
+                <label htmlFor="card-cvv">{t('finance.cvv')}</label>
                 <input
                   id="card-cvv"
                   value={cvv}
@@ -144,20 +146,20 @@ export default function AddFundsPaymentModal({ onClose, onFunded }) {
 
             <div className="modal-actions">
               <button type="button" className="btn btn-ghost btn-block" onClick={onClose}>
-                Cancel
+                {t('common.cancel')}
               </button>
               <button type="submit" className="btn btn-primary btn-block" disabled={!canSubmit || processing}>
-                {processing ? 'Processing…' : `Pay $${(effectiveAmountCents / 100).toFixed(2)}`}
+                {processing ? t('finance.processing') : t('finance.payAmount', { amount: (effectiveAmountCents / 100).toFixed(2) })}
               </button>
             </div>
           </form>
         ) : (
           <div className="payment-form">
-            <p className="field-hint">You'll be redirected to PayPal to complete this simulated payment.</p>
+            <p className="field-hint">{t('finance.paypalRedirectHint')}</p>
             {error && <p className="form-error">{error}</p>}
             <div className="modal-actions">
               <button type="button" className="btn btn-ghost btn-block" onClick={onClose}>
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -165,7 +167,7 @@ export default function AddFundsPaymentModal({ onClose, onFunded }) {
                 disabled={!canSubmit || processing}
                 onClick={handlePay}
               >
-                {processing ? 'Processing…' : 'Pay with PayPal'}
+                {processing ? t('finance.processing') : t('finance.payWithPaypal')}
               </button>
             </div>
           </div>

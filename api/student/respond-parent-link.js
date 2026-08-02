@@ -2,6 +2,7 @@ import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeUuid } from '../_lib/sanitize.js'
 import { insertNotification } from '../_lib/notifications.js'
+import { notificationText } from '../_lib/notificationText.js'
 import { sendPushToUser } from '../_lib/push.js'
 
 function validate(body) {
@@ -79,20 +80,23 @@ async function handle({ userId, body }) {
     .eq('id', invitation.id)
   if (updateError) throw updateError
 
-  const { data: student } = await supabase.from('users').select('username').eq('id', userId).maybeSingle()
-  const title = `✅ @${student?.username || 'A student'} is now linked to your account`
+  const [{ data: student }, { data: parent }] = await Promise.all([
+    supabase.from('users').select('username').eq('id', userId).maybeSingle(),
+    supabase.from('users').select('language_preference').eq('id', invitation.parent_id).maybeSingle(),
+  ])
+  const { title, body: notifBody } = notificationText('parent_link_accepted', parent?.language_preference, { studentUsername: student?.username })
   await insertNotification({
     userId: invitation.parent_id,
     type: 'parent_link_accepted',
     title,
-    body: 'You can now see their progress on your dashboard.',
+    body: notifBody,
     data: { student_id: userId, student_username: student?.username },
   })
   await sendPushToUser({
     userId: invitation.parent_id,
     type: 'parent_link_accepted',
     title,
-    body: 'You can now see their progress on your dashboard.',
+    body: notifBody,
     url: 'https://zyndal.ca',
   })
 

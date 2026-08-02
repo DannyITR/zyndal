@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { centsToDisplay } from '../../../lib/money'
 
 export default function PerfectWeekNotification({ achievement, onResolve }) {
+  const { t } = useTranslation()
   const [adjusting, setAdjusting] = useState(false)
   const [customAmount, setCustomAmount] = useState(centsToDisplay(achievement.suggestedBonusCents))
   const [processing, setProcessing] = useState(false)
@@ -14,7 +16,7 @@ export default function PerfectWeekNotification({ achievement, onResolve }) {
     try {
       await onResolve(amountCents)
     } catch {
-      setError("Couldn't process the bonus. Please try again.")
+      setError(t('finance.bonusFailed'))
       setProcessing(false)
     }
   }
@@ -25,8 +27,7 @@ export default function PerfectWeekNotification({ achievement, onResolve }) {
     <div className="perfect-week-card">
       <p className="perfect-week-emoji">🏆</p>
       <p className="perfect-week-text">
-        <strong>@{achievement.studentUsername}</strong> completed a perfect week! Pay{' '}
-        <strong>${centsToDisplay(achievement.suggestedBonusCents)}</strong> bonus?
+        {t('finance.perfectWeekText', { username: achievement.studentUsername, amount: centsToDisplay(achievement.suggestedBonusCents) })}
       </p>
 
       {!adjusting ? (
@@ -37,16 +38,16 @@ export default function PerfectWeekNotification({ achievement, onResolve }) {
             disabled={processing}
             onClick={() => handleConfirm(achievement.suggestedBonusCents)}
           >
-            {processing ? 'Processing…' : `Confirm $${centsToDisplay(achievement.suggestedBonusCents)}`}
+            {processing ? t('finance.processing') : t('finance.confirmAmount', { amount: centsToDisplay(achievement.suggestedBonusCents) })}
           </button>
           <button type="button" className="btn btn-ghost" disabled={processing} onClick={() => setAdjusting(true)}>
-            Adjust Amount
+            {t('finance.adjustAmount')}
           </button>
         </div>
       ) : (
         <div className="perfect-week-adjust">
           <div className="field">
-            <label htmlFor={`perfect-week-adjust-${achievement.id}`}>Custom amount ($)</label>
+            <label htmlFor={`perfect-week-adjust-${achievement.id}`}>{t('finance.customAmount')}</label>
             <input
               id={`perfect-week-adjust-${achievement.id}`}
               type="number"
@@ -59,7 +60,7 @@ export default function PerfectWeekNotification({ achievement, onResolve }) {
           </div>
           <div className="perfect-week-actions">
             <button type="button" className="btn btn-ghost" disabled={processing} onClick={() => setAdjusting(false)}>
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="button"
@@ -67,7 +68,7 @@ export default function PerfectWeekNotification({ achievement, onResolve }) {
               disabled={processing || !(customCents > 0)}
               onClick={() => handleConfirm(customCents)}
             >
-              {processing ? 'Processing…' : `Confirm $${centsToDisplay(customCents)}`}
+              {processing ? t('finance.processing') : t('finance.confirmAmount', { amount: centsToDisplay(customCents) })}
             </button>
           </div>
         </div>

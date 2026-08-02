@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { coinsToCents, centsToDisplay } from '../../../lib/money'
 
 export default function PayoutModal({ student, coins, rate, walletBalanceCents, onClose, onConfirm }) {
+  const { t } = useTranslation()
   const maxDollars = centsToDisplay(coinsToCents(coins, rate))
   const [coinsToPay, setCoinsToPay] = useState(String(coins))
   const [error, setError] = useState('')
@@ -19,7 +21,7 @@ export default function PayoutModal({ student, coins, rate, walletBalanceCents, 
     try {
       await onConfirm(numericCoins)
     } catch {
-      setError("Couldn't process the payout. Please try again.")
+      setError(t('finance.payoutFailed'))
       setConfirming(false)
     }
   }
@@ -27,14 +29,13 @@ export default function PayoutModal({ student, coins, rate, walletBalanceCents, 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <h2 className="modal-title">Payout</h2>
+        <h2 className="modal-title">{t('finance.payout')}</h2>
         <p className="modal-subtitle">
-          <strong>@{student.username}</strong> has <strong>{coins} coins</strong> = ${maxDollars} at your current
-          rate of {rate} coins = $1.
+          {t('finance.payoutSubtitle', { username: student.username, coins, dollars: maxDollars, rate })}
         </p>
 
         <div className="field">
-          <label htmlFor="payout-coins">Coins to pay out</label>
+          <label htmlFor="payout-coins">{t('finance.coinsToPayOut')}</label>
           <input
             id="payout-coins"
             type="number"
@@ -48,8 +49,7 @@ export default function PayoutModal({ student, coins, rate, walletBalanceCents, 
 
         {insufficientWallet && (
           <p className="form-error">
-            Your wallet balance (${centsToDisplay(walletBalanceCents)}) isn't enough to cover this payout. Add funds
-            first.
+            {t('finance.insufficientWallet', { balance: centsToDisplay(walletBalanceCents) })}
           </p>
         )}
 
@@ -57,7 +57,7 @@ export default function PayoutModal({ student, coins, rate, walletBalanceCents, 
 
         <div className="modal-actions">
           <button type="button" className="btn btn-ghost btn-block" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             type="button"
@@ -65,7 +65,7 @@ export default function PayoutModal({ student, coins, rate, walletBalanceCents, 
             disabled={!canConfirm || confirming}
             onClick={handleConfirm}
           >
-            {confirming ? 'Processing…' : `Confirm Payout ($${centsToDisplay(amountCents)})`}
+            {confirming ? t('finance.processing') : t('finance.confirmPayout', { amount: centsToDisplay(amountCents) })}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import PrivacyPolicyContent from './PrivacyPolicyContent'
 import TermsOfServiceContent from './TermsOfServiceContent'
 
@@ -8,15 +9,22 @@ import TermsOfServiceContent from './TermsOfServiceContent'
 // The app has no client-side router, so this stands in for a dedicated
 // "page": full-length content in a large scrollable card rather than a
 // small confirmation-style modal.
+//
+// This modal's own `lang` toggle is deliberately independent of the app's
+// global i18n.language (used only to seed its initial value) — a student
+// reading the app in French should still be able to switch to reading the
+// Terms in English without that also flipping the rest of the UI's
+// language, and vice versa.
 export default function LegalModal({ type, onClose }) {
-  const [lang, setLang] = useState('en')
+  const { t, i18n } = useTranslation()
+  const [lang, setLang] = useState(() => (['en', 'fr', 'es'].includes(i18n.language) ? i18n.language : 'en'))
   const isPrivacy = type === 'privacy'
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card legal-modal" onClick={(e) => e.stopPropagation()}>
         <div className="legal-modal-header">
-          <h2 className="modal-title">{isPrivacy ? 'Privacy Policy' : 'Terms of Service'}</h2>
+          <h2 className="modal-title">{isPrivacy ? t('landing.privacyPolicy') : t('landing.termsOfService')}</h2>
           <div className="lang-toggle" role="group" aria-label="Language">
             <button
               type="button"
@@ -32,6 +40,13 @@ export default function LegalModal({ type, onClose }) {
             >
               Français
             </button>
+            <button
+              type="button"
+              className={`lang-toggle-btn ${lang === 'es' ? 'lang-toggle-btn--active' : ''}`}
+              onClick={() => setLang('es')}
+            >
+              Español
+            </button>
           </div>
         </div>
 
@@ -41,7 +56,7 @@ export default function LegalModal({ type, onClose }) {
 
         <div className="modal-actions">
           <button type="button" className="btn btn-primary btn-block" onClick={onClose}>
-            Close
+            {t('common.close')}
           </button>
         </div>
       </div>

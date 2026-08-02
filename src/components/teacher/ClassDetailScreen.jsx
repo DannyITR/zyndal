@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getClassDetail } from '../../lib/storage'
+import { LOCALE_FOR_LANGUAGE } from '../../lib/i18n'
 import TopBar from '../shared/TopBar'
 import SubmissionDetailModal from './SubmissionDetailModal'
 import SetCurrentUnitModal from './SetCurrentUnitModal'
 
-function formatDate(value) {
+function formatDate(value, language) {
   if (!value) return '—'
-  return new Date(value).toLocaleDateString('en-US', { timeZone: 'UTC' })
+  return new Date(value).toLocaleDateString(LOCALE_FOR_LANGUAGE[language] || 'en-US', { timeZone: 'UTC' })
 }
 
 export default function ClassDetailScreen({ user, classId, onBack, onLogout, onLogoClick, onAssignHomework }) {
+  const { t, i18n } = useTranslation()
   const [detail, setDetail] = useState(null)
   const [error, setError] = useState('')
   const [expandedAssignmentId, setExpandedAssignmentId] = useState(null)
@@ -24,11 +27,15 @@ export default function ClassDetailScreen({ user, classId, onBack, onLogout, onL
         if (!cancelled) setDetail(data)
       })
       .catch((err) => {
-        if (!cancelled) setError(err.message || "Couldn't load this class.")
+        if (!cancelled) setError(err.message || t('teacher.loadClassFailed'))
       })
     return () => {
       cancelled = true
     }
+    // t is a stable function for the app's lifetime (see src/lib/i18n.js) —
+    // not a real dependency, and including it would refetch on every
+    // language change for no reason.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId])
 
   function handleCopyCode() {
@@ -44,7 +51,7 @@ export default function ClassDetailScreen({ user, classId, onBack, onLogout, onL
   if (error) {
     return (
       <div className="screen">
-        <TopBar title="Class" username={user.username} onBack={onBack} onLogout={onLogout} onLogoClick={onLogoClick} />
+        <TopBar title={t('teacher.classFallbackTitle')} username={user.username} onBack={onBack} onLogout={onLogout} onLogoClick={onLogoClick} />
         <p className="form-error">{error}</p>
       </div>
     )
@@ -53,8 +60,8 @@ export default function ClassDetailScreen({ user, classId, onBack, onLogout, onL
   if (!detail) {
     return (
       <div className="screen">
-        <TopBar title="Class" username={user.username} onBack={onBack} onLogout={onLogout} onLogoClick={onLogoClick} />
-        <p className="loading-text">Loading…</p>
+        <TopBar title={t('teacher.classFallbackTitle')} username={user.username} onBack={onBack} onLogout={onLogout} onLogoClick={onLogoClick} />
+        <p className="loading-text">{t('common.loading')}</p>
       </div>
     )
   }
@@ -63,7 +70,7 @@ export default function ClassDetailScreen({ user, classId, onBack, onLogout, onL
     <div className="screen">
       <TopBar
         title={detail.class.name}
-        subtitle={`Grade ${detail.class.grade} · ${detail.class.school}`}
+        subtitle={`${t('common.gradeLabel', { grade: detail.class.grade })} · ${detail.class.school}`}
         username={user.username}
         onBack={onBack}
         onLogout={onLogout}
@@ -71,33 +78,33 @@ export default function ClassDetailScreen({ user, classId, onBack, onLogout, onL
       />
 
       <div className="parent-code-card">
-        <p className="parent-code-label">Class code</p>
+        <p className="parent-code-label">{t('teacher.classCode')}</p>
         <div className="parent-code-value-row">
           <span className="parent-code-value">{detail.class.teacher_code}</span>
           <button type="button" className="btn btn-secondary btn-small" onClick={handleCopyCode}>
-            {copied ? 'Copied!' : 'Copy'}
+            {copied ? t('addChild.copied') : t('teacher.copy')}
           </button>
         </div>
       </div>
 
       <button type="button" className="btn btn-primary btn-block" onClick={() => onAssignHomework(detail.class)}>
-        📚 Assign Homework
+        {t('teacher.assignHomework')}
       </button>
 
       <div className="finance-section-card">
-        <p className="field-hint">Currently studying</p>
+        <p className="field-hint">{t('teacher.currentlyStudying')}</p>
         <p className="teacher-current-unit">
-          📖 Unit {detail.class.current_unit_number ?? 1}
+          {t('teacher.unitLabel', { number: detail.class.current_unit_number ?? 1 })}
           {detail.class.current_unit_title ? ` — ${detail.class.current_unit_title}` : ''}
         </p>
         <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowSetUnit(true)}>
-          Set Current Unit
+          {t('teacher.setCurrentUnit')}
         </button>
       </div>
 
-      <h3 className="section-heading">Students ({detail.students.length})</h3>
+      <h3 className="section-heading">{t('teacher.studentsHeading', { count: detail.students.length })}</h3>
       {detail.students.length === 0 ? (
-        <p className="field-hint">No students have joined yet — share the code above.</p>
+        <p className="field-hint">{t('teacher.noStudentsJoined')}</p>
       ) : (
         <div className="teacher-student-list">
           {detail.students.map((s) => (
@@ -107,7 +114,7 @@ export default function ClassDetailScreen({ user, classId, onBack, onLogout, onL
                   {s.avatar ? `${s.avatar} ` : ''}@{s.username}
                 </p>
                 <p className="finance-student-detail">
-                  🔥 {s.currentStreak} · ⚡ {s.totalXp} XP · Last active {formatDate(s.lastActive)}
+                  🔥 {s.currentStreak} · ⚡ {s.totalXp} XP · {t('teacher.lastActive', { date: formatDate(s.lastActive, i18n.language) })}
                 </p>
               </div>
             </div>
@@ -117,13 +124,13 @@ export default function ClassDetailScreen({ user, classId, onBack, onLogout, onL
 
       {detail.pendingWorkReviewCount > 0 && (
         <div className="daily-status-banner daily-status-banner--pending">
-          ✏️ Pending Work Reviews ({detail.pendingWorkReviewCount}) — open an assignment's student to review
+          {t('teacher.pendingWorkReviews', { count: detail.pendingWorkReviewCount })}
         </div>
       )}
 
-      <h3 className="section-heading">Assignments ({detail.assignments.length})</h3>
+      <h3 className="section-heading">{t('teacher.assignmentsHeading', { count: detail.assignments.length })}</h3>
       {detail.assignments.length === 0 ? (
-        <p className="field-hint">No homework assigned to this class yet.</p>
+        <p className="field-hint">{t('teacher.noHomeworkAssigned')}</p>
       ) : (
         <div className="teacher-assignment-list">
           {detail.assignments.map((a) => (
@@ -136,12 +143,12 @@ export default function ClassDetailScreen({ user, classId, onBack, onLogout, onL
                 <div>
                   <p className="teacher-class-name">{a.title}</p>
                   <p className="teacher-class-detail">
-                    {a.subject} · Due {formatDate(a.dueDate)} · {a.questionCount} question{a.questionCount === 1 ? '' : 's'}
+                    {t(`subjects.${a.subject}`, { defaultValue: a.subject })} · {t('teacher.dueDateQuestions', { date: formatDate(a.dueDate, i18n.language), count: a.questionCount })}
                   </p>
                 </div>
                 <p className="teacher-class-detail">
-                  {a.completedCount}/{a.totalEnrolled} completed
-                  {a.averageScorePercent !== null ? ` · avg ${a.averageScorePercent}%` : ''}
+                  {t('teacher.completedCount', { completed: a.completedCount, total: a.totalEnrolled })}
+                  {a.averageScorePercent !== null ? ` · ${t('teacher.avgScore', { percent: a.averageScorePercent })}` : ''}
                 </p>
               </button>
 
@@ -156,7 +163,9 @@ export default function ClassDetailScreen({ user, classId, onBack, onLogout, onL
                     >
                       <p className="finance-student-name">@{st.username}</p>
                       <p className="finance-student-detail">
-                        {st.status === 'completed' ? `✅ ${st.scorePercentage}% — ${formatDate(st.completedAt)}` : 'Not submitted'}
+                        {st.status === 'completed'
+                          ? `✅ ${st.scorePercentage}% — ${formatDate(st.completedAt, i18n.language)}`
+                          : t('teacher.notSubmitted')}
                       </p>
                     </button>
                   ))}
@@ -167,9 +176,9 @@ export default function ClassDetailScreen({ user, classId, onBack, onLogout, onL
         </div>
       )}
 
-      <h3 className="section-heading">Class Leaderboard</h3>
+      <h3 className="section-heading">{t('teacher.classLeaderboard')}</h3>
       {detail.leaderboard.length === 0 ? (
-        <p className="field-hint">No students yet.</p>
+        <p className="field-hint">{t('leaderboard.noStudentsYet')}</p>
       ) : (
         <ol className="leaderboard-list">
           {detail.leaderboard.map((s, i) => (

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   getParentWallet,
   getStudentsForParent,
@@ -24,11 +25,6 @@ import PerfectWeekNotification from './PerfectWeekNotification'
 import GradeRewardNotification from './GradeRewardNotification'
 
 const MILESTONE_DAYS = [7, 14, 30]
-const PAYOUT_TYPE_LABELS = {
-  manual: 'Manual Payout',
-  perfect_week_bonus: 'Perfect Week Bonus',
-  grade_bonus: 'Grade Bonus',
-}
 
 function buildGradeRewardDrafts(student) {
   return {
@@ -48,6 +44,12 @@ function buildMilestoneDrafts(milestoneSettings) {
 }
 
 export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
+  const { t } = useTranslation()
+  const PAYOUT_TYPE_LABELS = {
+    manual: t('finance.payoutTypeManual'),
+    perfect_week_bonus: t('finance.payoutTypePerfectWeek'),
+    grade_bonus: t('finance.payoutTypeGradeBonus'),
+  }
   const [wallet, setWallet] = useState(null)
   const [students, setStudents] = useState(null)
   const [progressByStudent, setProgressByStudent] = useState({})
@@ -60,10 +62,12 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
   const [rateInput, setRateInput] = useState('')
   const [rateSaving, setRateSaving] = useState(false)
   const [rateMessage, setRateMessage] = useState('')
+  const [rateMessageIsError, setRateMessageIsError] = useState(false)
 
   const [milestoneDrafts, setMilestoneDrafts] = useState(null)
   const [milestoneSaving, setMilestoneSaving] = useState(false)
   const [milestoneMessage, setMilestoneMessage] = useState('')
+  const [milestoneMessageIsError, setMilestoneMessageIsError] = useState(false)
 
   const [bonusDrafts, setBonusDrafts] = useState({})
   const [bonusSavingId, setBonusSavingId] = useState(null)
@@ -146,9 +150,11 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
     try {
       await updateCoinRate(user.id, rate)
       await refreshWallet()
-      setRateMessage('Rate updated!')
+      setRateMessage(t('finance.rateUpdated'))
+      setRateMessageIsError(false)
     } catch {
-      setRateMessage("Couldn't save the rate. Please try again.")
+      setRateMessage(t('finance.rateUpdateFailed'))
+      setRateMessageIsError(true)
     } finally {
       setRateSaving(false)
     }
@@ -165,9 +171,11 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
       }
       await updateMilestoneSettings(user.id, normalized)
       await refreshWallet()
-      setMilestoneMessage('Milestones updated!')
+      setMilestoneMessage(t('finance.milestonesUpdated'))
+      setMilestoneMessageIsError(false)
     } catch {
-      setMilestoneMessage("Couldn't save milestones. Please try again.")
+      setMilestoneMessage(t('finance.milestonesUpdateFailed'))
+      setMilestoneMessageIsError(true)
     } finally {
       setMilestoneSaving(false)
     }
@@ -258,14 +266,14 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
     return (
       <div className="screen">
         <TopBar
-          title="💳 Finances"
-          subtitle="Manage payments"
+          title={t('finance.title')}
+          subtitle={t('finance.subtitle')}
           username={user.username}
           onBack={onBack}
           onLogout={onLogout}
           onLogoClick={onLogoClick}
         />
-        <p className="loading-text">Loading…</p>
+        <p className="loading-text">{t('common.loading')}</p>
       </div>
     )
   }
@@ -273,8 +281,8 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
   return (
     <div className="screen">
       <TopBar
-        title="💳 Finances"
-        subtitle="Manage payments"
+        title={t('finance.title')}
+        subtitle={t('finance.subtitle')}
         username={user.username}
         onBack={onBack}
         onLogout={onLogout}
@@ -306,32 +314,29 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
       )}
 
       <div className="wallet-card">
-        <p className="wallet-label">Wallet Balance</p>
+        <p className="wallet-label">{t('finance.walletBalance')}</p>
         <p className="wallet-balance">${centsToDisplay(wallet.walletBalanceCents)}</p>
         <div className="wallet-meta-row">
           <div className="wallet-meta">
             <p className="wallet-meta-value">${centsToDisplay(wallet.totalAddedCents)}</p>
-            <p className="wallet-meta-label">Total added</p>
+            <p className="wallet-meta-label">{t('finance.totalAdded')}</p>
           </div>
           <div className="wallet-meta">
             <p className="wallet-meta-value">${centsToDisplay(wallet.totalPaidOutCents)}</p>
-            <p className="wallet-meta-label">Total paid out</p>
+            <p className="wallet-meta-label">{t('finance.totalPaidOut')}</p>
           </div>
         </div>
         <button type="button" className="btn btn-primary btn-block" onClick={() => setShowAddFunds(true)}>
-          + Add Funds
+          {t('finance.addFunds')}
         </button>
       </div>
 
       <div className="finance-info-card">
-        <p>
-          Your child earns <strong>1 coin</strong> per correct answer plus streak bonuses. You set how much each coin
-          is worth. The default is <strong>10 coins = $1</strong>.
-        </p>
+        <p>{t('finance.infoCard')}</p>
       </div>
 
       <div className="finance-section-card">
-        <h3 className="section-heading">Coin-to-Dollar Rate</h3>
+        <h3 className="section-heading">{t('finance.coinRateHeading')}</h3>
         <form className="rate-form" onSubmit={handleSaveRate}>
           <div className="rate-form-row">
             <input
@@ -341,24 +346,24 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
               value={rateInput}
               onChange={(e) => setRateInput(e.target.value)}
             />
-            <span className="rate-form-static">coins = $1</span>
+            <span className="rate-form-static">{t('finance.coinsEqualsOneDollar')}</span>
           </div>
           {rateMessage && (
-            <p className={rateMessage.startsWith("Couldn't") ? 'form-error' : 'form-success'}>{rateMessage}</p>
+            <p className={rateMessageIsError ? 'form-error' : 'form-success'}>{rateMessage}</p>
           )}
           <button type="submit" className="btn btn-secondary" disabled={rateSaving}>
-            {rateSaving ? 'Saving…' : 'Save Rate'}
+            {rateSaving ? t('settings.saving') : t('finance.saveRate')}
           </button>
         </form>
       </div>
 
       <div className="finance-section-card">
-        <h3 className="section-heading">Your Students</h3>
-        <p className="field-hint">You can always pay your child any amount at any time.</p>
+        <h3 className="section-heading">{t('parent.yourStudents')}</h3>
+        <p className="field-hint">{t('finance.payAnytimeHint')}</p>
         {!students ? (
-          <p className="loading-text">Loading…</p>
+          <p className="loading-text">{t('common.loading')}</p>
         ) : students.length === 0 ? (
-          <p className="field-hint">No students linked yet.</p>
+          <p className="field-hint">{t('parent.noStudentsLinked')}</p>
         ) : (
           <div className="finance-student-list">
             {students.map((student) => {
@@ -370,8 +375,7 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
                   <div>
                     <p className="finance-student-name">@{student.username}</p>
                     <p className="finance-student-detail">
-                      {progress.coins} coins = ${dollarValue} at your current rate of {wallet.coinToDollarRate} coins
-                      = $1
+                      {t('finance.studentCoinDetail', { coins: progress.coins, dollar: dollarValue, rate: wallet.coinToDollarRate })}
                     </p>
                   </div>
                   <button
@@ -380,7 +384,7 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
                     onClick={() => setPayoutTargetId(student.id)}
                     disabled={progress.coins === 0}
                   >
-                    💸 Payout
+                    {t('finance.payout')}
                   </button>
                 </div>
               )
@@ -390,14 +394,12 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
       </div>
 
       <div className="finance-section-card">
-        <h3 className="section-heading">Perfect Week Bonus</h3>
+        <h3 className="section-heading">{t('finance.perfectWeekBonusHeading')}</h3>
         <p className="field-hint">
-          Suggested bonus when a student answers all 6 subjects correctly, first attempt, for 7 days in a row
-          ({PERFECT_WEEK_TARGET}/{PERFECT_WEEK_TARGET}). You always confirm the payment yourself — this never pays
-          automatically.
+          {t('finance.perfectWeekBonusHint', { target: PERFECT_WEEK_TARGET })}
         </p>
         {!students || students.length === 0 ? (
-          <p className="field-hint">No students linked yet.</p>
+          <p className="field-hint">{t('parent.noStudentsLinked')}</p>
         ) : (
           <div className="perfect-week-bonus-list">
             {students.map((student) => (
@@ -417,9 +419,9 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
                   onChange={(e) => setBonusDrafts((prev) => ({ ...prev, [student.id]: e.target.value }))}
                 />
                 <button type="submit" className="btn btn-secondary btn-small" disabled={bonusSavingId === student.id}>
-                  {bonusSavingId === student.id ? 'Saving…' : 'Save'}
+                  {bonusSavingId === student.id ? t('settings.saving') : t('finance.save')}
                 </button>
-                {bonusMessageId === student.id && <span className="perfect-week-bonus-saved">Saved!</span>}
+                {bonusMessageId === student.id && <span className="perfect-week-bonus-saved">{t('finance.savedBang')}</span>}
               </form>
             ))}
           </div>
@@ -427,13 +429,10 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
       </div>
 
       <div className="finance-section-card">
-        <h3 className="section-heading">Grade Rewards</h3>
-        <p className="field-hint">
-          Suggested bonus when your student uploads a graded test. Below 60% suggests no bonus. You always confirm
-          the payment yourself — this never pays automatically.
-        </p>
+        <h3 className="section-heading">{t('finance.gradeRewardsHeading')}</h3>
+        <p className="field-hint">{t('finance.gradeRewardsHint')}</p>
         {!students || students.length === 0 ? (
-          <p className="field-hint">No students linked yet.</p>
+          <p className="field-hint">{t('parent.noStudentsLinked')}</p>
         ) : (
           <div className="grade-reward-list">
             {students.map((student) => (
@@ -475,9 +474,9 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
                   className="btn btn-secondary btn-small"
                   disabled={gradeRewardSavingId === student.id}
                 >
-                  {gradeRewardSavingId === student.id ? 'Saving…' : 'Save'}
+                  {gradeRewardSavingId === student.id ? t('settings.saving') : t('finance.save')}
                 </button>
-                {gradeRewardMessageId === student.id && <span className="perfect-week-bonus-saved">Saved!</span>}
+                {gradeRewardMessageId === student.id && <span className="perfect-week-bonus-saved">{t('finance.savedBang')}</span>}
               </form>
             ))}
           </div>
@@ -485,20 +484,20 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
       </div>
 
       <div className="finance-section-card">
-        <h3 className="section-heading">Reward Milestones</h3>
-        <p className="field-hint">Bonus coins awarded automatically when a student hits a streak milestone.</p>
+        <h3 className="section-heading">{t('finance.rewardMilestonesHeading')}</h3>
+        <p className="field-hint">{t('finance.rewardMilestonesHint')}</p>
         <form className="milestone-form" onSubmit={handleSaveMilestones}>
           <table className="milestone-table">
             <thead>
               <tr>
-                <th>Streak</th>
-                <th>Bonus coins</th>
+                <th>{t('finance.streakColumn')}</th>
+                <th>{t('finance.bonusCoinsColumn')}</th>
               </tr>
             </thead>
             <tbody>
               {MILESTONE_DAYS.map((day) => (
                 <tr key={day}>
-                  <td>{day}-day streak</td>
+                  <td>{t('finance.dayStreak', { count: day })}</td>
                   <td>
                     <input
                       type="number"
@@ -515,22 +514,22 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
             </tbody>
           </table>
           {milestoneMessage && (
-            <p className={milestoneMessage.startsWith("Couldn't") ? 'form-error' : 'form-success'}>
+            <p className={milestoneMessageIsError ? 'form-error' : 'form-success'}>
               {milestoneMessage}
             </p>
           )}
           <button type="submit" className="btn btn-secondary" disabled={milestoneSaving}>
-            {milestoneSaving ? 'Saving…' : 'Save Milestones'}
+            {milestoneSaving ? t('settings.saving') : t('finance.saveMilestones')}
           </button>
         </form>
       </div>
 
       <div className="finance-section-card">
-        <h3 className="section-heading">Payout History</h3>
+        <h3 className="section-heading">{t('finance.payoutHistoryHeading')}</h3>
         {!payoutHistory ? (
-          <p className="loading-text">Loading…</p>
+          <p className="loading-text">{t('common.loading')}</p>
         ) : payoutHistory.length === 0 ? (
-          <p className="field-hint">No payouts yet.</p>
+          <p className="field-hint">{t('finance.noPayoutsYet')}</p>
         ) : (
           <ul className="payout-history-list">
             {payoutHistory.map((entry) => (
@@ -538,7 +537,11 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
                 <div>
                   <p className="payout-history-student">@{entry.studentUsername}</p>
                   <p className="payout-history-date">
-                    {PAYOUT_TYPE_LABELS[entry.type] || 'Manual Payout'} · {entry.date} · {entry.coins} coins
+                    {t('finance.payoutHistoryDetail', {
+                      type: PAYOUT_TYPE_LABELS[entry.type] || t('finance.payoutTypeManual'),
+                      date: entry.date,
+                      coins: entry.coins,
+                    })}
                   </p>
                 </div>
                 <p className="payout-history-amount">${centsToDisplay(entry.amountCents)}</p>

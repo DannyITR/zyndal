@@ -1,0 +1,114 @@
+// In-app notification title/body, localized to the recipient's own
+// language_preference at insert time — the notifications table stores
+// pre-rendered text (see notifications.js), so this is the one place that
+// has to happen; NotificationsScreen.jsx just renders whatever's stored.
+// Mirrors resend.js's per-language-branch pattern, generalized to 3
+// languages and to accepting interpolated params per notification type.
+//
+// users.language_preference stores a full English word ('English'/'French'/
+// 'Spanish'), not an i18next code — same fact src/lib/i18n.js's own comment
+// documents; duplicated here in miniature (rather than importing that file)
+// since it's a browser-oriented module (pulls in i18next-browser-
+// languagedetector, which expects `window`) that has no place being loaded
+// into a serverless function.
+export const LANG_FOR_PREFERENCE = { English: 'en', French: 'fr', Spanish: 'es' }
+
+const TEMPLATES = {
+  score_share: {
+    en: ({ senderUsername, correct, total }) => ({
+      title: `@${senderUsername} shared their score`,
+      body: `@${senderUsername} got ${correct}/${total} today`,
+    }),
+    fr: ({ senderUsername, correct, total }) => ({
+      title: `@${senderUsername} a partagé son score`,
+      body: `@${senderUsername} a obtenu ${correct}/${total} aujourd'hui`,
+    }),
+    es: ({ senderUsername, correct, total }) => ({
+      title: `@${senderUsername} compartió su puntaje`,
+      body: `@${senderUsername} obtuvo ${correct}/${total} hoy`,
+    }),
+  },
+  friend_request: {
+    en: ({ senderUsername }) => ({ title: `@${senderUsername} wants to follow you`, body: 'Tap to accept or decline' }),
+    fr: ({ senderUsername }) => ({ title: `@${senderUsername} souhaite vous suivre`, body: 'Touchez pour accepter ou refuser' }),
+    es: ({ senderUsername }) => ({ title: `@${senderUsername} quiere seguirte`, body: 'Toca para aceptar o rechazar' }),
+  },
+  friend_accepted: {
+    en: ({ username }) => ({ title: `@${username} accepted your friend request`, body: 'You are now friends on Zyndal!' }),
+    fr: ({ username }) => ({ title: `@${username} a accepté votre demande d'ami`, body: 'Vous êtes maintenant amis sur Zyndal !' }),
+    es: ({ username }) => ({ title: `@${username} aceptó tu solicitud de amistad`, body: '¡Ahora son amigos en Zyndal!' }),
+  },
+  parent_link_request: {
+    en: ({ parentUsername }) => ({ title: `@${parentUsername} wants to link as your parent`, body: 'Accept or decline this request.' }),
+    fr: ({ parentUsername }) => ({ title: `@${parentUsername} souhaite se lier comme votre parent`, body: 'Acceptez ou refusez cette demande.' }),
+    es: ({ parentUsername }) => ({ title: `@${parentUsername} quiere vincularse como tu padre/madre`, body: 'Acepta o rechaza esta solicitud.' }),
+  },
+  parent_link_accepted: {
+    en: ({ studentUsername }) => ({
+      title: `✅ @${studentUsername || 'A student'} is now linked to your account`,
+      body: 'You can now see their progress on your dashboard.',
+    }),
+    fr: ({ studentUsername }) => ({
+      title: `✅ @${studentUsername || 'Un élève'} est maintenant lié à votre compte`,
+      body: 'Vous pouvez maintenant voir ses progrès sur votre tableau de bord.',
+    }),
+    es: ({ studentUsername }) => ({
+      title: `✅ @${studentUsername || 'Un estudiante'} ahora está vinculado a tu cuenta`,
+      body: 'Ahora puedes ver su progreso en tu panel.',
+    }),
+  },
+  work_approved: {
+    en: () => ({ title: '✅ Your work was approved! +1 XP' }),
+    fr: () => ({ title: '✅ Votre travail a été approuvé ! +1 XP' }),
+    es: () => ({ title: '✅ ¡Tu trabajo fue aprobado! +1 XP' }),
+  },
+  work_rejected: {
+    en: () => ({ title: 'Your teacher reviewed your work — keep practicing!' }),
+    fr: () => ({ title: 'Votre enseignant a examiné votre travail — continuez à vous entraîner !' }),
+    es: () => ({ title: 'Tu profesor revisó tu trabajo — ¡sigue practicando!' }),
+  },
+  homework_assigned: {
+    en: ({ title, dueDate }) => ({ title: `📚 New homework assigned: ${title}`, body: `Due ${dueDate}` }),
+    fr: ({ title, dueDate }) => ({ title: `📚 Nouveau devoir assigné : ${title}`, body: `À remettre le ${dueDate}` }),
+    es: ({ title, dueDate }) => ({ title: `📚 Nueva tarea asignada: ${title}`, body: `Vence el ${dueDate}` }),
+  },
+  homework_reminder: {
+    en: ({ title }) => ({
+      title: `📚 Homework due today: ${title}`,
+      body: "Don't forget to complete it before the end of the day!",
+    }),
+    fr: ({ title }) => ({
+      title: `📚 Devoir à remettre aujourd'hui : ${title}`,
+      body: "N'oubliez pas de le terminer avant la fin de la journée !",
+    }),
+    es: ({ title }) => ({
+      title: `📚 Tarea vence hoy: ${title}`,
+      body: '¡No olvides completarla antes de que termine el día!',
+    }),
+  },
+  streak_reminder: {
+    en: () => ({
+      title: "⚠️ Don't lose your streak!",
+      body: "You haven't answered today's questions yet — answer at least one to keep your flame alive 🔥",
+    }),
+    fr: () => ({
+      title: '⚠️ Ne perdez pas votre série !',
+      body: "Vous n'avez pas encore répondu aux questions d'aujourd'hui — répondez à au moins une pour garder votre flamme allumée 🔥",
+    }),
+    es: () => ({
+      title: '⚠️ ¡No pierdas tu racha!',
+      body: 'Aún no has respondido las preguntas de hoy — responde al menos una para mantener tu llama encendida 🔥',
+    }),
+  },
+}
+
+// languagePreference is the recipient's own users.language_preference —
+// always look up the notification's RECIPIENT (userId passed to
+// insertNotification), never the actor who triggered it (e.g. the sender of
+// a friend request), since the recipient is who reads the stored text.
+export function notificationText(type, languagePreference, params = {}) {
+  const lang = LANG_FOR_PREFERENCE[languagePreference] || 'en'
+  const templatesForType = TEMPLATES[type]
+  const build = templatesForType?.[lang] || templatesForType?.en
+  return build(params)
+}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   getStudentsForParent,
   getStudentProgress,
@@ -9,7 +10,7 @@ import {
   getPendingInvitationsForParent,
   getNotifications,
 } from '../../lib/storage'
-import { SUBJECTS, getSubject } from '../../lib/questions'
+import { SUBJECTS } from '../../lib/questions'
 import { countdownLabel, computeReadiness } from '../../lib/testprep'
 import TopBar from '../shared/TopBar'
 import AnswerDetail from '../shared/AnswerDetail'
@@ -22,6 +23,7 @@ import StudentCard from './StudentCard'
 import GradeBadge from '../student/uploads/GradeBadge'
 
 export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
+  const { t } = useTranslation()
   const [students, setStudents] = useState(null)
   const [progressByStudent, setProgressByStudent] = useState({})
   const [studyPlans, setStudyPlans] = useState(null)
@@ -123,7 +125,7 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
     return (
       <Leaderboard
         highlightUserIds={new Set((students || []).map((s) => s.id))}
-        subtitle="Your students are highlighted"
+        subtitle={t('parent.leaderboardSubtitle')}
         username={user.username}
         onBack={() => setShowLeaderboard(false)}
         onLogout={onLogout}
@@ -190,8 +192,8 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
   return (
     <div className="screen parent-screen">
       <TopBar
-        title={`${avatarPrefix}Hey, ${greetingName} 👋`}
-        subtitle="Parent Dashboard"
+        title={`${avatarPrefix}${t('common.greeting', { name: greetingName })}`}
+        subtitle={t('parent.subtitle')}
         username={user.username}
         onLogout={onLogout}
         onNotifications={() => setShowNotifications(true)}
@@ -202,25 +204,25 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
 
       <div className="home-actions">
         <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowFinances(true)}>
-          💳 Finances
+          {t('parent.finances')}
         </button>
         <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowLeaderboard(true)}>
-          🏆 Leaderboard
+          {t('nav.leaderboard')}
         </button>
       </div>
 
       <button type="button" className="btn btn-primary btn-block" onClick={() => setShowAddChild(true)}>
-        ➕ Add Child
+        {t('parent.addChild')}
       </button>
 
       {pendingInvitations.length > 0 && (
         <div className="finance-section-card">
-          <h3 className="section-heading">Pending Invitations</h3>
+          <h3 className="section-heading">{t('parent.pendingInvitations')}</h3>
           <div className="teacher-student-list">
             {pendingInvitations.map((inv) => (
               <div key={inv.id} className="finance-student-row">
                 <p className="finance-student-name">{inv.label}</p>
-                <span className="plan-status-badge plan-status-badge--pending">Pending</span>
+                <span className="plan-status-badge plan-status-badge--pending">{t('parent.pending')}</span>
               </div>
             ))}
           </div>
@@ -229,9 +231,14 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
 
       {studyPlans && studyPlans.length > 0 && (
         <>
-          <h3 className="section-heading">Test Prep</h3>
+          <h3 className="section-heading">{t('parent.testPrepHeading')}</h3>
           <div className="testprep-parent-list">
             {studyPlans.map((plan) => {
+              // Deliberately the raw English SUBJECTS name, not t(`subjects.${id}`)
+              // — countdownLabel() below wraps it in a hardcoded English
+              // sentence ("X test in N days"); Test Prep isn't in this
+              // translation stage's scope, so a translated subject name here
+              // would just produce mixed-language text, not full localization.
               const subjectName = SUBJECTS.find((s) => s.id === plan.subject)?.name || plan.subject
               const readiness = computeReadiness(plan.plan_data)
               return (
@@ -256,10 +263,10 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
 
       {testGrades && testGrades.length > 0 && (
         <>
-          <h3 className="section-heading">Test Grades</h3>
+          <h3 className="section-heading">{t('parent.testGradesHeading')}</h3>
           <div className="testprep-parent-list">
             {testGrades.map((upload) => {
-              const subjectName = getSubject(upload.subject)?.name || upload.subject
+              const subjectName = t(`subjects.${upload.subject}`)
               return (
                 <div key={upload.id} className="testprep-parent-row testprep-parent-row--inline">
                   <div className="testprep-parent-info">
@@ -276,15 +283,15 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
         </>
       )}
 
-      <h3 className="section-heading">Your Students</h3>
+      <h3 className="section-heading">{t('parent.yourStudents')}</h3>
 
       {!students ? (
-        <p className="loading-text">Loading…</p>
+        <p className="loading-text">{t('common.loading')}</p>
       ) : students.length === 0 ? (
         <div className="empty-state">
           <p className="empty-state-emoji">🔗</p>
-          <p>No students linked yet.</p>
-          <p className="field-hint">Share your code above — they'll enter it when they sign up.</p>
+          <p>{t('parent.noStudentsLinked')}</p>
+          <p className="field-hint">{t('parent.shareCodeHint')}</p>
         </div>
       ) : (
         <div className="student-list">

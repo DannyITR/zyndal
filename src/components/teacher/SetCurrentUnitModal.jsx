@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getOrGenerateCurriculumOutline, setCurrentUnit } from '../../lib/storage'
 import { SUBJECTS } from '../../lib/questions'
 
@@ -8,6 +9,7 @@ import { SUBJECTS } from '../../lib/questions'
 // curriculum outline for the unit dropdown. It isn't persisted on the class;
 // only the resulting unit number/title are.
 export default function SetCurrentUnitModal({ classId, classGrade, onSaved, onClose }) {
+  const { t } = useTranslation()
   const [subject, setSubject] = useState(SUBJECTS[0].id)
   const [outline, setOutline] = useState(null)
   const [loadingOutline, setLoadingOutline] = useState(false)
@@ -30,7 +32,7 @@ export default function SetCurrentUnitModal({ classId, classGrade, onSaved, onCl
         if (firstUnit) setUnitNumber(String(firstUnit.unit_number))
       })
       .catch((err) => {
-        if (!cancelled) setOutlineError(err.message || "Couldn't load the curriculum outline for this subject.")
+        if (!cancelled) setOutlineError(err.message || t('teacher.loadOutlineFailed'))
       })
       .finally(() => {
         if (!cancelled) setLoadingOutline(false)
@@ -38,6 +40,10 @@ export default function SetCurrentUnitModal({ classId, classGrade, onSaved, onCl
     return () => {
       cancelled = true
     }
+    // t is a stable function for the app's lifetime (see src/lib/i18n.js) —
+    // not a real dependency, and including it would refetch on every
+    // language change for no reason.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subject, classGrade])
 
   const units = outline?.outline_data?.units || []
@@ -52,7 +58,7 @@ export default function SetCurrentUnitModal({ classId, classGrade, onSaved, onCl
       onSaved(updated)
       onClose()
     } catch (err) {
-      setSaveError(err.message || "Couldn't save the current unit. Please try again.")
+      setSaveError(err.message || t('teacher.saveUnitFailed'))
     } finally {
       setSaving(false)
     }
@@ -61,31 +67,31 @@ export default function SetCurrentUnitModal({ classId, classGrade, onSaved, onCl
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <h2 className="modal-title">Set Current Unit</h2>
-        <p className="field-hint">Choose the subject and unit this class is currently studying.</p>
+        <h2 className="modal-title">{t('teacher.setCurrentUnit')}</h2>
+        <p className="field-hint">{t('teacher.chooseSubjectUnitHint')}</p>
 
         <div className="field">
-          <label htmlFor="unit-subject">Subject</label>
+          <label htmlFor="unit-subject">{t('teacher.subjectLabel')}</label>
           <select id="unit-subject" value={subject} onChange={(e) => setSubject(e.target.value)}>
             {SUBJECTS.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name}
+                {t(`subjects.${s.id}`)}
               </option>
             ))}
           </select>
         </div>
 
         <div className="field">
-          <label htmlFor="unit-select">Unit</label>
+          <label htmlFor="unit-select">{t('teacher.unitFieldLabel')}</label>
           {loadingOutline ? (
-            <p className="field-hint">Loading units…</p>
+            <p className="field-hint">{t('teacher.loadingUnits')}</p>
           ) : outlineError ? (
             <p className="form-error">{outlineError}</p>
           ) : (
             <select id="unit-select" value={unitNumber} onChange={(e) => setUnitNumber(e.target.value)}>
               {units.map((u) => (
                 <option key={u.unit_number} value={u.unit_number}>
-                  Unit {u.unit_number} — {u.unit_title}
+                  {t('teacher.unitOption', { number: u.unit_number, title: u.unit_title })}
                 </option>
               ))}
             </select>
@@ -95,10 +101,10 @@ export default function SetCurrentUnitModal({ classId, classGrade, onSaved, onCl
         {saveError && <p className="form-error">{saveError}</p>}
         <div className="modal-actions">
           <button type="button" className="btn btn-secondary" onClick={onClose} disabled={saving}>
-            Cancel
+            {t('common.cancel')}
           </button>
           <button type="button" className="btn btn-primary" onClick={handleSave} disabled={saving || loadingOutline || units.length === 0}>
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? t('settings.saving') : t('finance.save')}
           </button>
         </div>
       </div>

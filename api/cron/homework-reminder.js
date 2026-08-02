@@ -1,5 +1,6 @@
 import { supabase } from '../_lib/auth.js'
 import { insertNotification } from '../_lib/notifications.js'
+import { notificationText } from '../_lib/notificationText.js'
 import { sendPushToUser } from '../_lib/push.js'
 import { todayStr, DEFAULT_TIMEZONE } from '../../src/lib/streak.js'
 
@@ -27,7 +28,7 @@ export default async function handler(req, res) {
   try {
     const { data: users, error: usersError } = await supabase
       .from('users')
-      .select('id, timezone, notification_preferences')
+      .select('id, timezone, notification_preferences, language_preference')
       .eq('account_type', 'student')
       .is('deleted_at', null)
     if (usersError) throw usersError
@@ -125,8 +126,7 @@ export default async function handler(req, res) {
     })
 
     for (const { student, assignment } of toRemind) {
-      const title = `📚 Homework due today: ${assignment.title}`
-      const body = "Don't forget to complete it before the end of the day!"
+      const { title, body } = notificationText('homework_reminder', student.language_preference, { title: assignment.title })
       await insertNotification({
         userId: student.id,
         type: 'homework_reminder',

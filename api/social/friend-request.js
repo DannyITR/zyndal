@@ -2,6 +2,7 @@ import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeUsername } from '../_lib/sanitize.js'
 import { insertNotification } from '../_lib/notifications.js'
+import { notificationText } from '../_lib/notificationText.js'
 import { sendPushToUser } from '../_lib/push.js'
 
 // Mirrors sendFriendRequest and respondToFriendRequest in storage.js behind
@@ -99,13 +100,17 @@ async function handleSend(userId, body) {
     .single()
   if (error) throw error
 
-  const { data: sender } = await supabase.from('users').select('username').eq('id', userId).maybeSingle()
+  const [{ data: sender }, { data: target }] = await Promise.all([
+    supabase.from('users').select('username').eq('id', userId).maybeSingle(),
+    supabase.from('users').select('language_preference').eq('id', targetId).maybeSingle(),
+  ])
   const senderUsername = sender?.username || 'Someone'
+  const { title, body: notifBody } = notificationText('friend_request', target?.language_preference, { senderUsername })
   await insertNotification({
     userId: targetId,
     type: 'friend_request',
-    title: `@${senderUsername} wants to follow you`,
-    body: 'Tap to accept or decline',
+    title,
+    body: notifBody,
     data: { request_id: requestRow.id, sender_id: userId, sender_username: senderUsername },
   })
 
@@ -159,13 +164,17 @@ async function handleRespond(userId, body) {
     // distinct type from 'friend_request' (not just different copy)
     // because NotificationsScreen.jsx renders Accept/Decline buttons for
     // that type, which makes no sense here; there's nothing left to act on.
-    const { data: responder } = await supabase.from('users').select('username').eq('id', userId).maybeSingle()
+    const [{ data: responder }, { data: requester }] = await Promise.all([
+      supabase.from('users').select('username').eq('id', userId).maybeSingle(),
+      supabase.from('users').select('language_preference').eq('id', request.sender_id).maybeSingle(),
+    ])
     const responderUsername = responder?.username || 'Someone'
+    const { title, body: notifBody } = notificationText('friend_accepted', requester?.language_preference, { username: responderUsername })
     await insertNotification({
       userId: request.sender_id,
       type: 'friend_accepted',
-      title: `@${responderUsername} accepted your friend request`,
-      body: 'You are now friends on Zyndal!',
+      title,
+      body: notifBody,
       data: { responder_id: userId, responder_username: responderUsername },
     })
 

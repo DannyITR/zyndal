@@ -1,6 +1,7 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { insertNotification } from '../_lib/notifications.js'
+import { notificationText } from '../_lib/notificationText.js'
 import { sendPushToUser } from '../_lib/push.js'
 
 function validate(body) {
@@ -24,7 +25,7 @@ function validate(body) {
 async function handle({ userId, body }) {
   const { data: parent, error: parentError } = await supabase
     .from('users')
-    .select('id, username')
+    .select('id, username, language_preference')
     .eq('parent_code', body.parent_code)
     .eq('account_type', 'parent')
     .is('deleted_at', null)
@@ -82,19 +83,19 @@ async function handle({ userId, body }) {
       .in('id', matchingInviteIds)
   }
 
-  const title = `✅ @${student?.username || 'A student'} is now linked to your account`
+  const { title, body: notifBody } = notificationText('parent_link_accepted', parent.language_preference, { studentUsername: student?.username })
   await insertNotification({
     userId: parent.id,
     type: 'parent_link_accepted',
     title,
-    body: 'You can now see their progress on your dashboard.',
+    body: notifBody,
     data: { student_id: userId, student_username: student?.username },
   })
   await sendPushToUser({
     userId: parent.id,
     type: 'parent_link_accepted',
     title,
-    body: 'You can now see their progress on your dashboard.',
+    body: notifBody,
     url: 'https://zyndal.ca',
   })
 

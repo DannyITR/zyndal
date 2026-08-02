@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getTeacherClasses } from '../../lib/storage'
 import TopBar from '../shared/TopBar'
 import CreateClassModal from './CreateClassModal'
 
 export default function MyClassesScreen({ user, onBack, onLogout, onLogoClick, onOpenClass }) {
+  const { t } = useTranslation()
   const [classes, setClasses] = useState(null)
   const [error, setError] = useState('')
   const [showCreate, setShowCreate] = useState(false)
@@ -12,16 +14,19 @@ export default function MyClassesScreen({ user, onBack, onLogout, onLogoClick, o
     setError('')
     getTeacherClasses()
       .then((data) => setClasses(data.classes))
-      .catch((err) => setError(err.message || "Couldn't load your classes."))
+      .catch((err) => setError(err.message || t('teacher.loadClassesFailed')))
   }
 
+  // t is a stable function for the app's lifetime (see src/lib/i18n.js) —
+  // not a real dependency, and this effect should only run once on mount.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(load, [])
 
   return (
     <div className="screen">
       <TopBar
-        title="🏫 My Classes"
-        subtitle="Manage your classes"
+        title={t('teacher.myClasses')}
+        subtitle={t('teacher.manageClasses')}
         username={user.username}
         onBack={onBack}
         onLogout={onLogout}
@@ -29,18 +34,18 @@ export default function MyClassesScreen({ user, onBack, onLogout, onLogoClick, o
       />
 
       <button type="button" className="btn btn-primary btn-block" onClick={() => setShowCreate(true)}>
-        + Create Class
+        {t('teacher.createClass')}
       </button>
 
       {error && <p className="form-error">{error}</p>}
 
       {!classes ? (
-        <p className="loading-text">Loading…</p>
+        <p className="loading-text">{t('common.loading')}</p>
       ) : classes.length === 0 ? (
         <div className="empty-state">
           <p className="empty-state-emoji">🏫</p>
-          <p>No classes yet.</p>
-          <p className="field-hint">Create your first class above to get a code your students can join with.</p>
+          <p>{t('teacher.noClassesYet')}</p>
+          <p className="field-hint">{t('teacher.noClassesHint')}</p>
         </div>
       ) : (
         <div className="teacher-class-list">
@@ -51,11 +56,10 @@ export default function MyClassesScreen({ user, onBack, onLogout, onLogoClick, o
                 <span className="teacher-class-code">{c.teacher_code}</span>
               </div>
               <p className="teacher-class-detail">
-                Grade {c.grade} · {c.school}
+                {t('common.gradeLabel', { grade: c.grade })} · {c.school}
               </p>
               <p className="teacher-class-detail">
-                {c.studentCount} student{c.studentCount === 1 ? '' : 's'} · {c.activeAssignmentCount} active assignment
-                {c.activeAssignmentCount === 1 ? '' : 's'}
+                {t('teacher.classCardDetail', { students: c.studentCount, assignments: c.activeAssignmentCount })}
               </p>
             </button>
           ))}

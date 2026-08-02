@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getTeacherStats, getRecentHomework } from '../../lib/storage'
+import { LOCALE_FOR_LANGUAGE } from '../../lib/i18n'
 import TopBar from '../shared/TopBar'
 import SettingsScreen from '../shared/SettingsScreen'
 import MyClassesScreen from './MyClassesScreen'
@@ -15,6 +17,7 @@ const SHARE_URL_BASE = 'https://zyndal.ca'
 // reuses SettingsScreen.jsx as-is per the spec's "same settings page as
 // other account types."
 export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
+  const { t, i18n } = useTranslation()
   const [stats, setStats] = useState(null)
   const [statsError, setStatsError] = useState('')
   const [recentHomework, setRecentHomework] = useState(null)
@@ -27,18 +30,23 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
   function loadStats() {
     getTeacherStats()
       .then(setStats)
-      .catch((err) => setStatsError(err.message || 'Failed to load stats.'))
+      .catch((err) => setStatsError(err.message || t('teacher.loadStatsFailed')))
   }
 
   function loadRecentHomework() {
     getRecentHomework()
       .then((data) => setRecentHomework(data.homework))
-      .catch((err) => setRecentHomeworkError(err.message || 'Failed to load recent homework.'))
+      .catch((err) => setRecentHomeworkError(err.message || t('teacher.loadHomeworkFailed')))
   }
 
   useEffect(() => {
     loadStats()
     loadRecentHomework()
+    // loadStats/loadRecentHomework are plain functions redefined every
+    // render (only recently started closing over `t` from useTranslation,
+    // which is what surfaced this warning) — this effect should only run
+    // once on mount, same as before.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function goHome() {
@@ -61,7 +69,7 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
 
   async function handleShare() {
     const url = `${SHARE_URL_BASE}?ref=${encodeURIComponent(user.username)}`
-    const shareData = { title: 'Zyndal', text: 'Join me on Zyndal — daily questions, real rewards!', url }
+    const shareData = { title: 'Zyndal', text: t('teacher.shareText'), url }
     if (navigator.share && navigator.canShare?.(shareData)) {
       try {
         await navigator.share(shareData)
@@ -134,8 +142,8 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
   return (
     <div className="screen teacher-screen">
       <TopBar
-        title={`${avatarPrefix}Hey, ${greetingName} 👋`}
-        subtitle="Teacher Dashboard"
+        title={`${avatarPrefix}${t('common.greeting', { name: greetingName })}`}
+        subtitle={t('teacher.subtitle')}
         username={user.username}
         onLogout={onLogout}
         onSettings={() => setView('settings')}
@@ -147,40 +155,40 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
       <div className="teacher-stats-row">
         <div className="teacher-stat-card">
           <p className="teacher-stat-value">{stats ? stats.totalClasses : '…'}</p>
-          <p className="teacher-stat-label">Classes</p>
+          <p className="teacher-stat-label">{t('teacher.classesLabel')}</p>
         </div>
         <div className="teacher-stat-card">
           <p className="teacher-stat-value">{stats ? stats.totalStudents : '…'}</p>
-          <p className="teacher-stat-label">Students</p>
+          <p className="teacher-stat-label">{t('teacher.studentsLabel')}</p>
         </div>
         <div className="teacher-stat-card">
           <p className="teacher-stat-value">{stats ? stats.activeToday : '…'}</p>
-          <p className="teacher-stat-label">Active Today</p>
+          <p className="teacher-stat-label">{t('teacher.activeTodayLabel')}</p>
         </div>
         <div className="teacher-stat-card">
           <p className="teacher-stat-value">{stats ? stats.assignmentsDueThisWeek : '…'}</p>
-          <p className="teacher-stat-label">Due This Week</p>
+          <p className="teacher-stat-label">{t('teacher.dueThisWeekLabel')}</p>
         </div>
       </div>
 
       <div className="home-actions">
         <button type="button" className="btn btn-secondary btn-small" onClick={() => setView('classes')}>
-          🏫 My Classes
+          {t('teacher.myClasses')}
         </button>
         <button type="button" className="btn btn-secondary btn-small" onClick={() => setView('leaderboard')}>
-          🏆 Leaderboard
+          {t('nav.leaderboard')}
         </button>
       </div>
 
       <button type="button" className="btn btn-primary btn-block" onClick={handleShare}>
-        {shareStatus === 'copied' ? 'Link copied!' : '📣 Share Zyndal with Students'}
+        {shareStatus === 'copied' ? t('addChild.linkCopied') : t('teacher.shareWithStudents')}
       </button>
 
-      <h3 className="section-heading">Recent Homework</h3>
+      <h3 className="section-heading">{t('teacher.recentHomework')}</h3>
       {recentHomeworkError && <p className="form-error">{recentHomeworkError}</p>}
-      {!recentHomework && !recentHomeworkError && <p className="loading-text">Loading…</p>}
+      {!recentHomework && !recentHomeworkError && <p className="loading-text">{t('common.loading')}</p>}
       {recentHomework && recentHomework.length === 0 && (
-        <p className="field-hint">No homework assigned yet — open a class to assign your first one.</p>
+        <p className="field-hint">{t('teacher.noHomeworkYet')}</p>
       )}
       {recentHomework && recentHomework.length > 0 && (
         <div className="teacher-recent-homework-list">
@@ -195,8 +203,11 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
                 {h.className} — {h.title}
               </p>
               <p className="teacher-class-detail">
-                Due {new Date(`${h.dueDate}T00:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC' })} · {h.completedCount}/
-                {h.totalEnrolled} students completed
+                {t('teacher.dueDetail', {
+                  date: new Date(`${h.dueDate}T00:00:00Z`).toLocaleDateString(LOCALE_FOR_LANGUAGE[i18n.language] || 'en-US', { timeZone: 'UTC' }),
+                  completed: h.completedCount,
+                  total: h.totalEnrolled,
+                })}
               </p>
             </button>
           ))}

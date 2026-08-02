@@ -2,6 +2,7 @@ import { createParentHandler } from '../_lib/parentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeUuid } from '../_lib/sanitize.js'
 import { insertNotification } from '../_lib/notifications.js'
+import { notificationText } from '../_lib/notificationText.js'
 import { sendPushToUser } from '../_lib/push.js'
 
 function validate(body) {
@@ -18,7 +19,7 @@ function validate(body) {
 async function handle({ parentId, body }) {
   const { data: student, error: studentError } = await supabase
     .from('users')
-    .select('id, username, account_type, deleted_at')
+    .select('id, username, account_type, deleted_at, language_preference')
     .eq('id', body.student_id)
     .maybeSingle()
   if (studentError) throw studentError
@@ -73,8 +74,7 @@ async function handle({ parentId, body }) {
     .single()
   if (insertError) throw insertError
 
-  const title = `@${parent.username} wants to link as your parent`
-  const notifBody = 'Accept or decline this request.'
+  const { title, body: notifBody } = notificationText('parent_link_request', student.language_preference, { parentUsername: parent.username })
   await insertNotification({
     userId: body.student_id,
     type: 'parent_link_request',

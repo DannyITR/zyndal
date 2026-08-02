@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { centsToDisplay } from '../../../lib/money'
 
 export default function GradeRewardNotification({ bonus, onResolve }) {
+  const { t } = useTranslation()
   const [adjusting, setAdjusting] = useState(false)
   const [customAmount, setCustomAmount] = useState(centsToDisplay(bonus.suggestedBonusCents))
   const [processing, setProcessing] = useState(false)
@@ -14,20 +16,26 @@ export default function GradeRewardNotification({ bonus, onResolve }) {
     try {
       await onResolve(amountCents)
     } catch {
-      setError("Couldn't process the bonus. Please try again.")
+      setError(t('finance.bonusFailed'))
       setProcessing(false)
     }
   }
 
   const customCents = Math.round(Number(customAmount) * 100)
-  const subjectLabel = bonus.subject ? `${bonus.subject}${bonus.topic ? ` ${bonus.topic}` : ''} test` : 'test'
+  const subjectLabel = bonus.subject
+    ? `${t(`subjects.${bonus.subject}`, { defaultValue: bonus.subject })}${bonus.topic ? ` ${bonus.topic}` : ''} ${t('finance.testWord')}`
+    : t('finance.testWord')
 
   return (
     <div className="perfect-week-card">
       <p className="perfect-week-emoji">🎓</p>
       <p className="perfect-week-text">
-        <strong>@{bonus.studentUsername}</strong> got <strong>{bonus.gradeReceived}%</strong> on their {subjectLabel}!
-        Pay <strong>${centsToDisplay(bonus.suggestedBonusCents)}</strong> bonus?
+        {t('finance.gradeBonusText', {
+          username: bonus.studentUsername,
+          grade: bonus.gradeReceived,
+          subject: subjectLabel,
+          amount: centsToDisplay(bonus.suggestedBonusCents),
+        })}
       </p>
 
       {!adjusting ? (
@@ -38,16 +46,16 @@ export default function GradeRewardNotification({ bonus, onResolve }) {
             disabled={processing}
             onClick={() => handleConfirm(bonus.suggestedBonusCents)}
           >
-            {processing ? 'Processing…' : `Confirm $${centsToDisplay(bonus.suggestedBonusCents)}`}
+            {processing ? t('finance.processing') : t('finance.confirmAmount', { amount: centsToDisplay(bonus.suggestedBonusCents) })}
           </button>
           <button type="button" className="btn btn-ghost" disabled={processing} onClick={() => setAdjusting(true)}>
-            Adjust Amount
+            {t('finance.adjustAmount')}
           </button>
         </div>
       ) : (
         <div className="perfect-week-adjust">
           <div className="field">
-            <label htmlFor={`grade-bonus-adjust-${bonus.id}`}>Custom amount ($)</label>
+            <label htmlFor={`grade-bonus-adjust-${bonus.id}`}>{t('finance.customAmount')}</label>
             <input
               id={`grade-bonus-adjust-${bonus.id}`}
               type="number"
@@ -60,7 +68,7 @@ export default function GradeRewardNotification({ bonus, onResolve }) {
           </div>
           <div className="perfect-week-actions">
             <button type="button" className="btn btn-ghost" disabled={processing} onClick={() => setAdjusting(false)}>
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="button"
@@ -68,7 +76,7 @@ export default function GradeRewardNotification({ bonus, onResolve }) {
               disabled={processing || !(customCents > 0)}
               onClick={() => handleConfirm(customCents)}
             >
-              {processing ? 'Processing…' : `Confirm $${centsToDisplay(customCents)}`}
+              {processing ? t('finance.processing') : t('finance.confirmAmount', { amount: centsToDisplay(customCents) })}
             </button>
           </div>
         </div>

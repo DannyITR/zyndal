@@ -2,6 +2,7 @@ import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { getStreakRow, getTodayScore } from '../_lib/db.js'
 import { insertNotification } from '../_lib/notifications.js'
+import { notificationText } from '../_lib/notificationText.js'
 import { sendPushToUser } from '../_lib/push.js'
 import { getEffectiveStreak, todayStr, isValidTimeZone, DEFAULT_TIMEZONE } from '../../src/lib/streak.js'
 import { computeShareStreak } from '../../src/lib/streakShare.js'
@@ -54,13 +55,21 @@ async function handle({ userId, body }) {
   // Only notify on an actual new share, not a same-day duplicate (the
   // 23505 path above leaves shareRow undefined).
   if (shareRow) {
-    const { data: sender } = await supabase.from('users').select('username').eq('id', userId).maybeSingle()
+    const [{ data: sender }, { data: receiver }] = await Promise.all([
+      supabase.from('users').select('username').eq('id', userId).maybeSingle(),
+      supabase.from('users').select('language_preference').eq('id', body.receiver_id).maybeSingle(),
+    ])
     const senderUsername = sender?.username || 'Someone'
+    const { title, body: notifBody } = notificationText('score_share', receiver?.language_preference, {
+      senderUsername,
+      correct: senderScore.correct,
+      total: senderScore.total,
+    })
     await insertNotification({
       userId: body.receiver_id,
       type: 'score_share',
-      title: `@${senderUsername} shared their score`,
-      body: `@${senderUsername} got ${senderScore.correct}/${senderScore.total} today`,
+      title,
+      body: notifBody,
       data: { share_id: shareRow.id, sender_id: userId, sender_username: senderUsername, sender_score: senderScore },
     })
 

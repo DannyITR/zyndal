@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { searchStudentsForParent, sendParentLinkRequest, inviteChildByEmail } from '../../lib/storage'
 import TopBar from '../shared/TopBar'
 
@@ -6,6 +7,7 @@ const SHARE_URL_BASE = 'https://zyndal.ca'
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function AddChildScreen({ user, onBack, onLogout, onLogoClick, onChanged }) {
+  const { t } = useTranslation()
   const [tab, setTab] = useState('search') // search | email | code
 
   // ---------- Tab 1: search by username (mirrors FriendsScreen.jsx) ----------
@@ -47,7 +49,7 @@ export default function AddChildScreen({ user, onBack, onLogout, onLogoClick, on
         })
         .catch(() => {
           if (cancelled) return
-          setSearchError("Couldn't search right now. Please try again.")
+          setSearchError(t('friends.searchFailed'))
           setDropdownOpen(false)
           setDropdownResults(null)
         })
@@ -59,6 +61,10 @@ export default function AddChildScreen({ user, onBack, onLogout, onLogoClick, on
       cancelled = true
       clearTimeout(timer)
     }
+    // t is a stable function for the app's lifetime (see src/lib/i18n.js) —
+    // not a real dependency, and including it would re-search on every
+    // language change for no reason.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query])
 
   useEffect(() => {
@@ -86,7 +92,7 @@ export default function AddChildScreen({ user, onBack, onLogout, onLogoClick, on
       setRequestStatus('sent')
       onChanged?.()
     } catch (err) {
-      setRequestStatus(err.message || 'Failed')
+      setRequestStatus(err.message || t('addChild.requestFailed'))
     }
   }
 
@@ -102,7 +108,7 @@ export default function AddChildScreen({ user, onBack, onLogout, onLogoClick, on
     setEmailSent('')
     const trimmed = childEmail.trim()
     if (!EMAIL_PATTERN.test(trimmed)) {
-      setEmailError('Please enter a valid email address.')
+      setEmailError(t('addChild.invalidEmail'))
       return
     }
     setEmailSending(true)
@@ -112,7 +118,7 @@ export default function AddChildScreen({ user, onBack, onLogout, onLogoClick, on
       setChildEmail('')
       onChanged?.()
     } catch (err) {
-      setEmailError(err.message || "Couldn't send the invitation. Please try again.")
+      setEmailError(err.message || t('addChild.sendInviteFailed'))
     } finally {
       setEmailSending(false)
     }
@@ -154,23 +160,23 @@ export default function AddChildScreen({ user, onBack, onLogout, onLogoClick, on
 
   return (
     <div className="screen">
-      <TopBar title="➕ Add Child" subtitle="Link your child's account" username={user.username} onBack={onBack} onLogout={onLogout} onLogoClick={onLogoClick} />
+      <TopBar title={t('parent.addChild')} subtitle={t('addChild.subtitle')} username={user.username} onBack={onBack} onLogout={onLogout} onLogoClick={onLogoClick} />
 
       <div className="auth-tabs">
         <button type="button" className={`auth-tab ${tab === 'search' ? 'auth-tab--active' : ''}`} onClick={() => setTab('search')}>
-          Search Username
+          {t('addChild.tabSearch')}
         </button>
         <button type="button" className={`auth-tab ${tab === 'email' ? 'auth-tab--active' : ''}`} onClick={() => setTab('email')}>
-          Invite by Email
+          {t('addChild.tabEmail')}
         </button>
         <button type="button" className={`auth-tab ${tab === 'code' ? 'auth-tab--active' : ''}`} onClick={() => setTab('code')}>
-          Share Code
+          {t('addChild.tabCode')}
         </button>
       </div>
 
       {tab === 'search' && (
         <div className="finance-section-card">
-          <h3 className="section-heading">Search for your child's Zyndal username</h3>
+          <h3 className="section-heading">{t('addChild.searchHeading')}</h3>
           <div className="friend-search-input-wrap" ref={searchContainerRef}>
             <input
               type="text"
@@ -179,22 +185,22 @@ export default function AddChildScreen({ user, onBack, onLogout, onLogoClick, on
               onFocus={() => {
                 if (dropdownResults !== null) setDropdownOpen(true)
               }}
-              placeholder="Search by username..."
+              placeholder={t('addChild.searchPlaceholder')}
             />
 
             {dropdownOpen && (
               <div className="friend-search-dropdown">
                 {searching ? (
-                  <p className="friend-search-dropdown-empty">Searching…</p>
+                  <p className="friend-search-dropdown-empty">{t('friends.searching')}</p>
                 ) : dropdownResults && dropdownResults.length === 0 ? (
-                  <p className="friend-search-dropdown-empty">No students found with that username</p>
+                  <p className="friend-search-dropdown-empty">{t('addChild.noStudentsFound')}</p>
                 ) : (
                   dropdownResults?.map((result) => (
                     <button key={result.id} type="button" className="friend-search-dropdown-item" onClick={() => handleSelectResult(result)}>
                       <span className="friend-search-dropdown-avatar">{result.avatar || '👤'}</span>
                       <span className="friend-search-dropdown-info">
                         <span className="friend-search-dropdown-username">@{result.username}</span>
-                        {result.grade && <span className="friend-search-dropdown-grade">Grade {result.grade}</span>}
+                        {result.grade && <span className="friend-search-dropdown-grade">{t('common.gradeLabel', { grade: result.grade })}</span>}
                       </span>
                     </button>
                   ))
@@ -208,10 +214,10 @@ export default function AddChildScreen({ user, onBack, onLogout, onLogoClick, on
             <div className="friend-search-row">
               <span className="friend-search-name">@{selectedStudent.username}</span>
               {requestStatus === 'sent' ? (
-                <span className="friend-search-status">Requested ✓</span>
+                <span className="friend-search-status">{t('friends.requested')}</span>
               ) : (
                 <button type="button" className="btn btn-primary btn-small" disabled={requestStatus === 'sending'} onClick={handleSendRequest}>
-                  {requestStatus === 'sending' ? 'Sending…' : 'Send Link Request'}
+                  {requestStatus === 'sending' ? t('common.sending') : t('addChild.sendLinkRequest')}
                 </button>
               )}
               {requestStatus && requestStatus !== 'sending' && requestStatus !== 'sent' && <p className="friend-search-error">{requestStatus}</p>}
@@ -222,11 +228,11 @@ export default function AddChildScreen({ user, onBack, onLogout, onLogoClick, on
 
       {tab === 'email' && (
         <div className="finance-section-card">
-          <h3 className="section-heading">Invite by Email</h3>
-          <p className="field-hint">We'll send your child an email with a link to create their account, already linked to you.</p>
+          <h3 className="section-heading">{t('addChild.tabEmail')}</h3>
+          <p className="field-hint">{t('addChild.emailHint')}</p>
           <form className="auth-form" onSubmit={handleSendEmailInvite}>
             <div className="field">
-              <label htmlFor="child-email">Child's email address</label>
+              <label htmlFor="child-email">{t('addChild.emailLabel')}</label>
               <input
                 id="child-email"
                 type="email"
@@ -236,9 +242,9 @@ export default function AddChildScreen({ user, onBack, onLogout, onLogoClick, on
               />
             </div>
             {emailError && <p className="form-error">{emailError}</p>}
-            {emailSent && <p className="form-success">Invitation sent to {emailSent}!</p>}
+            {emailSent && <p className="form-success">{t('addChild.invitationSent', { email: emailSent })}</p>}
             <button type="submit" className="btn btn-primary btn-block" disabled={emailSending}>
-              {emailSending ? 'Sending…' : 'Send Invite'}
+              {emailSending ? t('common.sending') : t('addChild.sendInvite')}
             </button>
           </form>
         </div>
@@ -246,16 +252,16 @@ export default function AddChildScreen({ user, onBack, onLogout, onLogoClick, on
 
       {tab === 'code' && (
         <div className="parent-code-card">
-          <p className="parent-code-label">Your parent code</p>
+          <p className="parent-code-label">{t('addChild.yourParentCode')}</p>
           <div className="parent-code-value-row">
             <span className="parent-code-value">{user.parent_code}</span>
             <button type="button" className="btn btn-secondary btn-small" onClick={handleCopyCode}>
-              {copied ? 'Copied!' : 'Copy code'}
+              {copied ? t('addChild.copied') : t('addChild.copyCode')}
             </button>
           </div>
-          <p className="field-hint">Share this with your child so they can link their account.</p>
+          <p className="field-hint">{t('addChild.shareCodeHint')}</p>
           <button type="button" className="btn btn-secondary btn-block" onClick={handleShareLink}>
-            {shareStatus === 'copied' ? 'Link copied!' : '📣 Share invite link'}
+            {shareStatus === 'copied' ? t('addChild.linkCopied') : t('addChild.shareInviteLink')}
           </button>
         </div>
       )}
