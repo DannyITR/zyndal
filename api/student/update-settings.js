@@ -4,7 +4,7 @@ import { generateUniqueParentCode, SAFE_USER_COLUMNS } from '../_lib/db.js'
 import { sanitizeString, sanitizeEmail, sanitizeGrade, sanitizeAccountType } from '../_lib/sanitize.js'
 import { createAndSendVerificationEmail } from '../_lib/verification.js'
 
-const LANGUAGE_PREFERENCES = new Set(['English', 'French'])
+const LANGUAGE_PREFERENCES = new Set(['English', 'French', 'Spanish'])
 const NOTIFICATION_PREFERENCE_KEYS = ['enabled', 'score_share', 'friend_request', 'streak_reminder']
 
 // Backs updateUserProfile() in src/lib/storage.js. grade and
@@ -41,7 +41,7 @@ function validate(body) {
   }
 
   if (body.language_preference !== undefined && body.language_preference !== null && !LANGUAGE_PREFERENCES.has(body.language_preference)) {
-    return { field: 'language_preference', message: "language_preference must be 'English' or 'French'." }
+    return { field: 'language_preference', message: "language_preference must be 'English', 'French', or 'Spanish'." }
   }
 
   if (body.notification_preferences !== undefined && body.notification_preferences !== null) {

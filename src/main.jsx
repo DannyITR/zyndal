@@ -1,11 +1,18 @@
+// i18n must be the very first import — it runs i18next.init() as an import
+// side effect, which needs to happen before App (or anything it renders)
+// can call useTranslation()/access the i18next instance.
+import i18n from './lib/i18n'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { I18nextProvider } from 'react-i18next'
 import './index.css'
 import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <I18nextProvider i18n={i18n}>
+      <App />
+    </I18nextProvider>
   </StrictMode>,
 )
 

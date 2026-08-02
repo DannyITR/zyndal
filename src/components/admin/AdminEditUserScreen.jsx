@@ -310,7 +310,8 @@ export default function AdminEditUserScreen({ userId, onBack, onLogout }) {
                 <span>Language preference</span>
                 <select value={profile.language_preference} onChange={(e) => setProfileField('language_preference', e.target.value)}>
                   <option value="English">English</option>
-                  <option value="French">French</option>
+                  <option value="French">Français</option>
+                  <option value="Spanish">Español</option>
                 </select>
               </label>
               <label className="admin-field">

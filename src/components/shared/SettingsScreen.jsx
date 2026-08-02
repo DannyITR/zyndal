@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   updateUserProfile,
   changePassword,
@@ -11,6 +12,7 @@ import {
   getPendingParentRequests,
   respondToParentLinkRequest,
 } from '../../lib/storage'
+import { languageCodeForPreference } from '../../lib/i18n'
 import { AVATARS } from '../../lib/avatars'
 import TopBar from './TopBar'
 import LegalModal from '../legal/LegalModal'
@@ -19,6 +21,7 @@ import DeleteAccountModal from './DeleteAccountModal'
 const DEFAULT_NOTIFICATION_PREFERENCES = { enabled: true, score_share: true, friend_request: true, streak_reminder: true }
 
 export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogoClick }) {
+  const { i18n } = useTranslation()
   const isStudent = user.account_type === 'student'
 
   const [friendCount, setFriendCount] = useState(null)
@@ -180,6 +183,16 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
     onLogout()
   }
 
+  // Switches the UI language the moment it's picked, ahead of (and
+  // independent of) the profile form's own Save button below — the
+  // database write still only happens on submit, same as every other field
+  // on this form.
+  function handleLanguageChange(e) {
+    const preference = e.target.value
+    setLanguagePreference(preference)
+    i18n.changeLanguage(languageCodeForPreference(preference))
+  }
+
   async function handleSaveProfile(e) {
     e.preventDefault()
     setError('')
@@ -311,11 +324,15 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
         {isStudent && (
           <div className="field">
             <label htmlFor="settings-language">Preferred language</label>
-            <select id="settings-language" value={languagePreference} onChange={(e) => setLanguagePreference(e.target.value)}>
+            <select id="settings-language" value={languagePreference} onChange={handleLanguageChange}>
               <option value="English">English</option>
-              <option value="French">French</option>
+              <option value="French">Français</option>
+              <option value="Spanish">Español</option>
             </select>
-            <p className="field-hint">Used for AI-generated study guide and test prep questions when you're not studying from your own uploads.</p>
+            <p className="field-hint">
+              Changes the app's language right away. Also used for AI-generated study guide and test prep questions when
+              you're not studying from your own uploads.
+            </p>
           </div>
         )}
 

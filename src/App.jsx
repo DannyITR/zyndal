@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getCurrentUser, clearSession, setSessionExpiredHandler, lookupParentCode } from './lib/storage'
+import { languageCodeForPreference } from './lib/i18n'
 import LandingPage from './components/landing/LandingPage'
 import AuthScreen from './components/auth/AuthScreen'
 import OAuthCallbackScreen from './components/auth/OAuthCallbackScreen'
@@ -13,6 +15,7 @@ import AdminApp from './components/admin/AdminApp'
 import './App.css'
 
 function App() {
+  const { i18n } = useTranslation()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showLanding, setShowLanding] = useState(false)
@@ -88,6 +91,25 @@ function App() {
       cancelled = true
     }
   }, [inviteParams])
+
+  // Syncs i18next to whichever account is current, covering every path
+  // that ever calls setUser (initial load, login/signup, OAuth, email
+  // verification, Settings save) from one place instead of each of them
+  // needing to remember to do it. Before login, the language detector's own
+  // localStorage/browser fallback (see src/lib/i18n.js) already applies —
+  // this only fires once a real user object exists.
+  //
+  // Deliberately NOT depending on `i18n` here (it's a stable singleton for
+  // the app's whole lifetime, imported once from src/lib/i18n.js) — adding
+  // it caused this effect to re-fire immediately after any in-place
+  // i18n.changeLanguage() call elsewhere (e.g. SettingsScreen.jsx's
+  // instant-preview on the language dropdown), stomping that change right
+  // back to whatever's still saved on `user` before the form is submitted.
+  useEffect(() => {
+    if (!user?.language_preference) return
+    i18n.changeLanguage(languageCodeForPreference(user.language_preference))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.language_preference])
 
   // Fires from anywhere a /api/student or /api/questions call gets a 401
   // mid-session (session row deleted or expired while the user was active)

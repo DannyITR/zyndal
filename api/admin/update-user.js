@@ -3,7 +3,7 @@ import { supabase } from '../_lib/auth.js'
 import { sanitizeUuid, sanitizeGrade, sanitizeAccountType, sanitizeUsername, sanitizeString, sanitizeEmail } from '../_lib/sanitize.js'
 import { AVATARS } from '../../src/lib/avatars.js'
 
-const LANGUAGE_PREFERENCES = new Set(['English', 'French'])
+const LANGUAGE_PREFERENCES = new Set(['English', 'French', 'Spanish'])
 
 // Same column set get-user-detail.js selects (everything the Edit User page
 // needs to re-sync its local state after a save), not db.js's
@@ -62,7 +62,7 @@ function validate(body) {
   }
 
   if (body.language_preference !== undefined && body.language_preference !== null && !LANGUAGE_PREFERENCES.has(body.language_preference)) {
-    return { field: 'language_preference', message: "language_preference must be 'English' or 'French'." }
+    return { field: 'language_preference', message: "language_preference must be 'English', 'French', or 'Spanish'." }
   }
 
   if (body.avatar !== undefined && body.avatar !== null && body.avatar !== '' && !AVATARS.includes(body.avatar)) {
