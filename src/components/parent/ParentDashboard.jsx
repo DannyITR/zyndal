@@ -298,6 +298,7 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
                 progress={progress}
                 practiceSessions={practiceByStudent[student.id] || []}
                 grades={gradesByStudent[student.id] || []}
+                workSubmissions={student.workSubmissions || []}
                 onSelectEntry={setViewingEntry}
               />
             )

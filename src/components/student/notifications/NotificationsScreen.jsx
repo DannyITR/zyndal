@@ -20,6 +20,8 @@ const TYPE_ICON = {
   homework_assigned: '📚',
   homework_reminder: '📚',
   parent_link_request: '👨‍👩‍👧',
+  work_approved: '✅',
+  work_rejected: '✏️',
   // No entry for parent_link_accepted — its title text already leads with
   // "✅" (see link-parent.js/respond-parent-link.js), so a TYPE_ICON here
   // would just render a second checkmark right next to the first one.

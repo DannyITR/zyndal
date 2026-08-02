@@ -1,14 +1,17 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { submitHomework } from '../../../lib/storage'
 import { todayStr, formatLongDate } from '../../../lib/streak'
 import { getUserTimeZone } from '../../../lib/timezone'
 import TopBar from '../../shared/TopBar'
 import HomeworkQuestion from './HomeworkQuestion'
 
+// Scratchpad is Math-only — other subjects may be added in future.
 export default function HomeworkSessionScreen({ user, assignment, onFinished, onBack, onLogout, onLogoClick }) {
   const [answers, setAnswers] = useState({}) // questionIndex -> { selectedIndex, correct }
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const isMath = assignment.subject === 'math'
+  const scratchpadRefs = useRef([])
 
   const today = todayStr(new Date(), getUserTimeZone())
   const isLate = assignment.dueDate < today
@@ -25,7 +28,13 @@ export default function HomeworkSessionScreen({ user, assignment, onFinished, on
     setError('')
     try {
       const selectedIndexes = questions.map((_, i) => answers[i].selectedIndex)
-      const result = await submitHomework(assignment.id, selectedIndexes)
+      const workImages = {}
+      if (isMath) {
+        scratchpadRefs.current.forEach((pad, i) => {
+          if (pad && !pad.isEmpty()) workImages[i] = pad.toDataURL()
+        })
+      }
+      const result = await submitHomework(assignment.id, selectedIndexes, workImages)
       onFinished(result)
     } catch (err) {
       console.error('[Homework] submit failed:', err)
@@ -55,6 +64,8 @@ export default function HomeworkSessionScreen({ user, assignment, onFinished, on
           question={question}
           attempt={answers[i]}
           isLate={isLate}
+          isMath={isMath}
+          scratchpadRef={(el) => (scratchpadRefs.current[i] = el)}
           onAnswer={(selectedIndex, correct) => handleAnswer(i, selectedIndex, correct)}
         />
       ))}

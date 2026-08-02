@@ -49,12 +49,27 @@ async function handle({ teacherId, body }) {
     .maybeSingle()
   if (submissionError) throw submissionError
 
+  // Scratchpad is Math-only — other subjects may be added in future.
+  const { data: workSubmissions, error: workError } = await supabase
+    .from('work_submissions')
+    .select('id, question_index, image_base64, approved')
+    .eq('assignment_id', body.assignment_id)
+    .eq('user_id', body.student_id)
+    .eq('review_type', 'teacher')
+  if (workError) throw workError
+
   return {
     questions: assignment.questions,
     submitted: Boolean(submission?.completed_at),
     answers: submission?.answers ?? null,
     scorePercentage: submission?.score_percentage ?? null,
     completedAt: submission?.completed_at ?? null,
+    workSubmissions: (workSubmissions || []).map((w) => ({
+      id: w.id,
+      questionIndex: w.question_index,
+      imageBase64: w.image_base64,
+      approved: w.approved,
+    })),
   }
 }
 

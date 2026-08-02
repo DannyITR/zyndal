@@ -70,6 +70,19 @@ async function handle({ teacherId, body }) {
     : { data: [] }
   if (submissionsError) throw submissionsError
 
+  // Scratchpad is Math-only — other subjects may be added in future.
+  // "Pending Work Reviews" badge — count only, not the rows themselves;
+  // get-submission-detail.js is where a teacher actually reviews each one.
+  const { count: pendingWorkReviewCount, error: pendingWorkError } = assignmentIds.length
+    ? await supabase
+        .from('work_submissions')
+        .select('id', { count: 'exact', head: true })
+        .eq('review_type', 'teacher')
+        .is('approved', null)
+        .in('assignment_id', assignmentIds)
+    : { count: 0, error: null }
+  if (pendingWorkError) throw pendingWorkError
+
   const submissionsByAssignment = {}
   for (const s of submissions || []) {
     ;(submissionsByAssignment[s.assignment_id] ||= []).push(s)
@@ -109,6 +122,7 @@ async function handle({ teacherId, body }) {
     students,
     assignments: enrichedAssignments,
     leaderboard: [...students].sort((a, b) => b.totalXp - a.totalXp),
+    pendingWorkReviewCount: pendingWorkReviewCount || 0,
   }
 }
 

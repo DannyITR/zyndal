@@ -476,6 +476,15 @@ export async function getTodayQuestion(subject, timezone = getUserTimeZone()) {
   return callQuestionsApi('GET', `get-daily-question?subject=${encodeURIComponent(subject)}&timezone=${encodeURIComponent(timezone)}`)
 }
 
+// Scratchpad is Math-only — other subjects may be added in future.
+// Submits a photo of the student's handwritten work for AI grading against
+// the already-scored answer (answerId, from submitAnswer's response) — see
+// api/questions/grade-work.js for why question_text/correct_answer are
+// never sent from here.
+export async function gradeWork(answerId, imageDataUrl) {
+  return callQuestionsApi('POST', 'grade-work', { answer_id: answerId, image_base64: imageDataUrl })
+}
+
 // Computes the result of answering today's question and persists both the
 // new answer row and the updated streak/xp/coin totals. question and today
 // aren't sent — the server looks up today's actual question itself and
@@ -490,6 +499,7 @@ export async function submitAnswer(progress, question, selectedIndex, subjectId,
     timezone: getUserTimeZone(),
   })
 
+  const newEntry = { ...data.entry, id: data.answer_id }
   const newProgress = {
     ...progress,
     streak: data.new_streak,
@@ -497,7 +507,7 @@ export async function submitAnswer(progress, question, selectedIndex, subjectId,
     xp: data.new_xp_total,
     coins: data.new_coins_total,
     lastCorrectDate: data.last_correct_date,
-    history: [...progress.history, data.entry],
+    history: [...progress.history, newEntry],
   }
 
   return {
@@ -508,6 +518,7 @@ export async function submitAnswer(progress, question, selectedIndex, subjectId,
     milestoneHit: data.milestone_reached,
     bonusEarned: data.bonus_earned,
     perfectWeek: data.perfect_week_bonus_cents != null ? { bonusCents: data.perfect_week_bonus_cents } : null,
+    answerId: data.answer_id,
   }
 }
 
@@ -969,11 +980,15 @@ export async function getMyHomework() {
   return callStudentApi('GET', `get-homework?timezone=${encodeURIComponent(getUserTimeZone())}`)
 }
 
-export async function submitHomework(assignmentId, selectedIndexes) {
+// Scratchpad is Math-only — other subjects may be added in future.
+// workImages (optional): { questionIndex: canvas.toDataURL() } — only
+// meaningful for Math assignments, ignored server-side otherwise.
+export async function submitHomework(assignmentId, selectedIndexes, workImages) {
   return callStudentApi('POST', 'submit-homework', {
     assignment_id: assignmentId,
     selected_indexes: selectedIndexes,
     timezone: getUserTimeZone(),
+    ...(workImages && Object.keys(workImages).length > 0 ? { work_images: workImages } : {}),
   })
 }
 
@@ -1034,6 +1049,11 @@ export async function getSubmissionDetail(assignmentId, studentId) {
     'GET',
     `get-submission-detail?assignment_id=${encodeURIComponent(assignmentId)}&student_id=${encodeURIComponent(studentId)}`
   )
+}
+
+// Scratchpad is Math-only — other subjects may be added in future.
+export async function reviewWork(workSubmissionId, approved) {
+  return callTeacherApi('POST', 'review-work', { work_submission_id: workSubmissionId, approved })
 }
 
 // ---------- Teacher: homework ----------

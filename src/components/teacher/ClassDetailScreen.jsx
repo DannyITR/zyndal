@@ -115,6 +115,12 @@ export default function ClassDetailScreen({ user, classId, onBack, onLogout, onL
         </div>
       )}
 
+      {detail.pendingWorkReviewCount > 0 && (
+        <div className="daily-status-banner daily-status-banner--pending">
+          ✏️ Pending Work Reviews ({detail.pendingWorkReviewCount}) — open an assignment's student to review
+        </div>
+      )}
+
       <h3 className="section-heading">Assignments ({detail.assignments.length})</h3>
       {detail.assignments.length === 0 ? (
         <p className="field-hint">No homework assigned to this class yet.</p>

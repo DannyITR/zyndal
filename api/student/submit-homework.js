@@ -1,6 +1,6 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
-import { sanitizeUuid } from '../_lib/sanitize.js'
+import { sanitizeUuid, sanitizeImageBase64 } from '../_lib/sanitize.js'
 import { todayStr, isValidTimeZone, DEFAULT_TIMEZONE } from '../../src/lib/streak.js'
 
 function validate(body) {
@@ -13,6 +13,24 @@ function validate(body) {
   }
   if (body.selected_indexes.some((i) => !Number.isInteger(i) || i < 0 || i > 3)) {
     return { field: 'selected_indexes', message: 'Each selected index must be a whole number between 0 and 3.' }
+  }
+
+  // Scratchpad is Math-only — other subjects may be added in future.
+  // Optional map of questionIndex -> canvas.toDataURL() PNG, for Math
+  // assignments only (handle() ignores it entirely for other subjects).
+  if (body.work_images !== undefined) {
+    if (typeof body.work_images !== 'object' || body.work_images === null || Array.isArray(body.work_images)) {
+      return { field: 'work_images', message: 'work_images must be an object.' }
+    }
+    const cleaned = {}
+    for (const [key, value] of Object.entries(body.work_images)) {
+      const idx = Number(key)
+      if (!Number.isInteger(idx) || idx < 0) return { field: 'work_images', message: 'work_images keys must be valid question indexes.' }
+      const image = sanitizeImageBase64(value)
+      if (!image) return { field: 'work_images', message: 'Each work image must be valid image data.' }
+      cleaned[idx] = image
+    }
+    body.work_images = cleaned
   }
 
   return null
@@ -124,6 +142,28 @@ async function handle({ userId, body }) {
     { onConflict: 'assignment_id,student_id' }
   )
   if (submissionError) throw submissionError
+
+  // Scratchpad is Math-only — other subjects may be added in future.
+  // Pending teacher review, not AI-graded — see api/teacher/review-work.js.
+  // Only correctly-answered questions get a row: the bonus is for showing
+  // work behind a right answer, matching the daily-question path exactly.
+  if (assignment.subject === 'math' && body.work_images) {
+    const workRows = Object.entries(body.work_images)
+      .filter(([idx]) => results[Number(idx)]?.correct)
+      .map(([idx]) => ({
+        user_id: userId,
+        assignment_id: body.assignment_id,
+        question_index: Number(idx),
+        question_text: questions[Number(idx)].question,
+        image_base64: body.work_images[idx],
+        review_type: 'teacher',
+        approved: null,
+      }))
+    if (workRows.length > 0) {
+      const { error: workError } = await supabase.from('work_submissions').insert(workRows)
+      if (workError) throw workError
+    }
+  }
 
   return { results, scorePercentage, xpEarned, coinsEarned, late: isLate }
 }

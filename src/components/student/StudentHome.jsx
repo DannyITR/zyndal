@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { submitAnswer, submitLateAnswer, getTodayQuestion } from '../../lib/storage'
 import { getDailyQuestion, formatQuestionSubtitle } from '../../lib/questions'
 import { getEffectiveStreak, countCorrectSubjectsToday, todayStr, TOTAL_SUBJECTS, formatLongDate } from '../../lib/streak'
@@ -8,6 +8,8 @@ import TopBar from '../shared/TopBar'
 import StreakFlame from './StreakFlame'
 import StatPill from './StatPill'
 import QuestionCard from './QuestionCard'
+import Scratchpad from './Scratchpad'
+import WorkSubmissionPanel from './WorkSubmissionPanel'
 import MilestoneModal from './MilestoneModal'
 import PerfectWeekCelebration from './PerfectWeekCelebration'
 import GoPremiumModal from './testprep/GoPremiumModal'
@@ -76,8 +78,12 @@ export default function StudentHome({
       cancelled = true
     }
   }, [isToday, subject.id])
-  // The scored first attempt persisted this session: { selectedIndex, correct, coinsEarned, xpEarned }
+  // The scored first attempt persisted this session: { selectedIndex, correct, coinsEarned, xpEarned, answerId }
   const [justAnswered, setJustAnswered] = useState(null)
+  // Scratchpad is Math-only — other subjects may be added in future.
+  const scratchpadRef = useRef(null)
+  const [canvasHasDrawing, setCanvasHasDrawing] = useState(false)
+  const isMathSubject = subject.id === 'math'
   const [milestone, setMilestone] = useState(null)
   const [perfectWeekBonus, setPerfectWeekBonus] = useState(null) // dollars, or null
   const [submitting, setSubmitting] = useState(false)
@@ -128,6 +134,7 @@ export default function StudentHome({
           correct: todaysEntry.correct,
           coinsEarned: todaysEntry.coinsEarned,
           xpEarned: todaysEntry.xpEarned,
+          answerId: todaysEntry.id,
         }
       : null)
   const firstAttemptMade = Boolean(firstAttempt)
@@ -157,6 +164,7 @@ export default function StudentHome({
         correct: result.correct,
         coinsEarned: result.coinsEarned,
         xpEarned: result.xpEarned,
+        answerId: result.answerId,
       })
       if (result.milestoneHit) {
         setMilestone({ streak: result.milestoneHit, bonus: result.bonusEarned })
@@ -169,6 +177,14 @@ export default function StudentHome({
     } finally {
       setSubmitting(false)
     }
+  }
+
+  // Scratchpad is Math-only — other subjects may be added in future.
+  // Fired by WorkSubmissionPanel once api/questions/grade-work.js approves
+  // the drawn work — bumps the same progress object handleSelect already
+  // updates, so the stats row reflects the bonus immediately.
+  function handleWorkApproved(xpEarned, coinsEarned) {
+    onProgressChange({ ...progress, xp: progress.xp + xpEarned, coins: progress.coins + coinsEarned })
   }
 
   // The already-answered entry for the browsed past date, if any — read-only
@@ -228,7 +244,21 @@ export default function StudentHome({
                 celebrate={Boolean(justAnswered?.correct)}
                 onSelect={handleSelect}
                 onOpenCurriculumTopic={onOpenCurriculumTopic}
+                scratchpadSlot={
+                  isMathSubject && (!firstAttemptMade || firstAttempt.correct) ? (
+                    <Scratchpad ref={scratchpadRef} disabled={submitting} onDrawingChange={setCanvasHasDrawing} />
+                  ) : null
+                }
               />
+
+              {isMathSubject && firstAttemptMade && firstAttempt.correct && firstAttempt.answerId && (
+                <WorkSubmissionPanel
+                  answerId={firstAttempt.answerId}
+                  canvasRef={scratchpadRef}
+                  canvasHasDrawing={canvasHasDrawing}
+                  onApproved={handleWorkApproved}
+                />
+              )}
             </>
           )}
 

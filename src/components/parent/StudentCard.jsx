@@ -5,7 +5,12 @@ import HistoryList from '../shared/HistoryList'
 
 const TREND_LABEL = { improving: '📈 Improving', declining: '📉 Needs attention', steady: '➡️ Steady' }
 
-export default function StudentCard({ student, progress, practiceSessions = [], grades = [], onSelectEntry }) {
+function formatSubmissionDate(iso) {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+// Scratchpad is Math-only — other subjects may be added in future.
+export default function StudentCard({ student, progress, practiceSessions = [], grades = [], workSubmissions = [], onSelectEntry }) {
   const streak = getEffectiveStreak(progress, todayStr())
   const weeklyCount = getWeeklyCorrectCount(progress.history)
   const weeklyPct = Math.min(100, Math.round((weeklyCount / PERFECT_WEEK_TARGET) * 100))
@@ -87,6 +92,30 @@ export default function StudentCard({ student, progress, practiceSessions = [], 
                 </li>
               )
             })}
+          </ul>
+        )}
+      </details>
+
+      <details className="student-history">
+        <summary>Math Work Submissions ({workSubmissions.length})</summary>
+        {workSubmissions.length === 0 ? (
+          <p className="history-empty">No work submitted yet.</p>
+        ) : (
+          <ul className="history-list">
+            {workSubmissions.map((w) => (
+              <li key={w.id} className="history-item">
+                <div className="history-item-row history-item-row--static">
+                  <span className="history-icon">📐</span>
+                  <div className="history-body">
+                    <p className="history-prompt">{w.questionText}</p>
+                    <p className="history-meta">{formatSubmissionDate(w.submittedAt)}</p>
+                  </div>
+                  <span className={w.approved ? 'answer-review-correct' : 'answer-review-wrong'}>
+                    {w.approved ? '✅' : '❌'}
+                  </span>
+                </div>
+              </li>
+            ))}
           </ul>
         )}
       </details>

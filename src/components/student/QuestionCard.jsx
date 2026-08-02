@@ -2,7 +2,7 @@ import { formatQuestionSubtitle } from '../../lib/questions'
 
 const LETTERS = ['A', 'B', 'C', 'D']
 
-export default function QuestionCard({ question, answered, locked, selectedIndex, celebrate, onSelect, onOpenCurriculumTopic }) {
+export default function QuestionCard({ question, answered, locked, selectedIndex, celebrate, onSelect, onOpenCurriculumTopic, scratchpadSlot }) {
   // Only generated-pool questions carry real curriculum unit/topic tags
   // (see resolveDailyQuestion in api/_lib/dailyQuestion.js) — a hardcoded-
   // bank fallback question's `topic` is just a plain label with no
@@ -24,6 +24,8 @@ export default function QuestionCard({ question, answered, locked, selectedIndex
           {answered ? '📖 Review this topic in the curriculum' : '📖 Read about this topic in the curriculum before answering'}
         </button>
       )}
+
+      {scratchpadSlot}
 
       <div className="options">
         {question.options.map((option, i) => {

@@ -79,7 +79,7 @@ async function handle({ parentId }) {
     }
   }
 
-  const [studentRows, streakRows, answerRows, practiceRows, gradeRows, studyPlanRows, testGradeRows, achievementRows, gradeBonusRows] =
+  const [studentRows, streakRows, answerRows, practiceRows, gradeRows, studyPlanRows, testGradeRows, achievementRows, gradeBonusRows, workSubmissionRows] =
     await Promise.all([
       getStudentRows(studentIds),
       supabase.from('streaks').select('*').in('user_id', studentIds).then((r) => r.data || []),
@@ -131,10 +131,24 @@ async function handle({ parentId }) {
         .eq('resolved', false)
         .order('created_at', { ascending: false })
         .then((r) => r.data || []),
+      // Scratchpad is Math-only — other subjects may be added in future.
+      // Resolved submissions only (approved IS NOT NULL) — a Math homework
+      // submission still awaiting teacher review has nothing to show here
+      // yet (see get-class-detail.js's pendingWorkReviewCount for that
+      // side of it). image_base64 is deliberately not selected — the
+      // parent activity feed only needs date/question/status per spec.
+      supabase
+        .from('work_submissions')
+        .select('id, user_id, question_text, approved, submitted_at')
+        .in('user_id', studentIds)
+        .not('approved', 'is', null)
+        .order('submitted_at', { ascending: false })
+        .then((r) => r.data || []),
     ])
 
   const streakByStudent = Object.fromEntries(streakRows.map((s) => [s.user_id, s]))
   const answersByStudent = groupBy(answerRows, 'user_id')
+  const workSubmissionsByStudent = groupBy(workSubmissionRows, 'user_id')
   const practiceByStudent = groupBy(practiceRows, 'user_id')
   const gradesByStudent = groupBy(gradeRows, 'user_id')
   const usernameById = Object.fromEntries(studentRows.map((s) => [s.id, s.username]))
@@ -152,6 +166,12 @@ async function handle({ parentId }) {
       progress: toProgress(streakByStudent[s.id] || defaultStreakRow(s.id), answersByStudent[s.id] || []),
       recentPracticeSessions: (practiceByStudent[s.id] || []).slice(0, 5),
       grades: gradesByStudent[s.id] || [],
+      workSubmissions: (workSubmissionsByStudent[s.id] || []).slice(0, 20).map((w) => ({
+        id: w.id,
+        questionText: w.question_text,
+        approved: w.approved,
+        submittedAt: w.submitted_at,
+      })),
     }
   })
 

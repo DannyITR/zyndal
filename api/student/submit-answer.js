@@ -63,13 +63,20 @@ async function handle({ userId, body }) {
   // today, agnostic to how it got set.
   const result = applyDailyAnswer(progress, question, selected_index, subject, today, milestoneBonuses)
 
-  const { error: answerError } = await supabase.from('answers').insert({
-    user_id: userId,
-    subject,
-    question_text: question.prompt,
-    selected_answer: question.options[selected_index],
-    correct: result.correct,
-  })
+  // .select().single() (rather than a bare insert) so the new row's id can
+  // be handed back to the client as answer_id — grade-work.js needs it to
+  // look up this exact answer server-side for the Math scratchpad bonus.
+  const { data: insertedAnswer, error: answerError } = await supabase
+    .from('answers')
+    .insert({
+      user_id: userId,
+      subject,
+      question_text: question.prompt,
+      selected_answer: question.options[selected_index],
+      correct: result.correct,
+    })
+    .select('id')
+    .single()
   if (answerError) throw answerError
 
   const { error: streakError } = await supabase
@@ -108,6 +115,7 @@ async function handle({ userId, body }) {
     bonus_earned: result.bonusEarned,
     perfect_week_bonus_cents: perfectWeekBonusCents,
     entry: newEntry,
+    answer_id: insertedAnswer.id,
   }
 }
 
