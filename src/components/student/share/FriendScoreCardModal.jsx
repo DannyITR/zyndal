@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { formatLongDate, SCORE_COLORS, todayStr } from '../../../lib/streak'
 import { getUserTimeZone } from '../../../lib/timezone'
 
@@ -8,6 +9,7 @@ import { getUserTimeZone } from '../../../lib/timezone'
 // card, just populated with the friend's data instead. No XP line — none of
 // the three call sites' data sources include the friend's XP.
 export default function FriendScoreCardModal({ share, onClose }) {
+  const { t } = useTranslation()
   const today = todayStr(new Date(), getUserTimeZone())
   const { correct, total } = share.senderScore
   const scoreColor = SCORE_COLORS[Math.min(Math.max(correct, 0), 6)]
@@ -38,7 +40,7 @@ export default function FriendScoreCardModal({ share, onClose }) {
 
         <div className="modal-actions">
           <button type="button" className="btn btn-primary btn-block" onClick={onClose}>
-            Close
+            {t('common.close')}
           </button>
         </div>
       </div>

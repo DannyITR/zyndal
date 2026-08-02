@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 export default function FriendRequestBanner({ request, onRespond }) {
+  const { t } = useTranslation()
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
 
@@ -11,7 +13,7 @@ export default function FriendRequestBanner({ request, onRespond }) {
     try {
       await onRespond(request.id, accept)
     } catch {
-      setError("Couldn't update this request. Please try again.")
+      setError(t('friends.requestFailed'))
       setProcessing(false)
     }
   }
@@ -19,14 +21,14 @@ export default function FriendRequestBanner({ request, onRespond }) {
   return (
     <div className="friend-request-card">
       <p className="friend-request-text">
-        <strong>@{request.senderUsername}</strong> wants to follow you
+        <strong>@{request.senderUsername}</strong> {t('friends.wantsToFollow')}
       </p>
       <div className="friend-request-actions">
         <button type="button" className="btn btn-primary btn-small" disabled={processing} onClick={() => handle(true)}>
-          Accept
+          {t('common.accept')}
         </button>
         <button type="button" className="btn btn-ghost btn-small" disabled={processing} onClick={() => handle(false)}>
-          Decline
+          {t('common.decline')}
         </button>
       </div>
       {error && <p className="form-error">{error}</p>}

@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getLeaderboard, getFriendsLeaderboard } from '../../lib/storage'
 import TopBar from './TopBar'
 
 export default function Leaderboard({
   highlightUserIds,
-  subtitle = 'Top students by XP',
+  subtitle,
   username,
   currentUserId,
   onBack,
   onLogout,
   onLogoClick,
 }) {
+  const { t } = useTranslation()
   // The Friends tab only makes sense for a logged-in student viewing their
   // own rankings, so it's only offered when currentUserId is provided.
   const [tab, setTab] = useState('global')
@@ -29,11 +31,15 @@ export default function Leaderboard({
         if (!cancelled) setRows(data)
       })
       .catch(() => {
-        if (!cancelled) setError("Couldn't load the leaderboard. Please try again.")
+        if (!cancelled) setError(t('leaderboard.loadError'))
       })
     return () => {
       cancelled = true
     }
+    // t is a stable function for the app's lifetime (see src/lib/i18n.js) —
+    // not a real dependency, and including it would refetch on every
+    // language change for no reason.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, currentUserId])
 
   const myIndex = rows ? rows.findIndex((r) => r.userId === currentUserId) : -1
@@ -42,8 +48,8 @@ export default function Leaderboard({
   return (
     <div className="screen">
       <TopBar
-        title="🏆 Leaderboard"
-        subtitle={subtitle}
+        title={t('nav.leaderboard')}
+        subtitle={subtitle || t('leaderboard.defaultSubtitle')}
         username={username}
         onBack={onBack}
         onLogout={onLogout}
@@ -57,25 +63,25 @@ export default function Leaderboard({
             className={`auth-tab ${tab === 'global' ? 'auth-tab--active' : ''}`}
             onClick={() => setTab('global')}
           >
-            Global
+            {t('leaderboard.global')}
           </button>
           <button
             type="button"
             className={`auth-tab ${tab === 'friends' ? 'auth-tab--active' : ''}`}
             onClick={() => setTab('friends')}
           >
-            Friends
+            {t('leaderboard.friends')}
           </button>
         </div>
       )}
 
       {error && <p className="form-error">{error}</p>}
 
-      {!error && !rows && <p className="loading-text">Loading leaderboard…</p>}
+      {!error && !rows && <p className="loading-text">{t('leaderboard.loading')}</p>}
 
       {rows && rows.length === 0 && (
         <p className="loading-text">
-          {tab === 'friends' ? 'No friends yet — add some to see them here.' : 'No students yet.'}
+          {tab === 'friends' ? t('leaderboard.noFriendsYet') : t('leaderboard.noStudentsYet')}
         </p>
       )}
 
@@ -92,7 +98,7 @@ export default function Leaderboard({
                   <span className={`leaderboard-rank ${i < 3 ? `leaderboard-rank--${i + 1}` : ''}`}>{i + 1}</span>
                   <div className="leaderboard-info">
                     <p className="leaderboard-username">@{row.username}</p>
-                    {row.grade && <p className="leaderboard-grade">Grade {row.grade}</p>}
+                    {row.grade && <p className="leaderboard-grade">{t('common.gradeLabel', { grade: row.grade })}</p>}
                   </div>
                   <div className="leaderboard-stats">
                     <span className="leaderboard-streak">🔥 {row.streak}</span>
@@ -101,7 +107,7 @@ export default function Leaderboard({
                 </div>
                 {isAheadOfMe && (
                   <p className="leaderboard-nudge">
-                    {row.username} is ahead of you by {row.xp - myRow.xp} XP — answer today's questions to catch up
+                    {t('leaderboard.aheadOfYou', { username: row.username, xp: row.xp - myRow.xp })}
                   </p>
                 )}
               </li>

@@ -1,7 +1,17 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import TopBar from '../shared/TopBar'
+import { formatMonthYear } from '../../lib/streak'
 
-const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+const WEEKDAY_KEYS = [
+  'calendar.weekdaySun',
+  'calendar.weekdayMon',
+  'calendar.weekdayTue',
+  'calendar.weekdayWed',
+  'calendar.weekdayThu',
+  'calendar.weekdayFri',
+  'calendar.weekdaySat',
+]
 
 // Nothing to show before Zyndal existed — also doubles as the ← bound so a
 // student can't navigate into months with no possible data.
@@ -38,6 +48,7 @@ function colorClassFor(state, isFuture) {
 }
 
 export default function CalendarScreen({ user, progress, today, onSelectDay, onBack, onLogout, onLogoClick }) {
+  const { t, i18n } = useTranslation()
   const [todayYear, todayMonth] = today.split('-').map(Number)
   const [viewYear, setViewYear] = useState(todayYear)
   const [viewMonth, setViewMonth] = useState(todayMonth)
@@ -70,9 +81,13 @@ export default function CalendarScreen({ user, progress, today, onSelectDay, onB
   const dayStates = useMemo(() => computeDayStates(progress.history), [progress.history])
 
   const monthLabel = useMemo(
-    () =>
-      new Date(Date.UTC(viewYear, viewMonth - 1, 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
-    [viewYear, viewMonth]
+    () => formatMonthYear(viewYear, viewMonth),
+    // i18n.language isn't referenced directly in this callback (formatMonthYear
+    // reads it from the i18n singleton internally), but it must still be a
+    // dependency — otherwise switching languages while this screen is open
+    // wouldn't re-render the month name until viewYear/viewMonth also changed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [viewYear, viewMonth, i18n.language]
   )
 
   const cells = useMemo(() => {
@@ -87,8 +102,8 @@ export default function CalendarScreen({ user, progress, today, onSelectDay, onB
   return (
     <div className="screen student-screen">
       <TopBar
-        title="📅 Calendar"
-        subtitle="All subjects"
+        title={t('calendar.title')}
+        subtitle={t('calendar.allSubjects')}
         username={user.username}
         onBack={onBack}
         onLogout={onLogout}
@@ -97,33 +112,33 @@ export default function CalendarScreen({ user, progress, today, onSelectDay, onB
 
       <div className="calendar-legend">
         <span className="calendar-legend-item">
-          <span className="calendar-legend-dot calendar-legend-dot--correct" /> Correct
+          <span className="calendar-legend-dot calendar-legend-dot--correct" /> {t('calendar.legendCorrect')}
         </span>
         <span className="calendar-legend-item">
-          <span className="calendar-legend-dot calendar-legend-dot--mixed" /> Mixed
+          <span className="calendar-legend-dot calendar-legend-dot--mixed" /> {t('calendar.legendMixed')}
         </span>
         <span className="calendar-legend-item">
-          <span className="calendar-legend-dot calendar-legend-dot--wrong" /> Wrong
+          <span className="calendar-legend-dot calendar-legend-dot--wrong" /> {t('calendar.legendWrong')}
         </span>
         <span className="calendar-legend-item">
-          <span className="calendar-legend-dot calendar-legend-dot--empty" /> No activity
+          <span className="calendar-legend-dot calendar-legend-dot--empty" /> {t('calendar.legendEmpty')}
         </span>
       </div>
 
       <div className="calendar-nav">
-        <button type="button" className="calendar-nav-arrow" onClick={goPrevMonth} disabled={isEarliestMonth} aria-label="Previous month">
+        <button type="button" className="calendar-nav-arrow" onClick={goPrevMonth} disabled={isEarliestMonth} aria-label={t('calendar.prevMonth')}>
           ←
         </button>
         <span className="calendar-nav-label">{monthLabel}</span>
-        <button type="button" className="calendar-nav-arrow" onClick={goNextMonth} disabled={isLatestMonth} aria-label="Next month">
+        <button type="button" className="calendar-nav-arrow" onClick={goNextMonth} disabled={isLatestMonth} aria-label={t('calendar.nextMonth')}>
           →
         </button>
       </div>
 
       <div className="calendar-grid">
-        {WEEKDAY_LABELS.map((label, i) => (
+        {WEEKDAY_KEYS.map((key, i) => (
           <div key={`label-${i}`} className="calendar-weekday-label">
-            {label}
+            {t(key)}
           </div>
         ))}
         {cells.map((d, i) => {

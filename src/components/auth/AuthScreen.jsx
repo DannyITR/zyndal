@@ -20,7 +20,7 @@ export default function AuthScreen({ initialMode = 'login', onAuth, onLogoClick,
   // one), so a student who backs out of this form to try that route
   // instead just loses the prefill, same as if they'd never followed the
   // link.
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [view, setView] = useState(inviteParentCode ? 'signupForm' : initialMode === 'signup' ? 'signupChoose' : 'login')
   // Seeded from i18n.language (already resolved from a returning visitor's
   // localStorage/browser preference — see src/lib/i18n.js) rather than a
@@ -36,19 +36,19 @@ export default function AuthScreen({ initialMode = 'login', onAuth, onLogoClick,
 
       <div className="auth-card">
         <Logo size="large" />
-        <p className="auth-tagline">Level up every subject, one day at a time.</p>
+        <p className="auth-tagline">{t('auth.tagline')}</p>
 
         {inviteParentCode && inviteParentUsername && view === 'signupForm' && (
-          <p className="auth-invite-banner">🎉 @{inviteParentUsername} invited you to Zyndal! Create your account below.</p>
+          <p className="auth-invite-banner">{t('auth.inviteBanner', { username: inviteParentUsername })}</p>
         )}
 
         {view === 'signupChoose' && (
           <div className="auth-tabs">
             <button type="button" className="auth-tab" onClick={() => setView('login')}>
-              Log In
+              {t('auth.login.logIn')}
             </button>
             <button type="button" className="auth-tab auth-tab--active" onClick={() => setView('signupChoose')}>
-              Sign Up
+              {t('auth.login.signUp')}
             </button>
           </div>
         )}

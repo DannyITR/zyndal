@@ -1,8 +1,10 @@
+import { useTranslation } from 'react-i18next'
 import { formatQuestionSubtitle } from '../../lib/questions'
 
 const LETTERS = ['A', 'B', 'C', 'D']
 
 export default function QuestionCard({ question, answered, locked, selectedIndex, celebrate, onSelect, onOpenCurriculumTopic, scratchpadSlot }) {
+  const { t } = useTranslation()
   // Only generated-pool questions carry real curriculum unit/topic tags
   // (see resolveDailyQuestion in api/_lib/dailyQuestion.js) — a hardcoded-
   // bank fallback question's `topic` is just a plain label with no
@@ -21,7 +23,7 @@ export default function QuestionCard({ question, answered, locked, selectedIndex
           className="curriculum-topic-link"
           onClick={() => onOpenCurriculumTopic({ unitNumber: question.unitNumber, topicTitle: question.topicTitle })}
         >
-          {answered ? '📖 Review this topic in the curriculum' : '📖 Read about this topic in the curriculum before answering'}
+          {answered ? t('question.reviewTopic') : t('question.readTopic')}
         </button>
       )}
 

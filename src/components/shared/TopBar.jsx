@@ -1,6 +1,8 @@
+import { useTranslation } from 'react-i18next'
 import Logo from './Logo'
 
 export default function TopBar({ title, subtitle, username, onLogout, onBack, onSettings, onNotifications, unreadCount, onLogoClick }) {
+  const { t } = useTranslation()
   return (
     <header className="topbar">
       <div className="topbar-brand-row">
@@ -9,7 +11,7 @@ export default function TopBar({ title, subtitle, username, onLogout, onBack, on
       <div className="topbar-main-row">
         <div className="topbar-title-row">
           {onBack && (
-            <button type="button" className="topbar-back" onClick={onBack} aria-label="Back to subjects">
+            <button type="button" className="topbar-back" onClick={onBack} aria-label={t('common.backToSubjects')}>
               ←
             </button>
           )}
@@ -22,18 +24,18 @@ export default function TopBar({ title, subtitle, username, onLogout, onBack, on
           {username && <p className="topbar-username">@{username}</p>}
           <div className="topbar-buttons">
             {onNotifications && (
-              <button type="button" className="btn btn-ghost btn-icon topbar-icon-btn" onClick={onNotifications} aria-label="Notifications">
+              <button type="button" className="btn btn-ghost btn-icon topbar-icon-btn" onClick={onNotifications} aria-label={t('common.notificationsLabel')}>
                 🔔
                 {unreadCount > 0 && <span className="topbar-badge">{unreadCount}</span>}
               </button>
             )}
             {onSettings && (
-              <button type="button" className="btn btn-ghost btn-icon" onClick={onSettings} aria-label="Settings">
+              <button type="button" className="btn btn-ghost btn-icon" onClick={onSettings} aria-label={t('common.settingsLabel')}>
                 ⚙️
               </button>
             )}
             <button type="button" className="btn btn-ghost btn-small" onClick={onLogout}>
-              Log Out
+              {t('common.logOut')}
             </button>
           </div>
         </div>

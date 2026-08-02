@@ -27,6 +27,13 @@ export function languageCodeForPreference(languagePreference) {
   return PREFERENCE_TO_LANGUAGE_CODE[languagePreference] || 'en'
 }
 
+// Intl locale tags for date/number formatting (Intl.toLocaleDateString etc)
+// — a distinct concern from the i18next language codes above (which only
+// need 'en'/'fr'/'es' to pick a translation resource), so this stays a
+// separate map rather than overloading PREFERENCE_TO_LANGUAGE_CODE. fr-CA
+// and not fr-FR since Zyndal is a Canadian product.
+export const LOCALE_FOR_LANGUAGE = { en: 'en-US', fr: 'fr-CA', es: 'es-ES' }
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   getNotifications,
   markNotificationRead,
@@ -7,6 +8,7 @@ import {
   respondToFriendRequest,
   respondToParentLinkRequest,
 } from '../../../lib/storage'
+import { LOCALE_FOR_LANGUAGE } from '../../../lib/i18n'
 import TopBar from '../../shared/TopBar'
 import FriendScoreCardModal from '../share/FriendScoreCardModal'
 
@@ -27,8 +29,9 @@ const TYPE_ICON = {
   // would just render a second checkmark right next to the first one.
 }
 
-function formatDateTime(iso) {
-  return new Date(iso).toLocaleString('en-US', {
+function formatDateTime(iso, language) {
+  const locale = LOCALE_FOR_LANGUAGE[language] || 'en-US'
+  return new Date(iso).toLocaleString(locale, {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
@@ -44,6 +47,7 @@ function formatDateTime(iso) {
 // records the parent-side bonus-payout row, not a student-facing
 // notification.
 export default function NotificationsScreen({ user, onBack, onLogout, onLogoClick, openHomeworkIds, onOpenHomework }) {
+  const { t, i18n } = useTranslation()
   const [notifications, setNotifications] = useState(null)
   const [error, setError] = useState('')
   const [respondingId, setRespondingId] = useState(null)
@@ -61,7 +65,7 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
       const { notifications: list } = await getNotifications()
       setNotifications(list)
     } catch {
-      setError("Couldn't load notifications. Please try again.")
+      setError(t('notifications.loadError'))
     }
   }
 
@@ -72,11 +76,15 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
         if (!cancelled) setNotifications(list)
       })
       .catch(() => {
-        if (!cancelled) setError("Couldn't load notifications. Please try again.")
+        if (!cancelled) setError(t('notifications.loadError'))
       })
     return () => {
       cancelled = true
     }
+    // t is a stable function for the app's lifetime (see src/lib/i18n.js) —
+    // not a real dependency, and including it would refetch on every
+    // language change for no reason.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id])
 
   // Auto-marks everything read 2 seconds after the list first loads, so a
@@ -96,6 +104,12 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
         .catch((err) => console.error('[Notifications] failed to auto-mark all as read:', err))
     }, 2000)
     return () => clearTimeout(timer)
+    // refresh is a plain function redefined every render, not a stable
+    // dependency (only recently started closing over `t` from
+    // useTranslation, which is what surfaced this warning) — adding it
+    // would re-arm this effect's guard logic in ways unrelated to this
+    // change. Pre-existing pattern, left as-is.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notifications])
 
   async function handleMarkAllRead() {
@@ -103,7 +117,7 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
       await markAllNotificationsRead()
       await refresh()
     } catch {
-      setError("Couldn't mark all as read. Please try again.")
+      setError(t('notifications.markAllFailed'))
     }
   }
 
@@ -129,7 +143,7 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
       await markNotificationRead(notification.id)
       await refresh()
     } catch {
-      setError("Couldn't update this request. Please try again.")
+      setError(t('notifications.updateFailed'))
     } finally {
       setRespondingId(null)
     }
@@ -144,7 +158,7 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
       await markNotificationRead(notification.id)
       await refresh()
     } catch {
-      setError("Couldn't update this request. Please try again.")
+      setError(t('notifications.updateFailed'))
     } finally {
       setRespondingId(null)
     }
@@ -154,20 +168,20 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
 
   return (
     <div className="screen student-screen">
-      <TopBar title="🔔 Notifications" subtitle="Score shares, friend requests, and more" username={user.username} onBack={onBack} onLogout={onLogout} onLogoClick={onLogoClick} />
+      <TopBar title={t('notifications.title')} subtitle={t('notifications.subtitle')} username={user.username} onBack={onBack} onLogout={onLogout} onLogoClick={onLogoClick} />
 
       {notifications && notifications.length > 0 && (
         <button type="button" className="btn btn-secondary btn-block" disabled={unreadCount === 0} onClick={handleMarkAllRead}>
-          Mark all as read
+          {t('notifications.markAllRead')}
         </button>
       )}
 
       {error && <p className="form-error">{error}</p>}
 
       {!notifications ? (
-        <p className="loading-text">Loading…</p>
+        <p className="loading-text">{t('common.loading')}</p>
       ) : notifications.length === 0 ? (
-        <p className="field-hint">No notifications yet.</p>
+        <p className="field-hint">{t('notifications.noNotifications')}</p>
       ) : (
         <div className="notification-list">
           {notifications.map((n) => {
@@ -179,11 +193,11 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
                   <p className="notification-item-title">{n.title}</p>
                 </div>
                 <p className="notification-item-body">{n.body}</p>
-                <p className="notification-item-time">{formatDateTime(n.createdAt)}</p>
+                <p className="notification-item-time">{formatDateTime(n.createdAt, i18n.language)}</p>
 
                 {n.type === 'score_share' && (
                   <button type="button" className="btn btn-secondary btn-small" onClick={() => handleViewShare(n)}>
-                    View
+                    {t('notifications.view')}
                   </button>
                 )}
 
@@ -195,15 +209,15 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
                     className="btn btn-secondary btn-small"
                     onClick={() => onOpenHomework(n.data.assignment_id)}
                   >
-                    Open Homework
+                    {t('notifications.openHomework')}
                   </button>
                 )}
 
                 {n.type === 'parent_link_request' &&
                   (() => {
                     const status = resolved || n.invitationStatus
-                    if (status === 'accepted') return <p className="notification-item-status notification-item-status--accepted">✓ Linked</p>
-                    if (status === 'declined') return <p className="notification-item-status notification-item-status--declined">Declined</p>
+                    if (status === 'accepted') return <p className="notification-item-status notification-item-status--accepted">{t('notifications.linked')}</p>
+                    if (status === 'declined') return <p className="notification-item-status notification-item-status--declined">{t('common.declined')}</p>
                     return (
                       <div className="notification-item-actions">
                         <button
@@ -212,7 +226,7 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
                           disabled={respondingId === n.id}
                           onClick={() => handleRespondParentLink(n, true)}
                         >
-                          Accept
+                          {t('common.accept')}
                         </button>
                         <button
                           type="button"
@@ -220,7 +234,7 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
                           disabled={respondingId === n.id}
                           onClick={() => handleRespondParentLink(n, false)}
                         >
-                          Decline
+                          {t('common.decline')}
                         </button>
                       </div>
                     )
@@ -239,8 +253,8 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
                     // to the request (e.g. accepted from the Friends
                     // screen's banner instead of from here).
                     const status = resolved || n.requestStatus
-                    if (status === 'accepted') return <p className="notification-item-status notification-item-status--accepted">✓ Now friends</p>
-                    if (status === 'declined') return <p className="notification-item-status notification-item-status--declined">Declined</p>
+                    if (status === 'accepted') return <p className="notification-item-status notification-item-status--accepted">{t('notifications.nowFriends')}</p>
+                    if (status === 'declined') return <p className="notification-item-status notification-item-status--declined">{t('common.declined')}</p>
                     return (
                       <div className="notification-item-actions">
                         <button
@@ -249,7 +263,7 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
                           disabled={respondingId === n.id}
                           onClick={() => handleRespond(n, true)}
                         >
-                          Accept
+                          {t('common.accept')}
                         </button>
                         <button
                           type="button"
@@ -257,7 +271,7 @@ export default function NotificationsScreen({ user, onBack, onLogout, onLogoClic
                           disabled={respondingId === n.id}
                           onClick={() => handleRespond(n, false)}
                         >
-                          Decline
+                          {t('common.decline')}
                         </button>
                       </div>
                     )

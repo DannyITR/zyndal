@@ -14,6 +14,11 @@ const OPTIONS = {
     { value: 'parent', icon: '👨‍👩‍👧', label: 'Parent', description: 'Je veux suivre les progrès et récompenser mon enfant' },
     { value: 'teacher', icon: '🍎', label: 'Enseignant', description: 'Je veux assigner du travail à ma classe' },
   ],
+  es: [
+    { value: 'student', icon: '🎓', label: 'Estudiante', description: 'Estoy aquí para aprender y ganar recompensas' },
+    { value: 'parent', icon: '👨‍👩‍👧', label: 'Padre/Madre', description: 'Quiero supervisar y recompensar a mi hijo/a' },
+    { value: 'teacher', icon: '🍎', label: 'Profesor', description: 'Quiero asignar trabajo a mi clase' },
+  ],
 }
 
 export default function AccountTypeSelector({ value, onChange, lang = 'en' }) {

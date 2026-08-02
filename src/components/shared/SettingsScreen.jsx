@@ -21,7 +21,7 @@ import DeleteAccountModal from './DeleteAccountModal'
 const DEFAULT_NOTIFICATION_PREFERENCES = { enabled: true, score_share: true, friend_request: true, streak_reminder: true }
 
 export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogoClick }) {
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation()
   const isStudent = user.account_type === 'student'
 
   const [friendCount, setFriendCount] = useState(null)
@@ -63,7 +63,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
       setTeacherCodeInput('')
       loadJoinedClasses()
     } catch (err) {
-      setJoinError(err.message || "Couldn't join that class. Please check the code and try again.")
+      setJoinError(err.message || t('settings.joinClassFailed'))
     } finally {
       setJoinSaving(false)
     }
@@ -98,9 +98,9 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
     try {
       const { parent } = await linkParentByCode(parentCodeInput.trim())
       setParentCodeInput('')
-      setLinkParentSuccess(`✅ Linked to @${parent.username} successfully!`)
+      setLinkParentSuccess(t('settings.linkedSuccess', { username: parent.username }))
     } catch (err) {
-      setLinkParentError(err.message || "Couldn't link that code. Please check it and try again.")
+      setLinkParentError(err.message || t('settings.linkParentFailed'))
     } finally {
       setLinkParentSaving(false)
     }
@@ -114,11 +114,11 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
       await respondToParentLinkRequest(requestId, accept)
       if (accept) {
         const accepted = pendingParentRequests?.find((r) => r.id === requestId)
-        if (accepted) setLinkParentSuccess(`✅ Linked to @${accepted.parentUsername} successfully!`)
+        if (accepted) setLinkParentSuccess(t('settings.linkedSuccess', { username: accepted.parentUsername }))
       }
       loadPendingParentRequests()
     } catch (err) {
-      setRespondError(err.message || "Couldn't update this request. Please try again.")
+      setRespondError(err.message || t('settings.respondRequestFailed'))
     } finally {
       setRespondingRequestId(null)
     }
@@ -167,7 +167,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
       URL.revokeObjectURL(url)
     } catch (err) {
       console.error('[Settings] data export failed:', err)
-      setExportError(err.message || "Couldn't download your data. Please try again.")
+      setExportError(err.message || t('settings.downloadFailed'))
     } finally {
       setExporting(false)
     }
@@ -209,10 +209,10 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
         notificationPreferences: isStudent ? notificationPrefs : user.notification_preferences,
       })
       onSaved(updated)
-      setSuccess('Saved!')
+      setSuccess(t('settings.saved'))
     } catch (err) {
       console.error('[Settings] profile save failed:', err)
-      setError(err.message ? `Couldn't save your changes: ${err.message}` : "Couldn't save your changes. Please try again.")
+      setError(err.message ? t('settings.saveFailedWithMessage', { message: err.message }) : t('settings.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -223,7 +223,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
     setPasswordError('')
     setPasswordSuccess('')
     if (newPassword.length < 4) {
-      setPasswordError('New password must be at least 4 characters.')
+      setPasswordError(t('settings.passwordTooShort'))
       return
     }
     setPasswordSaving(true)
@@ -231,10 +231,10 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
       await changePassword(user.id, currentPassword, newPassword)
       setCurrentPassword('')
       setNewPassword('')
-      setPasswordSuccess('Password updated!')
+      setPasswordSuccess(t('settings.passwordUpdated'))
     } catch (err) {
       console.error('[Settings] password change failed:', err)
-      setPasswordError(err.message || "Couldn't update your password. Please try again.")
+      setPasswordError(err.message || t('settings.passwordUpdateFailed'))
     } finally {
       setPasswordSaving(false)
     }
@@ -243,8 +243,8 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
   return (
     <div className="screen">
       <TopBar
-        title="⚙️ Settings"
-        subtitle="Manage your profile"
+        title={t('settings.title')}
+        subtitle={t('settings.subtitle')}
         username={user.username}
         onBack={onBack}
         onLogout={onLogout}
@@ -253,13 +253,13 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
 
       {isStudent && friendCount !== null && (
         <p className="friend-count-line">
-          You have <strong>{friendCount}</strong> friend{friendCount === 1 ? '' : 's'} on Zyndal
+          {t('settings.friendCountPrefix')} <strong>{friendCount}</strong> {t('settings.friendCountSuffix', { count: friendCount })}
         </p>
       )}
 
       <form className="auth-form" onSubmit={handleSaveProfile}>
         <div className="field">
-          <label>Profile picture</label>
+          <label>{t('settings.profilePicture')}</label>
           <div className="avatar-grid">
             {AVATARS.map((a) => (
               <button
@@ -267,7 +267,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
                 type="button"
                 className={`avatar-option ${avatar === a ? 'avatar-option--selected' : ''}`}
                 onClick={() => setAvatar(a)}
-                aria-label={`Choose ${a} avatar`}
+                aria-label={t('settings.chooseAvatar', { avatar: a })}
               >
                 {a}
               </button>
@@ -276,42 +276,42 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
         </div>
 
         <div className="field">
-          <label htmlFor="settings-display-name">Display name</label>
+          <label htmlFor="settings-display-name">{t('settings.displayName')}</label>
           <input
             id="settings-display-name"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="What should we call you?"
+            placeholder={t('settings.displayNamePlaceholder')}
           />
         </div>
 
         <div className="field">
-          <label htmlFor="settings-email">Email address</label>
+          <label htmlFor="settings-email">{t('settings.emailAddress')}</label>
           <input
             id="settings-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder={t('settings.emailPlaceholder')}
             autoComplete="email"
           />
         </div>
 
         <div className="field">
-          <label htmlFor="settings-school">School name</label>
+          <label htmlFor="settings-school">{t('settings.schoolName')}</label>
           <input
             id="settings-school"
             value={schoolName}
             onChange={(e) => setSchoolName(e.target.value)}
-            placeholder="e.g. Lincoln High School"
+            placeholder={t('settings.schoolPlaceholder')}
           />
         </div>
 
         {isStudent && (
           <div className="field">
-            <label htmlFor="settings-grade">Grade</label>
+            <label htmlFor="settings-grade">{t('settings.grade')}</label>
             <select id="settings-grade" value={grade} onChange={(e) => setGrade(e.target.value)}>
-              <option value="">Select grade</option>
+              <option value="">{t('settings.selectGrade')}</option>
               <option value="7">7</option>
               <option value="8">8</option>
               <option value="9">9</option>
@@ -323,28 +323,23 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
 
         {isStudent && (
           <div className="field">
-            <label htmlFor="settings-language">Preferred language</label>
+            <label htmlFor="settings-language">{t('settings.preferredLanguage')}</label>
             <select id="settings-language" value={languagePreference} onChange={handleLanguageChange}>
               <option value="English">English</option>
               <option value="French">Français</option>
               <option value="Spanish">Español</option>
             </select>
-            <p className="field-hint">
-              Changes the app's language right away. Also used for AI-generated study guide and test prep questions when
-              you're not studying from your own uploads.
-            </p>
+            <p className="field-hint">{t('settings.languageHint')}</p>
           </div>
         )}
 
         {isStudent && (
           <div className="field">
-            <h3 className="section-heading">Notifications</h3>
-            <p className="field-hint">
-              These control push alerts only — notifications always still appear in the app's bell icon regardless of these settings.
-            </p>
+            <h3 className="section-heading">{t('settings.notificationsHeading')}</h3>
+            <p className="field-hint">{t('settings.notificationsHint')}</p>
             <label className="checkbox-field">
               <input type="checkbox" checked={notificationPrefs.enabled} onChange={() => toggleNotificationPref('enabled')} />
-              <span>Push notifications</span>
+              <span>{t('settings.pushNotifications')}</span>
             </label>
             <label className="checkbox-field">
               <input
@@ -353,7 +348,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
                 onChange={() => toggleNotificationPref('score_share')}
                 disabled={!notificationPrefs.enabled}
               />
-              <span>When a friend shares their score with me</span>
+              <span>{t('settings.notifScoreShare')}</span>
             </label>
             <label className="checkbox-field">
               <input
@@ -362,7 +357,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
                 onChange={() => toggleNotificationPref('friend_request')}
                 disabled={!notificationPrefs.enabled}
               />
-              <span>When someone sends me a friend request</span>
+              <span>{t('settings.notifFriendRequest')}</span>
             </label>
             <label className="checkbox-field">
               <input
@@ -371,7 +366,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
                 onChange={() => toggleNotificationPref('streak_reminder')}
                 disabled={!notificationPrefs.enabled}
               />
-              <span>Streak at risk reminder (9pm if not answered today)</span>
+              <span>{t('settings.notifStreakReminder')}</span>
             </label>
           </div>
         )}
@@ -379,14 +374,14 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
         {error && <p className="form-error">{error}</p>}
         {success && <p className="form-success">{success}</p>}
         <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
-          {saving ? 'Saving…' : 'Save Changes'}
+          {saving ? t('settings.saving') : t('settings.saveChanges')}
         </button>
       </form>
 
       <form className="auth-form" onSubmit={handleChangePassword}>
-        <h3 className="section-heading">Change Password</h3>
+        <h3 className="section-heading">{t('settings.changePassword')}</h3>
         <div className="field">
-          <label htmlFor="settings-current-password">Current password</label>
+          <label htmlFor="settings-current-password">{t('settings.currentPassword')}</label>
           <input
             id="settings-current-password"
             type="password"
@@ -396,7 +391,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
           />
         </div>
         <div className="field">
-          <label htmlFor="settings-new-password">New password</label>
+          <label htmlFor="settings-new-password">{t('settings.newPassword')}</label>
           <input
             id="settings-new-password"
             type="password"
@@ -408,14 +403,14 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
         {passwordError && <p className="form-error">{passwordError}</p>}
         {passwordSuccess && <p className="form-success">{passwordSuccess}</p>}
         <button type="submit" className="btn btn-secondary btn-block" disabled={passwordSaving}>
-          {passwordSaving ? 'Updating…' : 'Change Password'}
+          {passwordSaving ? t('settings.updating') : t('settings.changePassword')}
         </button>
       </form>
 
       {isStudent && pendingParentRequests && pendingParentRequests.length > 0 && (
         <div className="finance-section-card">
-          <h3 className="section-heading">Pending Parent Requests</h3>
-          <p className="field-hint">A parent wants to link their account to yours.</p>
+          <h3 className="section-heading">{t('settings.pendingParentRequests')}</h3>
+          <p className="field-hint">{t('settings.parentWantsLink')}</p>
           {respondError && <p className="form-error">{respondError}</p>}
           <div className="teacher-student-list">
             {pendingParentRequests.map((req) => (
@@ -430,7 +425,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
                     disabled={respondingRequestId === req.id}
                     onClick={() => handleRespondParentRequest(req.id, true)}
                   >
-                    Accept
+                    {t('common.accept')}
                   </button>
                   <button
                     type="button"
@@ -438,7 +433,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
                     disabled={respondingRequestId === req.id}
                     onClick={() => handleRespondParentRequest(req.id, false)}
                   >
-                    Decline
+                    {t('common.decline')}
                   </button>
                 </div>
               </div>
@@ -449,11 +444,11 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
 
       {isStudent && (
         <div className="finance-section-card">
-          <h3 className="section-heading">Link to a Parent</h3>
-          <p className="field-hint">Enter the code your parent shared with you.</p>
+          <h3 className="section-heading">{t('settings.linkToParent')}</h3>
+          <p className="field-hint">{t('settings.enterParentCode')}</p>
           <form className="auth-form" onSubmit={handleLinkParent}>
             <div className="field">
-              <label htmlFor="settings-parent-code">Parent code</label>
+              <label htmlFor="settings-parent-code">{t('settings.parentCode')}</label>
               <input
                 id="settings-parent-code"
                 value={parentCodeInput}
@@ -465,7 +460,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
             {linkParentError && <p className="form-error">{linkParentError}</p>}
             {linkParentSuccess && <p className="form-success">{linkParentSuccess}</p>}
             <button type="submit" className="btn btn-secondary btn-block" disabled={linkParentSaving}>
-              {linkParentSaving ? 'Linking…' : 'Link Parent'}
+              {linkParentSaving ? t('settings.linking') : t('settings.linkParent')}
             </button>
           </form>
         </div>
@@ -473,11 +468,11 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
 
       {isStudent && (
         <div className="finance-section-card">
-          <h3 className="section-heading">Join a Class</h3>
-          <p className="field-hint">Enter the 6-character code your teacher shared with you. You can join more than one class.</p>
+          <h3 className="section-heading">{t('settings.joinClass')}</h3>
+          <p className="field-hint">{t('settings.enterClassCode')}</p>
           <form className="auth-form" onSubmit={handleJoinClass}>
             <div className="field">
-              <label htmlFor="settings-teacher-code">Class code</label>
+              <label htmlFor="settings-teacher-code">{t('settings.classCode')}</label>
               <input
                 id="settings-teacher-code"
                 value={teacherCodeInput}
@@ -488,7 +483,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
             </div>
             {joinError && <p className="form-error">{joinError}</p>}
             <button type="submit" className="btn btn-secondary btn-block" disabled={joinSaving}>
-              {joinSaving ? 'Joining…' : 'Join Class'}
+              {joinSaving ? t('settings.joining') : t('settings.joinClassBtn')}
             </button>
           </form>
 
@@ -499,7 +494,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
                   <div>
                     <p className="finance-student-name">{c.name}</p>
                     <p className="finance-student-detail">
-                      Grade {c.grade} · {c.school} · Taught by @{c.teacherUsername}
+                      {t('settings.classDetail', { grade: c.grade, school: c.school, teacher: c.teacherUsername })}
                     </p>
                   </div>
                 </div>
@@ -511,21 +506,21 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
 
       <div className="settings-legal-links">
         <button type="button" onClick={() => setOpenLegal('privacy')}>
-          Privacy Policy
+          {t('landing.privacyPolicy')}
         </button>
         <button type="button" onClick={() => setOpenLegal('terms')}>
-          Terms of Service
+          {t('landing.termsOfService')}
         </button>
       </div>
 
       <div className="settings-danger-zone">
         <button type="button" className="btn btn-secondary btn-block" disabled={exporting} onClick={handleExport}>
-          {exporting ? 'Preparing download…' : '⬇️ Download my data'}
+          {exporting ? t('settings.preparingDownload') : t('settings.downloadData')}
         </button>
         {exportError && <p className="form-error">{exportError}</p>}
 
         <button type="button" className="btn btn-danger-outline btn-block" onClick={() => setShowDeleteModal(true)}>
-          Delete My Account
+          {t('deleteAccount.title')}
         </button>
       </div>
 

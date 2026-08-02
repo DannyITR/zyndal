@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getFriendsWithStreaks, getStreakSharesForUser, getTodaysReceivedShares, shareStreakWithFriend } from '../../../lib/storage'
 import { hasSharedToday, computeShareStreak } from '../../../lib/streakShare'
-import { SCORE_COLORS, TOTAL_SUBJECTS } from '../../../lib/streak'
+import { SCORE_COLORS, TOTAL_SUBJECTS, formatLongDate } from '../../../lib/streak'
 import TopBar from '../../shared/TopBar'
 import FriendSharePickerModal from './FriendSharePickerModal'
 
 export default function ShareStreakScreen({ user, streak, xp, todayScore, today, onBack, onLogout, onLogoClick }) {
+  const { t } = useTranslation()
   const [friends, setFriends] = useState(null)
   const [shares, setShares] = useState(null)
   const [receivedToday, setReceivedToday] = useState(null)
@@ -17,12 +19,7 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
   const [generating, setGenerating] = useState(false)
   const [cardError, setCardError] = useState('')
 
-  const formattedDate = new Date(`${today}T00:00:00Z`).toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
+  const formattedDate = formatLongDate(today)
 
   // Only worth surfacing as a prompt when there's no share streak with that
   // friend yet — once one exists, the active-streak friend list below
@@ -82,7 +79,7 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
       setShares(shareRows)
     } catch (err) {
       console.error('[Share] streak share failed:', err)
-      setError("Couldn't share your streak. Please try again.")
+      setError(t('share.streakShareFailed'))
     } finally {
       setSendingToId(null)
     }
@@ -111,8 +108,8 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
         try {
           await navigator.share({
             files: [file],
-            title: 'My Zyndal Score',
-            text: `I got ${todayScore}/6 correct on Zyndal today! 🎯`,
+            title: t('share.myScoreTitle'),
+            text: t('share.myScoreText', { score: todayScore }),
           })
           shared = true
         } catch (err) {
@@ -132,7 +129,7 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
         URL.revokeObjectURL(url)
       }
     } catch {
-      setCardError("Couldn't generate the share image. Please try again.")
+      setCardError(t('share.generateImageFailed'))
     } finally {
       setGenerating(false)
     }
@@ -144,12 +141,12 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
 
       {receivedToShow.length > 0 && (
         <div className="finance-section-card">
-          <h3 className="section-heading">Shared with you today</h3>
+          <h3 className="section-heading">{t('share.sharedWithYouToday')}</h3>
           <div className="shared-with-you-list">
             {receivedToShow.map((r) => (
               <div key={r.id} className="shared-with-you-row">
                 <p className="shared-with-you-text">
-                  <strong>@{r.senderUsername}</strong> shared their score with you
+                  <strong>@{r.senderUsername}</strong> {t('share.sharedScoreWithYou')}
                 </p>
                 {canShareToday ? (
                   <button
@@ -158,10 +155,10 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
                     disabled={sendingToId === r.senderId}
                     onClick={() => handleShareWithFriend(r.senderId)}
                   >
-                    {sendingToId === r.senderId ? 'Sharing…' : 'Share back'}
+                    {sendingToId === r.senderId ? t('common.sending') : t('share.shareBack')}
                   </button>
                 ) : (
-                  <p className="field-hint share-friend-locked-hint">Complete today's questions to share back</p>
+                  <p className="field-hint share-friend-locked-hint">{t('share.completeToShareBack')}</p>
                 )}
               </div>
             ))}
@@ -171,7 +168,7 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
 
       {error && <p className="form-error">{error}</p>}
       <button type="button" className="btn btn-primary btn-block" onClick={() => setShowFriendPicker(true)}>
-        👥 Share with friends
+        {t('share.shareWithFriends')}
       </button>
       {activeStreakFriends.length > 0 && (
         <div className="share-friend-list">
@@ -188,15 +185,15 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
                 <span className="share-friend-avatar">{friend.avatar || '👤'}</span>
                 <div className="share-friend-info">
                   <p className="share-friend-name">@{friend.username}</p>
-                  <p className="share-friend-stat share-friend-stat--share">🔥 {shareStreak} day share streak</p>
+                  <p className="share-friend-stat share-friend-stat--share">{t('friends.shareStreakDay', { count: shareStreak })}</p>
                   {waitingOnFriend && (
                     <p className="share-friend-stat share-friend-stat--waiting">
-                      Waiting for @{friend.username} to share back 🔥
+                      {t('share.waitingOnFriend', { username: friend.username })}
                     </p>
                   )}
                 </div>
                 {sharedToday ? (
-                  <span className="friend-picker-shared">✅ Shared today</span>
+                  <span className="friend-picker-shared">{t('common.sharedTodayBadge')}</span>
                 ) : canShareToday ? (
                   <button
                     type="button"
@@ -204,10 +201,10 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
                     disabled={sendingToId === friend.id}
                     onClick={() => handleShareWithFriend(friend.id)}
                   >
-                    {sendingToId === friend.id ? 'Sharing…' : 'Share 🔥'}
+                    {sendingToId === friend.id ? t('common.sending') : t('common.shareCta')}
                   </button>
                 ) : (
-                  <p className="field-hint share-friend-locked-hint">Finish today to share</p>
+                  <p className="field-hint share-friend-locked-hint">{t('share.finishToShare')}</p>
                 )}
               </div>
             )
@@ -261,7 +258,7 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
           <polyline points="16 6 12 2 8 6" />
           <line x1="12" y1="2" x2="12" y2="15" />
         </svg>
-        {generating ? 'Generating…' : 'Share externally'}
+        {generating ? t('share.generating') : t('share.shareExternally')}
       </button>
     </div>
   )

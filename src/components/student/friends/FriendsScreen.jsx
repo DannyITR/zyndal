@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   searchStudentsByUsername,
   sendFriendRequest,
@@ -18,6 +19,7 @@ import FriendRequestBanner from './FriendRequestBanner'
 import FriendScoreCardModal from '../share/FriendScoreCardModal'
 
 export default function FriendsScreen({ user, canShareToday, onBack, onLogout, onLogoClick }) {
+  const { t } = useTranslation()
   const [pendingRequests, setPendingRequests] = useState(null)
   const [friends, setFriends] = useState(null)
   const [shares, setShares] = useState(null)
@@ -73,7 +75,7 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
         })
         .catch(() => {
           if (cancelled) return
-          setSearchError("Couldn't search right now. Please try again.")
+          setSearchError(t('friends.searchFailed'))
           setDropdownOpen(false)
           setDropdownResults(null)
         })
@@ -85,6 +87,10 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
       cancelled = true
       clearTimeout(timer)
     }
+    // t is a stable function for the app's lifetime (see src/lib/i18n.js) —
+    // not a real dependency, and including it would re-search on every
+    // language change for no reason.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, user.id])
 
   // Closes the dropdown on any click outside the input+dropdown container —
@@ -156,7 +162,7 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
       await sendFriendRequest(user.id, selectedUser.id)
       setRequestStatus('sent')
     } catch (err) {
-      setRequestStatus(err.message || 'Failed')
+      setRequestStatus(err.message || t('friends.requestSendFailed'))
     }
   }
 
@@ -179,7 +185,7 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
       setShares(shareRows)
     } catch (err) {
       console.error('[Friends] streak share failed:', err)
-      setShareError("Couldn't share your score. Please try again.")
+      setShareError(t('friends.shareFailed'))
     } finally {
       setSendingToId(null)
     }
@@ -188,8 +194,8 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
   return (
     <div className="screen student-screen">
       <TopBar
-        title="👥 Friends"
-        subtitle="Find and follow other students"
+        title={t('friends.title')}
+        subtitle={t('friends.subtitle')}
         username={user.username}
         onBack={onBack}
         onLogout={onLogout}
@@ -205,7 +211,7 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
       )}
 
       <div className="finance-section-card">
-        <h3 className="section-heading">Find Students</h3>
+        <h3 className="section-heading">{t('friends.findStudents')}</h3>
         <div className="friend-search-input-wrap" ref={searchContainerRef}>
           <input
             type="text"
@@ -214,15 +220,15 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
             onFocus={() => {
               if (dropdownResults !== null) setDropdownOpen(true)
             }}
-            placeholder="Search friends by username..."
+            placeholder={t('common.searchByUsername')}
           />
 
           {dropdownOpen && (
             <div className="friend-search-dropdown">
               {searching ? (
-                <p className="friend-search-dropdown-empty">Searching…</p>
+                <p className="friend-search-dropdown-empty">{t('friends.searching')}</p>
               ) : dropdownResults && dropdownResults.length === 0 ? (
-                <p className="friend-search-dropdown-empty">No users found with that username</p>
+                <p className="friend-search-dropdown-empty">{t('friends.noUsersFound')}</p>
               ) : (
                 dropdownResults?.map((result) => (
                   <button
@@ -234,7 +240,7 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
                     <span className="friend-search-dropdown-avatar">{result.avatar || '👤'}</span>
                     <span className="friend-search-dropdown-info">
                       <span className="friend-search-dropdown-username">@{result.username}</span>
-                      {result.grade && <span className="friend-search-dropdown-grade">Grade {result.grade}</span>}
+                      {result.grade && <span className="friend-search-dropdown-grade">{t('common.gradeLabel', { grade: result.grade })}</span>}
                     </span>
                   </button>
                 ))
@@ -248,7 +254,7 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
           <div className="friend-search-row">
             <span className="friend-search-name">@{selectedUser.username}</span>
             {requestStatus === 'sent' ? (
-              <span className="friend-search-status">Requested ✓</span>
+              <span className="friend-search-status">{t('friends.requested')}</span>
             ) : (
               <button
                 type="button"
@@ -256,7 +262,7 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
                 disabled={requestStatus === 'sending'}
                 onClick={handleSendRequest}
               >
-                {requestStatus === 'sending' ? 'Sending…' : 'Send Friend Request'}
+                {requestStatus === 'sending' ? t('common.sending') : t('friends.sendRequest')}
               </button>
             )}
             {requestStatus && requestStatus !== 'sending' && requestStatus !== 'sent' && (
@@ -267,12 +273,12 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
       </div>
 
       <div className="finance-section-card">
-        <h3 className="section-heading">Your Friends</h3>
+        <h3 className="section-heading">{t('friends.yourFriends')}</h3>
         {shareError && <p className="form-error">{shareError}</p>}
         {!friends ? (
-          <p className="loading-text">Loading…</p>
+          <p className="loading-text">{t('common.loading')}</p>
         ) : friends.length === 0 ? (
-          <p className="field-hint">No friends yet — search above to follow someone.</p>
+          <p className="field-hint">{t('friends.noFriendsYet')}</p>
         ) : (
           <div className="friend-picker-list">
             {friends.map((friend) => {
@@ -295,12 +301,12 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
                     ) : (
                       <p className="share-friend-name">@{friend.username}</p>
                     )}
-                    {shareStreak > 0 && <p className="share-friend-stat share-friend-stat--share">🔥 {shareStreak} day share streak</p>}
+                    {shareStreak > 0 && <p className="share-friend-stat share-friend-stat--share">{t('friends.shareStreakDay', { count: shareStreak })}</p>}
                   </div>
                   {sharedToday ? (
-                    <span className="friend-picker-shared">✅ Shared today</span>
+                    <span className="friend-picker-shared">{t('common.sharedTodayBadge')}</span>
                   ) : !friendAlreadyShared && !canShareToday ? (
-                    <p className="field-hint friend-picker-hint">Complete today's questions to share with @{friend.username}</p>
+                    <p className="field-hint friend-picker-hint">{t('common.completeToShareWith', { username: friend.username })}</p>
                   ) : (
                     <button
                       type="button"
@@ -308,7 +314,7 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
                       disabled={sendingToId === friend.id}
                       onClick={() => handleShareWithFriend(friend.id)}
                     >
-                      {sendingToId === friend.id ? 'Sharing…' : 'Share 🔥'}
+                      {sendingToId === friend.id ? t('common.sending') : t('common.shareCta')}
                     </button>
                   )}
                 </div>

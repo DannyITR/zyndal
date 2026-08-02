@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 // Scratchpad is Math-only — other subjects may be added in future.
 
@@ -73,6 +74,7 @@ function drawStroke(ctx, stroke) {
 }
 
 const Scratchpad = forwardRef(function Scratchpad({ disabled, onDrawingChange }, ref) {
+  const { t } = useTranslation()
   const canvasRef = useRef(null)
   const containerRef = useRef(null)
   const strokesRef = useRef([]) // finalized strokes
@@ -236,17 +238,17 @@ const Scratchpad = forwardRef(function Scratchpad({ disabled, onDrawingChange },
           onPointerLeave={finishStroke}
           onPointerCancel={finishStroke}
         />
-        {isEmpty && <p className="scratchpad-placeholder">Show your work here to earn full marks on the question</p>}
+        {isEmpty && <p className="scratchpad-placeholder">{t('scratchpad.placeholder')}</p>}
 
         <button type="button" className="scratchpad-expand-btn" onClick={handleToggleExpand}>
-          {expanded ? 'Collapse ↑' : 'Expand ↕'}
+          {expanded ? t('scratchpad.collapse') : t('scratchpad.expand')}
         </button>
 
         <div className="scratchpad-resize-handle" style={{ touchAction: 'none' }} onPointerDown={handleResizeStart}>
           <span className="scratchpad-resize-grip" />
         </div>
 
-        {showResizeHint && <p className="scratchpad-resize-hint">Drag to expand ↕</p>}
+        {showResizeHint && <p className="scratchpad-resize-hint">{t('scratchpad.dragHint')}</p>}
       </div>
       <div className="scratchpad-toolbar">
         <button
@@ -255,7 +257,7 @@ const Scratchpad = forwardRef(function Scratchpad({ disabled, onDrawingChange },
           disabled={disabled}
           onClick={() => setTool('pen')}
         >
-          ✏️ Draw
+          {t('scratchpad.draw')}
         </button>
         <button
           type="button"
@@ -263,13 +265,13 @@ const Scratchpad = forwardRef(function Scratchpad({ disabled, onDrawingChange },
           disabled={disabled}
           onClick={() => setTool('eraser')}
         >
-          🧹 Eraser
+          {t('scratchpad.eraser')}
         </button>
         <button type="button" className="scratchpad-tool-btn" disabled={disabled || isEmpty} onClick={handleUndo}>
-          ↩️ Undo
+          {t('scratchpad.undo')}
         </button>
         <button type="button" className="scratchpad-tool-btn" disabled={disabled || isEmpty} onClick={handleClear}>
-          🗑️ Clear
+          {t('scratchpad.clear')}
         </button>
       </div>
     </div>

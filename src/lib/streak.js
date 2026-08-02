@@ -1,3 +1,5 @@
+import i18n, { LOCALE_FOR_LANGUAGE } from './i18n'
+
 // XP and coins earn at the same rate: 1 per correct answer, plus a one-time
 // bonus (added to both) the day a streak milestone is hit.
 export const XP_PER_CORRECT = 1
@@ -113,12 +115,26 @@ export function computeDayState(history, date) {
   return { completedIds, incorrectIds }
 }
 
-// "July 28, 2026" — shared by the date-nav bar, the subject screen header,
-// and the share card.
+// "July 28, 2026" (or the equivalent in whichever language is active — see
+// LOCALE_FOR_LANGUAGE) — shared by the date-nav bar, the subject screen
+// header, and the share card.
 export function formatLongDate(dateStr) {
-  return new Date(`${dateStr}T00:00:00Z`).toLocaleDateString('en-US', {
+  const locale = LOCALE_FOR_LANGUAGE[i18n.language] || 'en-US'
+  return new Date(`${dateStr}T00:00:00Z`).toLocaleDateString(locale, {
     month: 'long',
     day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+}
+
+// "July 2026" — the Calendar screen's month/year nav label. Takes year/month
+// numbers directly (not a dateStr) since CalendarScreen tracks the browsed
+// month as separate viewYear/viewMonth state, with no particular day.
+export function formatMonthYear(year, month) {
+  const locale = LOCALE_FOR_LANGUAGE[i18n.language] || 'en-US'
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString(locale, {
+    month: 'long',
     year: 'numeric',
     timeZone: 'UTC',
   })
