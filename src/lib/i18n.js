@@ -7,6 +7,7 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 import en from '../locales/en/translation.json'
 import fr from '../locales/fr/translation.json'
 import es from '../locales/es/translation.json'
+import { setActiveLanguage } from './streak.js'
 
 // The localStorage key the detector itself reads/writes on every
 // i18n.changeLanguage() call (see `detection` below) — named explicitly
@@ -55,5 +56,17 @@ i18n
     },
     interpolation: { escapeValue: false }, // React already escapes output
   })
+
+// Keeps src/lib/streak.js's own locale-aware date formatting (formatLongDate,
+// formatMonthYear) in sync with the active language — that file can't import
+// this one directly (see its own header comment: it's shared with serverless
+// functions, where this module's browser-only dependencies would crash
+// Node's module resolution), so the sync runs in this direction instead.
+// 'languageChanged' fires for every change regardless of source (detection,
+// changeLanguage() calls from Settings/SignupForm/LegalModal/etc) — the
+// direct call covers the state as of this init resolving, in case that
+// event doesn't fire for the initially-detected language.
+setActiveLanguage(i18n.language)
+i18n.on('languageChanged', setActiveLanguage)
 
 export default i18n

@@ -1,4 +1,25 @@
-import i18n, { LOCALE_FOR_LANGUAGE } from './i18n'
+// This file must stay free of any import from src/lib/i18n.js (or anything
+// that pulls in react-i18next/i18next-browser-languagedetector) — it's
+// imported by api/_lib/db.js, which api/auth/login.js and nearly every
+// other serverless function depend on, and Node's ESM loader (unlike Vite's
+// bundler) has no browser globals and requires an explicit extension on
+// relative specifiers, so a stray `import ... from './i18n'` here crashes
+// every API route that transitively imports this file with
+// FUNCTION_INVOCATION_FAILED. See api/_lib/db.js's own header comment,
+// which already documents this file as browser-dependency-free — that
+// invariant is deliberate, not incidental. Locale awareness for
+// formatLongDate/formatMonthYear below is threaded through via
+// setActiveLanguage() instead, called from src/lib/i18n.js (browser-only)
+// whenever i18next's active language changes; this file never imports that
+// module in return.
+const LOCALE_FOR_LANGUAGE = { en: 'en-US', fr: 'fr-CA', es: 'es-ES' }
+let activeLanguage = 'en'
+export function setActiveLanguage(lang) {
+  activeLanguage = lang
+}
+export function getActiveLanguage() {
+  return activeLanguage
+}
 
 // XP and coins earn at the same rate: 1 per correct answer, plus a one-time
 // bonus (added to both) the day a streak milestone is hit.
@@ -119,7 +140,7 @@ export function computeDayState(history, date) {
 // LOCALE_FOR_LANGUAGE) — shared by the date-nav bar, the subject screen
 // header, and the share card.
 export function formatLongDate(dateStr) {
-  const locale = LOCALE_FOR_LANGUAGE[i18n.language] || 'en-US'
+  const locale = LOCALE_FOR_LANGUAGE[activeLanguage] || 'en-US'
   return new Date(`${dateStr}T00:00:00Z`).toLocaleDateString(locale, {
     month: 'long',
     day: 'numeric',
@@ -132,7 +153,7 @@ export function formatLongDate(dateStr) {
 // numbers directly (not a dateStr) since CalendarScreen tracks the browsed
 // month as separate viewYear/viewMonth state, with no particular day.
 export function formatMonthYear(year, month) {
-  const locale = LOCALE_FOR_LANGUAGE[i18n.language] || 'en-US'
+  const locale = LOCALE_FOR_LANGUAGE[activeLanguage] || 'en-US'
   return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString(locale, {
     month: 'long',
     year: 'numeric',
