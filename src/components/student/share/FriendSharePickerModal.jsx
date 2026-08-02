@@ -30,11 +30,6 @@ export default function FriendSharePickerModal({ user, friends, shares, today, s
             {filtered.map((friend) => {
               const sharedToday = shares ? hasSharedToday(shares, user.id, friend.id, today) : false
               const shareStreak = shares ? computeShareStreak(shares, user.id, friend.id, today) : 0
-              // A friend who already shared with ME today is always
-              // shareable back, regardless of my own completion state —
-              // the "complete today's questions first" gate below only
-              // applies to starting a share, not reciprocating one.
-              const friendAlreadyShared = shares ? hasSharedToday(shares, friend.id, user.id, today) : false
               return (
                 <div key={friend.id} className="friend-picker-row">
                   <span className="share-friend-avatar">{friend.avatar || '👤'}</span>
@@ -44,7 +39,11 @@ export default function FriendSharePickerModal({ user, friends, shares, today, s
                   </div>
                   {sharedToday ? (
                     <span className="friend-picker-shared">✅ Shared today</span>
-                  ) : !friendAlreadyShared && !canShareToday ? (
+                  ) : !canShareToday ? (
+                    // No exception for reciprocal shares — a friend having
+                    // already shared with this user today does not bypass
+                    // the completion requirement, matching share-score.js's
+                    // own server-side check exactly.
                     <p className="field-hint friend-picker-hint">Complete today's questions to share with @{friend.username}</p>
                   ) : (
                     <button

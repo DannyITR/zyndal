@@ -28,6 +28,17 @@ async function handle({ userId, body }) {
   const senderStreak = getEffectiveStreak({ streak: streakRow.current_streak, lastCorrectDate: streakRow.last_answered_date }, today)
   const senderScore = await getTodayScore(userId, timezone)
 
+  // Server-side only, no exceptions — a friend having already shared with
+  // this user does NOT bypass it. The client used to gate this on subjects
+  // merely attempted (some possibly wrong), which let an incomplete/wrong
+  // day's score through; this is the actual source of truth now.
+  if (senderScore.correct < senderScore.total) {
+    const err = new Error('Complete all 6 subjects today before sharing your score')
+    err.status = 400
+    err.code = 'INCOMPLETE_DAY'
+    throw err
+  }
+
   const { data: shareRow, error } = await supabase
     .from('streak_shares')
     .insert({

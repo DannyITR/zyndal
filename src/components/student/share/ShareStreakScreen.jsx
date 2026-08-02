@@ -5,7 +5,7 @@ import { SCORE_COLORS, TOTAL_SUBJECTS } from '../../../lib/streak'
 import TopBar from '../../shared/TopBar'
 import FriendSharePickerModal from './FriendSharePickerModal'
 
-export default function ShareStreakScreen({ user, streak, xp, todayScore, subjectsAttemptedToday, today, onBack, onLogout, onLogoClick }) {
+export default function ShareStreakScreen({ user, streak, xp, todayScore, today, onBack, onLogout, onLogoClick }) {
   const [friends, setFriends] = useState(null)
   const [shares, setShares] = useState(null)
   const [receivedToday, setReceivedToday] = useState(null)
@@ -43,6 +43,12 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, subjec
       : []
 
   const scoreColor = SCORE_COLORS[Math.min(Math.max(todayScore, 0), 6)]
+
+  // Matches api/social/share-score.js's own server-side check exactly (all
+  // 6 subjects answered CORRECTLY, not merely attempted) — a stricter gate
+  // than this screen used to apply, and with no exception for reciprocal
+  // "share back" shares, since the server no longer allows one either.
+  const canShareToday = todayScore >= TOTAL_SUBJECTS
 
   // Only friends with an established (1+ day) mutual share streak are worth
   // surfacing as a card here — everyone else is reachable via the picker
@@ -145,14 +151,18 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, subjec
                 <p className="shared-with-you-text">
                   <strong>@{r.senderUsername}</strong> shared their score with you
                 </p>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-small shared-with-you-back-btn"
-                  disabled={sendingToId === r.senderId}
-                  onClick={() => handleShareWithFriend(r.senderId)}
-                >
-                  {sendingToId === r.senderId ? 'Sharing…' : 'Share back'}
-                </button>
+                {canShareToday ? (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-small shared-with-you-back-btn"
+                    disabled={sendingToId === r.senderId}
+                    onClick={() => handleShareWithFriend(r.senderId)}
+                  >
+                    {sendingToId === r.senderId ? 'Sharing…' : 'Share back'}
+                  </button>
+                ) : (
+                  <p className="field-hint share-friend-locked-hint">Complete today's questions to share back</p>
+                )}
               </div>
             ))}
           </div>
@@ -185,6 +195,20 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, subjec
                     </p>
                   )}
                 </div>
+                {sharedToday ? (
+                  <span className="friend-picker-shared">✅ Shared today</span>
+                ) : canShareToday ? (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-small"
+                    disabled={sendingToId === friend.id}
+                    onClick={() => handleShareWithFriend(friend.id)}
+                  >
+                    {sendingToId === friend.id ? 'Sharing…' : 'Share 🔥'}
+                  </button>
+                ) : (
+                  <p className="field-hint share-friend-locked-hint">Finish today to share</p>
+                )}
               </div>
             )
           })}
@@ -198,12 +222,7 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, subjec
           shares={shares}
           today={today}
           sendingToId={sendingToId}
-          // Gates on subjects ATTEMPTED today, not subjects answered
-          // CORRECTLY (that's todayScore, used for the share card itself) —
-          // submit-answer.js allows exactly one attempt per subject per day,
-          // so a wrong answer still finishes that subject for the day and
-          // should count toward "done for today" here.
-          canShareToday={subjectsAttemptedToday >= TOTAL_SUBJECTS}
+          canShareToday={canShareToday}
           onShare={handleShareWithFriend}
           onClose={() => setShowFriendPicker(false)}
         />

@@ -473,7 +473,6 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         streak={getEffectiveStreak(progress, today)}
         xp={progress.xp}
         todayScore={dailyProgress?.total_completed ?? 0}
-        subjectsAttemptedToday={(dailyProgress?.completed_subjects?.length ?? 0) + (dailyProgress?.incorrect_subjects?.length ?? 0)}
         today={today}
         onBack={() => setShowShareScreen(false)}
         onLogout={onLogout}
