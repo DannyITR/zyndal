@@ -1,6 +1,6 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
-import { getStreakRow, getTodayScore } from '../_lib/db.js'
+import { getStreakRow, getTodayScore, getTodayAttemptedCount } from '../_lib/db.js'
 import { insertNotification } from '../_lib/notifications.js'
 import { notificationText, pushNotificationText } from '../_lib/notificationText.js'
 import { sendPushToUser } from '../_lib/push.js'
@@ -27,13 +27,17 @@ async function handle({ userId, body }) {
 
   const streakRow = await getStreakRow(userId)
   const senderStreak = getEffectiveStreak({ streak: streakRow.current_streak, lastCorrectDate: streakRow.last_answered_date }, today)
-  const senderScore = await getTodayScore(userId, timezone)
+  const [senderScore, attemptedCount] = await Promise.all([getTodayScore(userId, timezone), getTodayAttemptedCount(userId, timezone)])
 
-  // Server-side only, no exceptions — a friend having already shared with
-  // this user does NOT bypass it. The client used to gate this on subjects
-  // merely attempted (some possibly wrong), which let an incomplete/wrong
-  // day's score through; this is the actual source of truth now.
-  if (senderScore.correct < senderScore.total) {
+  // A subject counts as "done for the day" once it's been ANSWERED, correct
+  // or not — matches the subject grid (get-daily-progress.js) and the
+  // Friends/Share screens' own gating exactly. senderScore.correct is a
+  // stricter count (right answers only) and stays separate: it's what gets
+  // displayed/shared (the share card's "X/6", the notification text), not
+  // what gates whether sharing is allowed at all. Server-side only, no
+  // exceptions — a friend having already shared with this user does NOT
+  // bypass it.
+  if (attemptedCount < senderScore.total) {
     const err = new Error('Complete all 6 subjects today before sharing your score')
     err.status = 400
     err.code = 'INCOMPLETE_DAY'

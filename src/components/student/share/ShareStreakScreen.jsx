@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getFriendsWithStreaks, getStreakSharesForUser, getTodaysReceivedShares, shareStreakWithFriend } from '../../../lib/storage'
 import { hasSharedToday, computeShareStreak } from '../../../lib/streakShare'
-import { SCORE_COLORS, TOTAL_SUBJECTS, formatLongDate } from '../../../lib/streak'
+import { SCORE_COLORS, formatLongDate } from '../../../lib/streak'
 import TopBar from '../../shared/TopBar'
 import FriendSharePickerModal from './FriendSharePickerModal'
 
-export default function ShareStreakScreen({ user, streak, xp, todayScore, today, onBack, onLogout, onLogoClick }) {
+export default function ShareStreakScreen({ user, streak, xp, todayScore, canShareToday, today, onBack, onLogout, onLogoClick }) {
   const { t } = useTranslation()
   const [friends, setFriends] = useState(null)
   const [shares, setShares] = useState(null)
@@ -40,12 +40,6 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, today,
       : []
 
   const scoreColor = SCORE_COLORS[Math.min(Math.max(todayScore, 0), 6)]
-
-  // Matches api/social/share-score.js's own server-side check exactly (all
-  // 6 subjects answered CORRECTLY, not merely attempted) — a stricter gate
-  // than this screen used to apply, and with no exception for reciprocal
-  // "share back" shares, since the server no longer allows one either.
-  const canShareToday = todayScore >= TOTAL_SUBJECTS
 
   // Only friends with an established (1+ day) mutual share streak are worth
   // surfacing as a card here — everyone else is reachable via the picker

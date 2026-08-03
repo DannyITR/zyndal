@@ -14,6 +14,7 @@ import {
   mondayOfWeek,
   todayStr,
   countCorrectSubjectsToday,
+  computeDayState,
   getEffectiveStreak,
 } from '../../src/lib/streak.js'
 import { findQuestionByPrompt } from '../../src/lib/questions.js'
@@ -193,6 +194,22 @@ export async function getTodayScore(userId, timezone) {
   const progress = await getProgressForUser(userId, timezone)
   const today = todayStr(new Date(), timezone)
   return { correct: countCorrectSubjectsToday(progress.history, today), total: TOTAL_SUBJECTS }
+}
+
+// Used by api/social/share-score.js to gate sharing on subjects ATTEMPTED
+// today (correct or incorrect), not just correct ones — matches
+// computeDailyState in api/student/get-daily-progress.js (which drives the
+// subject grid's green/red states) and StudentFlow.jsx's own canShareToday
+// computation for the Friends screen. A subject counts as "done for the
+// day" the moment it's answered at all; getTodayScore above stays
+// correct-only since it's also used for score DISPLAY (the share card's
+// "X/6", the score_share notification body), a separate concept from
+// share eligibility.
+export async function getTodayAttemptedCount(userId, timezone) {
+  const progress = await getProgressForUser(userId, timezone)
+  const today = todayStr(new Date(), timezone)
+  const { completedIds, incorrectIds } = computeDayState(progress.history, today)
+  return completedIds.size + incorrectIds.size
 }
 
 // Used by api/_lib/dailyQuestion.js's resolveDailyQuestion to read the

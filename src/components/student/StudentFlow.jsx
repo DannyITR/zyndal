@@ -356,6 +356,11 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   // the same logic get-daily-progress.js uses server-side for today.
   const todayCompletedIds = useMemo(() => new Set(dailyProgress?.completed_subjects ?? []), [dailyProgress])
   const todayIncorrectIds = useMemo(() => new Set(dailyProgress?.incorrect_subjects ?? []), [dailyProgress])
+  // Sharing is gated on subjects ATTEMPTED today (correct or incorrect), not
+  // just correct ones — matches api/social/share-score.js's own server-side
+  // check exactly. Shared by both the Friends screen and the Share Daily
+  // Score screen below rather than each recomputing it.
+  const canShareToday = todayCompletedIds.size + todayIncorrectIds.size >= TOTAL_SUBJECTS
   const pastDayState = useMemo(
     () => (isViewingToday || !progress ? null : computeDayState(progress.history, selectedDate)),
     [isViewingToday, progress, selectedDate]
@@ -426,7 +431,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         // Score screen's own friend picker enforces (see
         // FriendSharePickerModal.jsx) — this screen now offers the same
         // direct Share action per friend, so it needs the same rule.
-        canShareToday={(dailyProgress?.completed_subjects?.length ?? 0) + (dailyProgress?.incorrect_subjects?.length ?? 0) >= TOTAL_SUBJECTS}
+        canShareToday={canShareToday}
         onBack={() => {
           setShowFriends(false)
           refreshNotificationState()
@@ -466,6 +471,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         streak={getEffectiveStreak(progress, today)}
         xp={progress.xp}
         todayScore={dailyProgress?.total_completed ?? 0}
+        canShareToday={canShareToday}
         today={today}
         onBack={() => setShowShareScreen(false)}
         onLogout={onLogout}
