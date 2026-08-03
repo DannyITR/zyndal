@@ -8,9 +8,15 @@ export default function QuestionCard({ question, answered, locked, selectedIndex
   // Only generated-pool questions carry real curriculum unit/topic tags
   // (see resolveDailyQuestion in api/_lib/dailyQuestion.js) — a hardcoded-
   // bank fallback question's `topic` is just a plain label with no
-  // matching curriculum outline section to deep-link to, so the box is
-  // hidden rather than linking somewhere misleading.
-  const hasCurriculumTopic = Boolean(question.unitNumber && question.topicTitle && onOpenCurriculumTopic)
+  // matching curriculum outline section to deep-link to. The link still
+  // shows for those, though: onOpenCurriculumTopic({unitNumber: undefined,
+  // topicTitle: undefined}) just opens the general curriculum reference
+  // with nothing auto-expanded (CurriculumOutlineScreen's own
+  // initialUnitNumber/initialTopicTitle handling already no-ops on a falsy
+  // value — the same thing the plain "📖 Curriculum" nav button does), so
+  // there's no wrong-topic deep link to worry about — only whether the
+  // caller gave us a way to open curriculum at all.
+  const hasCurriculumTopic = Boolean(onOpenCurriculumTopic)
 
   return (
     <div className={`question-card ${celebrate ? 'question-card--celebrate' : ''}`}>

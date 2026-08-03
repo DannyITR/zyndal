@@ -396,6 +396,7 @@ export default function StudentHome({
               selectedIndex={dateEntry.selectedIndex}
               celebrate={false}
               onSelect={() => {}}
+              onOpenCurriculumTopic={onOpenCurriculumTopic}
             />
           ) : answeringPast ? (
             <>
@@ -409,6 +410,7 @@ export default function StudentHome({
                 selectedIndex={pastSelectedIndex}
                 celebrate={false}
                 onSelect={handlePastSelect}
+                onOpenCurriculumTopic={onOpenCurriculumTopic}
               />
               {pastSubmitError && <p className="form-error">{pastSubmitError}</p>}
             </>
