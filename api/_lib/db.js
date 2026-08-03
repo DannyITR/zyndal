@@ -196,13 +196,14 @@ export async function getTodayScore(userId, timezone) {
 }
 
 // Used by api/_lib/dailyQuestion.js's resolveDailyQuestion to read the
-// student's own grade — no existing helper does a plain "get user by id"
-// lookup, so this follows the same targeted-query style as getLinkedParent
-// below rather than pulling in the full SAFE_USER_COLUMNS set.
-export async function getUserGrade(userId) {
-  const { data, error } = await supabase.from('users').select('grade').eq('id', userId).maybeSingle()
+// student's own grade and language_preference in one query — no existing
+// helper does a plain "get user by id" lookup, so this follows the same
+// targeted-query style as getLinkedParent below rather than pulling in the
+// full SAFE_USER_COLUMNS set.
+export async function getUserGradeAndLanguage(userId) {
+  const { data, error } = await supabase.from('users').select('grade, language_preference').eq('id', userId).maybeSingle()
   if (error) throw error
-  return data?.grade ?? null
+  return { grade: data?.grade ?? null, languagePreference: data?.language_preference ?? null }
 }
 
 // This month's answered question texts for a subject, in the given

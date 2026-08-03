@@ -1,9 +1,10 @@
 import { waitUntil } from '@vercel/functions'
 import { supabase } from './auth.js'
-import { getUserGrade, getAnswersThisMonth } from './db.js'
+import { getUserGradeAndLanguage, getAnswersThisMonth } from './db.js'
 import { todayStr } from '../../src/lib/streak.js'
 import { getDailyQuestionForGrade, findQuestionByPrompt } from '../../src/lib/questions.js'
 import { generateQuestionPoolIfMissing } from '../questions/generate-question-pool.js'
+import { LANG_FOR_PREFERENCE } from './notificationText.js'
 
 // TODO: As students upload school materials, learn actual curriculum pacing
 // per school board and replace these monthly unit estimates with real data
@@ -34,6 +35,18 @@ export function simpleHash(str) {
   return h >>> 0
 }
 
+async function fetchOutline(subject, grade, language) {
+  const { data, error } = await supabase
+    .from('curriculum_outlines')
+    .select('outline_data')
+    .eq('subject', subject)
+    .eq('grade', grade)
+    .eq('language', language)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
 // Grade's curriculum outline (units -> topics), scoped to whichever unit
 // number(s) the seasonal schedule points at this month. Missing outline ->
 // empty result, which resolveDailyQuestion below treats as "fall back to
@@ -42,19 +55,19 @@ export function simpleHash(str) {
 // own separate on-demand flow.
 // Exported for api/teacher/get-bank-questions.js's "Add random questions"
 // convenience action, which needs the same "what unit(s) is this
-// subject/grade on right now" resolution the daily question does.
-export async function getScheduledUnits(subject, grade, timezone) {
+// subject/grade on right now" resolution the daily question does — that
+// caller never passes language, so it defaults to 'en' (teacher-facing bank
+// stays English-only, see get-bank-questions.js).
+export async function getScheduledUnits(subject, grade, timezone, language = 'en') {
   const today = todayStr(new Date(), timezone)
   const month = today.slice(5, 7)
   const scheduled = SEASONAL_UNIT_SCHEDULE[month] || [1]
 
-  const { data: outline, error } = await supabase
-    .from('curriculum_outlines')
-    .select('outline_data')
-    .eq('subject', subject)
-    .eq('grade', grade)
-    .maybeSingle()
-  if (error) throw error
+  let outline = await fetchOutline(subject, grade, language)
+  // A student's language outline may not have been generated/translated
+  // yet — fall back to the always-present English one rather than showing
+  // nothing.
+  if (!outline && language !== 'en') outline = await fetchOutline(subject, grade, 'en')
   if (!outline) return []
 
   const units = outline.outline_data?.units || []
@@ -68,7 +81,7 @@ export async function getScheduledUnits(subject, grade, timezone) {
   return units.filter((u) => unitNumbers.includes(u.unit_number))
 }
 
-async function getPool(subject, grade, scheduledUnits) {
+async function getPool(subject, grade, scheduledUnits, language) {
   const unitNumbers = scheduledUnits.map((u) => u.unit_number)
   if (unitNumbers.length === 0) return []
   const { data, error } = await supabase
@@ -76,6 +89,7 @@ async function getPool(subject, grade, scheduledUnits) {
     .select('*')
     .eq('subject', subject)
     .eq('grade', grade)
+    .eq('language', language)
     .in('unit_number', unitNumbers)
   if (error) throw error
   return data || []
@@ -175,11 +189,15 @@ async function resolveAnsweredQuestion(subject, questionText) {
 // stays fully authoritative either way, mirroring how the old pure
 // getDailyQuestion(subject) function worked before this feature existed.
 export async function resolveDailyQuestion({ userId, subject, timezone }) {
-  const [grade, answeredThisMonth] = await Promise.all([getUserGrade(userId), getAnswersThisMonth(userId, subject, timezone)])
+  const [{ grade, languagePreference }, answeredThisMonth] = await Promise.all([
+    getUserGradeAndLanguage(userId),
+    getAnswersThisMonth(userId, subject, timezone),
+  ])
   // Matches the existing client-side `user.grade || 9` fallback convention
   // used elsewhere (TestPrepSetupScreen, PracticeSetupScreen, etc.) for a
   // student whose grade was never set.
   const effectiveGrade = grade ?? 9
+  const language = LANG_FOR_PREFERENCE[languagePreference] || 'en'
   const today = todayStr(new Date(), timezone)
 
   // Bug fix: once a subject's been answered today, THAT question — not a
@@ -199,7 +217,7 @@ export async function resolveDailyQuestion({ userId, subject, timezone }) {
 
   let scheduledUnits = []
   try {
-    scheduledUnits = await getScheduledUnits(subject, effectiveGrade, timezone)
+    scheduledUnits = await getScheduledUnits(subject, effectiveGrade, timezone, language)
   } catch (err) {
     console.error('[dailyQuestion] failed to resolve curriculum schedule, falling back to hardcoded bank:', err)
   }
@@ -207,14 +225,34 @@ export async function resolveDailyQuestion({ userId, subject, timezone }) {
   let pool = []
   if (scheduledUnits.length > 0) {
     try {
-      pool = await getPool(subject, effectiveGrade, scheduledUnits)
+      pool = await getPool(subject, effectiveGrade, scheduledUnits, language)
+      // The student's language pool may not exist yet (bulk translation
+      // hasn't reached this subject/grade/unit) — fall back to English
+      // rather than dropping to the hardcoded bank.
+      if (pool.length === 0 && language !== 'en') {
+        pool = await getPool(subject, effectiveGrade, scheduledUnits, 'en')
+      }
     } catch (err) {
       console.error('[dailyQuestion] failed to load generated_questions pool, falling back to hardcoded bank:', err)
     }
   }
 
   if (pool.length === 0) {
-    if (scheduledUnits.length > 0) triggerBackgroundGeneration(subject, effectiveGrade, scheduledUnits)
+    // Background generation always fills the canonical English pool (the
+    // bulk script is what populates fr/es — see
+    // scripts/generate-multilingual-content.js), so it needs the English
+    // unit_title/topic_title, not whatever language scheduledUnits ended up
+    // in above (which may have come from a translated outline).
+    let englishUnits = scheduledUnits
+    if (language !== 'en') {
+      try {
+        englishUnits = await getScheduledUnits(subject, effectiveGrade, timezone, 'en')
+      } catch (err) {
+        console.error('[dailyQuestion] failed to resolve English curriculum schedule for background generation:', err)
+        englishUnits = []
+      }
+    }
+    if (englishUnits.length > 0) triggerBackgroundGeneration(subject, effectiveGrade, englishUnits)
     const hardcoded = getDailyQuestionForGrade(subject, effectiveGrade, new Date(`${today}T12:00:00Z`))
     // The hardcoded bank has no authored explanation text (unlike
     // AI-generated pool questions below) — explicitly null rather than

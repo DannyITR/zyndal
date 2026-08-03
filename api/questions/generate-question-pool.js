@@ -1,6 +1,11 @@
 import { supabase } from '../_lib/auth.js'
-import { generateJson, gradeToSecondary } from '../_lib/anthropic.js'
+import { generateJson, gradeToSecondary, languageInstruction } from '../_lib/anthropic.js'
 import { SUBJECTS } from '../../src/lib/questions.js'
+
+// language is the short DB code ('en'/'fr'/'es' — see generated_questions.
+// language); LANGUAGE_NAME maps it to the full word languageInstruction()
+// expects, matching every other AI-generation call site in this codebase.
+const LANGUAGE_NAME = { en: 'English', fr: 'French', es: 'Spanish' }
 
 // waitUntil promises share the invoking function's own timeout — this repo
 // sets no maxDuration anywhere today, so without an explicit bump here the
@@ -41,9 +46,10 @@ const QUESTION_POOL_SCHEMA = {
   required: ['questions'],
 }
 
-function buildSystemPrompt({ subject, grade, unit_number, unit_title, topic_title }) {
+function buildSystemPrompt({ subject, grade, unit_number, unit_title, topic_title, language }) {
   const secondary = gradeToSecondary(grade)
-  return `You are a Quebec high school curriculum expert generating a permanent multiple-choice question bank for the Quebec Education Program (QEP). Generate EXACTLY 20 multiple choice questions (no more, no fewer) for Quebec Secondary ${secondary} students studying ${subject}, Unit ${unit_number}: ${unit_title}, Topic: ${topic_title}. Make questions varied in difficulty (a mix of easy, medium and hard). Each question must test a different aspect of the topic — no two questions should test the same fact or skill. Each question needs EXACTLY 4 options and a 0-based index for the correct one. Return the 20 questions in the "questions" array.`
+  const languageName = LANGUAGE_NAME[language] || 'English'
+  return `You are a Quebec high school curriculum expert generating a permanent multiple-choice question bank for the Quebec Education Program (QEP). Generate EXACTLY 20 multiple choice questions (no more, no fewer) for Quebec Secondary ${secondary} students studying ${subject}, Unit ${unit_number}: ${unit_title}, Topic: ${topic_title}. Make questions varied in difficulty (a mix of easy, medium and hard). Each question must test a different aspect of the topic — no two questions should test the same fact or skill. Each question needs EXACTLY 4 options and a 0-based index for the correct one. Return the 20 questions in the "questions" array. ${languageInstruction(languageName)}`
 }
 
 // Exported separately from the default HTTP handler so
@@ -53,7 +59,7 @@ function buildSystemPrompt({ subject, grade, unit_number, unit_title, topic_titl
 // entirely once 20 questions already exist for this exact combination, so
 // it's safe to call repeatedly (e.g. once per student request that lands
 // on a still-empty pool) without risking duplicate Claude calls or rows.
-export async function generateQuestionPoolIfMissing({ subject, grade, unit_number, unit_title, topic_title }) {
+export async function generateQuestionPoolIfMissing({ subject, grade, unit_number, unit_title, topic_title, language = 'en' }) {
   const { count, error: countError } = await supabase
     .from('generated_questions')
     .select('id', { count: 'exact', head: true })
@@ -61,6 +67,7 @@ export async function generateQuestionPoolIfMissing({ subject, grade, unit_numbe
     .eq('grade', grade)
     .eq('unit_number', unit_number)
     .eq('topic_title', topic_title)
+    .eq('language', language)
   if (countError) throw countError
   if ((count || 0) >= 20) return { generated: 0, skipped: true }
 
@@ -73,7 +80,7 @@ export async function generateQuestionPoolIfMissing({ subject, grade, unit_numbe
   let questions = null
   for (let attempt = 0; attempt < 2 && !questions; attempt++) {
     const result = await generateJson({
-      system: buildSystemPrompt({ subject, grade, unit_number, unit_title, topic_title }),
+      system: buildSystemPrompt({ subject, grade, unit_number, unit_title, topic_title, language }),
       schema: QUESTION_POOL_SCHEMA,
       maxTokens: 64000,
       content: 'Generate the 20 questions now.',
@@ -96,6 +103,7 @@ export async function generateQuestionPoolIfMissing({ subject, grade, unit_numbe
     correct: q.correct,
     explanation: q.explanation,
     difficulty: q.difficulty,
+    language,
   }))
 
   const { error: insertError } = await supabase.from('generated_questions').insert(rows)
@@ -146,6 +154,7 @@ export default async function handler(req, res) {
       unit_number: Number(body.unit_number),
       unit_title: body.unit_title,
       topic_title: body.topic_title,
+      language: LANGUAGE_NAME[body.language] ? body.language : 'en',
     })
     res.status(200).json(result)
   } catch (err) {

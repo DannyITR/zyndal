@@ -30,7 +30,12 @@ const CURRICULUM_UNIT_SCHEMA = {
   required: ['unit_number', 'unit_title', 'topics'],
 }
 
-const CURRICULUM_OUTLINE_SCHEMA = {
+// Exported so translateCurriculumOutlineData (below) and the multilingual
+// bulk-generation script can constrain a translation call to this exact
+// shape too — additionalProperties:false + required already guarantees the
+// model can't rename/drop/add keys during translation, which is most of
+// why this is more robust than a raw "return only JSON" prompt.
+export const CURRICULUM_OUTLINE_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   properties: {
@@ -65,6 +70,10 @@ function buildSystemPrompt(subject, grade) {
 }`
 }
 
+function buildTranslationSystemPrompt(targetLanguage) {
+  return `You are a professional translator specializing in Quebec Education Program (QEP) curriculum materials. Translate the given curriculum outline JSON from English to ${targetLanguage}. Translate only the text values (unit_title, topic_title, explanation, key_formulas, worked_example, common_mistakes) — never translate the "subject" field, and keep the JSON structure (same number of units, same number of topics per unit, same unit_number values) exactly as given. Keep mathematical notation, formulas, and numbers exactly as they appear in the source.`
+}
+
 function validate(body) {
   if (!body.subject || typeof body.subject !== 'string') return 'subject is required.'
   if (!Number.isFinite(body.grade)) return 'grade is required and must be a number.'
@@ -81,6 +90,21 @@ export async function generateCurriculumOutlineData(subject, grade) {
     schema: CURRICULUM_OUTLINE_SCHEMA,
     maxTokens: 64000,
     content: 'Generate the curriculum outline now.',
+  })
+}
+
+// Used by scripts/generate-multilingual-content.js and
+// api/admin/generate-multilingual.js — targetLanguage is a full word
+// ('French'/'Spanish'), matching languageInstruction's convention elsewhere
+// in this codebase. Reuses CURRICULUM_OUTLINE_SCHEMA so the translated
+// output is guaranteed the same shape as the English source (see that
+// schema's own comment).
+export async function translateCurriculumOutlineData(outlineData, targetLanguage) {
+  return generateJson({
+    system: buildTranslationSystemPrompt(targetLanguage),
+    schema: CURRICULUM_OUTLINE_SCHEMA,
+    maxTokens: 64000,
+    content: JSON.stringify(outlineData),
   })
 }
 

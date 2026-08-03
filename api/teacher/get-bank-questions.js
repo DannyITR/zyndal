@@ -41,7 +41,7 @@ async function handle({ body }) {
     }
     const unitNumbers = scheduledUnits.map((u) => u.unit_number)
 
-    let query = supabase.from('generated_questions').select('*').eq('subject', body.subject).eq('grade', body.grade)
+    let query = supabase.from('generated_questions').select('*').eq('subject', body.subject).eq('grade', body.grade).eq('language', 'en')
     if (unitNumbers.length > 0) query = query.in('unit_number', unitNumbers)
     const { data, error } = await query
     if (error) throw error
@@ -51,11 +51,16 @@ async function handle({ body }) {
     return { questions: shuffled.slice(0, body.random_count) }
   }
 
+  // Teachers browse/assign from the English bank only — there's no
+  // teacher-facing language toggle, and without this filter fr/es rows
+  // (added by scripts/generate-multilingual-content.js) would otherwise
+  // show up mixed in with English ones here.
   const { data, error } = await supabase
     .from('generated_questions')
     .select('*')
     .eq('subject', body.subject)
     .eq('grade', body.grade)
+    .eq('language', 'en')
     .order('unit_number', { ascending: true })
   if (error) throw error
   return { questions: data || [] }
