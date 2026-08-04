@@ -1,4 +1,5 @@
-import { createGenerateHandler } from './_lib/handler.js'
+import { createStudentHandler } from './_lib/studentHandler.js'
+import { assertPremium } from './_lib/subscription.js'
 import { generateJson, QUESTION_SCHEMA, languageInstruction, gradeToSecondary } from './_lib/anthropic.js'
 
 // Mirrors generateStudyGuide in src/lib/ai.js — the daily Study Guide
@@ -25,7 +26,21 @@ function validate(body) {
   return null
 }
 
-async function handle({ subject, grade, language = 'English' }) {
+// Was createGenerateHandler (no session auth at all — CORS + rate limit
+// only) until this endpoint needed per-user premium enforcement, which
+// requires knowing who's actually calling. That gap wasn't specific to
+// premium status: with no auth, this endpoint (and its 3 siblings —
+// generate-test-prep.js, generate-from-upload.js, generate-from-document.js)
+// was callable by anyone on the internet, logged in or not, to burn
+// Anthropic API credits. createStudentHandler's session check closes that
+// entirely; assertPremium is the actual gate this task asked for. The
+// IP-based rate limit createGenerateHandler used to apply is dropped here
+// deliberately — every other session-authenticated endpoint in this
+// codebase relies on auth as its defense rather than also rate-limiting by
+// IP, and now that anonymous access is gone, that's the same posture.
+async function handle({ userId, body }) {
+  await assertPremium(userId)
+  const { subject, grade, language = 'English' } = body
   return generateJson({
     system: buildSystemPrompt(grade, subject, language),
     schema: STUDY_GUIDE_SCHEMA,
@@ -34,4 +49,4 @@ async function handle({ subject, grade, language = 'English' }) {
   })
 }
 
-export default createGenerateHandler({ validate, handle })
+export default createStudentHandler({ method: 'POST', validate, handle })

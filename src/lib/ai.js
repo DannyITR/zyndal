@@ -1,6 +1,7 @@
 import { SUBJECTS } from './questions'
 import { buildDemoStudyPlanDays, buildDemoStudyGuide } from './testPrepQuestionBank'
 import { fileToBase64, resizeImageToBase64 } from './imageUtils'
+import { getSessionToken, notifyPremiumRequired } from './storage'
 
 // ⚠️ TEMPORARY TESTING SWITCH — while true, generateStudyPlan and
 // generateStudyGuide return hardcoded questions from testPrepQuestionBank.js
@@ -22,15 +23,29 @@ function resolveSubjectId(nameOrId) {
 // for the shared model/schema/prompt-running logic and api/generate-*.js
 // for each endpoint. Locally this requires `vercel dev` (not just
 // `vite dev`) so /api routes actually exist to call.
+//
+// X-Session-Token is required now — these four endpoints used to have no
+// auth at all (createGenerateHandler only did CORS + rate limiting), which
+// meant anyone could call them directly, logged in or not. They're
+// createStudentHandler + assertPremium now (see each api/generate-*.js
+// file's own comment), so a request with no/invalid token gets a normal
+// 401 instead of silently working.
 async function callGenerateApi(endpoint, body) {
+  const token = getSessionToken()
   const response = await fetch(`/api/${endpoint}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'X-Session-Token': token } : {}),
+    },
     body: JSON.stringify(body),
   })
   const data = await response.json().catch(() => null)
   if (!response.ok) {
-    throw new Error(data?.error || `Request to ${endpoint} failed (${response.status}).`)
+    if (data?.code === 'PREMIUM_REQUIRED') notifyPremiumRequired()
+    const err = new Error(data?.error || `Request to ${endpoint} failed (${response.status}).`)
+    if (data?.code) err.code = data.code
+    throw err
   }
   return data
 }

@@ -1,4 +1,5 @@
-import { createGenerateHandler } from './_lib/handler.js'
+import { createStudentHandler } from './_lib/studentHandler.js'
+import { assertPremium } from './_lib/subscription.js'
 import { generateJson, QUESTION_SCHEMA, languageInstruction, gradeToSecondary } from './_lib/anthropic.js'
 
 // Mirrors generateStudyPlan in src/lib/ai.js — the Test Prep feature's
@@ -50,7 +51,11 @@ function validate(body) {
   return null
 }
 
-async function handle({ subject, grade, topic, days_available, language = 'English' }) {
+// See generate-study-guide.js's identical comment for why this moved from
+// createGenerateHandler (no auth) to createStudentHandler + assertPremium.
+async function handle({ userId, body }) {
+  await assertPremium(userId)
+  const { subject, grade, topic, days_available, language = 'English' } = body
   return generateJson({
     system: buildSystemPrompt(grade, subject, topic, days_available, language),
     schema: STUDY_PLAN_SCHEMA,
@@ -59,4 +64,4 @@ async function handle({ subject, grade, topic, days_available, language = 'Engli
   })
 }
 
-export default createGenerateHandler({ validate, handle })
+export default createStudentHandler({ method: 'POST', validate, handle })

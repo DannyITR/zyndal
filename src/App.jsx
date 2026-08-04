@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getCurrentUser, clearSession, setSessionExpiredHandler, lookupParentCode } from './lib/storage'
+import { getCurrentUser, clearSession, setSessionExpiredHandler, setPremiumRequiredHandler, lookupParentCode } from './lib/storage'
 import { languageCodeForPreference } from './lib/i18n'
 import LandingPage from './components/landing/LandingPage'
 import AuthScreen from './components/auth/AuthScreen'
@@ -11,6 +11,7 @@ import StudentFlow from './components/student/StudentFlow'
 import ParentDashboard from './components/parent/ParentDashboard'
 import TeacherFlow from './components/teacher/TeacherFlow'
 import InstallPrompt from './components/shared/InstallPrompt'
+import UpgradeModal from './components/shared/UpgradeModal'
 import AdminApp from './components/admin/AdminApp'
 import './App.css'
 
@@ -61,6 +62,7 @@ function App() {
     return { parentCode, email: params.get('email') || '' }
   })
   const [inviteParentUsername, setInviteParentUsername] = useState(null)
+  const [showGlobalUpgradeModal, setShowGlobalUpgradeModal] = useState(false)
 
   useEffect(() => {
     if (!inviteParams) return
@@ -123,6 +125,17 @@ function App() {
       setAuthMode('login')
     })
     return () => setSessionExpiredHandler(null)
+  }, [])
+
+  // Fires from ANY API call that comes back 403 PREMIUM_REQUIRED (see
+  // api/_lib/subscription.js's assertPremium and setPremiumRequiredHandler
+  // in storage.js) — the server-side backstop for the UI's own isPremium
+  // checks, so directly hitting a gated endpoint still surfaces the normal
+  // upgrade modal instead of a raw error. Rendered in every logged-in
+  // branch below, same cross-cutting pattern as <InstallPrompt />.
+  useEffect(() => {
+    setPremiumRequiredHandler(() => setShowGlobalUpgradeModal(true))
+    return () => setPremiumRequiredHandler(null)
   }, [])
 
   function handleLogout() {
@@ -223,6 +236,7 @@ function App() {
       <>
         <TeacherFlow user={user} onLogout={handleLogout} onUserUpdate={setUser} />
         <InstallPrompt />
+        {showGlobalUpgradeModal && <UpgradeModal onClose={() => setShowGlobalUpgradeModal(false)} />}
       </>
     )
   }
@@ -232,6 +246,7 @@ function App() {
       <>
         <ParentDashboard user={user} onLogout={handleLogout} onUserUpdate={setUser} />
         <InstallPrompt />
+        {showGlobalUpgradeModal && <UpgradeModal onClose={() => setShowGlobalUpgradeModal(false)} />}
       </>
     )
   }
@@ -240,6 +255,7 @@ function App() {
     <>
       <StudentFlow user={user} onLogout={handleLogout} onUserUpdate={setUser} />
       <InstallPrompt />
+      {showGlobalUpgradeModal && <UpgradeModal onClose={() => setShowGlobalUpgradeModal(false)} />}
     </>
   )
 }

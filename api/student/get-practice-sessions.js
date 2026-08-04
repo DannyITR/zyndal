@@ -1,5 +1,6 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
+import { assertPremium } from '../_lib/subscription.js'
 
 // Backs getRecentPracticeSessions() in src/lib/storage.js.
 function validate(body) {
@@ -10,6 +11,7 @@ function validate(body) {
 }
 
 async function handle({ userId, body }) {
+  await assertPremium(userId)
   const limit = body.limit ? Number(body.limit) : 5
   const { data, error } = await supabase
     .from('practice_sessions')

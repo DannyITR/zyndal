@@ -1,6 +1,7 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { getLinkedParent } from '../_lib/db.js'
+import { assertPremium } from '../_lib/subscription.js'
 import { computeSuggestedBonusCents } from '../../src/lib/gradeReward.js'
 import { sanitizeSubject, sanitizeString, sanitizeInteger } from '../_lib/sanitize.js'
 
@@ -63,6 +64,7 @@ async function maybeCreateGradeBonus({ userId, gradePercentage, uploadId }) {
 }
 
 async function handle({ userId, body }) {
+  await assertPremium(userId)
   const { subject, topic, grade_received: gradeReceived, test_date: testDate, summary, key_concepts: keyConcepts, document_type: documentType, pages_count: pagesCount, notes } = body
 
   const { data, error } = await supabase

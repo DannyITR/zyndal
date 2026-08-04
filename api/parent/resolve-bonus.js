@@ -2,6 +2,7 @@ import { createParentHandler } from '../_lib/parentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { getStreakRow } from '../_lib/db.js'
 import { getParentWalletRow, walletRowToJson } from '../_lib/parentDb.js'
+import { assertPremium } from '../_lib/subscription.js'
 import { centsToCoins } from '../../src/lib/money.js'
 
 // Mirrors resolvePerfectWeekAchievement and resolveGradeBonus in storage.js
@@ -52,6 +53,9 @@ async function handle({ parentId, body }) {
   }
 
   const studentId = bonusRow.student_id
+  // See payout.js's identical comment — checked against the student, not
+  // the parent calling this endpoint.
+  await assertPremium(studentId)
 
   if (confirmed === false) {
     const { error } = await supabase

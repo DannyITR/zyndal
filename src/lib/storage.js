@@ -19,6 +19,27 @@ export function setSessionExpiredHandler(fn) {
   sessionExpiredHandler = fn
 }
 
+let premiumRequiredHandler = null
+// Registered once by App.jsx (mirrors setSessionExpiredHandler above) so a
+// 403 PREMIUM_REQUIRED from ANY endpoint — not just the ones the UI already
+// gates with its own isPremium checks — shows the upgrade modal instead of
+// a raw error. This is the actual server-side enforcement's other half:
+// api/_lib/subscription.js's assertPremium stops the request, this makes
+// sure hitting that stop still shows a proper upgrade prompt rather than a
+// confusing error toast, covering anyone who bypasses the UI gating (or a
+// screen this app simply hasn't wired its own premium check into yet).
+export function setPremiumRequiredHandler(fn) {
+  premiumRequiredHandler = fn
+}
+
+// Exported so ai.js's callGenerateApi — a separate fetch wrapper, not this
+// file's callApi, since it hits a different base path with its own auth
+// header timing — can trigger the same global callback without duplicating
+// the registration mechanism.
+export function notifyPremiumRequired() {
+  premiumRequiredHandler?.()
+}
+
 async function callApi(basePath, method, endpoint, body) {
   const token = getSessionToken()
   let response
@@ -55,6 +76,7 @@ async function callApi(basePath, method, endpoint, body) {
     // tell an expired token apart from an invalid one without string-
     // matching err.message.
     if (data?.code) err.code = data.code
+    if (data?.code === 'PREMIUM_REQUIRED') premiumRequiredHandler?.()
     throw err
   }
   return data

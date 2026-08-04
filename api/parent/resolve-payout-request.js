@@ -2,6 +2,7 @@ import { createParentHandler } from '../_lib/parentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { getStreakRow } from '../_lib/db.js'
 import { getParentWalletRow, applyPayout, walletRowToJson } from '../_lib/parentDb.js'
+import { assertPremium } from '../_lib/subscription.js'
 import { insertNotification } from '../_lib/notifications.js'
 import { notificationText } from '../_lib/notificationText.js'
 import { sendPushToUser } from '../_lib/push.js'
@@ -48,6 +49,9 @@ async function handle({ parentId, body }) {
   }
 
   const studentId = requestRow.student_id
+  // See payout.js's identical comment — checked against the student, not
+  // the parent calling this endpoint.
+  await assertPremium(studentId)
   const { data: student } = await supabase.from('users').select('language_preference').eq('id', studentId).maybeSingle()
 
   if (action === 'decline') {

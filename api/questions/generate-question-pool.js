@@ -59,6 +59,18 @@ function buildSystemPrompt({ subject, grade, unit_number, unit_title, topic_titl
 // entirely once 20 questions already exist for this exact combination, so
 // it's safe to call repeatedly (e.g. once per student request that lands
 // on a still-empty pool) without risking duplicate Claude calls or rows.
+//
+// Deliberately NOT premium-gated, despite being listed among the endpoints
+// to lock down: this function has no userId at all (it's called from
+// dailyQuestion.js's triggerBackgroundGeneration, which is part of the
+// explicitly free daily-question flow — get-daily-question.js), and the
+// HTTP handler below it is a system/cron endpoint authenticated by
+// CRON_SECRET, not a student session — there's no account to check premium
+// against there either. Adding a check here would either require plumbing
+// a userId through a call path that free/expired students must still be
+// able to trigger (so gating it would break the free daily-question
+// experience for them), or gating a system-to-system endpoint that has no
+// user identity to gate on.
 export async function generateQuestionPoolIfMissing({ subject, grade, unit_number, unit_title, topic_title, language = 'en' }) {
   const { count, error: countError } = await supabase
     .from('generated_questions')

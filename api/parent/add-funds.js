@@ -6,6 +6,15 @@ import { sanitizeInteger } from '../_lib/sanitize.js'
 // Mirrors addFundsToWallet in storage.js. Simulated money only — no real
 // payment processor is involved (see the "Parent finances" header comment
 // in storage.js) — so this just increments the two wallet columns.
+//
+// Deliberately NOT premium-gated, unlike this file's siblings (payout.js,
+// resolve-payout-request.js, resolve-bonus.js) — this endpoint touches no
+// student at all, just the calling parent's own wallet_balance_cents/
+// total_added_cents. There's no student_id here to check premium against,
+// and checking the parent's own account would contradict the parent
+// exemption (parent dashboard/wallet management is always free) — only the
+// payout side, which actually pays out to a specific student, is gated.
+//
 // 100-1000000 cents ($1-$10,000) bounds a single funding transaction to a
 // sane range — the preset buttons in AddFundsPaymentModal.jsx (10/20/50/100
 // dollars) are well inside it; only a hand-crafted request would ever hit

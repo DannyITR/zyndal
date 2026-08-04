@@ -1,5 +1,6 @@
 import { createParentHandler } from '../_lib/parentHandler.js'
 import { verifyStudentBelongsToParent, applyPayout, walletRowToJson } from '../_lib/parentDb.js'
+import { assertPremium } from '../_lib/subscription.js'
 import { sanitizeUuid, sanitizeInteger } from '../_lib/sanitize.js'
 
 // Mirrors payoutStudentCoins in storage.js: cashes out a student's coins for
@@ -32,6 +33,13 @@ function validate(body) {
 async function handle({ parentId, body }) {
   const { student_id: studentId, coins, amount_cents: amountCents, payout_type: payoutType } = body
   await verifyStudentBelongsToParent(parentId, studentId)
+  // Premium is checked against the STUDENT, not the parent — wallet/payout
+  // is a student-facing feature (per the spec's own framing), and parent
+  // accounts are otherwise exempt from premium checks entirely (parent
+  // dashboard, student viewing, notifications). Checking the parent's own
+  // status here wouldn't make sense either way: parentId isn't a
+  // student-tier account, so requirePremium would just always deny it.
+  await assertPremium(studentId)
 
   const { updatedWalletRow, newCoinBalance } = await applyPayout({
     parentId,

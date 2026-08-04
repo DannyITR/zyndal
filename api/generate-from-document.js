@@ -1,4 +1,5 @@
-import { createGenerateHandler } from './_lib/handler.js'
+import { createStudentHandler } from './_lib/studentHandler.js'
+import { assertPremium } from './_lib/subscription.js'
 import { generateJson } from './_lib/anthropic.js'
 
 // Mirrors processUploadedDocument in src/lib/ai.js — NOT one of the four
@@ -84,7 +85,13 @@ function validate(body) {
   return null
 }
 
-async function handle({ uploadType, files }) {
+// See generate-study-guide.js's identical comment for why this moved from
+// createGenerateHandler (no auth) to createStudentHandler + assertPremium
+// — this one in particular used to mean anyone, logged in or not, could
+// upload arbitrary images/PDFs and have them scanned on Zyndal's dime.
+async function handle({ userId, body }) {
+  await assertPremium(userId)
+  const { uploadType, files } = body
   const documentBlocks = files.map((file) =>
     file.mediaType === 'application/pdf'
       ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: file.base64 } }
@@ -99,4 +106,4 @@ async function handle({ uploadType, files }) {
   })
 }
 
-export default createGenerateHandler({ validate, handle })
+export default createStudentHandler({ method: 'POST', validate, handle })

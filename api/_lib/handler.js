@@ -35,7 +35,13 @@ export function createGenerateHandler({ validate, handle }) {
       res.status(200).json(result)
     } catch (err) {
       console.error('[api] generation failed:', err)
-      res.status(err.refusal ? 422 : err.status || err.statusCode || 500).json({ error: err.message || 'Generation failed. Please try again.' })
+      // code was missing entirely here until assertPremium (subscription.js)
+      // needed it to reach the client on a 403 — every other handler
+      // wrapper in this codebase (studentHandler, parentHandler,
+      // adminHandler) already includes it.
+      res
+        .status(err.refusal ? 422 : err.status || err.statusCode || 500)
+        .json({ error: err.message || 'Generation failed. Please try again.', code: err.code || 'SERVER_ERROR' })
     }
   }
 }

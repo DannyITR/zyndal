@@ -1,6 +1,7 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { generateCurriculumOutlineData } from '../generate-curriculum.js'
+import { assertPremium } from '../_lib/subscription.js'
 import { SUBJECTS } from '../../src/lib/questions.js'
 import { LANG_FOR_PREFERENCE } from '../_lib/notificationText.js'
 
@@ -17,6 +18,7 @@ function validate(body) {
 }
 
 async function handle({ userId, body }) {
+  await assertPremium(userId)
   const subject = body.subject
   const grade = Number(body.grade)
 

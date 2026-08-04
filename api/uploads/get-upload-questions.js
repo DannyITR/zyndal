@@ -1,5 +1,6 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
+import { assertPremium } from '../_lib/subscription.js'
 
 // Two modes, both scoped to the caller's own uploads (never another user's,
 // per spec):
@@ -66,6 +67,7 @@ async function handleBySubject(userId, subject) {
 }
 
 async function handle({ userId, body }) {
+  await assertPremium(userId)
   if (body.upload_id) return handleByUploadId(userId, body.upload_id)
   return handleBySubject(userId, body.subject)
 }

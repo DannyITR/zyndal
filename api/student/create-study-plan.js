@@ -1,5 +1,6 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
+import { assertPremium } from '../_lib/subscription.js'
 import { sanitizeSubject, sanitizeString, sanitizeGrade } from '../_lib/sanitize.js'
 
 // Backs createStudyPlan() in src/lib/storage.js.
@@ -32,6 +33,7 @@ function validate(body) {
 }
 
 async function handle({ userId, body }) {
+  await assertPremium(userId)
   const { subject, topic, test_date: testDate, days_available: daysAvailable, grade_level: gradeLevel, plan_data: planData } = body
 
   const { data, error } = await supabase

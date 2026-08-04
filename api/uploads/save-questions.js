@@ -1,5 +1,6 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
+import { assertPremium } from '../_lib/subscription.js'
 
 // Mirrors createUploadQuestions in storage.js. Also doubles as the endpoint
 // behind cacheGeneratedUploadQuestions (questions generated on the fly from
@@ -16,6 +17,7 @@ function validate(body) {
 }
 
 async function handle({ userId, body }) {
+  await assertPremium(userId)
   const { upload_id: uploadId, questions, pages_added: pagesAdded } = body
 
   const { data: upload, error: uploadError } = await supabase

@@ -55,3 +55,41 @@ export async function syncTrialExpiry(user) {
   }
   return { ...user, is_premium: false }
 }
+
+// Server-side enforcement for premium-gated endpoints — the UI's own
+// isPremium checks (StudentHome.jsx etc.) only hide buttons; this is what
+// actually stops a direct API call from a trial_expired/free account.
+// Re-fetches from the DB rather than trusting a caller-supplied user
+// object, since this has to be safe to call as the very first line of a
+// handler with nothing but a userId. Runs the same syncTrialExpiry check
+// login/get-profile do, so a request arriving right as a trial lapses
+// still gets is_premium corrected in the DB before the allow/deny decision
+// is made — not just a stale cached true from before it expired.
+export async function requirePremium(userId) {
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('id, is_premium, trial_ends_at, is_paying_subscriber')
+    .eq('id', userId)
+    .maybeSingle()
+  if (error) throw error
+  if (!user) return { allowed: false, code: 'PREMIUM_REQUIRED' }
+
+  const synced = await syncTrialExpiry(user)
+  const { subscription_status } = getSubscriptionStatus(synced)
+  const allowed = subscription_status === 'trial_active' || subscription_status === 'premium'
+  return allowed ? { allowed: true } : { allowed: false, code: 'PREMIUM_REQUIRED' }
+}
+
+// Throwing convenience wrapper around requirePremium — every gated
+// endpoint's handle() just wants to bail out immediately on a locked
+// account, so this matches the throw-based authorization-guard convention
+// already used elsewhere in this codebase (e.g. verifyStudentBelongsToParent
+// in parentDb.js) instead of repeating an if-check at 20+ call sites.
+export async function assertPremium(userId) {
+  const { allowed } = await requirePremium(userId)
+  if (allowed) return
+  const err = new Error('Premium required')
+  err.status = 403
+  err.code = 'PREMIUM_REQUIRED'
+  throw err
+}

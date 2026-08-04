@@ -1,6 +1,7 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { getStreakRow } from '../_lib/db.js'
+import { assertPremium } from '../_lib/subscription.js'
 import { COINS_PER_CORRECT } from '../../src/lib/streak.js'
 
 // Backs savePracticeSession() in src/lib/storage.js. score_percentage and
@@ -31,6 +32,7 @@ function validate(body) {
 }
 
 async function handle({ userId, body }) {
+  await assertPremium(userId)
   const { subject, topic, questions_correct: questionsCorrect, questions_total: questionsTotal } = body
   const scorePercentage = Math.round((questionsCorrect / questionsTotal) * 100)
   const coinsEarned = questionsCorrect * COINS_PER_CORRECT

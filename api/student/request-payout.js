@@ -2,6 +2,7 @@ import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { getStreakRow } from '../_lib/db.js'
 import { getParentLinkForStudent, getParentWalletRow } from '../_lib/parentDb.js'
+import { assertPremium } from '../_lib/subscription.js'
 import { insertNotification } from '../_lib/notifications.js'
 import { notificationText } from '../_lib/notificationText.js'
 import { sendPushToUser } from '../_lib/push.js'
@@ -22,6 +23,7 @@ function validate(body) {
 }
 
 async function handle({ userId, body }) {
+  await assertPremium(userId)
   const { coin_amount: coinAmount, note } = body
 
   const link = await getParentLinkForStudent(userId)

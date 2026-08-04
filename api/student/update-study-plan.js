@@ -1,5 +1,6 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
+import { assertPremium } from '../_lib/subscription.js'
 
 // Backs updateStudyPlanData/completeStudyPlan/cancelStudyPlan in
 // src/lib/storage.js behind one endpoint (same combined-action pattern as
@@ -23,6 +24,7 @@ function validate(body) {
 }
 
 async function handle({ userId, body }) {
+  await assertPremium(userId)
   const { plan_id: planId, plan_data: planData, status } = body
 
   const { data: plan, error: fetchError } = await supabase.from('study_plans').select('user_id').eq('id', planId).maybeSingle()
