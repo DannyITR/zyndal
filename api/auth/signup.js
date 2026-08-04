@@ -1,6 +1,7 @@
 import { createPublicHandler } from '../_lib/publicHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { SAFE_USER_COLUMNS } from '../_lib/db.js'
+import { TRIAL_DAYS, getSubscriptionStatus } from '../_lib/subscription.js'
 import { hashPassword } from '../../src/lib/password.js'
 import { sanitizeUsername, sanitizeAccountType, sanitizeGrade } from '../_lib/sanitize.js'
 
@@ -108,12 +109,31 @@ async function handle({ body }) {
   // they need a parent_code too or the dashboard has nothing to show/share.
   const parentCode = accountType === 'parent' || accountType === 'teacher' ? await generateUniqueParentCode() : null
 
+  // Every new signup — student, parent, or teacher — gets a 30-day
+  // Premium trial, no card required. is_premium starts true; the daily
+  // api/cron/expire-trials.js job (plus the same check on every
+  // login/get-profile, via syncTrialExpiry) is what turns it back off once
+  // trial_ends_at passes, unless is_paying_subscriber is set by then.
+  const trialStartedAt = new Date()
+  const trialEndsAt = new Date(trialStartedAt.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
+
   const { data: newUser, error: insertError } = await supabase
     .from('users')
-    .insert({ username, password: hashedPassword, account_type: accountType, grade, parent_code: parentCode })
+    .insert({
+      username,
+      password: hashedPassword,
+      account_type: accountType,
+      grade,
+      parent_code: parentCode,
+      trial_started_at: trialStartedAt.toISOString(),
+      trial_ends_at: trialEndsAt.toISOString(),
+      is_premium: true,
+    })
     .select(SAFE_USER_COLUMNS)
     .single()
   if (insertError) throw insertError
+
+  Object.assign(newUser, getSubscriptionStatus(newUser))
 
   if (accountType === 'student') {
     const { error: streakError } = await supabase.from('streaks').insert({ user_id: newUser.id })

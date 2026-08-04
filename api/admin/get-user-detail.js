@@ -2,6 +2,7 @@ import { createAdminHandler } from '../_lib/adminHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { getProgressForUser } from '../_lib/db.js'
 import { usernameLookup } from '../_lib/parentDb.js'
+import { getSubscriptionStatus } from '../_lib/subscription.js'
 import { sanitizeUuid } from '../_lib/sanitize.js'
 
 // Everything except password — same intent as db.js's SAFE_USER_COLUMNS,
@@ -10,7 +11,7 @@ import { sanitizeUuid } from '../_lib/sanitize.js'
 const USER_COLUMNS =
   'id, username, account_type, grade, parent_code, created_at, display_name, email, school, avatar, ' +
   'wallet_balance_cents, total_added_cents, total_paid_out_cents, coin_to_dollar_rate, is_premium, ' +
-  'email_verified, deleted_at, timezone, language_preference'
+  'email_verified, deleted_at, timezone, language_preference, trial_started_at, trial_ends_at, is_paying_subscriber'
 
 function validate(body) {
   const userId = sanitizeUuid(body.user_id)
@@ -30,6 +31,7 @@ async function handle({ body }) {
     err.code = 'NOT_FOUND'
     throw err
   }
+  Object.assign(user, getSubscriptionStatus(user))
 
   const [
     progress,

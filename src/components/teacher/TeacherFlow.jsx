@@ -5,6 +5,8 @@ import { LOCALE_FOR_LANGUAGE } from '../../lib/i18n'
 import { getErrorMessage } from '../../lib/errors'
 import TopBar from '../shared/TopBar'
 import SettingsScreen from '../shared/SettingsScreen'
+import TrialBanner from '../shared/TrialBanner'
+import UpgradeModal from '../shared/UpgradeModal'
 import MyClassesScreen from './MyClassesScreen'
 import ClassDetailScreen from './ClassDetailScreen'
 import AssignHomeworkScreen from './AssignHomeworkScreen'
@@ -27,6 +29,7 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
   const [selectedClassId, setSelectedClassId] = useState(null)
   const [assignHomeworkClass, setAssignHomeworkClass] = useState(null) // { id, name } — the class Assign Homework was opened from
   const [shareStatus, setShareStatus] = useState('') // '' | 'copied'
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   function loadStats() {
     getTeacherStats()
@@ -172,6 +175,12 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
         </div>
       </div>
 
+      <TrialBanner
+        subscriptionStatus={user.subscription_status}
+        daysRemainingInTrial={user.days_remaining_in_trial}
+        onUpgradeClick={() => setShowUpgradeModal(true)}
+      />
+
       <div className="home-actions">
         <button type="button" className="btn btn-secondary btn-small" onClick={() => setView('classes')}>
           {t('teacher.myClasses')}
@@ -214,6 +223,8 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
           ))}
         </div>
       )}
+
+      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
     </div>
   )
 }

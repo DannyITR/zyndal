@@ -484,6 +484,16 @@
     "payoutHistoryDetail": "{{type}} · {{date}}",
     "loadFailed": "No se pudo cargar tu billetera. Inténtalo de nuevo."
   },
+  "upgrade": {
+    "title": "Función Premium",
+    "body": "Esta función es parte de Zyndal Premium. Actualiza para desbloquear práctica ilimitada, guías de estudio, preparación para exámenes, carga de tareas y la billetera de recompensas de tu padre/madre.",
+    "pricing": "$5.99/mes por estudiante o $15/mes para tu familia (hasta 5 estudiantes)",
+    "upgradeCta": "Actualizar a Premium",
+    "maybeLater": "Más tarde",
+    "trialBannerDays": "🎉 Prueba Premium — {{count}} día restante",
+    "trialBannerDays_other": "🎉 Prueba Premium — {{count}} días restantes",
+    "trialBannerLastDay": "⚠️ La prueba termina hoy — actualiza para mantener el acceso Premium"
+  },
   "teacher": {
     "loadStatsFailed": "Error al cargar las estadísticas.",
     "loadHomeworkFailed": "Error al cargar las tareas recientes.",

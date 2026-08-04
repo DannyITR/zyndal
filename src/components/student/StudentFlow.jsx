@@ -20,6 +20,8 @@ import { getUserTimeZone } from '../../lib/timezone'
 import { isPushSupported, subscribeToPush } from '../../lib/push'
 import { getErrorMessage } from '../../lib/errors'
 import TopBar from '../shared/TopBar'
+import TrialBanner from '../shared/TrialBanner'
+import UpgradeModal from '../shared/UpgradeModal'
 import SubjectDashboard from './SubjectDashboard'
 import StudentHome from './StudentHome'
 import CalendarScreen from './CalendarScreen'
@@ -91,6 +93,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [showPractice, setShowPractice] = useState(false)
   const [showGrades, setShowGrades] = useState(false)
   const [showWallet, setShowWallet] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showCurriculum, setShowCurriculum] = useState(false)
   // Set only when the curriculum screen is opened from the daily question
   // screen's "Read about this topic" box — tells CurriculumOutlineScreen
@@ -728,10 +731,16 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
               label={t('home.coins')}
               value={progress.coins}
               onInfoClick={() => setInfoModalKey('coins')}
-              onClick={() => setShowWallet(true)}
+              onClick={() => (user.is_premium ? setShowWallet(true) : setShowUpgradeModal(true))}
             />
           )}
         </div>
+
+        <TrialBanner
+          subscriptionStatus={user.subscription_status}
+          daysRemainingInTrial={user.days_remaining_in_trial}
+          onUpgradeClick={() => setShowUpgradeModal(true)}
+        />
 
         {pendingFriendRequests && pendingFriendRequests.length > 0 && (
           <div className="friend-request-banner-list">
@@ -846,6 +855,8 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         )}
 
         {viewingShare && <FriendScoreCardModal share={viewingShare} onClose={() => setViewingShare(null)} />}
+
+        {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
       </div>
     )
   }

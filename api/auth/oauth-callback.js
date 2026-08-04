@@ -1,13 +1,18 @@
 import { createPublicHandler } from '../_lib/publicHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { SAFE_USER_COLUMNS, getLinkedParentStatus } from '../_lib/db.js'
+import { TRIAL_DAYS, getSubscriptionStatus, syncTrialExpiry } from '../_lib/subscription.js'
 import { hashPassword } from '../../src/lib/password.js'
 
 // Session: social login (Google/Facebook). Companion to
 // api/auth/oauth-merge.js. Deliberately a brand-new file rather than a
-// change to api/auth/login.js/signup.js, which must stay untouched — the
-// existing username/password flow doesn't know this table or these
-// endpoints exist.
+// change to api/auth/login.js/signup.js for the OAuth-specific parts —
+// the username/password flow still doesn't know the oauth_identities
+// table or these endpoints exist, and never should. That's narrower than
+// "never touch those files at all": both now also set/check the same
+// trial fields this file does (see api/_lib/subscription.js), since that
+// concern is account-lifecycle logic every signup/login path needs,
+// independent of which auth method was used.
 //
 // The client sends provider/provider_user_id/provider_email/provider_name
 // straight from the browser's Supabase Auth session, but NONE of that is
@@ -139,12 +144,14 @@ async function handle({ body }) {
     if (user.deleted_at) throw accountDeletedError()
 
     const token = await issueSession(user.id)
-    const { deleted_at: _deletedAt, ...safeUser } = user
+    const syncedUser = await syncTrialExpiry(user)
+    const { deleted_at: _deletedAt, ...safeUser } = syncedUser
     if (safeUser.account_type === 'student') {
       const { linked, parentDeleted } = await getLinkedParentStatus(user.id)
       safeUser.has_linked_parent = linked
       safeUser.linked_parent_deleted = parentDeleted
     }
+    Object.assign(safeUser, getSubscriptionStatus(safeUser))
     return { success: true, token, user: safeUser, is_new_user: false }
   }
 
@@ -179,6 +186,12 @@ async function handle({ body }) {
   const username = await generateUniqueUsername(name, email)
   const placeholderPassword = await hashPassword(crypto.randomUUID())
 
+  // Same 30-day no-card-required trial as api/auth/signup.js — see that
+  // file's own comment on why is_premium starts true and how it turns
+  // back off later.
+  const trialStartedAt = new Date()
+  const trialEndsAt = new Date(trialStartedAt.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
+
   const { data: newUser, error: insertError } = await supabase
     .from('users')
     .insert({
@@ -187,10 +200,15 @@ async function handle({ body }) {
       account_type: 'student',
       email,
       email_verified: true,
+      trial_started_at: trialStartedAt.toISOString(),
+      trial_ends_at: trialEndsAt.toISOString(),
+      is_premium: true,
     })
     .select(SAFE_USER_COLUMNS)
     .single()
   if (insertError) throw insertError
+
+  Object.assign(newUser, getSubscriptionStatus(newUser))
 
   const { error: streakError } = await supabase.from('streaks').insert({ user_id: newUser.id })
   if (streakError) throw streakError

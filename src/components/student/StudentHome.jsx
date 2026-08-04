@@ -22,7 +22,7 @@ import Scratchpad from './Scratchpad'
 import WorkSubmissionPanel from './WorkSubmissionPanel'
 import MilestoneModal from './MilestoneModal'
 import PerfectWeekCelebration from './PerfectWeekCelebration'
-import GoPremiumModal from './testprep/GoPremiumModal'
+import UpgradeModal from '../shared/UpgradeModal'
 import CancelTestPlanModal from './testprep/CancelTestPlanModal'
 
 export default function StudentHome({
@@ -137,14 +137,31 @@ export default function StudentHome({
 
   const planForThisSubject = activePlan && activePlan.subject === subject.id ? activePlan : null
 
-  // Test Prep and the Study Guide are premium features; free students see the
-  // upgrade pitch instead.
+  // Test Prep, the Study Guide, Upload, My Uploads, and Practice are all
+  // premium features; a trial_expired/free student sees the upgrade pitch
+  // instead. isPremium is user.is_premium — true during an active trial
+  // or for a real paying/grandfathered account, false once a trial lapses
+  // (see api/_lib/subscription.js) — so this same boolean already carries
+  // the right meaning without needing to branch on subscription_status
+  // directly here.
   function handleOpenTestPrep() {
     if (isPremium) onOpenTestPrep()
     else setShowPremiumModal(true)
   }
   function handleOpenStudyGuide() {
     if (isPremium) onOpenStudyGuide()
+    else setShowPremiumModal(true)
+  }
+  function handleOpenUpload() {
+    if (isPremium) onOpenUpload()
+    else setShowPremiumModal(true)
+  }
+  function handleOpenMyUploads() {
+    if (isPremium) onOpenMyUploads()
+    else setShowPremiumModal(true)
+  }
+  function handleOpenPractice() {
+    if (isPremium) onOpenPractice()
     else setShowPremiumModal(true)
   }
 
@@ -458,24 +475,30 @@ export default function StudentHome({
       )}
 
       <div className="home-actions">
-        <button type="button" className="btn btn-secondary btn-small" onClick={handleOpenTestPrep}>
+        <button type="button" className="btn btn-secondary btn-small btn--premium" onClick={handleOpenTestPrep}>
+          <span className="premium-crown" aria-hidden="true">👑</span>
           {t('home.testPrep')}
         </button>
         {!planForThisSubject && (
-          <button type="button" className="btn btn-secondary btn-small" onClick={handleOpenStudyGuide}>
+          <button type="button" className="btn btn-secondary btn-small btn--premium" onClick={handleOpenStudyGuide}>
+            <span className="premium-crown" aria-hidden="true">👑</span>
             {t('home.studyGuide')}
           </button>
         )}
-        <button type="button" className="btn btn-secondary btn-small" onClick={onOpenUpload}>
+        <button type="button" className="btn btn-secondary btn-small btn--premium" onClick={handleOpenUpload}>
+          <span className="premium-crown" aria-hidden="true">👑</span>
           {t('home.upload')}
         </button>
-        <button type="button" className="btn btn-secondary btn-small" onClick={onOpenMyUploads}>
+        <button type="button" className="btn btn-secondary btn-small btn--premium" onClick={handleOpenMyUploads}>
+          <span className="premium-crown" aria-hidden="true">👑</span>
           {t('home.myUploads')}
         </button>
-        <button type="button" className="btn btn-secondary btn-small" onClick={onOpenPractice}>
+        <button type="button" className="btn btn-secondary btn-small btn--premium" onClick={handleOpenPractice}>
+          <span className="premium-crown" aria-hidden="true">👑</span>
           {t('home.practice')}
         </button>
-        <button type="button" className="btn btn-secondary btn-small" onClick={onOpenGrades}>
+        <button type="button" className="btn btn-secondary btn-small btn--premium" onClick={onOpenGrades}>
+          <span className="premium-crown" aria-hidden="true">👑</span>
           {t('home.myGrades')}
         </button>
         <button type="button" className="btn btn-secondary btn-small" onClick={onOpenCurriculum}>
@@ -487,7 +510,7 @@ export default function StudentHome({
       {perfectWeekBonus !== null && (
         <PerfectWeekCelebration amount={perfectWeekBonus} onClose={() => setPerfectWeekBonus(null)} />
       )}
-      {showPremiumModal && <GoPremiumModal onClose={() => setShowPremiumModal(false)} />}
+      {showPremiumModal && <UpgradeModal onClose={() => setShowPremiumModal(false)} />}
       {showCancelModal && planForThisSubject && (
         <CancelTestPlanModal onConfirm={handleCancelPlan} onClose={() => setShowCancelModal(false)} />
       )}

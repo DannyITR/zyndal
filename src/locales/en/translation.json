@@ -484,6 +484,16 @@
     "payoutHistoryDetail": "{{type}} · {{date}}",
     "loadFailed": "Couldn't load your wallet. Please try again."
   },
+  "upgrade": {
+    "title": "Premium Feature",
+    "body": "This feature is part of Zyndal Premium. Upgrade to unlock unlimited practice, study guides, test prep, homework uploads, and your parent reward wallet.",
+    "pricing": "$5.99/month per student or $15/month for your family (up to 5 students)",
+    "upgradeCta": "Upgrade to Premium",
+    "maybeLater": "Maybe later",
+    "trialBannerDays": "🎉 Premium trial — {{count}} day remaining",
+    "trialBannerDays_other": "🎉 Premium trial — {{count}} days remaining",
+    "trialBannerLastDay": "⚠️ Trial ends today — upgrade to keep Premium access"
+  },
   "teacher": {
     "loadStatsFailed": "Failed to load stats.",
     "loadHomeworkFailed": "Failed to load recent homework.",

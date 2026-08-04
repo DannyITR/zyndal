@@ -16,6 +16,8 @@ import TopBar from '../shared/TopBar'
 import AnswerDetail from '../shared/AnswerDetail'
 import Leaderboard from '../shared/Leaderboard'
 import SettingsScreen from '../shared/SettingsScreen'
+import TrialBanner from '../shared/TrialBanner'
+import UpgradeModal from '../shared/UpgradeModal'
 import NotificationsScreen from '../student/notifications/NotificationsScreen'
 import FinanceScreen from './finance/FinanceScreen'
 import AddChildScreen from './AddChildScreen'
@@ -38,6 +40,7 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
   const [showFinances, setShowFinances] = useState(false)
   const [showAddChild, setShowAddChild] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   // The logo always resets to the main dashboard view for a logged-in parent.
   function handleLogoClick() {
@@ -203,13 +206,27 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
       />
 
       <div className="home-actions">
-        <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowFinances(true)}>
+        {/* The wallet/payout features live entirely on this Finances screen
+            (add funds, payout students, resolve payout requests) — gated as
+            a whole rather than piecemeal inside FinanceScreen.jsx itself. */}
+        <button
+          type="button"
+          className="btn btn-secondary btn-small btn--premium"
+          onClick={() => (user.is_premium ? setShowFinances(true) : setShowUpgradeModal(true))}
+        >
+          <span className="premium-crown" aria-hidden="true">👑</span>
           {t('parent.finances')}
         </button>
         <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowLeaderboard(true)}>
           {t('nav.leaderboard')}
         </button>
       </div>
+
+      <TrialBanner
+        subscriptionStatus={user.subscription_status}
+        daysRemainingInTrial={user.days_remaining_in_trial}
+        onUpgradeClick={() => setShowUpgradeModal(true)}
+      />
 
       <button type="button" className="btn btn-primary btn-block" onClick={() => setShowAddChild(true)}>
         {t('parent.addChild')}
@@ -312,6 +329,8 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
           })}
         </div>
       )}
+
+      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
     </div>
   )
 }

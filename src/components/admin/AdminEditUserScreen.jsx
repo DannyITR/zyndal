@@ -39,8 +39,27 @@ function profileFromUser(user) {
     school: user.school || '',
     language_preference: user.language_preference || 'English',
     is_premium: user.is_premium,
+    is_paying_subscriber: user.is_paying_subscriber,
     email_verified: user.email_verified,
     avatar: user.avatar || '',
+  }
+}
+
+// subscription_status/days_remaining_in_trial are pre-computed server-side
+// (see api/_lib/subscription.js) — same helper AdminDashboard.jsx's table
+// uses, duplicated here rather than shared from a common module since
+// there's no existing shared-component layer between the two admin
+// screens for something this small.
+function formatSubscriptionStatus(user) {
+  switch (user.subscription_status) {
+    case 'trial_active':
+      return `Trial (${user.days_remaining_in_trial} day${user.days_remaining_in_trial === 1 ? '' : 's'} left)`
+    case 'premium':
+      return 'Premium'
+    case 'trial_expired':
+      return 'Expired'
+    default:
+      return 'Free'
   }
 }
 
@@ -68,6 +87,8 @@ export default function AdminEditUserScreen({ userId, onBack, onLogout }) {
 
   const [deleteTarget, setDeleteTarget] = useState(null) // { hardDelete: bool }
   const [dangerBusy, setDangerBusy] = useState(false)
+
+  const [extendingTrial, setExtendingTrial] = useState(false)
 
   function showToast(type, text) {
     setToast({ type, text })
@@ -112,6 +133,7 @@ export default function AdminEditUserScreen({ userId, onBack, onLogout }) {
         school: profile.school,
         language_preference: profile.language_preference,
         is_premium: profile.is_premium,
+        is_paying_subscriber: profile.is_paying_subscriber,
         email_verified: profile.email_verified,
         avatar: profile.avatar,
       }
@@ -198,6 +220,26 @@ export default function AdminEditUserScreen({ userId, onBack, onLogout }) {
       showToast('error', err.message || 'Failed to delete grade entry.')
     } finally {
       setDeletingGradeId(null)
+    }
+  }
+
+  // +30 days from whichever is later: the current trial_ends_at (so
+  // repeated clicks stack forward from the existing expiry, not from
+  // "now" each time) or now itself (so a long-expired trial doesn't stay
+  // in the past after "extending" it).
+  async function handleExtendTrial() {
+    setExtendingTrial(true)
+    try {
+      const base = Math.max(detail.user.trial_ends_at ? new Date(detail.user.trial_ends_at).getTime() : 0, Date.now())
+      const newTrialEndsAt = new Date(base + 30 * 24 * 60 * 60 * 1000).toISOString()
+      const { user } = await updateAdminUser({ user_id: userId, trial_ends_at: newTrialEndsAt, is_premium: true })
+      setDetail((prev) => ({ ...prev, user: { ...prev.user, ...user } }))
+      setProfile(profileFromUser(user))
+      showToast('success', 'Trial extended by 30 days.')
+    } catch (err) {
+      showToast('error', err.message || 'Failed to extend trial.')
+    } finally {
+      setExtendingTrial(false)
     }
   }
 
@@ -332,6 +374,14 @@ export default function AdminEditUserScreen({ userId, onBack, onLogout }) {
               <label className="admin-checkbox-field">
                 <input
                   type="checkbox"
+                  checked={profile.is_paying_subscriber}
+                  onChange={(e) => setProfileField('is_paying_subscriber', e.target.checked)}
+                />
+                <span>Paying subscriber (permanent Premium, ignores trial dates)</span>
+              </label>
+              <label className="admin-checkbox-field">
+                <input
+                  type="checkbox"
                   checked={profile.email_verified}
                   onChange={(e) => setProfileField('email_verified', e.target.checked)}
                 />
@@ -367,6 +417,26 @@ export default function AdminEditUserScreen({ userId, onBack, onLogout }) {
               <dt>Last Active</dt>
               <dd>{formatDate(detail.stats.lastActive)}</dd>
             </dl>
+          </section>
+
+          <section className="admin-panel">
+            <h2>Subscription</h2>
+            <dl className="admin-detail-grid">
+              <dt>Status</dt>
+              <dd>{formatSubscriptionStatus(detail.user)}</dd>
+              <dt>Trial Started</dt>
+              <dd>{formatDateTime(detail.user.trial_started_at)}</dd>
+              <dt>Trial Ends</dt>
+              <dd>{formatDateTime(detail.user.trial_ends_at)}</dd>
+            </dl>
+            <div className="admin-form-actions">
+              <button type="button" className="admin-btn admin-btn-secondary" disabled={extendingTrial} onClick={handleExtendTrial}>
+                {extendingTrial ? 'Extending…' : 'Extend Trial +30 Days'}
+              </button>
+            </div>
+            <p className="admin-empty-hint">
+              Use the "Paying subscriber" checkbox above to grant permanent Premium regardless of trial dates.
+            </p>
           </section>
 
           <section className="admin-panel">

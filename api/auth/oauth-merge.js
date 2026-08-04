@@ -1,6 +1,7 @@
 import { createPublicHandler } from '../_lib/publicHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { SAFE_USER_COLUMNS, getLinkedParentStatus } from '../_lib/db.js'
+import { getSubscriptionStatus, syncTrialExpiry } from '../_lib/subscription.js'
 import { comparePassword, isBcryptHash } from '../../src/lib/password.js'
 import { sanitizeUsername } from '../_lib/sanitize.js'
 
@@ -143,12 +144,14 @@ async function handle({ body }) {
   const { error: sessionError } = await supabase.from('sessions').insert({ user_id: user.id, token })
   if (sessionError) throw sessionError
 
-  const { password: _password, deleted_at: _deletedAt, ...safeUser } = user
+  const syncedUser = await syncTrialExpiry(user)
+  const { password: _password, deleted_at: _deletedAt, ...safeUser } = syncedUser
   if (safeUser.account_type === 'student') {
     const { linked, parentDeleted } = await getLinkedParentStatus(user.id)
     safeUser.has_linked_parent = linked
     safeUser.linked_parent_deleted = parentDeleted
   }
+  Object.assign(safeUser, getSubscriptionStatus(safeUser))
   return { success: true, token, user: safeUser }
 }
 

@@ -1,6 +1,7 @@
 import { createAdminHandler } from '../_lib/adminHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeUuid, sanitizeGrade, sanitizeAccountType, sanitizeUsername, sanitizeString, sanitizeEmail } from '../_lib/sanitize.js'
+import { getSubscriptionStatus } from '../_lib/subscription.js'
 import { AVATARS } from '../../src/lib/avatars.js'
 
 const LANGUAGE_PREFERENCES = new Set(['English', 'French', 'Spanish'])
@@ -12,7 +13,7 @@ const LANGUAGE_PREFERENCES = new Set(['English', 'French', 'Spanish'])
 const RETURN_COLUMNS =
   'id, username, account_type, grade, parent_code, created_at, display_name, email, school, avatar, ' +
   'wallet_balance_cents, total_added_cents, total_paid_out_cents, coin_to_dollar_rate, is_premium, ' +
-  'email_verified, deleted_at, timezone, language_preference'
+  'email_verified, deleted_at, timezone, language_preference, trial_started_at, trial_ends_at, is_paying_subscriber'
 
 // deleted_at is accepted here only as `null` (restore) — actually deleting
 // an account (soft or hard) always goes through delete-user.js, which
@@ -73,6 +74,22 @@ function validate(body) {
     return { field: 'is_premium', message: 'is_premium must be true or false.' }
   }
 
+  if (body.is_paying_subscriber !== undefined && typeof body.is_paying_subscriber !== 'boolean') {
+    return { field: 'is_paying_subscriber', message: 'is_paying_subscriber must be true or false.' }
+  }
+
+  // null explicitly clears the trial (falls back to 'free' status via
+  // getSubscriptionStatus) — anything else must parse as a real date. The
+  // Edit User page computes the actual ISO string itself (e.g. "+30 days
+  // from now or from the current trial_ends_at, whichever is later"); this
+  // endpoint just validates and stores whatever it's given, matching every
+  // other field here.
+  if (body.trial_ends_at !== undefined && body.trial_ends_at !== null) {
+    const parsed = new Date(body.trial_ends_at)
+    if (Number.isNaN(parsed.getTime())) return { field: 'trial_ends_at', message: 'trial_ends_at must be a valid date.' }
+    body.trial_ends_at = parsed.toISOString()
+  }
+
   if (body.email_verified !== undefined && typeof body.email_verified !== 'boolean') {
     return { field: 'email_verified', message: 'email_verified must be true or false.' }
   }
@@ -95,6 +112,8 @@ async function handle({ body }) {
   if (body.language_preference !== undefined) updates.language_preference = body.language_preference
   if (body.avatar !== undefined) updates.avatar = body.avatar || null
   if (body.is_premium !== undefined) updates.is_premium = body.is_premium
+  if (body.is_paying_subscriber !== undefined) updates.is_paying_subscriber = body.is_paying_subscriber
+  if (body.trial_ends_at !== undefined) updates.trial_ends_at = body.trial_ends_at
   if (body.email_verified !== undefined) updates.email_verified = body.email_verified
   if (body.deleted_at === null) updates.deleted_at = null
 
@@ -148,6 +167,7 @@ async function handle({ body }) {
     err.code = 'NOT_FOUND'
     throw err
   }
+  Object.assign(data, getSubscriptionStatus(data))
 
   return { user: data }
 }

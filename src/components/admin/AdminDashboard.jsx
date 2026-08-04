@@ -7,6 +7,22 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString()
 }
 
+// subscription_status/days_remaining_in_trial come pre-computed from
+// api/_lib/subscription.js (see api/admin/get-users.js) — this just
+// renders the label, no status logic lives here.
+function formatSubscriptionStatus(user) {
+  switch (user.subscription_status) {
+    case 'trial_active':
+      return `Trial (${user.days_remaining_in_trial} day${user.days_remaining_in_trial === 1 ? '' : 's'} left)`
+    case 'premium':
+      return 'Premium'
+    case 'trial_expired':
+      return 'Expired'
+    default:
+      return 'Free'
+  }
+}
+
 const STAT_CARDS = [
   { key: 'totalUsers', label: 'Total Users', get: (s) => s.totalUsers.all },
   { key: 'activeToday', label: 'Active Today', get: (s) => s.dailyActiveUsers },
@@ -192,7 +208,7 @@ export default function AdminDashboard({ onLogout, onEditUser, refreshKey }) {
                 <th>Email</th>
                 <th>Type</th>
                 <th>Grade</th>
-                <th>Premium</th>
+                <th>Subscription</th>
                 <th>Verified</th>
                 <th>Streak</th>
                 <th>XP</th>
@@ -223,7 +239,7 @@ export default function AdminDashboard({ onLogout, onEditUser, refreshKey }) {
                     <td>{user.email || '—'}</td>
                     <td>{user.account_type}</td>
                     <td>{user.grade ?? '—'}</td>
-                    <td>{user.is_premium ? 'Yes' : 'No'}</td>
+                    <td>{formatSubscriptionStatus(user)}</td>
                     <td>{user.email_verified ? 'Yes' : 'No'}</td>
                     <td>{user.current_streak}</td>
                     <td>{user.total_xp}</td>

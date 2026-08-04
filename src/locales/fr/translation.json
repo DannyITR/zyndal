@@ -484,6 +484,16 @@
     "payoutHistoryDetail": "{{type}} · {{date}}",
     "loadFailed": "Impossible de charger votre portefeuille. Veuillez réessayer."
   },
+  "upgrade": {
+    "title": "Fonctionnalité Premium",
+    "body": "Cette fonctionnalité fait partie de Zyndal Premium. Passez à Premium pour débloquer la pratique illimitée, les guides d'étude, la préparation aux examens, le téléversement de devoirs et le portefeuille de récompenses de votre parent.",
+    "pricing": "5,99 $/mois par élève ou 15 $/mois pour votre famille (jusqu'à 5 élèves)",
+    "upgradeCta": "Passer à Premium",
+    "maybeLater": "Plus tard",
+    "trialBannerDays": "🎉 Essai Premium — {{count}} jour restant",
+    "trialBannerDays_other": "🎉 Essai Premium — {{count}} jours restants",
+    "trialBannerLastDay": "⚠️ L'essai se termine aujourd'hui — passez à Premium pour garder l'accès"
+  },
   "teacher": {
     "loadStatsFailed": "Échec du chargement des statistiques.",
     "loadHomeworkFailed": "Échec du chargement des devoirs récents.",

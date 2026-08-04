@@ -1,6 +1,7 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { SAFE_USER_COLUMNS, getLinkedParentStatus } from '../_lib/db.js'
+import { getSubscriptionStatus, syncTrialExpiry } from '../_lib/subscription.js'
 
 // Backs getCurrentUser() in src/lib/storage.js for BOTH student and parent
 // accounts — despite the /student/ path (matching the endpoint list this
@@ -33,7 +34,14 @@ async function handle({ userId }) {
     data.has_linked_parent = linked
     data.linked_parent_deleted = parentDeleted
   }
-  return data
+  // Called on every app mount/session restore (see getCurrentUser in
+  // storage.js), so this is the main place — alongside login — that
+  // actually catches a trial lapsing without waiting on the once-daily
+  // cron. subscription_status/days_remaining_in_trial drive the trial
+  // banner and the admin panel's subscription column.
+  const synced = await syncTrialExpiry(data)
+  Object.assign(synced, getSubscriptionStatus(synced))
+  return synced
 }
 
 export default createStudentHandler({ method: 'GET', handle })

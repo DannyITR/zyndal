@@ -1,8 +1,10 @@
 import { createAdminHandler } from '../_lib/adminHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeString, sanitizeAccountType } from '../_lib/sanitize.js'
+import { getSubscriptionStatus } from '../_lib/subscription.js'
 
-const USER_COLUMNS = 'id, username, email, account_type, grade, is_premium, email_verified, created_at, deleted_at'
+const USER_COLUMNS =
+  'id, username, email, account_type, grade, is_premium, email_verified, created_at, deleted_at, trial_ends_at, is_paying_subscriber'
 const MAX_LIMIT = 200
 
 function handleIsPremiumFilter(query, raw) {
@@ -58,6 +60,7 @@ async function handle({ body }) {
     total_xp: streakByUser[u.id]?.total_xp ?? 0,
     coin_balance: streakByUser[u.id]?.coin_balance ?? 0,
     last_active: lastActiveByUser[u.id] || null,
+    ...getSubscriptionStatus(u),
   }))
 
   return { users: enriched, page, limit, total, totalPages }

@@ -28,6 +28,19 @@
   transform: scale(0.97);
 }
 
+.btn--premium {
+  position: relative;
+}
+
+.premium-crown {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 12px;
+  line-height: 1;
+  pointer-events: none;
+}
+
 .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -3556,18 +3569,20 @@ div.zyndal-logo {
   font-size: 44px;
 }
 
-.premium-modal-price {
+.premium-modal-body {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.premium-modal-pricing {
   font-family: var(--font-heading);
-  font-size: 34px;
   font-weight: 800;
+  font-size: 16px;
   background: var(--gradient-gold);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-}
-
-.premium-modal-price-period {
-  font-size: 15px;
 }
 
 .premium-benefits {
@@ -3581,6 +3596,41 @@ div.zyndal-logo {
   font-size: 13px;
   line-height: 1.5;
   color: var(--text-dim);
+}
+
+/* ---------- Trial countdown banner ---------- */
+
+.trial-banner {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.trial-banner--normal {
+  border-color: rgba(155, 77, 255, 0.4);
+  background: rgba(155, 77, 255, 0.1);
+  color: var(--purple-bright);
+}
+
+.trial-banner--warning {
+  border-color: rgba(255, 193, 7, 0.5);
+  background: rgba(255, 193, 7, 0.12);
+  color: var(--gold);
+}
+
+.trial-banner--urgent {
+  border-color: rgba(255, 92, 122, 0.5);
+  background: rgba(255, 92, 122, 0.12);
+  color: var(--red);
 }
 
 /* ---------- Document uploads ---------- */
