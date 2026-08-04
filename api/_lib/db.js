@@ -272,22 +272,26 @@ export async function getLinkedParent(studentId) {
   }
 }
 
-// For a student's home screen: whether their linked parent (if any) has
-// deleted their own account — drives the one-time "your parent account was
-// deactivated" banner in StudentFlow.jsx. False (not an error) when there's
-// no link at all.
-export async function isLinkedParentDeleted(studentId) {
+// For a student's home screen: whether they have a linked parent at all
+// (drives the Coins stat box / Wallet page's visibility — see
+// StudentFlow.jsx and api/student/get-wallet.js) and, if so, whether that
+// parent has deleted their own account (drives the one-time "your parent
+// account was deactivated" banner in StudentFlow.jsx). Combined into one
+// function since both need the same parent_student lookup — get-profile.js
+// used to run this as two separate queries across two call sites before the
+// Wallet feature needed the "linked at all" half too.
+export async function getLinkedParentStatus(studentId) {
   const { data: link, error: linkError } = await supabase
     .from('parent_student')
     .select('parent_id')
     .eq('student_id', studentId)
     .maybeSingle()
   if (linkError) throw linkError
-  if (!link) return false
+  if (!link) return { linked: false, parentDeleted: false }
 
   const { data: parent, error: parentError } = await supabase.from('users').select('deleted_at').eq('id', link.parent_id).maybeSingle()
   if (parentError) throw parentError
-  return Boolean(parent?.deleted_at)
+  return { linked: true, parentDeleted: Boolean(parent?.deleted_at) }
 }
 
 // Mirrors normalizeMilestoneBonuses in storage.js exactly.

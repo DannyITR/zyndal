@@ -640,6 +640,29 @@ export async function resolveGradeBonus(bonusId, parentId, _studentId, amountCen
   invalidateParentDashboard()
 }
 
+// ---------- Payout requests (student-initiated cash-out) ----------
+
+export async function getPendingPayoutRequests(parentId) {
+  const dash = await fetchParentDashboard(parentId)
+  return dash.pendingPayoutRequests
+}
+
+export async function resolvePayoutRequest(requestId, action) {
+  await callParentApi('POST', 'resolve-payout-request', { request_id: requestId, action })
+  invalidateParentDashboard()
+}
+
+// Student-side Wallet page — not cached like fetchParentDashboard/
+// fetchFriendsDashboard, since it's only ever read from the one Wallet
+// screen rather than sliced across several components.
+export async function getStudentWallet() {
+  return callStudentApi('GET', 'get-wallet')
+}
+
+export async function requestPayout(coinAmount, note) {
+  return callStudentApi('POST', 'request-payout', { coin_amount: coinAmount, note })
+}
+
 // ---------- Document uploads ----------
 // Session 4: saveUpload/addPagesToUpload compose two endpoints (save-upload,
 // save-questions) instead of inserting into uploads/upload_questions

@@ -3,6 +3,7 @@
 // way db.js mirrors the student ones (see db.js's header comment for why
 // storage.js itself can't be imported directly here).
 import { supabase } from './auth.js'
+import { getStreakRow } from './db.js'
 
 // Excludes password (see get-profile.js/update-settings.js from Session 3)
 // and the wallet/financial columns, which only ever make sense for the
@@ -97,4 +98,91 @@ export async function usernameLookup(userIds) {
   const { data, error } = await supabase.from('users').select('id, username').in('id', userIds)
   if (error) throw error
   return Object.fromEntries((data || []).map((u) => [u.id, u.username]))
+}
+
+// Core "cash out coins for real dollars" operation: deducts `coins` from the
+// student's streaks.coin_balance and `amountCents` from the parent's
+// wallet_balance_cents, then records a payouts row. Shared by
+// api/parent/payout.js (parent-initiated, any amount up to the student's
+// balance) and api/parent/resolve-payout-request.js (approving a request
+// the student made) so the actual money-moving logic exists in exactly one
+// place. Deliberately does NOT do authorization (verifyStudentBelongsToParent)
+// or wallet-sufficiency checks — those differ slightly per caller (a
+// request made hours ago needs its stored amount re-validated against
+// CURRENT balances, not just the coin count) and are each caller's own
+// responsibility before calling this.
+export async function applyPayout({ parentId, studentId, coins, amountCents, type }) {
+  const streakRow = await getStreakRow(studentId)
+  if (coins > streakRow.coin_balance) {
+    const err = new Error('Cannot pay out more coins than the student has.')
+    err.status = 400
+    err.code = 'VALIDATION_ERROR'
+    throw err
+  }
+
+  const { error: streakError } = await supabase
+    .from('streaks')
+    .update({ coin_balance: streakRow.coin_balance - coins })
+    .eq('user_id', studentId)
+  if (streakError) throw streakError
+
+  const wallet = await getParentWalletRow(parentId)
+  const { data: updatedWalletRow, error: walletError } = await supabase
+    .from('users')
+    .update({
+      wallet_balance_cents: wallet.wallet_balance_cents - amountCents,
+      total_paid_out_cents: wallet.total_paid_out_cents + amountCents,
+    })
+    .eq('id', parentId)
+    .select('wallet_balance_cents, total_added_cents, total_paid_out_cents, coin_to_dollar_rate, milestone_settings')
+    .single()
+  if (walletError) throw walletError
+
+  const { error: payoutError } = await supabase.from('payouts').insert({
+    parent_id: parentId,
+    student_id: studentId,
+    coins,
+    amount_cents: amountCents,
+    type: type || 'manual',
+  })
+  if (payoutError) throw payoutError
+
+  return { updatedWalletRow, newCoinBalance: streakRow.coin_balance - coins }
+}
+
+// The student-side mirror of verifyStudentBelongsToParent's lookup, queried
+// from the student's end (by student_id) rather than requiring both ids up
+// front, since a student doesn't know their parent's id until this
+// resolves. Used by api/student/get-wallet.js and
+// api/student/request-payout.js. payout_cap_cents/payout_cap_period are
+// nullable — no parent-facing settings UI sets them yet (not in this
+// feature's scope), but the columns exist so the Wallet page's "if a cap is
+// set" display logic has something real to check once one does.
+export async function getParentLinkForStudent(studentId) {
+  const { data, error } = await supabase
+    .from('parent_student')
+    .select('parent_id, payout_cap_cents, payout_cap_period')
+    .eq('student_id', studentId)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+// Student-facing mirror of getPayoutHistoryRows above — same payouts
+// table, scoped to student_id instead of parent_id. No username lookup
+// needed since it's always the caller's own history.
+export async function getPayoutHistoryForStudent(studentId) {
+  const { data: rows, error } = await supabase
+    .from('payouts')
+    .select('*')
+    .eq('student_id', studentId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (rows || []).map((r) => ({
+    id: r.id,
+    coins: r.coins,
+    amountCents: r.amount_cents,
+    type: r.type || 'manual',
+    date: r.created_at.slice(0, 10),
+  }))
 }

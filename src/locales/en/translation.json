@@ -141,7 +141,8 @@
     "dayStreakLabel": "day streak",
     "whatIsDayStreak": "What is the day streak?",
     "whatIsLabel": "What is {{label}}?",
-    "loadingProgress": "Loading your progress…"
+    "loadingProgress": "Loading your progress…",
+    "viewWallet": "View Wallet"
   },
   "nav": {
     "leaderboard": "🏆 Leaderboard",
@@ -452,7 +453,36 @@
     "insufficientWallet": "Your wallet balance (${{balance}}) isn't enough to cover this payout. Add funds first.",
     "confirmPayout": "Confirm Payout (${{amount}})",
     "testWord": "test",
-    "gradeBonusText": "@{{username}} got {{grade}}% on their {{subject}}! Pay ${{amount}} bonus?"
+    "gradeBonusText": "@{{username}} got {{grade}}% on their {{subject}}! Pay ${{amount}} bonus?",
+    "payoutTypeRequest": "Requested Payout",
+    "payoutRequestsHeading": "Payout Requests",
+    "payoutRequestText": "@{{username}} is requesting a payout of ${{amount}}",
+    "payoutRequestNote": "Note: {{note}}",
+    "approveAmount": "Approve ${{amount}}",
+    "payoutRequestFailed": "Couldn't process this request. Please try again."
+  },
+  "wallet": {
+    "title": "💰 Wallet",
+    "subtitle": "Your coins & payouts",
+    "currentBalance": "Current Balance",
+    "coinsSuffix": "coins",
+    "worthAtRate": "Worth ${{amount}} at your parent's current rate",
+    "conversionRate": "{{rate}} coins = $1 (set by your parent)",
+    "payoutCapWeek": "Your parent has set a maximum payout of ${{amount}} per week",
+    "payoutCapMonth": "Your parent has set a maximum payout of ${{amount}} per month",
+    "requestPayoutButton": "💰 Request Payout",
+    "requestPending": "⏳ Payout requested",
+    "confirmTitle": "Request Payout",
+    "confirmText": "Request a payout of {{coins}} coins (${{amount}})?",
+    "noteLabel": "What do you want to use it for?",
+    "notePlaceholder": "Optional",
+    "confirmButton": "Confirm",
+    "requestSuccess": "Payout request sent! Your parent will review it shortly.",
+    "requestFailed": "Couldn't send your payout request. Please try again.",
+    "historyHeading": "Payout History",
+    "noPayoutsYet": "No payouts yet — keep answering questions to earn coins!",
+    "payoutHistoryDetail": "{{type}} · {{date}}",
+    "loadFailed": "Couldn't load your wallet. Please try again."
   },
   "teacher": {
     "loadStatsFailed": "Failed to load stats.",

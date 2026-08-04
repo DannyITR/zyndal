@@ -1,6 +1,6 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
-import { SAFE_USER_COLUMNS, isLinkedParentDeleted } from '../_lib/db.js'
+import { SAFE_USER_COLUMNS, getLinkedParentStatus } from '../_lib/db.js'
 
 // Backs getCurrentUser() in src/lib/storage.js for BOTH student and parent
 // accounts — despite the /student/ path (matching the endpoint list this
@@ -15,8 +15,10 @@ import { SAFE_USER_COLUMNS, isLinkedParentDeleted } from '../_lib/db.js'
 // deleted_at itself is never returned to the client (not in
 // SAFE_USER_COLUMNS) — a deleted account's own session was already purged
 // by delete-account.js, so this endpoint would 401 for them before ever
-// reaching here anyway. linked_parent_deleted is added for students only —
-// see isLinkedParentDeleted's header comment.
+// reaching here anyway. linked_parent_deleted and has_linked_parent are
+// added for students only — see getLinkedParentStatus's header comment.
+// has_linked_parent drives the Coins stat box's visibility (StudentFlow.jsx)
+// and whether the Wallet page is reachable at all.
 async function handle({ userId }) {
   const { data, error } = await supabase.from('users').select(SAFE_USER_COLUMNS).eq('id', userId).maybeSingle()
   if (error) throw error
@@ -27,7 +29,9 @@ async function handle({ userId }) {
     throw err
   }
   if (data.account_type === 'student') {
-    data.linked_parent_deleted = await isLinkedParentDeleted(userId)
+    const { linked, parentDeleted } = await getLinkedParentStatus(userId)
+    data.has_linked_parent = linked
+    data.linked_parent_deleted = parentDeleted
   }
   return data
 }

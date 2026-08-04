@@ -100,6 +100,51 @@ const TEMPLATES = {
       body: 'Aún no has respondido las preguntas de hoy — responde al menos una para mantener tu llama encendida 🔥',
     }),
   },
+  // amount is a pre-formatted dollar string (e.g. "5.00", via
+  // centsToDisplay) — same convention as homework_assigned's dueDate above,
+  // rather than passing raw cents and reformatting per-language here.
+  payout_requested: {
+    en: ({ studentUsername, amount }) => ({
+      title: `💰 @${studentUsername} is requesting a payout of $${amount}`,
+      body: 'Tap to review this request.',
+    }),
+    fr: ({ studentUsername, amount }) => ({
+      title: `💰 @${studentUsername} demande un paiement de ${amount} $`,
+      body: 'Touchez pour examiner cette demande.',
+    }),
+    es: ({ studentUsername, amount }) => ({
+      title: `💰 @${studentUsername} está solicitando un pago de $${amount}`,
+      body: 'Toca para revisar esta solicitud.',
+    }),
+  },
+  payout_approved: {
+    en: ({ amount }) => ({
+      title: '🎉 Your payout request was approved!',
+      body: `$${amount} has been paid out.`,
+    }),
+    fr: ({ amount }) => ({
+      title: '🎉 Votre demande de paiement a été approuvée !',
+      body: `${amount} $ ont été versés.`,
+    }),
+    es: ({ amount }) => ({
+      title: '🎉 ¡Tu solicitud de pago fue aprobada!',
+      body: `Se han pagado $${amount}.`,
+    }),
+  },
+  payout_declined: {
+    en: () => ({
+      title: 'Your payout request was declined by your parent',
+      body: 'You can keep earning coins and request again later.',
+    }),
+    fr: () => ({
+      title: 'Votre demande de paiement a été refusée par votre parent',
+      body: 'Vous pouvez continuer à gagner des pièces et refaire une demande plus tard.',
+    }),
+    es: () => ({
+      title: 'Tu solicitud de pago fue rechazada por tu padre/madre',
+      body: 'Puedes seguir ganando monedas y volver a solicitar más tarde.',
+    }),
+  },
 }
 
 // languagePreference is the recipient's own users.language_preference —

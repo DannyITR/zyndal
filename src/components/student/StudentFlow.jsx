@@ -39,6 +39,7 @@ import StudyGuideScreen from './testprep/StudyGuideScreen'
 import UploadsFlow from './uploads/UploadsFlow'
 import PracticeFlow from './practice/PracticeFlow'
 import GradesScreen from './grades/GradesScreen'
+import WalletScreen from './wallet/WalletScreen'
 import CurriculumOutlineScreen from './curriculum/CurriculumOutlineScreen'
 import HomeworkFlow from './homework/HomeworkFlow'
 import ClassesFlow from './classes/ClassesFlow'
@@ -89,6 +90,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [uploadsView, setUploadsView] = useState(null) // null | 'select-type' | 'library'
   const [showPractice, setShowPractice] = useState(false)
   const [showGrades, setShowGrades] = useState(false)
+  const [showWallet, setShowWallet] = useState(false)
   const [showCurriculum, setShowCurriculum] = useState(false)
   // Set only when the curriculum screen is opened from the daily question
   // screen's "Read about this topic" box — tells CurriculumOutlineScreen
@@ -559,6 +561,26 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     )
   }
 
+  if (showWallet) {
+    // Reachable only via the Coins stat box, which is itself only rendered
+    // when user.has_linked_parent is true — but that flag could be stale
+    // mid-session (e.g. a parent unlinked after this page loaded), so the
+    // real guard is server-side: api/student/get-wallet.js throws
+    // NO_LINKED_PARENT if there's no link at fetch time, and
+    // onNoLinkedParent below bounces back here, matching the spec's
+    // "redirect back to home screen" requirement regardless of how this
+    // screen was reached.
+    return (
+      <WalletScreen
+        user={user}
+        onBack={() => setShowWallet(false)}
+        onNoLinkedParent={() => setShowWallet(false)}
+        onLogout={onLogout}
+        onLogoClick={handleLogoClick}
+      />
+    )
+  }
+
   if (showCurriculum && activeSubject) {
     return (
       <CurriculumOutlineScreen
@@ -687,7 +709,21 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         <div className="stats-row">
           <StreakFlame streak={getEffectiveStreak(progress, today)} onInfoClick={() => setInfoModalKey('streak')} />
           <StatPill icon="⚡" label={t('home.xp')} value={progress.xp} onInfoClick={() => setInfoModalKey('xp')} />
-          <StatPill icon="🪙" label={t('home.coins')} value={progress.coins} onInfoClick={() => setInfoModalKey('coins')} />
+          {/* Only a student with a linked parent has anything to cash out —
+              no parent means no wallet, no coins, no payout button (see
+              WalletScreen.jsx's own redirect-home guard for the same rule
+              enforced server-side too). Reappears automatically the next
+              time the profile is refetched (login, session restore) once a
+              parent links — has_linked_parent comes from get-profile.js. */}
+          {user.has_linked_parent && (
+            <StatPill
+              icon="🪙"
+              label={t('home.coins')}
+              value={progress.coins}
+              onInfoClick={() => setInfoModalKey('coins')}
+              onClick={() => setShowWallet(true)}
+            />
+          )}
         </div>
 
         {pendingFriendRequests && pendingFriendRequests.length > 0 && (

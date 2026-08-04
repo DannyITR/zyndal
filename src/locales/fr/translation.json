@@ -141,7 +141,8 @@
     "dayStreakLabel": "série de jours",
     "whatIsDayStreak": "Qu'est-ce que la série de jours ?",
     "whatIsLabel": "Qu'est-ce que {{label}} ?",
-    "loadingProgress": "Chargement de vos progrès…"
+    "loadingProgress": "Chargement de vos progrès…",
+    "viewWallet": "Voir le portefeuille"
   },
   "nav": {
     "leaderboard": "🏆 Classement",
@@ -452,7 +453,36 @@
     "insufficientWallet": "Le solde de votre portefeuille ({{balance}} $) n'est pas suffisant pour couvrir ce paiement. Ajoutez des fonds d'abord.",
     "confirmPayout": "Confirmer le paiement ({{amount}} $)",
     "testWord": "test",
-    "gradeBonusText": "@{{username}} a obtenu {{grade}} % à son test de {{subject}} ! Payer un bonus de {{amount}} $ ?"
+    "gradeBonusText": "@{{username}} a obtenu {{grade}} % à son test de {{subject}} ! Payer un bonus de {{amount}} $ ?",
+    "payoutTypeRequest": "Paiement demandé",
+    "payoutRequestsHeading": "Demandes de paiement",
+    "payoutRequestText": "@{{username}} demande un paiement de {{amount}} $",
+    "payoutRequestNote": "Note : {{note}}",
+    "approveAmount": "Approuver {{amount}} $",
+    "payoutRequestFailed": "Impossible de traiter cette demande. Veuillez réessayer."
+  },
+  "wallet": {
+    "title": "💰 Portefeuille",
+    "subtitle": "Vos pièces et paiements",
+    "currentBalance": "Solde actuel",
+    "coinsSuffix": "pièces",
+    "worthAtRate": "Vaut {{amount}} $ au taux actuel de votre parent",
+    "conversionRate": "{{rate}} pièces = 1 $ (déterminé par votre parent)",
+    "payoutCapWeek": "Votre parent a fixé un paiement maximal de {{amount}} $ par semaine",
+    "payoutCapMonth": "Votre parent a fixé un paiement maximal de {{amount}} $ par mois",
+    "requestPayoutButton": "💰 Demander un paiement",
+    "requestPending": "⏳ Paiement demandé",
+    "confirmTitle": "Demander un paiement",
+    "confirmText": "Demander un paiement de {{coins}} pièces ({{amount}} $) ?",
+    "noteLabel": "À quoi voulez-vous l'utiliser ?",
+    "notePlaceholder": "Facultatif",
+    "confirmButton": "Confirmer",
+    "requestSuccess": "Demande de paiement envoyée ! Votre parent l'examinera bientôt.",
+    "requestFailed": "Impossible d'envoyer votre demande de paiement. Veuillez réessayer.",
+    "historyHeading": "Historique des paiements",
+    "noPayoutsYet": "Aucun paiement pour le moment — continuez à répondre aux questions pour gagner des pièces !",
+    "payoutHistoryDetail": "{{type}} · {{date}}",
+    "loadFailed": "Impossible de charger votre portefeuille. Veuillez réessayer."
   },
   "teacher": {
     "loadStatsFailed": "Échec du chargement des statistiques.",

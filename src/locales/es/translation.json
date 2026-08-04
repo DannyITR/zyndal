@@ -141,7 +141,8 @@
     "dayStreakLabel": "racha de días",
     "whatIsDayStreak": "¿Qué es la racha de días?",
     "whatIsLabel": "¿Qué es {{label}}?",
-    "loadingProgress": "Cargando tu progreso…"
+    "loadingProgress": "Cargando tu progreso…",
+    "viewWallet": "Ver billetera"
   },
   "nav": {
     "leaderboard": "🏆 Clasificación",
@@ -452,7 +453,36 @@
     "insufficientWallet": "El saldo de tu billetera (${{balance}}) no es suficiente para cubrir este pago. Agrega fondos primero.",
     "confirmPayout": "Confirmar pago (${{amount}})",
     "testWord": "examen",
-    "gradeBonusText": "¡@{{username}} obtuvo {{grade}}% en su examen de {{subject}}! ¿Pagar un bono de ${{amount}}?"
+    "gradeBonusText": "¡@{{username}} obtuvo {{grade}}% en su examen de {{subject}}! ¿Pagar un bono de ${{amount}}?",
+    "payoutTypeRequest": "Pago solicitado",
+    "payoutRequestsHeading": "Solicitudes de pago",
+    "payoutRequestText": "@{{username}} está solicitando un pago de ${{amount}}",
+    "payoutRequestNote": "Nota: {{note}}",
+    "approveAmount": "Aprobar ${{amount}}",
+    "payoutRequestFailed": "No se pudo procesar esta solicitud. Inténtalo de nuevo."
+  },
+  "wallet": {
+    "title": "💰 Billetera",
+    "subtitle": "Tus monedas y pagos",
+    "currentBalance": "Saldo actual",
+    "coinsSuffix": "monedas",
+    "worthAtRate": "Vale ${{amount}} a la tasa actual de tu padre/madre",
+    "conversionRate": "{{rate}} monedas = $1 (establecido por tu padre/madre)",
+    "payoutCapWeek": "Tu padre/madre ha establecido un pago máximo de ${{amount}} por semana",
+    "payoutCapMonth": "Tu padre/madre ha establecido un pago máximo de ${{amount}} por mes",
+    "requestPayoutButton": "💰 Solicitar pago",
+    "requestPending": "⏳ Pago solicitado",
+    "confirmTitle": "Solicitar pago",
+    "confirmText": "¿Solicitar un pago de {{coins}} monedas (${{amount}})?",
+    "noteLabel": "¿Para qué quieres usarlo?",
+    "notePlaceholder": "Opcional",
+    "confirmButton": "Confirmar",
+    "requestSuccess": "¡Solicitud de pago enviada! Tu padre/madre la revisará pronto.",
+    "requestFailed": "No se pudo enviar tu solicitud de pago. Inténtalo de nuevo.",
+    "historyHeading": "Historial de pagos",
+    "noPayoutsYet": "Aún no hay pagos — ¡sigue respondiendo preguntas para ganar monedas!",
+    "payoutHistoryDetail": "{{type}} · {{date}}",
+    "loadFailed": "No se pudo cargar tu billetera. Inténtalo de nuevo."
   },
   "teacher": {
     "loadStatsFailed": "Error al cargar las estadísticas.",

@@ -56,12 +56,45 @@ async function getPendingInvitations(parentId) {
   }))
 }
 
+// Mirrors getPendingInvitations' shape/purpose above, just for
+// payout_requests instead of parent_invitations — a student-initiated
+// "please cash out my coins" request the parent hasn't approved/declined
+// yet. Not folded into the students[] mapping below since it needs to
+// still show up even for a student who somehow has zero linked-students
+// rows left (shouldn't happen, but this endpoint already treats
+// studentIds.length === 0 as a real early-return case, so this stays
+// independent of that array for the same defensive reason).
+async function getPendingPayoutRequests(parentId) {
+  const { data: requests, error } = await supabase
+    .from('payout_requests')
+    .select('id, student_id, coin_amount, dollar_amount_cents, note, created_at')
+    .eq('parent_id', parentId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  if (!requests || requests.length === 0) return []
+
+  const studentIds = [...new Set(requests.map((r) => r.student_id))]
+  const usernameById = await usernameLookup(studentIds)
+
+  return requests.map((r) => ({
+    id: r.id,
+    studentId: r.student_id,
+    studentUsername: usernameById[r.student_id] || 'Unknown',
+    coinAmount: r.coin_amount,
+    dollarAmountCents: r.dollar_amount_cents,
+    note: r.note,
+    createdAt: r.created_at,
+  }))
+}
+
 async function handle({ parentId }) {
-  const [links, walletRow, payoutHistory, pendingInvitations] = await Promise.all([
+  const [links, walletRow, payoutHistory, pendingInvitations, pendingPayoutRequests] = await Promise.all([
     getParentLinks(parentId),
     getParentWalletRow(parentId),
     getPayoutHistoryRows(parentId),
     getPendingInvitations(parentId),
+    getPendingPayoutRequests(parentId),
   ])
   const studentIds = links.map((l) => l.student_id)
   const linkByStudentId = Object.fromEntries(links.map((l) => [l.student_id, l]))
@@ -76,6 +109,7 @@ async function handle({ parentId }) {
       pendingGradeBonuses: [],
       payoutHistory,
       pendingInvitations,
+      pendingPayoutRequests,
     }
   }
 
@@ -208,6 +242,7 @@ async function handle({ parentId }) {
     })),
     payoutHistory,
     pendingInvitations,
+    pendingPayoutRequests,
   }
 }
 

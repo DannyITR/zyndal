@@ -15,6 +15,8 @@ import {
   getPendingGradeBonuses,
   resolveGradeBonus,
   updateGradeRewardSettings,
+  getPendingPayoutRequests,
+  resolvePayoutRequest,
 } from '../../../lib/storage'
 import { coinsToCents, centsToDisplay } from '../../../lib/money'
 import { PERFECT_WEEK_TARGET } from '../../../lib/streak'
@@ -23,6 +25,7 @@ import AddFundsPaymentModal from './AddFundsPaymentModal'
 import PayoutModal from './PayoutModal'
 import PerfectWeekNotification from './PerfectWeekNotification'
 import GradeRewardNotification from './GradeRewardNotification'
+import PayoutRequestNotification from './PayoutRequestNotification'
 
 const MILESTONE_DAYS = [7, 14, 30]
 
@@ -78,6 +81,8 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
   const [gradeRewardSavingId, setGradeRewardSavingId] = useState(null)
   const [gradeRewardMessageId, setGradeRewardMessageId] = useState(null)
 
+  const [pendingPayoutRequests, setPendingPayoutRequests] = useState(null)
+
   // Used by the save handlers below (not the initial-load effect, which
   // fetches the wallet inline to keep its dependency array accurate).
   async function refreshWallet() {
@@ -95,6 +100,11 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
   async function refreshPendingGradeBonuses() {
     const list = await getPendingGradeBonuses(user.id)
     setPendingGradeBonuses(list)
+  }
+
+  async function refreshPendingPayoutRequests() {
+    const list = await getPendingPayoutRequests(user.id)
+    setPendingPayoutRequests(list)
   }
 
   useEffect(() => {
@@ -119,6 +129,9 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
     })
     getPendingGradeBonuses(user.id).then((list) => {
       if (!cancelled) setPendingGradeBonuses(list)
+    })
+    getPendingPayoutRequests(user.id).then((list) => {
+      if (!cancelled) setPendingPayoutRequests(list)
     })
     return () => {
       cancelled = true
@@ -240,6 +253,27 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
     await refreshPendingGradeBonuses()
   }
 
+  // Approve runs the same applyPayout deduction the manual/bonus flows use
+  // (see api/parent/resolve-payout-request.js) — the request's own stored
+  // coin/dollar amounts are what get paid, not something re-entered here.
+  async function handleApprovePayoutRequest(request) {
+    await resolvePayoutRequest(request.id, 'approve')
+    const [updatedProgress, updatedWallet, updatedHistory] = await Promise.all([
+      getStudentProgress(user.id, request.studentId),
+      getParentWallet(user.id),
+      getPayoutHistory(user.id),
+    ])
+    setProgressByStudent((prev) => ({ ...prev, [request.studentId]: updatedProgress }))
+    setWallet(updatedWallet)
+    setPayoutHistory(updatedHistory)
+    await refreshPendingPayoutRequests()
+  }
+
+  async function handleDeclinePayoutRequest(request) {
+    await resolvePayoutRequest(request.id, 'decline')
+    await refreshPendingPayoutRequests()
+  }
+
   async function handleSaveGradeReward(e, studentId) {
     e.preventDefault()
     const draft = gradeRewardDrafts[studentId]
@@ -310,6 +344,22 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
               onResolve={(amountCents) => handleResolveGradeBonus(bonus, amountCents)}
             />
           ))}
+        </div>
+      )}
+
+      {pendingPayoutRequests && pendingPayoutRequests.length > 0 && (
+        <div className="finance-section-card">
+          <h3 className="section-heading">{t('finance.payoutRequestsHeading')}</h3>
+          <div className="perfect-week-banner">
+            {pendingPayoutRequests.map((request) => (
+              <PayoutRequestNotification
+                key={request.id}
+                request={request}
+                onApprove={() => handleApprovePayoutRequest(request)}
+                onDecline={() => handleDeclinePayoutRequest(request)}
+              />
+            ))}
+          </div>
         </div>
       )}
 
