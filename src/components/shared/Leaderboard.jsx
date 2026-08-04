@@ -8,6 +8,7 @@ export default function Leaderboard({
   subtitle,
   username,
   currentUserId,
+  hasCompletedToday,
   onBack,
   onLogout,
   onLogoClick,
@@ -88,7 +89,18 @@ export default function Leaderboard({
       {rows && rows.length > 0 && (
         <ol className="leaderboard-list">
           {rows.map((row, i) => {
-            const isAheadOfMe = tab === 'friends' && myRow && i < myIndex && row.userId !== currentUserId
+            // Only nudges toward "answer today's questions" when that's
+            // actually still true — hasCompletedToday comes from
+            // StudentFlow's own dailyProgress (completed + incorrect
+            // subjects today, not just correct ones, matching the subject
+            // grid and the sharing gate's own definition of "done for the
+            // day"), not derived here, so this never depends on stale local
+            // state. undefined (the parent-dashboard usage, which has no
+            // currentUserId/daily progress at all) never matters in
+            // practice: isAheadOfMe already requires myRow, which is always
+            // null there since there's no way to reach the friends tab
+            // without a currentUserId.
+            const isAheadOfMe = tab === 'friends' && myRow && i < myIndex && row.userId !== currentUserId && !hasCompletedToday
             return (
               <li
                 key={row.userId}

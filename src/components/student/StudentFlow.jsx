@@ -406,6 +406,13 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         highlightUserIds={new Set([user.id])}
         username={user.username}
         currentUserId={user.id}
+        // Same "all 6 subjects attempted today" definition as canShareToday
+        // above (completed + incorrect, sourced from dailyProgress —
+        // api/student/get-daily-progress.js's own server-computed today,
+        // not anything recomputed/cached here) — gates the Friends tab's
+        // "catch up" nudge so it doesn't nag someone who's already done for
+        // the day just because a friend has more lifetime XP.
+        hasCompletedToday={canShareToday}
         onBack={() => setShowLeaderboard(false)}
         onLogout={onLogout}
         onLogoClick={handleLogoClick}
