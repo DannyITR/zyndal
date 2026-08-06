@@ -3560,9 +3560,34 @@ div.zyndal-logo {
 /* ---------- Premium modal ---------- */
 
 .premium-modal {
+  position: relative;
   align-items: center;
   text-align: center;
   background: linear-gradient(180deg, rgba(155, 77, 255, 0.18), var(--card) 55%);
+}
+
+.modal-close-x {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.modal-close-x:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--text);
 }
 
 .premium-modal-emoji {

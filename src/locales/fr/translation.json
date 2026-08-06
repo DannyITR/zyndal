@@ -524,8 +524,14 @@
     "chooseStudent": "Pour quel élève ?",
     "noLinkedStudents": "Ajoutez un enfant dans Paramètres avant de vous abonner.",
     "continue": "Continuer",
-    "creatingCheckout": "Redirection vers le paiement sécurisé…",
-    "checkoutError": "Une erreur est survenue lors de la création de votre session de paiement. Veuillez réessayer."
+    "creatingCheckout": "Préparation de votre paiement…",
+    "redirectingToCheckout": "Redirection vers le paiement sécurisé…",
+    "checkoutError": "Une erreur est survenue lors de la création de votre session de paiement. Veuillez réessayer.",
+    "checkoutTimeout": "Une erreur est survenue — veuillez réessayer.",
+    "redirectTakingLong": "Cela prend trop de temps?",
+    "clickHereToCancel": "Cliquez ici pour annuler",
+    "cancel": "Annuler",
+    "retry": "Réessayer"
   },
   "teacher": {
     "loadStatsFailed": "Échec du chargement des statistiques.",

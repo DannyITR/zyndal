@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createCheckoutSession, getStudentsForParent } from '../../lib/storage'
 import { getErrorMessage } from '../../lib/errors'
@@ -18,17 +18,67 @@ import { getErrorMessage } from '../../lib/errors'
 // covers themselves. So the Family card only appears for a parent, and a
 // parent choosing the Student plan with more than one linked child has to
 // say which one — that's the studentPicker step below.
+//
+// Every step always has a working exit (the top-right X, at minimum) — a
+// prior version left 'loading' with none at all, so a slow/hung network
+// request or a redirect that silently failed to fire left the user
+// permanently stuck with no way out except closing the tab.
+const SESSION_CREATION_TIMEOUT_MS = 8000
+const REDIRECT_STUCK_TIMEOUT_MS = 5000
+
 export default function UpgradeModal({ user, context = 'default', onClose }) {
   const { t } = useTranslation()
   const isParent = user?.account_type === 'parent'
 
-  const [step, setStep] = useState('picker') // 'picker' | 'studentPicker' | 'loading'
+  const [step, setStep] = useState('picker') // 'picker' | 'studentPicker' | 'loading' | 'redirecting' | 'error'
   const [selectedPlan, setSelectedPlan] = useState(null)
   const [students, setStudents] = useState(null)
   const [selectedStudentId, setSelectedStudentId] = useState(null)
   const [error, setError] = useState('')
+  const [redirectStuck, setRedirectStuck] = useState(false)
 
-  function handleDismiss() {
+  // Guards against a slow/late createCheckoutSession response (or the 8s
+  // timeout firing after it already resolved) applying stale state once the
+  // user has already cancelled or hit Retry — only the outcome of the most
+  // recent startCheckout call is ever applied.
+  const requestIdRef = useRef(0)
+  // What Retry re-attempts — the last { plan, studentId } passed to
+  // startCheckout, whichever step (timeout or a real error) triggered it.
+  const pendingCheckoutRef = useRef(null)
+
+  // Pushes a history entry the moment the modal opens so the browser back
+  // button closes it instead of navigating the whole SPA away. No `url`
+  // argument is passed, so this doesn't change the current URL — pressing
+  // back lands the user back on the same page they were already on, just
+  // without the modal. handleDismiss below is the only way this component
+  // ever closes itself, and it always goes through history.back() so the
+  // resulting popstate event is the single, common path that actually
+  // unmounts the modal — whether the close came from the X button or a
+  // real back-button press, the two behave identically.
+  useEffect(() => {
+    window.history.pushState({ zyndalModal: 'upgrade' }, '')
+    function handlePopState() {
+      finishClose()
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // The "taking too long?" reveal only ever applies to the current
+  // 'redirecting' attempt — leaving that step (a real navigation away,
+  // cancelling, or retrying) always clears it rather than letting a stale
+  // timer fire against a step it no longer applies to.
+  useEffect(() => {
+    if (step !== 'redirecting') {
+      setRedirectStuck(false)
+      return
+    }
+    const timer = setTimeout(() => setRedirectStuck(true), REDIRECT_STUCK_TIMEOUT_MS)
+    return () => clearTimeout(timer)
+  }, [step])
+
+  function finishClose() {
     try {
       localStorage.setItem('zyndal_premium_modal_dismissed_at', String(Date.now()))
     } catch {
@@ -38,17 +88,40 @@ export default function UpgradeModal({ user, context = 'default', onClose }) {
     onClose()
   }
 
+  function handleDismiss() {
+    window.history.back()
+  }
+
   async function startCheckout(plan, studentId) {
+    pendingCheckoutRef.current = { plan, studentId }
+    const requestId = ++requestIdRef.current
     setError('')
     setStep('loading')
+
+    const timeoutId = setTimeout(() => {
+      if (requestIdRef.current !== requestId) return
+      setError(t('upgrade.checkoutTimeout'))
+      setStep('error')
+    }, SESSION_CREATION_TIMEOUT_MS)
+
     try {
       const { checkout_url: checkoutUrl } = await createCheckoutSession({ plan, studentId })
+      if (requestIdRef.current !== requestId) return
+      clearTimeout(timeoutId)
+      setStep('redirecting')
       window.location.href = checkoutUrl
     } catch (err) {
+      if (requestIdRef.current !== requestId) return
+      clearTimeout(timeoutId)
       console.error('[UpgradeModal] checkout session creation failed:', err)
       setError(getErrorMessage(err, t, 'upgrade.checkoutError'))
-      setStep(plan === 'student' && isParent && students?.length > 1 ? 'studentPicker' : 'picker')
+      setStep('error')
     }
+  }
+
+  function handleRetry() {
+    const pending = pendingCheckoutRef.current
+    if (pending) startCheckout(pending.plan, pending.studentId)
   }
 
   async function handleChoosePlan(plan) {
@@ -80,9 +153,14 @@ export default function UpgradeModal({ user, context = 'default', onClose }) {
     }
   }
 
+  const overlayClickable = step !== 'loading' && step !== 'redirecting'
+
   return (
-    <div className="modal-overlay" onClick={step === 'loading' ? undefined : handleDismiss}>
+    <div className="modal-overlay" onClick={overlayClickable ? handleDismiss : undefined}>
       <div className="modal-card premium-modal" onClick={(e) => e.stopPropagation()}>
+        <button type="button" className="modal-close-x" onClick={handleDismiss} aria-label={t('home.dismiss')}>
+          ✕
+        </button>
         <p className="premium-modal-emoji">👑</p>
         <h2 className="modal-title">{t('upgrade.title')}</h2>
         <p className="premium-modal-body">{context === 'trial' ? t('upgrade.trialBody') : t('upgrade.body')}</p>
@@ -141,7 +219,43 @@ export default function UpgradeModal({ user, context = 'default', onClose }) {
           </>
         )}
 
-        {step === 'loading' && <p className="premium-modal-body">{t('upgrade.creatingCheckout')}</p>}
+        {step === 'loading' && (
+          <>
+            <p className="premium-modal-body">{t('upgrade.creatingCheckout')}</p>
+            <button type="button" className="btn btn-ghost btn-block" onClick={handleDismiss}>
+              {t('upgrade.cancel')}
+            </button>
+          </>
+        )}
+
+        {step === 'redirecting' && (
+          <>
+            <p className="premium-modal-body">{t('upgrade.redirectingToCheckout')}</p>
+            {redirectStuck && (
+              <>
+                <p className="form-error">{t('upgrade.redirectTakingLong')}</p>
+                <button type="button" className="btn btn-secondary btn-block" onClick={handleRetry}>
+                  {t('upgrade.retry')}
+                </button>
+              </>
+            )}
+            <button type="button" className="btn btn-ghost btn-block" onClick={handleDismiss}>
+              {redirectStuck ? t('upgrade.clickHereToCancel') : t('upgrade.cancel')}
+            </button>
+          </>
+        )}
+
+        {step === 'error' && (
+          <>
+            <p className="form-error">{error}</p>
+            <button type="button" className="btn btn-primary btn-block" onClick={handleRetry}>
+              {t('upgrade.retry')}
+            </button>
+            <button type="button" className="btn btn-ghost btn-block" onClick={handleDismiss}>
+              {t('upgrade.cancel')}
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

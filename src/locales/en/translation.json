@@ -524,8 +524,14 @@
     "chooseStudent": "Which student is this for?",
     "noLinkedStudents": "Add a child in Settings before subscribing.",
     "continue": "Continue",
-    "creatingCheckout": "Redirecting to secure checkout…",
-    "checkoutError": "Something went wrong creating your checkout session. Please try again."
+    "creatingCheckout": "Setting up your checkout…",
+    "redirectingToCheckout": "Redirecting to secure checkout…",
+    "checkoutError": "Something went wrong creating your checkout session. Please try again.",
+    "checkoutTimeout": "Something went wrong — please try again.",
+    "redirectTakingLong": "Taking too long?",
+    "clickHereToCancel": "Click here to cancel",
+    "cancel": "Cancel",
+    "retry": "Retry"
   },
   "teacher": {
     "loadStatsFailed": "Failed to load stats.",

@@ -524,8 +524,14 @@
     "chooseStudent": "¿Para qué estudiante es esto?",
     "noLinkedStudents": "Agrega un hijo/a en Configuración antes de suscribirte.",
     "continue": "Continuar",
-    "creatingCheckout": "Redirigiendo al pago seguro…",
-    "checkoutError": "Algo salió mal al crear tu sesión de pago. Inténtalo de nuevo."
+    "creatingCheckout": "Preparando tu pago…",
+    "redirectingToCheckout": "Redirigiendo al pago seguro…",
+    "checkoutError": "Algo salió mal al crear tu sesión de pago. Inténtalo de nuevo.",
+    "checkoutTimeout": "Algo salió mal — inténtalo de nuevo.",
+    "redirectTakingLong": "¿Esto está tardando demasiado?",
+    "clickHereToCancel": "Haz clic aquí para cancelar",
+    "cancel": "Cancelar",
+    "retry": "Reintentar"
   },
   "teacher": {
     "loadStatsFailed": "Error al cargar las estadísticas.",
