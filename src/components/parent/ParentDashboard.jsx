@@ -40,7 +40,7 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
   const [showFinances, setShowFinances] = useState(false)
   const [showAddChild, setShowAddChild] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(null) // null | 'default' | 'trial'
 
   // The logo always resets to the main dashboard view for a logged-in parent.
   function handleLogoClick() {
@@ -212,7 +212,7 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
         <button
           type="button"
           className="btn btn-secondary btn-small btn--premium"
-          onClick={() => (user.is_premium ? setShowFinances(true) : setShowUpgradeModal(true))}
+          onClick={() => (user.is_premium ? setShowFinances(true) : setShowUpgradeModal('default'))}
         >
           <span className="premium-crown" aria-hidden="true">👑</span>
           {t('parent.finances')}
@@ -225,7 +225,7 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
       <TrialBanner
         subscriptionStatus={user.subscription_status}
         daysRemainingInTrial={user.days_remaining_in_trial}
-        onUpgradeClick={() => setShowUpgradeModal(true)}
+        onUpgradeClick={() => setShowUpgradeModal('trial')}
       />
 
       <button type="button" className="btn btn-primary btn-block" onClick={() => setShowAddChild(true)}>
@@ -330,7 +330,7 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
         </div>
       )}
 
-      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
+      {showUpgradeModal && <UpgradeModal user={user} context={showUpgradeModal} onClose={() => setShowUpgradeModal(null)} />}
     </div>
   )
 }

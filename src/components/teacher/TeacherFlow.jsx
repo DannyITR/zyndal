@@ -29,7 +29,7 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
   const [selectedClassId, setSelectedClassId] = useState(null)
   const [assignHomeworkClass, setAssignHomeworkClass] = useState(null) // { id, name } — the class Assign Homework was opened from
   const [shareStatus, setShareStatus] = useState('') // '' | 'copied'
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(null) // null | 'default' | 'trial'
 
   function loadStats() {
     getTeacherStats()
@@ -178,7 +178,7 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
       <TrialBanner
         subscriptionStatus={user.subscription_status}
         daysRemainingInTrial={user.days_remaining_in_trial}
-        onUpgradeClick={() => setShowUpgradeModal(true)}
+        onUpgradeClick={() => setShowUpgradeModal('trial')}
       />
 
       <div className="home-actions">
@@ -224,7 +224,7 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
         </div>
       )}
 
-      {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
+      {showUpgradeModal && <UpgradeModal user={user} context={showUpgradeModal} onClose={() => setShowUpgradeModal(null)} />}
     </div>
   )
 }

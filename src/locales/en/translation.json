@@ -325,7 +325,31 @@
     "classDetail": "Grade {{grade}} · {{school}} · Taught by @{{teacher}}",
     "downloadData": "⬇️ Download my data",
     "preparingDownload": "Preparing download…",
-    "downloadFailed": "Couldn't download your data. Please try again."
+    "downloadFailed": "Couldn't download your data. Please try again.",
+    "subscriptionHeading": "Subscription",
+    "subscriptionTrialActive": "Premium Trial — {{count}} day remaining",
+    "subscriptionTrialActive_other": "Premium Trial — {{count}} days remaining",
+    "subscriptionTrialLastDay": "Premium Trial — ends today",
+    "subscriptionUpgradeNow": "Upgrade now",
+    "subscriptionPremiumRenews": "Premium — renews {{date}}",
+    "subscriptionPremiumActive": "Premium",
+    "subscriptionManage": "Manage subscription",
+    "subscriptionOpeningPortal": "Opening billing portal…",
+    "subscriptionPremiumViaFamily": "Premium — renews {{date}} (via your parent's Family plan)",
+    "subscriptionPremiumViaFamilyNoDate": "Premium (via your parent's Family plan)",
+    "subscriptionFreePlan": "Free plan",
+    "subscriptionPortalFailed": "Couldn't open the billing portal. Please try again."
+  },
+  "subscriptionSuccess": {
+    "verifying": "Confirming your payment…",
+    "title": "Welcome to Zyndal Premium! Your subscription is active.",
+    "titleFamily": "Welcome to Zyndal Premium! Your Family plan is active.",
+    "continueCta": "Start learning →",
+    "error": "We couldn't confirm your payment. If you were charged, contact hello@zyndal.ca and we'll sort it out."
+  },
+  "subscriptionCancelled": {
+    "title": "No worries — you can upgrade anytime from Settings.",
+    "backCta": "Back to Zyndal"
   },
   "deleteAccount": {
     "title": "Delete My Account",
@@ -487,12 +511,21 @@
   "upgrade": {
     "title": "Premium Feature",
     "body": "This feature is part of Zyndal Premium. Upgrade to unlock unlimited practice, study guides, test prep, homework uploads, and your parent reward wallet.",
-    "pricing": "$5.99/month per student or $15/month for your family (up to 5 students)",
-    "upgradeCta": "Upgrade to Premium",
+    "trialBody": "Upgrade now and never lose access to unlimited practice, study guides, test prep, homework uploads, and your parent reward wallet.",
     "maybeLater": "Maybe later",
     "trialBannerDays": "🎉 Premium trial — {{count}} day remaining",
     "trialBannerDays_other": "🎉 Premium trial — {{count}} days remaining",
-    "trialBannerLastDay": "⚠️ Trial ends today — upgrade to keep Premium access"
+    "trialBannerLastDay": "⚠️ Trial ends today — upgrade to keep Premium access",
+    "choosePlan": "Choose a plan",
+    "planStudentLabel": "$5.99/month — Student",
+    "planStudentDesc": "Covers 1 student",
+    "planFamilyLabel": "$15.00/month — Family",
+    "planFamilyDesc": "Covers up to 5 students",
+    "chooseStudent": "Which student is this for?",
+    "noLinkedStudents": "Add a child in Settings before subscribing.",
+    "continue": "Continue",
+    "creatingCheckout": "Redirecting to secure checkout…",
+    "checkoutError": "Something went wrong creating your checkout session. Please try again."
   },
   "teacher": {
     "loadStatsFailed": "Failed to load stats.",
@@ -618,6 +651,7 @@
     "INVALID_TOKEN": "This link is invalid.",
     "METHOD_NOT_ALLOWED": "That action isn't available.",
     "NO_ATTEMPTS_LEFT": "No attempts left.",
+    "NO_BILLING_ACCOUNT": "No billing account found for this user.",
     "NO_EMAIL": "No email address is on file for this account.",
     "NOT_CORRECT": "That answer wasn't correct.",
     "NOT_FOUND": "We couldn't find that.",

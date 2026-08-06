@@ -122,6 +122,10 @@ function callNotificationsApi(method, endpoint, body) {
   return callApi('/api/notifications', method, endpoint, body)
 }
 
+function callStripeApi(method, endpoint, body) {
+  return callApi('/api/stripe', method, endpoint, body)
+}
+
 // Session 4: ParentDashboard and FinanceScreen each already fetch several
 // small, always-together pieces on mount via Promise.all (students,
 // wallet, study plans, pending bonuses, payout history, per-student
@@ -409,6 +413,24 @@ export async function getCurrentUser() {
 export async function getStudentsForParent(parentId) {
   const dash = await fetchParentDashboard(parentId)
   return dash.students.map(({ progress: _progress, recentPracticeSessions: _sessions, grades: _grades, ...student }) => student)
+}
+
+// ---------- Stripe subscription payments ----------
+
+// studentId is only meaningful when a parent buys the 'student' plan (see
+// api/stripe/create-checkout.js) — omitted for a self-purchase (student or
+// teacher buyer) or the 'family' plan (which covers every linked student,
+// resolved server-side).
+export async function createCheckoutSession({ plan, studentId }) {
+  return callStripeApi('POST', 'create-checkout', { plan, student_id: studentId })
+}
+
+export async function openCustomerPortal() {
+  return callStripeApi('POST', 'customer-portal')
+}
+
+export async function verifySubscriptionSession(sessionId) {
+  return callStripeApi('GET', `verify-session?session_id=${encodeURIComponent(sessionId)}`)
 }
 
 // ---------- Add Child (parent-initiated linking) ----------

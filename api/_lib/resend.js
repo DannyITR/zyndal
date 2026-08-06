@@ -265,3 +265,97 @@ export async function sendHomeworkAssignedEmail({ email, title, className, dueDa
   })
   if (error) throw new Error(error.message || 'Failed to send homework assignment email.')
 }
+
+// Three Stripe-subscription-lifecycle emails, sent by api/_lib/stripeSubscription.js.
+// Always addressed to the actual payer (the subscription owner — see that
+// file's is_subscription_owner-scoped lookups), never a student whose
+// Premium came from a linked parent's plan.
+const SUBSCRIPTION_STRINGS = {
+  welcome: {
+    en: {
+      subject: 'Welcome to Zyndal Premium! 🎉',
+      heading: 'Welcome to Zyndal Premium!',
+      body: 'Your Premium subscription is now active. You have full access to all Premium features including unlimited practice, study guides, test prep, homework uploads, and your parent reward wallet. Manage your subscription anytime in Settings. Thank you for supporting Zyndal!',
+      button: 'Open Zyndal',
+    },
+    fr: {
+      subject: 'Bienvenue sur Zyndal Premium! 🎉',
+      heading: 'Bienvenue sur Zyndal Premium!',
+      body: "Votre abonnement Premium est maintenant actif. Vous avez un accès complet à toutes les fonctionnalités Premium, y compris la pratique illimitée, les guides d'étude, la préparation aux tests, les téléversements de devoirs et le portefeuille de récompenses de votre parent. Gérez votre abonnement à tout moment dans Paramètres. Merci de soutenir Zyndal!",
+      button: 'Ouvrir Zyndal',
+    },
+    es: {
+      subject: '¡Bienvenido a Zyndal Premium! 🎉',
+      heading: '¡Bienvenido a Zyndal Premium!',
+      body: 'Tu suscripción Premium ya está activa. Tienes acceso completo a todas las funciones Premium, incluida la práctica ilimitada, guías de estudio, preparación para exámenes, subida de tareas y la billetera de recompensas de tu padre/madre. Administra tu suscripción en cualquier momento desde Configuración. ¡Gracias por apoyar a Zyndal!',
+      button: 'Abrir Zyndal',
+    },
+  },
+  paymentFailed: {
+    en: {
+      subject: 'Your Zyndal payment failed',
+      heading: 'Payment failed',
+      body: 'Your Zyndal payment failed — please update your payment method to keep your Premium access.',
+      button: 'Update payment method',
+    },
+    fr: {
+      subject: 'Votre paiement Zyndal a échoué',
+      heading: 'Échec du paiement',
+      body: 'Votre paiement Zyndal a échoué — veuillez mettre à jour votre moyen de paiement pour conserver votre accès Premium.',
+      button: 'Mettre à jour le paiement',
+    },
+    es: {
+      subject: 'Tu pago de Zyndal falló',
+      heading: 'Pago fallido',
+      body: 'Tu pago de Zyndal falló — actualiza tu método de pago para conservar tu acceso Premium.',
+      button: 'Actualizar método de pago',
+    },
+  },
+  cancelled: {
+    en: {
+      subject: 'Your Zyndal Premium subscription has ended',
+      heading: 'Subscription ended',
+      body: 'Your Zyndal Premium subscription has ended. You can resubscribe anytime from Settings to get full access back.',
+      button: 'Resubscribe',
+    },
+    fr: {
+      subject: 'Votre abonnement Zyndal Premium a pris fin',
+      heading: 'Abonnement terminé',
+      body: 'Votre abonnement Zyndal Premium a pris fin. Vous pouvez vous réabonner à tout moment dans Paramètres pour retrouver un accès complet.',
+      button: 'Se réabonner',
+    },
+    es: {
+      subject: 'Tu suscripción a Zyndal Premium ha finalizado',
+      heading: 'Suscripción finalizada',
+      body: 'Tu suscripción a Zyndal Premium ha finalizado. Puedes volver a suscribirte en cualquier momento desde Configuración para recuperar el acceso completo.',
+      button: 'Volver a suscribirse',
+    },
+  },
+}
+
+function subscriptionEmailContent(kind, languagePreference) {
+  const s = SUBSCRIPTION_STRINGS[kind][langFor(languagePreference)]
+  const html = renderEmailHtml({ heading: s.heading, body: s.body, buttonText: s.button, buttonLink: SIGNUP_BASE_URL, footer: '' })
+  return { subject: s.subject, html }
+}
+
+export async function sendWelcomeEmail({ email, languagePreference }) {
+  const resend = getResendClient()
+  const { subject, html } = subscriptionEmailContent('welcome', languagePreference)
+  const { error } = await resend.emails.send({ from: 'Zyndal <hello@zyndal.ca>', replyTo: 'hello@zyndal.ca', to: email, subject, html })
+  if (error) throw new Error(error.message || 'Failed to send welcome email.')
+}
+
+export async function sendPaymentFailedEmail({ email, languagePreference }) {
+  const resend = getResendClient()
+  const { subject, html } = subscriptionEmailContent('paymentFailed', languagePreference)
+  const { error } = await resend.emails.send({ from: 'Zyndal <hello@zyndal.ca>', replyTo: 'hello@zyndal.ca', to: email, subject, html })
+  if (error) throw new Error(error.message || 'Failed to send payment-failed email.')
+}
+
+export async function sendSubscriptionCancelledEmail({ email, languagePreference }) {
+  const resend = getResendClient()
+  const { subject, html } = subscriptionEmailContent('cancelled', languagePreference)
+  const { error } = await resend.emails.send({ from: 'Zyndal <hello@zyndal.ca>', replyTo: 'hello@zyndal.ca', to: email, subject, html })
+  if (error) throw new Error(error.message || 'Failed to send cancellation email.')
+}

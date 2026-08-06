@@ -7,6 +7,8 @@ import AuthScreen from './components/auth/AuthScreen'
 import OAuthCallbackScreen from './components/auth/OAuthCallbackScreen'
 import VerifyEmailScreen from './components/auth/VerifyEmailScreen'
 import ResetPasswordScreen from './components/auth/ResetPasswordScreen'
+import SubscriptionSuccessScreen from './components/subscription/SubscriptionSuccessScreen'
+import SubscriptionCancelledScreen from './components/subscription/SubscriptionCancelledScreen'
 import StudentFlow from './components/student/StudentFlow'
 import ParentDashboard from './components/parent/ParentDashboard'
 import TeacherFlow from './components/teacher/TeacherFlow'
@@ -35,6 +37,12 @@ function App() {
   // it aren't logged in on that device, so this is checked (and rendered)
   // before anything waits on getCurrentUser().
   const [isVerifyPage, setIsVerifyPage] = useState(() => window.location.pathname === '/verify')
+  // Same rationale — Stripe Checkout's success_url/cancel_url (see
+  // api/stripe/create-checkout.js) hard-navigate the browser away to Stripe
+  // and back, same as an OAuth redirect. See vercel.json for the matching
+  // rewrites.
+  const [isSubscriptionSuccessPage, setIsSubscriptionSuccessPage] = useState(() => window.location.pathname === '/subscription/success')
+  const [isSubscriptionCancelledPage, setIsSubscriptionCancelledPage] = useState(() => window.location.pathname === '/subscription/cancelled')
   // No setter — unlike isVerifyPage/isOAuthCallback, nothing here ever
   // calls back into App's own state; ResetPasswordScreen never logs
   // anyone in (see its own comment), so there's no user object to hand
@@ -184,6 +192,23 @@ function App() {
     }
   }
 
+  // The user was already logged in before the Stripe redirect (their
+  // session token survives it — same origin, same localStorage), so unlike
+  // finishOAuthCallback/finishVerify there's no "no user" branch to worry
+  // about; nextUser is only null when verify-session.js itself failed
+  // (see SubscriptionSuccessScreen's error state), in which case there's
+  // simply nothing new to apply.
+  function finishSubscriptionSuccess(nextUser) {
+    window.history.replaceState({}, '', '/')
+    setIsSubscriptionSuccessPage(false)
+    if (nextUser) setUser(nextUser)
+  }
+
+  function finishSubscriptionCancelled() {
+    window.history.replaceState({}, '', '/')
+    setIsSubscriptionCancelledPage(false)
+  }
+
   if (isAdminPage) {
     return <AdminApp />
   }
@@ -198,6 +223,14 @@ function App() {
 
   if (isOAuthCallback) {
     return <OAuthCallbackScreen onAuth={finishOAuthCallback} onCancel={() => finishOAuthCallback(null)} />
+  }
+
+  if (isSubscriptionSuccessPage) {
+    return <SubscriptionSuccessScreen onDone={finishSubscriptionSuccess} />
+  }
+
+  if (isSubscriptionCancelledPage) {
+    return <SubscriptionCancelledScreen onDone={finishSubscriptionCancelled} />
   }
 
   if (loading) {
@@ -236,7 +269,7 @@ function App() {
       <>
         <TeacherFlow user={user} onLogout={handleLogout} onUserUpdate={setUser} />
         <InstallPrompt />
-        {showGlobalUpgradeModal && <UpgradeModal onClose={() => setShowGlobalUpgradeModal(false)} />}
+        {showGlobalUpgradeModal && <UpgradeModal user={user} onClose={() => setShowGlobalUpgradeModal(false)} />}
       </>
     )
   }
@@ -246,7 +279,7 @@ function App() {
       <>
         <ParentDashboard user={user} onLogout={handleLogout} onUserUpdate={setUser} />
         <InstallPrompt />
-        {showGlobalUpgradeModal && <UpgradeModal onClose={() => setShowGlobalUpgradeModal(false)} />}
+        {showGlobalUpgradeModal && <UpgradeModal user={user} onClose={() => setShowGlobalUpgradeModal(false)} />}
       </>
     )
   }
@@ -255,7 +288,7 @@ function App() {
     <>
       <StudentFlow user={user} onLogout={handleLogout} onUserUpdate={setUser} />
       <InstallPrompt />
-      {showGlobalUpgradeModal && <UpgradeModal onClose={() => setShowGlobalUpgradeModal(false)} />}
+      {showGlobalUpgradeModal && <UpgradeModal user={user} onClose={() => setShowGlobalUpgradeModal(false)} />}
     </>
   )
 }

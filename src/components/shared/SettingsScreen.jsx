@@ -11,6 +11,7 @@ import {
   linkParentByCode,
   getPendingParentRequests,
   respondToParentLinkRequest,
+  openCustomerPortal,
 } from '../../lib/storage'
 import { languageCodeForPreference } from '../../lib/i18n'
 import { getErrorMessage } from '../../lib/errors'
@@ -18,8 +19,15 @@ import { AVATARS } from '../../lib/avatars'
 import TopBar from './TopBar'
 import LegalModal from '../legal/LegalModal'
 import DeleteAccountModal from './DeleteAccountModal'
+import UpgradeModal from './UpgradeModal'
 
 const DEFAULT_NOTIFICATION_PREFERENCES = { enabled: true, score_share: true, friend_request: true, streak_reminder: true }
+
+const RENEWAL_DATE_LOCALE = { en: 'en-US', fr: 'fr-CA', es: 'es-ES' }
+function formatRenewalDate(iso, language) {
+  const locale = RENEWAL_DATE_LOCALE[language] || 'en-US'
+  return new Date(iso).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })
+}
 
 export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogoClick }) {
   const { t, i18n } = useTranslation()
@@ -147,6 +155,28 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState('')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+
+  const [showSubscriptionUpgradeModal, setShowSubscriptionUpgradeModal] = useState(false)
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [portalError, setPortalError] = useState('')
+
+  // "Manage subscription" is only ever rendered for the actual Stripe
+  // customer (user.is_subscription_owner) — a student whose Premium came
+  // from a linked parent's plan has no billing account of their own to
+  // manage (see api/stripe/customer-portal.js's own 400 guard, which this
+  // mirrors client-side to avoid a round trip that can only fail).
+  async function handleManageSubscription() {
+    setPortalError('')
+    setPortalLoading(true)
+    try {
+      const { portal_url: portalUrl } = await openCustomerPortal()
+      window.location.href = portalUrl
+    } catch (err) {
+      console.error('[Settings] failed to open customer portal:', err)
+      setPortalError(getErrorMessage(err, t, 'settings.subscriptionPortalFailed'))
+      setPortalLoading(false)
+    }
+  }
 
   // fetch() with a custom X-Session-Token header can't trigger a native
   // browser download the way a plain link to the URL could — so this fetches
@@ -408,6 +438,50 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
         </button>
       </form>
 
+      <div className="finance-section-card">
+        <h3 className="section-heading">{t('settings.subscriptionHeading')}</h3>
+        {user.subscription_status === 'trial_active' && (
+          <>
+            <p className="field-hint">
+              {user.days_remaining_in_trial <= 1
+                ? t('settings.subscriptionTrialLastDay')
+                : t('settings.subscriptionTrialActive', { count: user.days_remaining_in_trial })}
+            </p>
+            <button type="button" className="btn btn-primary btn-block" onClick={() => setShowSubscriptionUpgradeModal(true)}>
+              {t('settings.subscriptionUpgradeNow')}
+            </button>
+          </>
+        )}
+        {user.subscription_status === 'premium' && user.is_subscription_owner && (
+          <>
+            <p className="field-hint">
+              {user.subscription_current_period_end
+                ? t('settings.subscriptionPremiumRenews', { date: formatRenewalDate(user.subscription_current_period_end, i18n.language) })
+                : t('settings.subscriptionPremiumActive')}
+            </p>
+            {portalError && <p className="form-error">{portalError}</p>}
+            <button type="button" className="btn btn-secondary btn-block" disabled={portalLoading} onClick={handleManageSubscription}>
+              {portalLoading ? t('settings.subscriptionOpeningPortal') : t('settings.subscriptionManage')}
+            </button>
+          </>
+        )}
+        {user.subscription_status === 'premium' && !user.is_subscription_owner && (
+          <p className="field-hint">
+            {user.subscription_current_period_end
+              ? t('settings.subscriptionPremiumViaFamily', { date: formatRenewalDate(user.subscription_current_period_end, i18n.language) })
+              : t('settings.subscriptionPremiumViaFamilyNoDate')}
+          </p>
+        )}
+        {(user.subscription_status === 'trial_expired' || user.subscription_status === 'free') && (
+          <>
+            <p className="field-hint">{t('settings.subscriptionFreePlan')}</p>
+            <button type="button" className="btn btn-primary btn-block" onClick={() => setShowSubscriptionUpgradeModal(true)}>
+              {t('settings.subscriptionUpgradeNow')}
+            </button>
+          </>
+        )}
+      </div>
+
       {isStudent && pendingParentRequests && pendingParentRequests.length > 0 && (
         <div className="finance-section-card">
           <h3 className="section-heading">{t('settings.pendingParentRequests')}</h3>
@@ -527,6 +601,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
 
       {openLegal && <LegalModal type={openLegal} onClose={() => setOpenLegal(null)} />}
       {showDeleteModal && <DeleteAccountModal onConfirm={handleDeleteAccount} onClose={() => setShowDeleteModal(false)} />}
+      {showSubscriptionUpgradeModal && <UpgradeModal user={user} onClose={() => setShowSubscriptionUpgradeModal(false)} />}
     </div>
   )
 }

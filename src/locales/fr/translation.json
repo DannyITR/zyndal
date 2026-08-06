@@ -325,7 +325,31 @@
     "classDetail": "Niveau {{grade}} · {{school}} · Enseigné par @{{teacher}}",
     "downloadData": "⬇️ Télécharger mes données",
     "preparingDownload": "Préparation du téléchargement…",
-    "downloadFailed": "Impossible de télécharger vos données. Veuillez réessayer."
+    "downloadFailed": "Impossible de télécharger vos données. Veuillez réessayer.",
+    "subscriptionHeading": "Abonnement",
+    "subscriptionTrialActive": "Essai Premium — {{count}} jour restant",
+    "subscriptionTrialActive_other": "Essai Premium — {{count}} jours restants",
+    "subscriptionTrialLastDay": "Essai Premium — se termine aujourd'hui",
+    "subscriptionUpgradeNow": "Passer à Premium",
+    "subscriptionPremiumRenews": "Premium — renouvellement le {{date}}",
+    "subscriptionPremiumActive": "Premium",
+    "subscriptionManage": "Gérer l'abonnement",
+    "subscriptionOpeningPortal": "Ouverture du portail de facturation…",
+    "subscriptionPremiumViaFamily": "Premium — renouvellement le {{date}} (via le forfait Famille de votre parent)",
+    "subscriptionPremiumViaFamilyNoDate": "Premium (via le forfait Famille de votre parent)",
+    "subscriptionFreePlan": "Forfait gratuit",
+    "subscriptionPortalFailed": "Impossible d'ouvrir le portail de facturation. Veuillez réessayer."
+  },
+  "subscriptionSuccess": {
+    "verifying": "Confirmation de votre paiement…",
+    "title": "Bienvenue sur Zyndal Premium! Votre abonnement est actif.",
+    "titleFamily": "Bienvenue sur Zyndal Premium! Votre forfait Famille est actif.",
+    "continueCta": "Commencer à apprendre →",
+    "error": "Nous n'avons pas pu confirmer votre paiement. Si vous avez été facturé(e), contactez hello@zyndal.ca et nous réglerons cela."
+  },
+  "subscriptionCancelled": {
+    "title": "Pas de souci — vous pouvez passer à Premium à tout moment depuis Paramètres.",
+    "backCta": "Retour à Zyndal"
   },
   "deleteAccount": {
     "title": "Supprimer mon compte",
@@ -487,12 +511,21 @@
   "upgrade": {
     "title": "Fonctionnalité Premium",
     "body": "Cette fonctionnalité fait partie de Zyndal Premium. Passez à Premium pour débloquer la pratique illimitée, les guides d'étude, la préparation aux examens, le téléversement de devoirs et le portefeuille de récompenses de votre parent.",
-    "pricing": "5,99 $/mois par élève ou 15 $/mois pour votre famille (jusqu'à 5 élèves)",
-    "upgradeCta": "Passer à Premium",
+    "trialBody": "Passez à Premium maintenant et ne perdez jamais l'accès à la pratique illimitée, aux guides d'étude, à la préparation aux examens, au téléversement de devoirs et au portefeuille de récompenses de votre parent.",
     "maybeLater": "Plus tard",
     "trialBannerDays": "🎉 Essai Premium — {{count}} jour restant",
     "trialBannerDays_other": "🎉 Essai Premium — {{count}} jours restants",
-    "trialBannerLastDay": "⚠️ L'essai se termine aujourd'hui — passez à Premium pour garder l'accès"
+    "trialBannerLastDay": "⚠️ L'essai se termine aujourd'hui — passez à Premium pour garder l'accès",
+    "choosePlan": "Choisissez un forfait",
+    "planStudentLabel": "5,99 $/mois — Élève",
+    "planStudentDesc": "Couvre 1 élève",
+    "planFamilyLabel": "15,00 $/mois — Famille",
+    "planFamilyDesc": "Couvre jusqu'à 5 élèves",
+    "chooseStudent": "Pour quel élève ?",
+    "noLinkedStudents": "Ajoutez un enfant dans Paramètres avant de vous abonner.",
+    "continue": "Continuer",
+    "creatingCheckout": "Redirection vers le paiement sécurisé…",
+    "checkoutError": "Une erreur est survenue lors de la création de votre session de paiement. Veuillez réessayer."
   },
   "teacher": {
     "loadStatsFailed": "Échec du chargement des statistiques.",
@@ -618,6 +651,7 @@
     "INVALID_TOKEN": "Ce lien est invalide.",
     "METHOD_NOT_ALLOWED": "Cette action n'est pas disponible.",
     "NO_ATTEMPTS_LEFT": "Aucune tentative restante.",
+    "NO_BILLING_ACCOUNT": "Aucun compte de facturation trouvé pour cet utilisateur.",
     "NO_EMAIL": "Aucune adresse courriel n'est enregistrée pour ce compte.",
     "NOT_CORRECT": "Cette réponse n'était pas correcte.",
     "NOT_FOUND": "Nous n'avons pas trouvé cela.",

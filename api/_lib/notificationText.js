@@ -145,6 +145,20 @@ const TEMPLATES = {
       body: 'Puedes seguir ganando monedas y volver a solicitar más tarde.',
     }),
   },
+  // Fires from both invoice.payment_failed and customer.subscription.updated
+  // (status: past_due) — see api/_lib/stripeSubscription.js's own comment on
+  // why these aren't deduped against each other (Stripe treats them as
+  // logically separate events, both firing for one real failed charge).
+  subscription_payment_failed: {
+    en: () => ({ title: '⚠️ Payment failed — update your payment method to keep Premium' }),
+    fr: () => ({ title: '⚠️ Échec du paiement — mettez à jour votre moyen de paiement pour conserver Premium' }),
+    es: () => ({ title: '⚠️ Pago fallido — actualiza tu método de pago para conservar Premium' }),
+  },
+  subscription_cancelled: {
+    en: () => ({ title: 'Your Zyndal Premium subscription has ended', body: 'You can resubscribe anytime from Settings.' }),
+    fr: () => ({ title: 'Votre abonnement Zyndal Premium a pris fin', body: 'Vous pouvez vous réabonner à tout moment dans Paramètres.' }),
+    es: () => ({ title: 'Tu suscripción a Zyndal Premium ha finalizado', body: 'Puedes volver a suscribirte en cualquier momento desde Configuración.' }),
+  },
 }
 
 // languagePreference is the recipient's own users.language_preference —

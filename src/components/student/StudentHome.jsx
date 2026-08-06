@@ -510,7 +510,7 @@ export default function StudentHome({
       {perfectWeekBonus !== null && (
         <PerfectWeekCelebration amount={perfectWeekBonus} onClose={() => setPerfectWeekBonus(null)} />
       )}
-      {showPremiumModal && <UpgradeModal onClose={() => setShowPremiumModal(false)} />}
+      {showPremiumModal && <UpgradeModal user={user} onClose={() => setShowPremiumModal(false)} />}
       {showCancelModal && planForThisSubject && (
         <CancelTestPlanModal onConfirm={handleCancelPlan} onClose={() => setShowCancelModal(false)} />
       )}

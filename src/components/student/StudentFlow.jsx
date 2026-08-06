@@ -93,7 +93,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [showPractice, setShowPractice] = useState(false)
   const [showGrades, setShowGrades] = useState(false)
   const [showWallet, setShowWallet] = useState(false)
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(null) // null | 'default' | 'trial'
   const [showCurriculum, setShowCurriculum] = useState(false)
   // Set only when the curriculum screen is opened from the daily question
   // screen's "Read about this topic" box — tells CurriculumOutlineScreen
@@ -731,7 +731,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
               label={t('home.coins')}
               value={progress.coins}
               onInfoClick={() => setInfoModalKey('coins')}
-              onClick={() => (user.is_premium ? setShowWallet(true) : setShowUpgradeModal(true))}
+              onClick={() => (user.is_premium ? setShowWallet(true) : setShowUpgradeModal('default'))}
             />
           )}
         </div>
@@ -739,7 +739,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         <TrialBanner
           subscriptionStatus={user.subscription_status}
           daysRemainingInTrial={user.days_remaining_in_trial}
-          onUpgradeClick={() => setShowUpgradeModal(true)}
+          onUpgradeClick={() => setShowUpgradeModal('trial')}
         />
 
         {pendingFriendRequests && pendingFriendRequests.length > 0 && (
@@ -856,7 +856,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
 
         {viewingShare && <FriendScoreCardModal share={viewingShare} onClose={() => setViewingShare(null)} />}
 
-        {showUpgradeModal && <UpgradeModal onClose={() => setShowUpgradeModal(false)} />}
+        {showUpgradeModal && <UpgradeModal user={user} context={showUpgradeModal} onClose={() => setShowUpgradeModal(null)} />}
       </div>
     )
   }
