@@ -139,11 +139,11 @@ export default function StudentHome({
 
   // Test Prep, the Study Guide, Upload, My Uploads, and Practice are all
   // premium features; a trial_expired/free student sees the upgrade pitch
-  // instead. isPremium is user.is_premium — true during an active trial
-  // or for a real paying/grandfathered account, false once a trial lapses
-  // (see api/_lib/subscription.js) — so this same boolean already carries
-  // the right meaning without needing to branch on subscription_status
-  // directly here.
+  // instead. isPremium is StudentFlow's isPremiumUnlocked(user) (see
+  // src/lib/premium.js) — true whenever subscription_status is
+  // 'trial_active' or 'premium' — deliberately NOT the raw user.is_premium
+  // column, which can drift out of sync with the trial dates (e.g. an admin
+  // extending trial_ends_at without also flipping is_premium back on).
   function handleOpenTestPrep() {
     if (isPremium) onOpenTestPrep()
     else setShowPremiumModal(true)

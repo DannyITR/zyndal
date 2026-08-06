@@ -18,6 +18,7 @@ import { getSubject } from '../../lib/questions'
 import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE, TOTAL_SUBJECTS } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
 import { isPushSupported, subscribeToPush } from '../../lib/push'
+import { isPremiumUnlocked } from '../../lib/premium'
 import { getErrorMessage } from '../../lib/errors'
 import TopBar from '../shared/TopBar'
 import TrialBanner from '../shared/TrialBanner'
@@ -334,7 +335,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   }
 
   useEffect(() => {
-    if (!user.is_premium) return
+    if (!isPremiumUnlocked(user.subscription_status)) return
     let cancelled = false
     getActiveStudyPlan(user.id).then((plan) => {
       if (!cancelled) setActivePlan(plan)
@@ -342,7 +343,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     return () => {
       cancelled = true
     }
-  }, [user.id, user.is_premium])
+  }, [user.id, user.subscription_status])
 
   async function handleRespondToFriendRequest(requestId, accept) {
     await respondToFriendRequest(requestId, accept)
@@ -731,7 +732,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
               label={t('home.coins')}
               value={progress.coins}
               onInfoClick={() => setInfoModalKey('coins')}
-              onClick={() => (user.is_premium ? setShowWallet(true) : setShowUpgradeModal('default'))}
+              onClick={() => (isPremiumUnlocked(user.subscription_status) ? setShowWallet(true) : setShowUpgradeModal('default'))}
             />
           )}
         </div>
@@ -870,7 +871,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       date={selectedDate}
       onLateAnswered={handleLateAnswered}
       activePlan={activePlan}
-      isPremium={user.is_premium}
+      isPremium={isPremiumUnlocked(user.subscription_status)}
       onOpenTestPrep={() => setShowTestPrepSetup(true)}
       onOpenStudyGuide={() => setShowStudyGuide(true)}
       onOpenStudyPlan={() => setShowStudyPlan(true)}

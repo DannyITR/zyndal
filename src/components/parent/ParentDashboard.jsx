@@ -12,6 +12,7 @@ import {
 } from '../../lib/storage'
 import { SUBJECTS } from '../../lib/questions'
 import { countdownLabel, computeReadiness } from '../../lib/testprep'
+import { isPremiumUnlocked } from '../../lib/premium'
 import TopBar from '../shared/TopBar'
 import AnswerDetail from '../shared/AnswerDetail'
 import Leaderboard from '../shared/Leaderboard'
@@ -212,7 +213,7 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
         <button
           type="button"
           className="btn btn-secondary btn-small btn--premium"
-          onClick={() => (user.is_premium ? setShowFinances(true) : setShowUpgradeModal('default'))}
+          onClick={() => (isPremiumUnlocked(user.subscription_status) ? setShowFinances(true) : setShowUpgradeModal('default'))}
         >
           <span className="premium-crown" aria-hidden="true">👑</span>
           {t('parent.finances')}
