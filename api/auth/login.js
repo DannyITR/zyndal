@@ -73,6 +73,11 @@ async function handle({ body }) {
   const { error: sessionError } = await supabase.from('sessions').insert({ user_id: user.id, token })
   if (sessionError) throw sessionError
 
+  // Non-critical (backs the admin panel's Last Active column) — never block
+  // login over it.
+  const { error: lastLoginError } = await supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('id', user.id)
+  if (lastLoginError) console.error('[api] failed to update last_login_at:', lastLoginError)
+
   // Every login re-checks trial expiry (see subscription.js's own comment
   // on why this can't just wait for the once-daily cron) before the
   // response's is_premium value gets read anywhere downstream.

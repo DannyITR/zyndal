@@ -71,11 +71,13 @@ export function getAdminStats() {
   return callAdminApi('GET', 'get-stats')
 }
 
-export function getAdminUsers({ page = 1, limit = 50, search = '', accountType = '', isPremium = '' } = {}) {
+export function getAdminUsers({ page = 1, limit = 50, search = '', accountType = '', isPremium = '', sortBy = '', sortDir = '' } = {}) {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) })
   if (search) params.set('search', search)
   if (accountType) params.set('account_type', accountType)
   if (isPremium !== '') params.set('is_premium', String(isPremium))
+  if (sortBy) params.set('sort', sortBy)
+  if (sortDir) params.set('sort_dir', sortDir)
   return callAdminApi('GET', `get-users?${params.toString()}`)
 }
 

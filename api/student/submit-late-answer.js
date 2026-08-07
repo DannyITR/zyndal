@@ -83,6 +83,12 @@ async function handle({ userId, body }) {
   })
   if (answerError) throw answerError
 
+  // Non-critical (backs the admin panel's Last Active column) — uses the
+  // real current time, not `answeredAt` (which is backdated to the past
+  // day being caught up on), since the activity is happening right now.
+  const { error: lastActivityError } = await supabase.from('users').update({ last_activity_at: new Date().toISOString() }).eq('id', userId)
+  if (lastActivityError) console.error('[api] failed to update last_activity_at:', lastActivityError)
+
   if (xpEarned > 0 || coinsEarned > 0) {
     const streakRow = await getStreakRow(userId)
     const { error: rewardError } = await supabase

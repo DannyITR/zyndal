@@ -7,6 +7,28 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString()
 }
 
+const RELATIVE_UNITS = [
+  { limit: 60, divisor: 1, label: 'second' },
+  { limit: 3600, divisor: 60, label: 'minute' },
+  { limit: 86400, divisor: 3600, label: 'hour' },
+  { limit: 604800, divisor: 86400, label: 'day' },
+  { limit: 2629800, divisor: 604800, label: 'week' },
+  { limit: 31557600, divisor: 2629800, label: 'month' },
+  { limit: Infinity, divisor: 31557600, label: 'year' },
+]
+
+// last_active_at (see api/admin/get-users.js) is the GREATEST of a user's
+// last_login_at and last_activity_at — this just renders it relatively,
+// no "which of the two was more recent" logic lives here.
+function formatRelativeTime(value) {
+  if (!value) return 'Never'
+  const seconds = Math.round((Date.now() - new Date(value).getTime()) / 1000)
+  if (seconds < 30) return 'Just now'
+  const unit = RELATIVE_UNITS.find((u) => seconds < u.limit)
+  const amount = Math.round(seconds / unit.divisor)
+  return `${amount} ${unit.label}${amount === 1 ? '' : 's'} ago`
+}
+
 // subscription_status/days_remaining_in_trial come pre-computed from
 // api/_lib/subscription.js (see api/admin/get-users.js) — this just
 // renders the label, no status logic lives here.
@@ -47,6 +69,8 @@ export default function AdminDashboard({ onLogout, onEditUser, refreshKey }) {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [accountType, setAccountType] = useState('')
   const [isPremium, setIsPremium] = useState('')
+  const [sortBy, setSortBy] = useState('created_at')
+  const [sortDir, setSortDir] = useState('desc')
 
   const [busyUserId, setBusyUserId] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null) // { id, username, hardDelete }
@@ -71,13 +95,27 @@ export default function AdminDashboard({ onLogout, onEditUser, refreshKey }) {
 
   useEffect(() => {
     setPage(1)
-  }, [debouncedSearch, accountType, isPremium])
+  }, [debouncedSearch, accountType, isPremium, sortBy, sortDir])
+
+  function handleSortClick(column) {
+    if (sortBy === column) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortBy(column)
+      setSortDir('desc')
+    }
+  }
+
+  function sortIndicator(column) {
+    if (sortBy !== column) return null
+    return sortDir === 'asc' ? ' ▲' : ' ▼'
+  }
 
   useEffect(() => {
     let cancelled = false
     setUsersLoading(true)
     setUsersError('')
-    getAdminUsers({ page, limit, search: debouncedSearch, accountType, isPremium })
+    getAdminUsers({ page, limit, search: debouncedSearch, accountType, isPremium, sortBy, sortDir })
       .then((data) => {
         if (cancelled) return
         setUsers(data.users)
@@ -101,7 +139,7 @@ export default function AdminDashboard({ onLogout, onEditUser, refreshKey }) {
     // table shows. AdminDashboard is kept mounted (not unmounted) while
     // that page is open specifically so page/search/filter state survives
     // the round trip — see AdminApp.jsx.
-  }, [page, limit, debouncedSearch, accountType, isPremium, refreshKey])
+  }, [page, limit, debouncedSearch, accountType, isPremium, sortBy, sortDir, refreshKey])
 
   async function handleTogglePremium(user) {
     setActionError('')
@@ -212,8 +250,12 @@ export default function AdminDashboard({ onLogout, onEditUser, refreshKey }) {
                 <th>Verified</th>
                 <th>Streak</th>
                 <th>XP</th>
-                <th>Joined</th>
-                <th>Last Active</th>
+                <th className="admin-th-sortable" onClick={() => handleSortClick('created_at')}>
+                  Joined{sortIndicator('created_at')}
+                </th>
+                <th className="admin-th-sortable" onClick={() => handleSortClick('last_active_at')}>
+                  Last Active{sortIndicator('last_active_at')}
+                </th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -244,7 +286,7 @@ export default function AdminDashboard({ onLogout, onEditUser, refreshKey }) {
                     <td>{user.current_streak}</td>
                     <td>{user.total_xp}</td>
                     <td>{formatDate(user.created_at)}</td>
-                    <td>{formatDate(user.last_active)}</td>
+                    <td>{formatRelativeTime(user.last_active_at)}</td>
                     <td className="admin-row-actions">
                       <button type="button" className="admin-btn admin-btn-small" onClick={() => onEditUser(user.id)}>
                         Edit

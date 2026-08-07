@@ -88,6 +88,11 @@ async function handle({ userId, body }) {
     .single()
   if (answerError) throw answerError
 
+  // Non-critical (backs the admin panel's Last Active column) — never block
+  // the answer submission over it.
+  const { error: lastActivityError } = await supabase.from('users').update({ last_activity_at: new Date().toISOString() }).eq('id', userId)
+  if (lastActivityError) console.error('[api] failed to update last_activity_at:', lastActivityError)
+
   const { error: streakError } = await supabase
     .from('streaks')
     .update({

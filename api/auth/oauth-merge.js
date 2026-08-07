@@ -144,6 +144,11 @@ async function handle({ body }) {
   const { error: sessionError } = await supabase.from('sessions').insert({ user_id: user.id, token })
   if (sessionError) throw sessionError
 
+  // Non-critical (backs the admin panel's Last Active column) — never block
+  // login over it.
+  const { error: lastLoginError } = await supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('id', user.id)
+  if (lastLoginError) console.error('[api] failed to update last_login_at:', lastLoginError)
+
   const syncedUser = await syncTrialExpiry(user)
   const { password: _password, deleted_at: _deletedAt, ...safeUser } = syncedUser
   if (safeUser.account_type === 'student') {

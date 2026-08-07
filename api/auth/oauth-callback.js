@@ -144,6 +144,11 @@ async function handle({ body }) {
     if (user.deleted_at) throw accountDeletedError()
 
     const token = await issueSession(user.id)
+    // Non-critical (backs the admin panel's Last Active column) — never
+    // block login over it.
+    const { error: lastLoginError } = await supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('id', user.id)
+    if (lastLoginError) console.error('[api] failed to update last_login_at:', lastLoginError)
+
     const syncedUser = await syncTrialExpiry(user)
     const { deleted_at: _deletedAt, ...safeUser } = syncedUser
     if (safeUser.account_type === 'student') {
@@ -203,6 +208,10 @@ async function handle({ body }) {
       trial_started_at: trialStartedAt.toISOString(),
       trial_ends_at: trialEndsAt.toISOString(),
       is_premium: true,
+      // A brand-new OAuth account is issued a session immediately below —
+      // that's an effective first login, so it counts the same as one for
+      // the admin panel's Last Active column.
+      last_login_at: trialStartedAt.toISOString(),
     })
     .select(SAFE_USER_COLUMNS)
     .single()

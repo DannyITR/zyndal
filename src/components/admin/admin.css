@@ -218,6 +218,15 @@
   white-space: nowrap;
 }
 
+.admin-th-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-th-sortable:hover {
+  color: #222;
+}
+
 .admin-table td {
   padding: 8px 10px;
   border-bottom: 1px solid #eef0f2;

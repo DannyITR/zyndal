@@ -128,6 +128,10 @@ async function handle({ body }) {
       trial_started_at: trialStartedAt.toISOString(),
       trial_ends_at: trialEndsAt.toISOString(),
       is_premium: true,
+      // A brand-new signup is issued a session immediately below — that's
+      // an effective first login, so it counts the same as one for the
+      // admin panel's Last Active column.
+      last_login_at: trialStartedAt.toISOString(),
     })
     .select(SAFE_USER_COLUMNS)
     .single()
