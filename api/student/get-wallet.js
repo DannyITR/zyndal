@@ -14,12 +14,16 @@ import { coinsToCents } from '../../src/lib/money.js'
 // state, only if they were unlinked after the page loaded).
 //
 // With up to 2 linked parents possibly having different rates/caps, the
-// single headline number this page shows picks: the HIGHER
-// coin_to_dollar_rate (more favorable to the student — approval-time
-// re-validation in resolve-payout-request.js is the real backstop either
-// way) and the STRICTER (lower) payout cap when more than one parent has
-// actually set one (a cap is a deliberate limit — silently using the
-// looser one would defeat a parent's intent).
+// single headline number this page shows picks: the LOWER
+// coin_to_dollar_rate (coin_to_dollar_rate is "coins per dollar" — see
+// money.js — so a LOWER number means each coin is worth MORE, the more
+// favorable direction for the student; approval-time re-validation in
+// resolve-payout-request.js is the real backstop either way, since the
+// actual amount paid always uses whichever specific parent approves'
+// own rate, not this display estimate) and the STRICTER (lower) payout
+// cap when more than one parent has actually set one (a cap is a
+// deliberate limit — silently using the looser one would defeat a
+// parent's intent).
 async function handle({ userId }) {
   const links = await getParentLinksForStudent(userId)
   if (links.length === 0) {
@@ -46,7 +50,7 @@ async function handle({ userId }) {
   ])
   const pendingRequest = pendingRequests?.[0] || null
 
-  const bestRate = Math.max(...wallets.map((w) => w.coin_to_dollar_rate))
+  const bestRate = Math.min(...wallets.map((w) => w.coin_to_dollar_rate))
   const maxParentWalletBalanceCents = Math.max(...wallets.map((w) => w.wallet_balance_cents))
   const linksWithCaps = links.filter((l) => l.payout_cap_cents != null)
   const stricterCapLink =
