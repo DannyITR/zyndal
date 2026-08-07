@@ -63,7 +63,7 @@ export default async function handler(req, res) {
 
     const { data: students, error: studentsError } = await supabase
       .from('users')
-      .select('id, username')
+      .select('id, username, display_name')
       .in('id', studentIds)
       .is('deleted_at', null)
     if (studentsError) throw studentsError
@@ -107,12 +107,14 @@ export default async function handler(req, res) {
 
     function buildChildSummary(studentId) {
       const student = studentById[studentId]
-      const username = student?.username || 'Unknown'
+      // Same display_name-over-username preference get-dashboard.js's own
+      // nameById already uses for the parent-facing side of this app.
+      const name = student?.display_name || student?.username || 'Unknown'
       const weekAnswerRows = answersByStudent[studentId] || []
       const weekGradeRows = gradesByStudent[studentId] || []
 
       if (weekAnswerRows.length === 0 && weekGradeRows.length === 0) {
-        return { username, hasActivity: false }
+        return { name, hasActivity: false }
       }
 
       const streakRow = streakByStudent[studentId]
@@ -126,7 +128,7 @@ export default async function handler(req, res) {
       const correctCount = weekAnswerRows.filter((a) => a.correct).length
 
       return {
-        username,
+        name,
         hasActivity: true,
         streak: effectiveStreak,
         xpEarned: correctCount * XP_PER_CORRECT,

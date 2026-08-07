@@ -363,106 +363,185 @@ export async function sendSubscriptionCancelledEmail({ email, languagePreference
 // Sent by api/weekly-summary.js's cron. Unlike every other email above,
 // this one's content isn't a single interpolated paragraph — each parent
 // gets one email covering every one of their linked children in a single
-// send (deliberately NOT one email per child) — so this builds its own
-// full HTML rather than going through renderEmailHtml's fixed
-// heading+one-paragraph+button shape.
+// send (deliberately NOT one email per child), with a per-child stat grid
+// and a streak badge — so this builds its own complete HTML document
+// (DOCTYPE + viewport meta, for real mobile-client rendering) rather than
+// going through renderEmailHtml's fixed heading+one-paragraph+button
+// fragment shape every other email in this file uses.
 const WEEKLY_SUMMARY_STRINGS = {
   en: {
     subject: 'Your Weekly Zyndal Summary',
     heading: 'Your Weekly Summary',
     intro: "Here's how your kids did on Zyndal this past week:",
-    button: 'Open Zyndal',
-    streak: 'Streak',
-    day: 'day',
-    days: 'days',
-    xpEarned: 'XP earned',
-    coinsEarned: 'Coins earned',
-    questionsAnswered: 'Questions answered',
-    gradesEntered: 'Grades entered',
-    noGradesEntered: 'No grades entered',
-    noActivity: 'No activity this week',
+    button: 'View Full Dashboard',
+    day: 'day streak',
+    days: 'day streak',
+    xp: 'XP earned',
+    coins: 'Coins earned',
+    questions: 'Questions',
+    grades: 'Grades',
+    noGradesEntered: 'No grades entered this week',
+    // Deliberately upbeat, not guilt-tripping — a parent shouldn't read
+    // this as a complaint about their kid.
+    noActivity: "hasn't answered any questions yet this week — a gentle nudge might help them get going! 🌱",
   },
   fr: {
     subject: 'Votre résumé hebdomadaire Zyndal',
     heading: 'Votre résumé hebdomadaire',
     intro: 'Voici comment vos enfants ont progressé sur Zyndal cette semaine :',
-    button: 'Ouvrir Zyndal',
-    streak: 'Série',
-    day: 'jour',
-    days: 'jours',
-    xpEarned: 'XP gagnés',
-    coinsEarned: 'Pièces gagnées',
-    questionsAnswered: 'Questions répondues',
-    gradesEntered: 'Notes ajoutées',
-    noGradesEntered: 'Aucune note ajoutée',
-    noActivity: 'Aucune activité cette semaine',
+    button: 'Voir le tableau de bord',
+    day: 'jour de série',
+    days: 'jours de série',
+    xp: 'XP gagnés',
+    coins: 'Pièces gagnées',
+    questions: 'Questions',
+    grades: 'Notes',
+    noGradesEntered: 'Aucune note ajoutée cette semaine',
+    noActivity: "n'a pas encore répondu à de questions cette semaine — un petit rappel pourrait l'aider à s'y remettre ! 🌱",
   },
   es: {
     subject: 'Tu resumen semanal de Zyndal',
     heading: 'Tu resumen semanal',
     intro: 'Así les fue a tus hijos en Zyndal esta semana:',
-    button: 'Abrir Zyndal',
-    streak: 'Racha',
-    day: 'día',
-    days: 'días',
-    xpEarned: 'XP ganados',
-    coinsEarned: 'Monedas ganadas',
-    questionsAnswered: 'Preguntas respondidas',
-    gradesEntered: 'Calificaciones agregadas',
-    noGradesEntered: 'Sin calificaciones agregadas',
-    noActivity: 'Sin actividad esta semana',
+    button: 'Ver panel completo',
+    day: 'día de racha',
+    days: 'días de racha',
+    xp: 'XP ganados',
+    coins: 'Monedas ganadas',
+    questions: 'Preguntas',
+    grades: 'Calificaciones',
+    noGradesEntered: 'Sin calificaciones agregadas esta semana',
+    noActivity: 'aún no ha respondido preguntas esta semana — un pequeño recordatorio podría ayudarle a comenzar. 🌱',
   },
 }
 
-// child: { username, streak, xpEarned, coinsEarned, questionsAnswered,
+// Not a security boundary (email HTML, not a browser DOM), just hygiene —
+// display_name is user-editable free text (Settings), so it shouldn't be
+// interpolated into HTML unescaped.
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function statCell(value, label) {
+  return `
+    <td style="width:50%;padding:0 6px 8px 0;">
+      <div style="background:#1a0f2e;border-radius:10px;padding:10px 12px;">
+        <p style="margin:0;color:#ffffff;font-family:'Segoe UI',Inter,system-ui,sans-serif;font-weight:700;font-size:17px;">${value}</p>
+        <p style="margin:2px 0 0;color:#8f7ba8;font-size:11px;">${label}</p>
+      </div>
+    </td>
+  `
+}
+
+// child: { name, streak, xpEarned, coinsEarned, questionsAnswered,
 // grades: [{subject, gradePercentage}], hasActivity }. hasActivity
-// distinguishes "answered zero questions this week" (still shown, with a
-// "no activity" note) from the normal stat block — per the spec's "skip
-// children with zero activity for the week [XP/coins/etc lines], still
-// list them but note no activity, don't skip the parent entirely."
+// distinguishes "answered zero questions this week" (still shown, with an
+// encouraging note in place of the stat grid) from real activity — per
+// the spec's "skip children with zero activity for the week [i.e. the
+// stat grid], still list them but note no activity, don't skip the
+// parent entirely."
 function weeklySummaryChildHtml(child, s) {
+  const name = escapeHtml(child.name)
+
   if (!child.hasActivity) {
     return `
-      <div style="text-align:left;background:#2a1b42;border-radius:12px;padding:14px 16px;margin:0 0 10px;">
-        <p style="color:#ffffff;font-weight:700;font-size:14px;margin:0 0 4px;">@${child.username}</p>
-        <p style="color:#8f7ba8;font-size:13px;margin:0;">${s.noActivity}</p>
+      <div style="text-align:left;background:#2a1b42;border-radius:14px;padding:16px 18px;margin:0 0 12px;">
+        <p style="color:#ffffff;font-weight:700;font-size:15px;margin:0 0 6px;">${name}</p>
+        <p style="color:#8f7ba8;font-size:13px;margin:0;line-height:1.5;">${name} ${s.noActivity}</p>
       </div>
     `
   }
+
+  // Mirrors the in-app streak pill (src/components/student/StreakFlame.jsx
+  // / .streak-pill--lit in App.css) — warm orange/gold when the streak is
+  // actually alive, muted when it's 0. CSS animation/filter aren't
+  // reliable across email clients, so this is a static color-only echo of
+  // that "lit vs unlit" look rather than the pulsing flame itself.
+  const streakLit = child.streak > 0
+  const streakBg = streakLit ? 'rgba(255,158,68,0.15)' : '#1a0f2e'
+  const streakBorder = streakLit ? 'rgba(255,158,68,0.5)' : 'rgba(255,255,255,0.08)'
   const streakUnit = child.streak === 1 ? s.day : s.days
+
   const gradesText =
-    child.grades.length > 0 ? child.grades.map((g) => `${g.subject} ${g.gradePercentage}%`).join(', ') : s.noGradesEntered
+    child.grades.length > 0
+      ? child.grades.map((g) => `${escapeHtml(g.subject)} ${g.gradePercentage}%`).join(', ')
+      : s.noGradesEntered
+
   return `
-    <div style="text-align:left;background:#2a1b42;border-radius:12px;padding:14px 16px;margin:0 0 10px;">
-      <p style="color:#ffffff;font-weight:700;font-size:14px;margin:0 0 6px;">@${child.username}</p>
-      <p style="color:#c9b8e8;font-size:13px;margin:0;line-height:1.7;">
-        🔥 ${s.streak}: ${child.streak} ${streakUnit}<br>
-        ⚡ ${s.xpEarned}: ${child.xpEarned}<br>
-        🪙 ${s.coinsEarned}: ${child.coinsEarned}<br>
-        ✅ ${s.questionsAnswered}: ${child.questionsAnswered}<br>
-        📊 ${s.gradesEntered}: ${gradesText}
-      </p>
+    <div style="text-align:left;background:#2a1b42;border-radius:14px;padding:16px 18px;margin:0 0 12px;">
+      <p style="color:#ffffff;font-weight:700;font-size:15px;margin:0 0 12px;">${name}</p>
+
+      <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 12px;">
+        <tr>
+          <td style="background:${streakBg};border:1px solid ${streakBorder};border-radius:10px;padding:8px 14px;white-space:nowrap;">
+            <span style="font-size:18px;vertical-align:middle;">🔥</span>
+            <span style="font-family:'Segoe UI',Inter,system-ui,sans-serif;font-weight:700;font-size:15px;color:#ffffff;vertical-align:middle;margin-left:6px;">${child.streak}</span>
+            <span style="font-size:12px;color:#c9b8e8;vertical-align:middle;margin-left:5px;">${streakUnit}</span>
+          </td>
+        </tr>
+      </table>
+
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 8px;">
+        <tr>${statCell(child.xpEarned, `⚡ ${s.xp}`)}${statCell(child.coinsEarned, `🪙 ${s.coins}`)}</tr>
+        <tr>${statCell(child.questionsAnswered, `✅ ${s.questions}`)}${statCell(child.grades.length, `📊 ${s.grades}`)}</tr>
+      </table>
+
+      <p style="color:#8f7ba8;font-size:12px;margin:0;line-height:1.5;">${gradesText}</p>
     </div>
   `
 }
 
 function weeklySummaryEmailContent(children, languagePreference) {
-  const s = WEEKLY_SUMMARY_STRINGS[langFor(languagePreference)]
+  const lang = langFor(languagePreference)
+  const s = WEEKLY_SUMMARY_STRINGS[lang]
   const childrenHtml = children.map((child) => weeklySummaryChildHtml(child, s)).join('')
+
+  // A real HTML document (not just a fragment, unlike every other email
+  // above) specifically so the viewport meta tag actually applies —
+  // matters more here than for the shorter one-CTA emails since this one
+  // has a multi-row stat grid that benefits from real mobile rendering.
+  // The <style> block is a progressive-enhancement nicety on clients that
+  // support it (most modern mobile mail apps); every rule that actually
+  // matters is still inlined too, so it degrades cleanly on clients (e.g.
+  // older Outlook) that strip <style> blocks entirely.
   const html = `
-    <div style="background:#12081f;padding:40px 20px;font-family:'Segoe UI',Inter,system-ui,sans-serif;">
-      <div style="max-width:420px;margin:0 auto;background:#221336;border-radius:24px;padding:36px 28px;text-align:center;">
-        <div style="font-size:15px;font-weight:700;color:#b983ff;letter-spacing:0.5px;margin-bottom:24px;">
-          ⚡ ZYNDAL
-        </div>
-        <h1 style="color:#ffffff;font-size:20px;margin:0 0 12px;">${s.heading}</h1>
-        <p style="color:#c9b8e8;font-size:15px;line-height:1.5;margin:0 0 20px;">${s.intro}</p>
-        ${childrenHtml}
-        <a href="${SIGNUP_BASE_URL}" style="display:inline-block;background:linear-gradient(135deg,#8a2be2 0%,#6c3bff 45%,#47bfff 100%);color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:14px 32px;border-radius:14px;margin-top:6px;">
+<!DOCTYPE html>
+<html lang="${lang}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${s.subject}</title>
+<style>
+  @media only screen and (max-width: 480px) {
+    .zyndal-email-outer { padding: 24px 12px !important; }
+    .zyndal-email-card { padding: 28px 18px !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#12081f;">
+  <div class="zyndal-email-outer" style="background:#12081f;padding:40px 20px;font-family:'Segoe UI',Inter,system-ui,sans-serif;">
+    <div class="zyndal-email-card" style="max-width:440px;margin:0 auto;background:#221336;border-radius:24px;padding:36px 28px;">
+      <div style="text-align:center;font-size:15px;font-weight:700;color:#b983ff;letter-spacing:0.5px;margin-bottom:24px;">
+        ⚡ ZYNDAL
+      </div>
+      <h1 style="text-align:center;color:#ffffff;font-size:20px;margin:0 0 12px;">${s.heading}</h1>
+      <p style="text-align:center;color:#c9b8e8;font-size:15px;line-height:1.5;margin:0 0 22px;">${s.intro}</p>
+
+      ${childrenHtml}
+
+      <div style="text-align:center;margin-top:10px;">
+        <a href="${SIGNUP_BASE_URL}" style="display:inline-block;background:linear-gradient(135deg,#8a2be2 0%,#6c3bff 45%,#47bfff 100%);color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:14px 32px;border-radius:14px;">
           ${s.button}
         </a>
       </div>
     </div>
+  </div>
+</body>
+</html>
   `.trim()
   return { subject: s.subject, html }
 }
