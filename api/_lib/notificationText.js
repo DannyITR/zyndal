@@ -57,6 +57,42 @@ const TEMPLATES = {
       body: 'Ahora puedes ver su progreso en tu panel.',
     }),
   },
+  // amount is a pre-formatted dollar string (via centsToDisplay), same
+  // convention as payout_requested below. Sent to EVERY linked parent
+  // independently (see api/student/submit-answer.js) — each may have a
+  // different suggested amount, since perfect_week_bonus is set per
+  // parent-student link.
+  perfect_week_ready: {
+    en: ({ studentUsername, amount }) => ({
+      title: `🌟 @${studentUsername} completed a perfect week!`,
+      body: `A $${amount} bonus has been suggested — review it on your dashboard.`,
+    }),
+    fr: ({ studentUsername, amount }) => ({
+      title: `🌟 @${studentUsername} a complété une semaine parfaite !`,
+      body: `Un bonus de ${amount} $ a été suggéré — consultez-le sur votre tableau de bord.`,
+    }),
+    es: ({ studentUsername, amount }) => ({
+      title: `🌟 ¡@${studentUsername} completó una semana perfecta!`,
+      body: `Se sugirió un bono de $${amount} — revísalo en tu panel.`,
+    }),
+  },
+  // Same per-parent-independent-amount convention as perfect_week_ready
+  // above — fired for both an uploaded graded test and a manually-logged
+  // grade (api/uploads/save-upload.js, api/student/create-grade.js).
+  grade_bonus_ready: {
+    en: ({ studentUsername, amount }) => ({
+      title: `🎓 @${studentUsername} got a grade worthy of a bonus!`,
+      body: `A $${amount} bonus has been suggested — review it on your dashboard.`,
+    }),
+    fr: ({ studentUsername, amount }) => ({
+      title: `🎓 @${studentUsername} a obtenu une note méritant un bonus !`,
+      body: `Un bonus de ${amount} $ a été suggéré — consultez-le sur votre tableau de bord.`,
+    }),
+    es: ({ studentUsername, amount }) => ({
+      title: `🎓 ¡@${studentUsername} obtuvo una calificación que merece un bono!`,
+      body: `Se sugirió un bono de $${amount} — revísalo en tu panel.`,
+    }),
+  },
   work_approved: {
     en: () => ({ title: '✅ Your work was approved! +1 XP' }),
     fr: () => ({ title: '✅ Votre travail a été approuvé ! +1 XP' }),

@@ -1,5 +1,6 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
+import { countParentLinksForStudent } from '../_lib/parentDb.js'
 import { sanitizeUuid } from '../_lib/sanitize.js'
 import { insertNotification } from '../_lib/notifications.js'
 import { notificationText } from '../_lib/notificationText.js'
@@ -54,20 +55,24 @@ async function handle({ userId, body }) {
     return { accepted: false }
   }
 
-  const { data: existingLink, error: existingLinkError } = await supabase
+  const { data: existingLinkToThisParent, error: existingLinkError } = await supabase
     .from('parent_student')
     .select('parent_id')
     .eq('student_id', userId)
+    .eq('parent_id', invitation.parent_id)
     .maybeSingle()
   if (existingLinkError) throw existingLinkError
-  if (existingLink && existingLink.parent_id !== invitation.parent_id) {
-    const err = new Error("You're already linked to a parent.")
-    err.status = 400
-    err.code = 'ALREADY_LINKED'
-    throw err
-  }
 
-  if (!existingLink) {
+  if (!existingLinkToThisParent) {
+    // Up to 2 linked parents per student — only runs for a genuinely new
+    // link (re-accepting an invite from an already-linked parent is a
+    // no-op below, not blocked by the cap).
+    if ((await countParentLinksForStudent(userId)) >= 2) {
+      const err = new Error('This student already has 2 linked parent accounts — the maximum allowed.')
+      err.status = 400
+      err.code = 'MAX_PARENTS_LINKED'
+      throw err
+    }
     const { error: insertError } = await supabase
       .from('parent_student')
       .insert({ parent_id: invitation.parent_id, student_id: userId })

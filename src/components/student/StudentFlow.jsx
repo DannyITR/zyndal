@@ -128,7 +128,10 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [selectedDate, setSelectedDate] = useState(today)
 
   // user.linked_parent_deleted comes from login/get-profile (see
-  // api/_lib/db.js's isLinkedParentDeleted) — shown once per mount, then
+  // api/_lib/db.js's getLinkedParentStatus) — true if ANY of this
+  // student's up-to-2 linked parents has deleted their account, not only
+  // once none are left, since losing one benefactor is still meaningful
+  // even with another parent still linked. Shown once per mount, then
   // auto-dismisses on its own after 5s (still manually closeable sooner).
   const [showParentDeletedBanner, setShowParentDeletedBanner] = useState(Boolean(user.linked_parent_deleted))
   useEffect(() => {

@@ -1,9 +1,13 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
-import { getProgressForUser, getLinkedParent, normalizeMilestoneBonuses, recordPerfectWeekAchievement, syncUserTimezone } from '../_lib/db.js'
+import { getProgressForUser, getLinkedParents, normalizeMilestoneBonuses, recordPerfectWeekAchievement, syncUserTimezone } from '../_lib/db.js'
 import { resolveDailyQuestion } from '../_lib/dailyQuestion.js'
 import { applyDailyAnswer, getWeeklyCorrectCount, PERFECT_WEEK_TARGET, todayStr, isValidTimeZone, DEFAULT_TIMEZONE } from '../../src/lib/streak.js'
 import { SUBJECTS } from '../../src/lib/questions.js'
+import { insertNotification } from '../_lib/notifications.js'
+import { notificationText } from '../_lib/notificationText.js'
+import { sendPushToUser } from '../_lib/push.js'
+import { centsToDisplay } from '../../src/lib/money.js'
 
 // Deliberately NOT the request shape originally specified
 // ({ subject, question_text, selected_answer, correct, is_first_attempt }).
@@ -52,8 +56,13 @@ async function handle({ userId, body }) {
     throw err
   }
 
-  const linkedParent = await getLinkedParent(userId)
-  const milestoneBonuses = normalizeMilestoneBonuses(linkedParent?.milestoneSettings)
+  const linkedParents = await getLinkedParents(userId)
+  // Milestone bonuses are a single shared coin grant to the student, not a
+  // per-parent suggestion like perfect-week/grade bonuses below — with up
+  // to 2 linked parents potentially having different milestone_settings,
+  // there's no sane way to apply both to one grant, so this uses whichever
+  // parent linked first.
+  const milestoneBonuses = normalizeMilestoneBonuses(linkedParents[0]?.milestoneSettings)
   // Day-streak rule: applyDailyAnswer credits the streak the moment the
   // FIRST correct first-attempt answer of the day lands, in any single
   // subject — it no longer requires all 6. Nothing else here needs to
@@ -91,12 +100,27 @@ async function handle({ userId, body }) {
     .eq('user_id', userId)
   if (streakError) throw streakError
 
+  // Client-facing celebration only ever shows one number — see
+  // StudentHome.jsx's handleSelect — so with up to 2 linked parents
+  // potentially suggesting different amounts, this surfaces the first
+  // linked parent's amount specifically (matches the milestoneBonuses
+  // choice above). Both parents still each get their own row + own
+  // notification below, regardless of which amount is shown here.
   let perfectWeekBonusCents = null
-  if (result.correct && linkedParent) {
+  if (result.correct && linkedParents.length > 0) {
     const weeklyCount = getWeeklyCorrectCount(result.progress.history, today)
     if (weeklyCount === PERFECT_WEEK_TARGET) {
-      const achievement = await recordPerfectWeekAchievement(userId, linkedParent.parentId, linkedParent.perfectWeekBonusDollars, today)
-      if (achievement) perfectWeekBonusCents = achievement.suggested_bonus_cents
+      const { data: student } = await supabase.from('users').select('username').eq('id', userId).maybeSingle()
+      const studentUsername = student?.username || 'Someone'
+      for (const parent of linkedParents) {
+        const achievement = await recordPerfectWeekAchievement(userId, parent.parentId, parent.perfectWeekBonusDollars, today)
+        if (!achievement) continue
+        if (perfectWeekBonusCents === null) perfectWeekBonusCents = achievement.suggested_bonus_cents
+        const amount = centsToDisplay(achievement.suggested_bonus_cents)
+        const { title, body: notifBody } = notificationText('perfect_week_ready', parent.languagePreference, { studentUsername, amount })
+        await insertNotification({ userId: parent.parentId, type: 'perfect_week_ready', title, body: notifBody, data: { student_id: userId } })
+        await sendPushToUser({ userId: parent.parentId, type: 'perfect_week_ready', title, body: notifBody, url: 'https://zyndal.ca' })
+      }
     }
   }
 

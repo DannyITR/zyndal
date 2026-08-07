@@ -94,6 +94,20 @@ async function handle({ parentId, body }) {
     .eq('id', requestId)
   if (updateError) throw updateError
 
+  // If a second linked parent has their own still-pending sibling row for
+  // this same student request (same request_group_id), it's now moot —
+  // the coins have already been paid out via applyPayout above. Safe
+  // under a race: applyPayout's own coins > coin_balance check means two
+  // concurrent approvals of sibling rows can't both succeed regardless of
+  // this cleanup step's timing.
+  const { error: cancelSiblingError } = await supabase
+    .from('payout_requests')
+    .update({ status: 'cancelled', resolved_at: new Date().toISOString() })
+    .eq('request_group_id', requestRow.request_group_id)
+    .neq('id', requestId)
+    .eq('status', 'pending')
+  if (cancelSiblingError) throw cancelSiblingError
+
   const amount = centsToDisplay(requestRow.dollar_amount_cents)
   const { title, body: notifBody } = notificationText('payout_approved', student?.language_preference, { amount })
   await insertNotification({ userId: studentId, type: 'payout_approved', title, body: notifBody, data: { request_id: requestId, amount_cents: requestRow.dollar_amount_cents } })

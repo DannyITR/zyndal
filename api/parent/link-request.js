@@ -30,16 +30,24 @@ async function handle({ parentId, body }) {
     throw err
   }
 
-  const { data: existingLink, error: existingLinkError } = await supabase
+  // Up to 2 linked parents per student — fetching the actual rows (not
+  // just a count) so "already linked to ME specifically" can be told
+  // apart from "linked to someone else, but there's still room."
+  const { data: existingLinks, error: existingLinkError } = await supabase
     .from('parent_student')
     .select('parent_id')
     .eq('student_id', body.student_id)
-    .maybeSingle()
   if (existingLinkError) throw existingLinkError
-  if (existingLink) {
-    const err = new Error('That student is already linked to a parent.')
+  if ((existingLinks || []).some((l) => l.parent_id === parentId)) {
+    const err = new Error("You're already linked to this student.")
     err.status = 400
     err.code = 'ALREADY_LINKED'
+    throw err
+  }
+  if ((existingLinks || []).length >= 2) {
+    const err = new Error('This student already has 2 linked parent accounts — the maximum allowed.')
+    err.status = 400
+    err.code = 'MAX_PARENTS_LINKED'
     throw err
   }
 

@@ -11,6 +11,7 @@ import {
   linkParentByCode,
   getPendingParentRequests,
   respondToParentLinkRequest,
+  getLinkedParents,
   openCustomerPortal,
 } from '../../lib/storage'
 import { languageCodeForPreference } from '../../lib/i18n'
@@ -87,6 +88,20 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
   const [respondingRequestId, setRespondingRequestId] = useState(null)
   const [respondError, setRespondError] = useState('')
 
+  // Read-only — nothing here lets the student unlink from their end.
+  const [linkedParents, setLinkedParents] = useState(null)
+
+  function loadLinkedParents() {
+    getLinkedParents()
+      .then((data) => setLinkedParents(data.parents))
+      .catch(() => setLinkedParents([]))
+  }
+
+  useEffect(() => {
+    if (!isStudent) return
+    loadLinkedParents()
+  }, [isStudent])
+
   function loadPendingParentRequests() {
     getPendingParentRequests()
       .then((data) => setPendingParentRequests(data.requests))
@@ -108,6 +123,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
       const { parent } = await linkParentByCode(parentCodeInput.trim())
       setParentCodeInput('')
       setLinkParentSuccess(t('settings.linkedSuccess', { username: parent.username }))
+      loadLinkedParents()
     } catch (err) {
       setLinkParentError(getErrorMessage(err, t, 'settings.linkParentFailed'))
     } finally {
@@ -124,6 +140,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
       if (accept) {
         const accepted = pendingParentRequests?.find((r) => r.id === requestId)
         if (accepted) setLinkParentSuccess(t('settings.linkedSuccess', { username: accepted.parentUsername }))
+        loadLinkedParents()
       }
       loadPendingParentRequests()
     } catch (err) {
@@ -408,6 +425,25 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
           {saving ? t('settings.saving') : t('settings.saveChanges')}
         </button>
       </form>
+
+      {isStudent && (
+        <div className="finance-section-card">
+          <h3 className="section-heading">{t('settings.linkedParentsHeading')}</h3>
+          {linkedParents === null ? (
+            <p className="field-hint">{t('common.loading')}</p>
+          ) : linkedParents.length === 0 ? (
+            <p className="field-hint">{t('settings.noLinkedParents')}</p>
+          ) : (
+            <div className="teacher-student-list">
+              {linkedParents.map((p) => (
+                <p key={p.id} className="finance-student-name">
+                  {p.avatar ? `${p.avatar} ` : '👨‍👩‍👧 '}@{p.username} ({t('settings.parentLabel')})
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <form className="auth-form" onSubmit={handleChangePassword}>
         <h3 className="section-heading">{t('settings.changePassword')}</h3>

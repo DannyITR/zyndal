@@ -1,9 +1,13 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
-import { getLinkedParent } from '../_lib/db.js'
+import { getLinkedParents } from '../_lib/db.js'
 import { assertPremium } from '../_lib/subscription.js'
 import { computeSuggestedBonusCents } from '../../src/lib/gradeReward.js'
 import { sanitizeSubject, sanitizeString, sanitizeInteger } from '../_lib/sanitize.js'
+import { insertNotification } from '../_lib/notifications.js'
+import { notificationText } from '../_lib/notificationText.js'
+import { sendPushToUser } from '../_lib/push.js'
+import { centsToDisplay } from '../../src/lib/money.js'
 
 // Mirrors createUpload in storage.js, PLUS two things the literal spec
 // omits but "keep existing functionality intact" requires: the `notes`
@@ -41,26 +45,44 @@ function validate(body) {
   return null
 }
 
+// Loops over every linked parent (up to 2) — each gets their own
+// suggested-bonus row (computed from THEIR OWN reward-cents settings,
+// which can differ per parent) and their own notification, safe under
+// the grade_bonuses_upload_id_parent_id_key constraint (widened to
+// include parent_id specifically so this no longer collides).
 async function maybeCreateGradeBonus({ userId, gradePercentage, uploadId }) {
-  const linkedParent = await getLinkedParent(userId)
-  if (!linkedParent) return
+  const linkedParents = await getLinkedParents(userId)
+  if (linkedParents.length === 0) return
 
-  const suggestedBonusCents = computeSuggestedBonusCents(gradePercentage, {
-    gradeRewardAPlusCents: linkedParent.gradeRewardAPlusCents,
-    gradeRewardACents: linkedParent.gradeRewardACents,
-    gradeRewardBCents: linkedParent.gradeRewardBCents,
-    gradeRewardCCents: linkedParent.gradeRewardCCents,
-  })
-  if (suggestedBonusCents <= 0) return
+  const { data: student } = await supabase.from('users').select('username').eq('id', userId).maybeSingle()
+  const studentUsername = student?.username || 'Someone'
 
-  const { error } = await supabase.from('grade_bonuses').insert({
-    upload_id: uploadId,
-    student_id: userId,
-    parent_id: linkedParent.parentId,
-    grade_received: gradePercentage,
-    suggested_bonus_cents: suggestedBonusCents,
-  })
-  if (error && error.code !== '23505') throw error // already recorded for this upload
+  for (const parent of linkedParents) {
+    const suggestedBonusCents = computeSuggestedBonusCents(gradePercentage, {
+      gradeRewardAPlusCents: parent.gradeRewardAPlusCents,
+      gradeRewardACents: parent.gradeRewardACents,
+      gradeRewardBCents: parent.gradeRewardBCents,
+      gradeRewardCCents: parent.gradeRewardCCents,
+    })
+    if (suggestedBonusCents <= 0) continue
+
+    const { error } = await supabase.from('grade_bonuses').insert({
+      upload_id: uploadId,
+      student_id: userId,
+      parent_id: parent.parentId,
+      grade_received: gradePercentage,
+      suggested_bonus_cents: suggestedBonusCents,
+    })
+    if (error) {
+      if (error.code === '23505') continue // already recorded for this upload+parent
+      throw error
+    }
+
+    const amount = centsToDisplay(suggestedBonusCents)
+    const { title, body: notifBody } = notificationText('grade_bonus_ready', parent.languagePreference, { studentUsername, amount })
+    await insertNotification({ userId: parent.parentId, type: 'grade_bonus_ready', title, body: notifBody, data: { student_id: userId, upload_id: uploadId } })
+    await sendPushToUser({ userId: parent.parentId, type: 'grade_bonus_ready', title, body: notifBody, url: 'https://zyndal.ca' })
+  }
 }
 
 async function handle({ userId, body }) {

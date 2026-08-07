@@ -1048,6 +1048,11 @@ export async function respondToParentLinkRequest(invitationId, accept) {
   return callStudentApi('POST', 'respond-parent-link', { invitation_id: invitationId, action: accept ? 'accept' : 'decline' })
 }
 
+// Settings screen's read-only "Linked Parents" section — up to 2.
+export async function getLinkedParents() {
+  return callStudentApi('GET', 'get-linked-parents')
+}
+
 // ---------- Classes (student side) ----------
 
 export async function getMyClasses() {

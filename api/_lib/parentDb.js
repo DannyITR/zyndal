@@ -29,6 +29,21 @@ export async function getStudentRows(studentIds) {
   return data || []
 }
 
+// Shared by every parent-student linking entry point (link-parent.js,
+// link-request.js, respond-parent-link.js, search-students.js) to enforce
+// the 2-linked-parents-per-student cap. api/auth/signup.js's own
+// parent_student insert doesn't need this — it only ever targets the
+// student row it just created in the same request, which structurally
+// can't already have any links.
+export async function countParentLinksForStudent(studentId) {
+  const { count, error } = await supabase
+    .from('parent_student')
+    .select('id', { count: 'exact', head: true })
+    .eq('student_id', studentId)
+  if (error) throw error
+  return count || 0
+}
+
 // Authorization guard for every parent mutation that targets a specific
 // student (payout, resolve-bonus, per-student settings). Without this, a
 // valid parent session token could act on ANY student_id in the request
@@ -151,21 +166,24 @@ export async function applyPayout({ parentId, studentId, coins, amountCents, typ
 }
 
 // The student-side mirror of verifyStudentBelongsToParent's lookup, queried
-// from the student's end (by student_id) rather than requiring both ids up
-// front, since a student doesn't know their parent's id until this
-// resolves. Used by api/student/get-wallet.js and
+// from the student's end (by student_id) rather than requiring a parent id
+// up front, since a student doesn't know their parent's id until this
+// resolves. Returns an array (0-2 entries, one per linked parent — a
+// student can have up to 2) rather than a single row/null, so callers can
+// decide how to reconcile potentially-differing per-parent settings (see
+// get-wallet.js's rate/cap display and request-payout.js's per-parent
+// payout_requests rows) themselves. Used by api/student/get-wallet.js and
 // api/student/request-payout.js. payout_cap_cents/payout_cap_period are
 // nullable — no parent-facing settings UI sets them yet (not in this
 // feature's scope), but the columns exist so the Wallet page's "if a cap is
 // set" display logic has something real to check once one does.
-export async function getParentLinkForStudent(studentId) {
+export async function getParentLinksForStudent(studentId) {
   const { data, error } = await supabase
     .from('parent_student')
     .select('parent_id, payout_cap_cents, payout_cap_period')
     .eq('student_id', studentId)
-    .maybeSingle()
   if (error) throw error
-  return data
+  return data || []
 }
 
 // Student-facing mirror of getPayoutHistoryRows above — same payouts

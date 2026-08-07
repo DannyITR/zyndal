@@ -220,7 +220,7 @@ export async function getTodayAttemptedCount(userId, timezone) {
 // Used by api/_lib/dailyQuestion.js's resolveDailyQuestion to read the
 // student's own grade and language_preference in one query — no existing
 // helper does a plain "get user by id" lookup, so this follows the same
-// targeted-query style as getLinkedParent below rather than pulling in the
+// targeted-query style as getLinkedParents below rather than pulling in the
 // full SAFE_USER_COLUMNS set.
 export async function getUserGradeAndLanguage(userId) {
   const { data, error } = await supabase.from('users').select('grade, language_preference').eq('id', userId).maybeSingle()
@@ -247,56 +247,65 @@ export async function getAnswersThisMonth(userId, subject, timezone) {
   return new Set((data || []).map((row) => row.question_text))
 }
 
-// Mirrors getLinkedParent in storage.js exactly.
-export async function getLinkedParent(studentId) {
-  const { data: link, error: linkError } = await supabase
+// Returns an array (0-2 entries — a student can have up to 2 linked
+// parents) instead of a single object/null, since each linked parent has
+// their own independent reward settings (perfect_week_bonus, grade reward
+// thresholds, milestone_settings). Callers that create a per-parent
+// suggested-bonus row (submit-answer.js, save-upload.js, create-grade.js)
+// loop over this; perfect_week_achievements/grade_bonuses' unique
+// constraints were widened to include parent_id specifically so one row
+// per linked parent no longer collides.
+export async function getLinkedParents(studentId) {
+  const { data: links, error: linkError } = await supabase
     .from('parent_student')
     .select(
       'parent_id, perfect_week_bonus, grade_reward_a_plus_cents, grade_reward_a_cents, grade_reward_b_cents, grade_reward_c_cents'
     )
     .eq('student_id', studentId)
-    .maybeSingle()
   if (linkError) throw linkError
-  if (!link) return null
+  if (!links || links.length === 0) return []
 
-  const { data: parent, error: parentError } = await supabase
+  const parentIds = links.map((l) => l.parent_id)
+  const { data: parents, error: parentError } = await supabase
     .from('users')
-    .select('milestone_settings')
-    .eq('id', link.parent_id)
-    .maybeSingle()
+    .select('id, milestone_settings, language_preference')
+    .in('id', parentIds)
   if (parentError) throw parentError
+  const parentById = Object.fromEntries((parents || []).map((p) => [p.id, p]))
 
-  return {
+  return links.map((link) => ({
     parentId: link.parent_id,
     perfectWeekBonusDollars: Number(link.perfect_week_bonus ?? 10),
-    milestoneSettings: parent?.milestone_settings ?? null,
+    milestoneSettings: parentById[link.parent_id]?.milestone_settings ?? null,
+    languagePreference: parentById[link.parent_id]?.language_preference ?? null,
     gradeRewardAPlusCents: link.grade_reward_a_plus_cents ?? 2500,
     gradeRewardACents: link.grade_reward_a_cents ?? 1500,
     gradeRewardBCents: link.grade_reward_b_cents ?? 1000,
     gradeRewardCCents: link.grade_reward_c_cents ?? 500,
-  }
+  }))
 }
 
 // For a student's home screen: whether they have a linked parent at all
 // (drives the Coins stat box / Wallet page's visibility — see
-// StudentFlow.jsx and api/student/get-wallet.js) and, if so, whether that
-// parent has deleted their own account (drives the one-time "your parent
-// account was deactivated" banner in StudentFlow.jsx). Combined into one
+// StudentFlow.jsx and api/student/get-wallet.js) and, if so, whether ANY
+// linked parent (up to 2) has deleted their own account (drives the
+// one-time "your parent account was deactivated" banner in
+// StudentFlow.jsx). parentDeleted fires on ANY linked parent's deletion,
+// not only once zero remain — a student who still has one active parent
+// left but just lost the other is still losing a benefactor, and staying
+// silent would be a worse gap than one extra banner. Combined into one
 // function since both need the same parent_student lookup — get-profile.js
 // used to run this as two separate queries across two call sites before the
 // Wallet feature needed the "linked at all" half too.
 export async function getLinkedParentStatus(studentId) {
-  const { data: link, error: linkError } = await supabase
-    .from('parent_student')
-    .select('parent_id')
-    .eq('student_id', studentId)
-    .maybeSingle()
+  const { data: links, error: linkError } = await supabase.from('parent_student').select('parent_id').eq('student_id', studentId)
   if (linkError) throw linkError
-  if (!link) return { linked: false, parentDeleted: false }
+  if (!links || links.length === 0) return { linked: false, parentDeleted: false }
 
-  const { data: parent, error: parentError } = await supabase.from('users').select('deleted_at').eq('id', link.parent_id).maybeSingle()
+  const parentIds = links.map((l) => l.parent_id)
+  const { data: parents, error: parentError } = await supabase.from('users').select('deleted_at').in('id', parentIds)
   if (parentError) throw parentError
-  return { linked: true, parentDeleted: Boolean(parent?.deleted_at) }
+  return { linked: true, parentDeleted: (parents || []).some((p) => Boolean(p.deleted_at)) }
 }
 
 // Mirrors normalizeMilestoneBonuses in storage.js exactly.
