@@ -11,6 +11,20 @@ import { sendWelcomeEmail, sendPaymentFailedEmail, sendSubscriptionCancelledEmai
 import { insertNotification } from './notifications.js'
 import { notificationText } from './notificationText.js'
 
+// This account's Stripe API version no longer carries current_period_end on
+// the top-level Subscription object (confirmed empirically against a real
+// live subscription — it's `undefined` there) — it now lives per
+// subscription-item instead, to support multiple differently-billed items
+// on one subscription. This app only ever creates a single-item
+// subscription (one price per Checkout Session), so the first item's
+// current_period_end is the whole subscription's period end. Falls back to
+// the old top-level field too, in case a future API version restores it or
+// a differently-configured account still has it there.
+function subscriptionPeriodEndIso(subscription) {
+  const periodEndUnix = subscription.items?.data?.[0]?.current_period_end ?? subscription.current_period_end
+  return periodEndUnix ? new Date(periodEndUnix * 1000).toISOString() : null
+}
+
 // Insert-and-catch-23505 idempotency idiom, same as recordPerfectWeekAchievement
 // in db.js. Returns true the first time an id is claimed, false on every
 // later attempt (a Stripe retry, or the webhook/verify-session race above).
@@ -39,30 +53,52 @@ export async function applyCheckoutCompleted(session) {
   const cascaded = Boolean(studentIds || studentId)
   const recipientIds = cascaded ? studentIds || [studentId] : [buyerId]
 
-  const subscription = await stripe.subscriptions.retrieve(session.subscription)
+  // Logged for every event while this is being watched post-fix — the raw
+  // webhook payload's own session.subscription field is not reliable
+  // (observed null/unusable on a real completed checkout, which used to
+  // throw here and abort every write below, leaving stripe_subscription_id/
+  // is_paying_subscriber/is_premium/subscription_plan/period_end unset even
+  // though stripe_customer_id was already correctly set — that field comes
+  // from api/stripe/create-checkout.js at session-creation time, an
+  // entirely separate write from anything in this function).
+  console.log('[stripe webhook] checkout.session.completed raw session:', JSON.stringify(session))
+
+  // Re-fetch the session directly by id with subscription expanded inline,
+  // rather than trusting event.data.object's own (unreliable) subscription
+  // field or making a second lookup via stripe.subscriptions.retrieve — one
+  // API call, guaranteed to return the full subscription object.
+  const fullSession = await stripe.checkout.sessions.retrieve(session.id, { expand: ['subscription'] })
+  console.log('[stripe webhook] expanded session.subscription:', JSON.stringify(fullSession.subscription))
+
+  const subscription = fullSession.subscription
+  if (!subscription || typeof subscription === 'string') {
+    throw new Error(`checkout.session.completed for session ${session.id} has no expanded subscription object.`)
+  }
+
+  const customerId = typeof fullSession.customer === 'string' ? fullSession.customer : fullSession.customer?.id
   const subscriptionFields = {
     stripe_subscription_id: subscription.id,
     subscription_plan: plan,
-    subscription_current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+    subscription_current_period_end: subscriptionPeriodEndIso(subscription),
   }
 
   if (cascaded) {
     const { error: buyerError } = await supabase
       .from('users')
-      .update({ stripe_customer_id: session.customer, is_subscription_owner: true })
+      .update({ stripe_customer_id: customerId, is_subscription_owner: true })
       .eq('id', buyerId)
     if (buyerError) throw buyerError
 
     const { error: recipientError } = await supabase
       .from('users')
-      .update({ is_premium: true, is_paying_subscriber: true, stripe_customer_id: session.customer, ...subscriptionFields })
+      .update({ is_premium: true, is_paying_subscriber: true, stripe_customer_id: customerId, ...subscriptionFields })
       .in('id', recipientIds)
     if (recipientError) throw recipientError
   } else {
     const { error } = await supabase
       .from('users')
       .update({
-        stripe_customer_id: session.customer,
+        stripe_customer_id: customerId,
         is_subscription_owner: true,
         is_premium: true,
         is_paying_subscriber: true,
@@ -121,7 +157,7 @@ export async function handleSubscriptionUpdated(event) {
   const customerId = subscription.customer
   const subscriptionId = subscription.id
   const status = subscription.status
-  const periodEndIso = new Date(subscription.current_period_end * 1000).toISOString()
+  const periodEndIso = subscriptionPeriodEndIso(subscription)
 
   const { data: matched, error: matchError } = await supabase
     .from('users')
