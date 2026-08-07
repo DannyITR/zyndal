@@ -9,14 +9,24 @@ function tierFor(days) {
   return 'normal'
 }
 
-// Renders nothing outside subscription_status === 'trial_active' — a
-// premium/expired/free user sees no banner at all here (expired/free get
-// the reactive UpgradeModal instead, when they tap a gated feature).
-// Shared across the student home screen, parent dashboard, and teacher
-// dashboard, all of which already have subscription_status/
-// days_remaining_in_trial on their own `user` object from get-profile.js.
+// Renders nothing outside subscription_status === 'trial_active' or
+// 'trial_expired' — a premium/free user sees no banner at all here (free
+// gets the reactive UpgradeModal instead, when they tap a gated feature;
+// premium has nothing to upgrade). Shared across the student home screen,
+// parent dashboard, and teacher dashboard, all of which already have
+// subscription_status/days_remaining_in_trial on their own `user` object
+// from get-profile.js.
 export default function TrialBanner({ subscriptionStatus, daysRemainingInTrial, onUpgradeClick }) {
   const { t } = useTranslation()
+
+  if (subscriptionStatus === 'trial_expired') {
+    return (
+      <button type="button" className="trial-banner trial-banner--urgent" onClick={onUpgradeClick}>
+        {t('upgrade.trialExpiredBanner')}
+      </button>
+    )
+  }
+
   if (subscriptionStatus !== 'trial_active' || daysRemainingInTrial == null) return null
 
   const tier = tierFor(daysRemainingInTrial)

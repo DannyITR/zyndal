@@ -1,6 +1,14 @@
 import TopBar from '../../shared/TopBar'
 
-export default function UploadTypeSelectScreen({ username, onSelectType, onBack, onLogout, onLogoClick }) {
+export default function UploadTypeSelectScreen({
+  username,
+  onSelectType,
+  onBack,
+  onLogout,
+  onLogoClick,
+  subscriptionStatus,
+  daysRemainingInTrial,
+}) {
   return (
     <div className="screen student-screen">
       <TopBar
@@ -10,6 +18,8 @@ export default function UploadTypeSelectScreen({ username, onSelectType, onBack,
         onBack={onBack}
         onLogout={onLogout}
         onLogoClick={onLogoClick}
+        subscriptionStatus={subscriptionStatus}
+        daysRemainingInTrial={daysRemainingInTrial}
       />
 
       <div className="upload-type-grid">

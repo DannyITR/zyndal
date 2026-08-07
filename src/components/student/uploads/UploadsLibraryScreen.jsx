@@ -35,6 +35,8 @@ export default function UploadsLibraryScreen({ user, lockedSubjectId, onSelectUp
         onBack={onBack}
         onLogout={onLogout}
         onLogoClick={onLogoClick}
+        subscriptionStatus={user.subscription_status}
+        daysRemainingInTrial={user.days_remaining_in_trial}
       />
 
       <button type="button" className="btn btn-primary btn-block" onClick={onNewUpload}>

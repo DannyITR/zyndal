@@ -516,6 +516,7 @@
     "trialBannerDays": "🎉 Premium trial — {{count}} day remaining",
     "trialBannerDays_other": "🎉 Premium trial — {{count}} days remaining",
     "trialBannerLastDay": "⚠️ Trial ends today — upgrade to keep Premium access",
+    "trialExpiredBanner": "Your free trial has ended — upgrade to keep Premium access",
     "choosePlan": "Choose a plan",
     "planStudentLabel": "$5.99/month — Student",
     "planStudentDesc": "Covers 1 student",
@@ -531,7 +532,13 @@
     "redirectTakingLong": "Taking too long?",
     "clickHereToCancel": "Click here to cancel",
     "cancel": "Cancel",
-    "retry": "Retry"
+    "retry": "Retry",
+    "premiumFeatureTooltip": "Premium feature — upgrade to unlock"
+  },
+  "premiumBanner": {
+    "trialActive": "✨ Premium Trial — {{count}} day remaining",
+    "trialActive_other": "✨ Premium Trial — {{count}} days remaining",
+    "premium": "✨ Zyndal Premium"
   },
   "teacher": {
     "loadStatsFailed": "Failed to load stats.",

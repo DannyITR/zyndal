@@ -147,6 +147,8 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
             onBack={onBack}
             onLogout={onLogout}
             onLogoClick={onLogoClick}
+            subscriptionStatus={user.subscription_status}
+            daysRemainingInTrial={user.days_remaining_in_trial}
           />
           <p className="loading-text">Loading…</p>
         </div>
@@ -179,6 +181,8 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
         onBack={onBack}
         onLogout={onLogout}
         onLogoClick={onLogoClick}
+        subscriptionStatus={user.subscription_status}
+        daysRemainingInTrial={user.days_remaining_in_trial}
       />
 
       {guide && (

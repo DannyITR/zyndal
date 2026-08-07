@@ -12,6 +12,8 @@ export default function PracticeResultsScreen({ user, subjectName, topic, result
         username={user.username}
         onLogout={onLogout}
         onLogoClick={onLogoClick}
+        subscriptionStatus={user.subscription_status}
+        daysRemainingInTrial={user.days_remaining_in_trial}
       />
 
       <div className="testprep-header-card practice-results-card">

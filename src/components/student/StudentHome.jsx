@@ -23,6 +23,7 @@ import WorkSubmissionPanel from './WorkSubmissionPanel'
 import MilestoneModal from './MilestoneModal'
 import PerfectWeekCelebration from './PerfectWeekCelebration'
 import UpgradeModal from '../shared/UpgradeModal'
+import PremiumFeatureButton from '../shared/PremiumFeatureButton'
 import CancelTestPlanModal from './testprep/CancelTestPlanModal'
 
 export default function StudentHome({
@@ -475,32 +476,26 @@ export default function StudentHome({
       )}
 
       <div className="home-actions">
-        <button type="button" className="btn btn-secondary btn-small btn--premium" onClick={handleOpenTestPrep}>
-          <span className="premium-crown" aria-hidden="true">👑</span>
+        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenTestPrep}>
           {t('home.testPrep')}
-        </button>
+        </PremiumFeatureButton>
         {!planForThisSubject && (
-          <button type="button" className="btn btn-secondary btn-small btn--premium" onClick={handleOpenStudyGuide}>
-            <span className="premium-crown" aria-hidden="true">👑</span>
+          <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenStudyGuide}>
             {t('home.studyGuide')}
-          </button>
+          </PremiumFeatureButton>
         )}
-        <button type="button" className="btn btn-secondary btn-small btn--premium" onClick={handleOpenUpload}>
-          <span className="premium-crown" aria-hidden="true">👑</span>
+        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenUpload}>
           {t('home.upload')}
-        </button>
-        <button type="button" className="btn btn-secondary btn-small btn--premium" onClick={handleOpenMyUploads}>
-          <span className="premium-crown" aria-hidden="true">👑</span>
+        </PremiumFeatureButton>
+        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenMyUploads}>
           {t('home.myUploads')}
-        </button>
-        <button type="button" className="btn btn-secondary btn-small btn--premium" onClick={handleOpenPractice}>
-          <span className="premium-crown" aria-hidden="true">👑</span>
+        </PremiumFeatureButton>
+        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenPractice}>
           {t('home.practice')}
-        </button>
-        <button type="button" className="btn btn-secondary btn-small btn--premium" onClick={onOpenGrades}>
-          <span className="premium-crown" aria-hidden="true">👑</span>
+        </PremiumFeatureButton>
+        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={onOpenGrades}>
           {t('home.myGrades')}
-        </button>
+        </PremiumFeatureButton>
         <button type="button" className="btn btn-secondary btn-small" onClick={onOpenCurriculum}>
           {t('home.curriculum')}
         </button>

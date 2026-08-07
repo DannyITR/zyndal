@@ -740,7 +740,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         <TrialBanner
           subscriptionStatus={user.subscription_status}
           daysRemainingInTrial={user.days_remaining_in_trial}
-          onUpgradeClick={() => setShowUpgradeModal('trial')}
+          onUpgradeClick={() => setShowUpgradeModal(user.subscription_status === 'trial_active' ? 'trial' : 'default')}
         />
 
         {pendingFriendRequests && pendingFriendRequests.length > 0 && (

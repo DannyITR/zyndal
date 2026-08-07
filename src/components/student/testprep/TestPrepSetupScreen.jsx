@@ -139,6 +139,8 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
         onBack={onBack}
         onLogout={onLogout}
         onLogoClick={onLogoClick}
+        subscriptionStatus={user.subscription_status}
+        daysRemainingInTrial={user.days_remaining_in_trial}
       />
 
       <form className="auth-form" onSubmit={handleFormSubmit}>

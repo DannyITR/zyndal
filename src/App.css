@@ -41,6 +41,35 @@
   pointer-events: none;
 }
 
+/* Shown on hover (desktop, :hover/:focus-visible below) or long-press
+   (mobile — .btn--premium-tooltip-visible is toggled by PremiumFeatureButton's
+   own touch-timer JS, since there's no native long-press CSS equivalent). */
+.premium-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #1a0f2e;
+  border: 1px solid rgba(255, 193, 7, 0.4);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 5;
+}
+
+.btn--premium:hover .premium-tooltip,
+.btn--premium:focus-visible .premium-tooltip,
+.btn--premium.btn--premium-tooltip-visible .premium-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -642,6 +671,17 @@ div.zyndal-logo {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* One-line "you already have Premium" confirmation on premium-gated pages
+   — deliberately subtle (small text, no background/border), not a full-
+   width alert. Only ever rendered by TopBar when a screen passes
+   subscriptionStatus (see PremiumFeatureBanner.jsx). */
+.premium-feature-banner {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold);
+  margin: 6px 0 0;
 }
 
 .topbar-actions {

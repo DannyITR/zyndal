@@ -124,6 +124,8 @@ export default function UploadCaptureScreen({ user, uploadType, lockedSubjectId,
         onBack={onBack}
         onLogout={onLogout}
         onLogoClick={onLogoClick}
+        subscriptionStatus={user.subscription_status}
+        daysRemainingInTrial={user.days_remaining_in_trial}
       />
 
       <input

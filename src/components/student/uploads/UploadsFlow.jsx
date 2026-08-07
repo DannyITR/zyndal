@@ -52,6 +52,8 @@ export default function UploadsFlow({ user, initialView, lockedSubjectId, onExit
         onBack={backFromTypeOrDetail}
         onLogout={onLogout}
         onLogoClick={onLogoClick}
+        subscriptionStatus={user.subscription_status}
+        daysRemainingInTrial={user.days_remaining_in_trial}
       />
     )
   }

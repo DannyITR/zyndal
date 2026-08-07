@@ -19,6 +19,7 @@ import Leaderboard from '../shared/Leaderboard'
 import SettingsScreen from '../shared/SettingsScreen'
 import TrialBanner from '../shared/TrialBanner'
 import UpgradeModal from '../shared/UpgradeModal'
+import PremiumFeatureButton from '../shared/PremiumFeatureButton'
 import NotificationsScreen from '../student/notifications/NotificationsScreen'
 import FinanceScreen from './finance/FinanceScreen'
 import AddChildScreen from './AddChildScreen'
@@ -210,14 +211,12 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
         {/* The wallet/payout features live entirely on this Finances screen
             (add funds, payout students, resolve payout requests) — gated as
             a whole rather than piecemeal inside FinanceScreen.jsx itself. */}
-        <button
-          type="button"
-          className="btn btn-secondary btn-small btn--premium"
+        <PremiumFeatureButton
+          subscriptionStatus={user.subscription_status}
           onClick={() => (isPremiumUnlocked(user.subscription_status) ? setShowFinances(true) : setShowUpgradeModal('default'))}
         >
-          <span className="premium-crown" aria-hidden="true">👑</span>
           {t('parent.finances')}
-        </button>
+        </PremiumFeatureButton>
         <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowLeaderboard(true)}>
           {t('nav.leaderboard')}
         </button>
@@ -226,7 +225,7 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
       <TrialBanner
         subscriptionStatus={user.subscription_status}
         daysRemainingInTrial={user.days_remaining_in_trial}
-        onUpgradeClick={() => setShowUpgradeModal('trial')}
+        onUpgradeClick={() => setShowUpgradeModal(user.subscription_status === 'trial_active' ? 'trial' : 'default')}
       />
 
       <button type="button" className="btn btn-primary btn-block" onClick={() => setShowAddChild(true)}>

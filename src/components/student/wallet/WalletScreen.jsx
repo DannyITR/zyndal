@@ -67,7 +67,15 @@ export default function WalletScreen({ user, onBack, onNoLinkedParent, onLogout,
   if (loadError) {
     return (
       <div className="screen student-screen">
-        <TopBar title={t('wallet.title')} username={user.username} onBack={onBack} onLogout={onLogout} onLogoClick={onLogoClick} />
+        <TopBar
+          title={t('wallet.title')}
+          username={user.username}
+          onBack={onBack}
+          onLogout={onLogout}
+          onLogoClick={onLogoClick}
+          subscriptionStatus={user.subscription_status}
+          daysRemainingInTrial={user.days_remaining_in_trial}
+        />
         <p className="form-error">{loadError}</p>
       </div>
     )
@@ -76,7 +84,15 @@ export default function WalletScreen({ user, onBack, onNoLinkedParent, onLogout,
   if (!wallet) {
     return (
       <div className="screen student-screen">
-        <TopBar title={t('wallet.title')} username={user.username} onBack={onBack} onLogout={onLogout} onLogoClick={onLogoClick} />
+        <TopBar
+          title={t('wallet.title')}
+          username={user.username}
+          onBack={onBack}
+          onLogout={onLogout}
+          onLogoClick={onLogoClick}
+          subscriptionStatus={user.subscription_status}
+          daysRemainingInTrial={user.days_remaining_in_trial}
+        />
         <p className="loading-text">{t('common.loading')}</p>
       </div>
     )
@@ -90,7 +106,16 @@ export default function WalletScreen({ user, onBack, onNoLinkedParent, onLogout,
 
   return (
     <div className="screen student-screen">
-      <TopBar title={t('wallet.title')} subtitle={t('wallet.subtitle')} username={user.username} onBack={onBack} onLogout={onLogout} onLogoClick={onLogoClick} />
+      <TopBar
+        title={t('wallet.title')}
+        subtitle={t('wallet.subtitle')}
+        username={user.username}
+        onBack={onBack}
+        onLogout={onLogout}
+        onLogoClick={onLogoClick}
+        subscriptionStatus={user.subscription_status}
+        daysRemainingInTrial={user.days_remaining_in_trial}
+      />
 
       <div className="wallet-card">
         <p className="wallet-label">{t('wallet.currentBalance')}</p>

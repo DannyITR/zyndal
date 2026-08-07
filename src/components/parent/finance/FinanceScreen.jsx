@@ -306,6 +306,8 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
           onBack={onBack}
           onLogout={onLogout}
           onLogoClick={onLogoClick}
+          subscriptionStatus={user.subscription_status}
+          daysRemainingInTrial={user.days_remaining_in_trial}
         />
         <p className="loading-text">{t('common.loading')}</p>
       </div>
@@ -321,6 +323,8 @@ export default function FinanceScreen({ user, onBack, onLogout, onLogoClick }) {
         onBack={onBack}
         onLogout={onLogout}
         onLogoClick={onLogoClick}
+        subscriptionStatus={user.subscription_status}
+        daysRemainingInTrial={user.days_remaining_in_trial}
       />
 
       {pendingAchievements && pendingAchievements.length > 0 && (

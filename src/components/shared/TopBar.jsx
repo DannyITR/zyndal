@@ -1,7 +1,24 @@
 import { useTranslation } from 'react-i18next'
 import Logo from './Logo'
+import PremiumFeatureBanner from './PremiumFeatureBanner'
 
-export default function TopBar({ title, subtitle, username, onLogout, onBack, onSettings, onNotifications, unreadCount, onLogoClick }) {
+// subscriptionStatus/daysRemainingInTrial are only ever passed by premium-
+// gated screens (Study Guide, Test Prep, Uploads, Practice, My Grades,
+// Wallet/Finances) — every free screen's <TopBar> call simply omits them,
+// so PremiumFeatureBanner renders nothing there with no extra flag needed.
+export default function TopBar({
+  title,
+  subtitle,
+  username,
+  onLogout,
+  onBack,
+  onSettings,
+  onNotifications,
+  unreadCount,
+  onLogoClick,
+  subscriptionStatus,
+  daysRemainingInTrial,
+}) {
   const { t } = useTranslation()
   return (
     <header className="topbar">
@@ -40,6 +57,7 @@ export default function TopBar({ title, subtitle, username, onLogout, onBack, on
           </div>
         </div>
       </div>
+      <PremiumFeatureBanner subscriptionStatus={subscriptionStatus} daysRemainingInTrial={daysRemainingInTrial} />
     </header>
   )
 }

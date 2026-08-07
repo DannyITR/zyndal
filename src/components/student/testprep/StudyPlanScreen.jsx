@@ -44,6 +44,8 @@ export default function StudyPlanScreen({ user, plan, onPlanUpdate, onBack, onLo
         onBack={onBack}
         onLogout={onLogout}
         onLogoClick={onLogoClick}
+        subscriptionStatus={user.subscription_status}
+        daysRemainingInTrial={user.days_remaining_in_trial}
       />
 
       <div className="testprep-header-card">

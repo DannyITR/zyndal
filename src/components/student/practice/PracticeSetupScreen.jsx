@@ -59,6 +59,8 @@ export default function PracticeSetupScreen({ user, lockedSubjectId, onStart, on
         onBack={onBack}
         onLogout={onLogout}
         onLogoClick={onLogoClick}
+        subscriptionStatus={user.subscription_status}
+        daysRemainingInTrial={user.days_remaining_in_trial}
       />
 
       <form className="auth-form" onSubmit={handleSubmit}>

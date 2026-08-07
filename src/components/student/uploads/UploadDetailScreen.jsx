@@ -16,6 +16,8 @@ export default function UploadDetailScreen({ user, upload, onBack, onLogout, onL
         onBack={onBack}
         onLogout={onLogout}
         onLogoClick={onLogoClick}
+        subscriptionStatus={user.subscription_status}
+        daysRemainingInTrial={user.days_remaining_in_trial}
       />
 
       <div className="testprep-header-card">

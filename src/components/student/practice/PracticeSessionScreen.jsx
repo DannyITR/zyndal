@@ -66,6 +66,8 @@ export default function PracticeSessionScreen({
         onBack={onBack}
         onLogout={onLogout}
         onLogoClick={onLogoClick}
+        subscriptionStatus={user.subscription_status}
+        daysRemainingInTrial={user.days_remaining_in_trial}
       />
 
       {error && <p className="form-error">{error}</p>}
