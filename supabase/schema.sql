@@ -332,39 +332,39 @@ create table if not exists sessions (
 create index if not exists sessions_token_idx on sessions(token);
 create index if not exists sessions_user_id_idx on sessions(user_id);
 
--- oauth_identities is the one table created after Session 5's RLS rollout
--- (see api/_lib/auth.js) — every /api/* function already authenticates the
--- caller itself and uses the service-role key, which bypasses RLS
--- regardless, so this has no policies defined; enabling RLS here only
--- matters for blocking the anon key from reading it directly, matching
--- every other table's actual (if not accurately reflected below) state.
+-- Every table below has RLS enabled with no policies defined — default-deny
+-- for the anon key; every /api/* function authenticates the caller itself
+-- and uses the service-role key (api/_lib/auth.js), which bypasses RLS
+-- regardless, so this only matters for blocking the anon key from reading
+-- these tables directly. Re-confirmed empirically against the live database
+-- on 2026-08-08: anon-key reads return 0 rows and anon-key inserts return
+-- 42501 (RLS policy violation) on every one of these.
+--
+-- This block predates Session 5's RLS rollout and used to read "disable" —
+-- left un-updated for over a week after RLS was actually turned back on
+-- live (see 7833bab's commit message), which is exactly the kind of stale
+-- drift this file is prone to for anything not re-checked against the live
+-- database. Like the rest of this file, these statements are a reference
+-- snapshot, not applied automatically — re-run manually only if a table's
+-- live state ever needs to change.
+alter table users enable row level security;
+alter table streaks enable row level security;
+alter table answers enable row level security;
+alter table parent_student enable row level security;
+alter table payouts enable row level security;
+alter table perfect_week_achievements enable row level security;
+alter table friend_requests enable row level security;
+alter table friends enable row level security;
+alter table streak_shares enable row level security;
+alter table uploads enable row level security;
+alter table upload_questions enable row level security;
+alter table grades enable row level security;
+alter table grade_bonuses enable row level security;
+alter table study_plans enable row level security;
+alter table practice_sessions enable row level security;
+alter table curriculum_outlines enable row level security;
+alter table sessions enable row level security;
 alter table oauth_identities enable row level security;
-
--- NOTE: the block below predates Session 5 and is stale — every table it
--- lists actually has RLS enabled in the live database today (see
--- api/_lib/auth.js's comment on the service-role client). Left as-is rather
--- than rewritten here since this file is a running log of statements to
--- run, not applied automatically; re-running "disable" on an
--- already-RLS-enabled table would be a real, destructive change and isn't
--- part of this feature.
--- No auth system yet, so RLS is off for all tables.
-alter table users disable row level security;
-alter table streaks disable row level security;
-alter table answers disable row level security;
-alter table parent_student disable row level security;
-alter table payouts disable row level security;
-alter table perfect_week_achievements disable row level security;
-alter table friend_requests disable row level security;
-alter table friends disable row level security;
-alter table streak_shares disable row level security;
-alter table uploads disable row level security;
-alter table upload_questions disable row level security;
-alter table grades disable row level security;
-alter table grade_bonuses disable row level security;
-alter table study_plans disable row level security;
-alter table practice_sessions disable row level security;
-alter table curriculum_outlines disable row level security;
-alter table sessions disable row level security;
 
 -- ---------- Migrations ----------
 -- Run against a database that already has an `uploads` table from before
