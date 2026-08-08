@@ -237,7 +237,12 @@
     "shareStreakDay_other": "🔥 Racha de {{count}} días compartiendo",
     "shareFailed": "No se pudo compartir tu puntaje. Inténtalo de nuevo.",
     "wantsToFollow": "quiere seguirte",
-    "requestFailed": "No se pudo actualizar esta solicitud. Inténtalo de nuevo."
+    "requestFailed": "No se pudo actualizar esta solicitud. Inténtalo de nuevo.",
+    "pokeButton": "Dar un toque",
+    "pokeModalTitle": "Enviar un toque a @{{username}}",
+    "pokeModalSubtitle": "Elige un mensaje para enviar",
+    "pokeSent": "¡Toque enviado! 👋",
+    "pokeFailed": "No se pudo enviar el toque. Inténtalo de nuevo."
   },
   "share": {
     "sharedWithYouToday": "Compartido contigo hoy",
@@ -294,6 +299,7 @@
     "notifScoreShare": "Cuando un amigo comparte su puntaje conmigo",
     "notifFriendRequest": "Cuando alguien me envía una solicitud de amistad",
     "notifStreakReminder": "Recordatorio de racha en riesgo (9pm si no has respondido hoy)",
+    "notifPoke": "Cuando un amigo me da un toque",
     "saveChanges": "Guardar cambios",
     "saving": "Guardando…",
     "saved": "¡Guardado!",
@@ -671,7 +677,9 @@
     "NO_EMAIL": "No hay un correo electrónico registrado para esta cuenta.",
     "NOT_CORRECT": "Esa respuesta no fue correcta.",
     "NOT_FOUND": "No pudimos encontrar eso.",
+    "NOT_FRIENDS": "Solo puedes dar un toque a tus amigos.",
     "NOT_MATH": "Esto solo está disponible para Matemáticas.",
+    "POKE_LIMIT_REACHED": "Ya le diste un toque a este amigo el número máximo de veces hoy.",
     "RATE_LIMITED": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
     "REVIEW_FAILED": "Algo salió mal al revisar tu trabajo. Inténtalo de nuevo.",
     "SERVER_ERROR": "Algo salió mal. Inténtalo de nuevo.",

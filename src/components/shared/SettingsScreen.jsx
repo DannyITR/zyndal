@@ -22,7 +22,7 @@ import LegalModal from '../legal/LegalModal'
 import DeleteAccountModal from './DeleteAccountModal'
 import UpgradeModal from './UpgradeModal'
 
-const DEFAULT_NOTIFICATION_PREFERENCES = { enabled: true, score_share: true, friend_request: true, streak_reminder: true }
+const DEFAULT_NOTIFICATION_PREFERENCES = { enabled: true, score_share: true, friend_request: true, streak_reminder: true, poke: true }
 
 const RENEWAL_DATE_LOCALE = { en: 'en-US', fr: 'fr-CA', es: 'es-ES' }
 function formatRenewalDate(iso, language) {
@@ -415,6 +415,15 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
                 disabled={!notificationPrefs.enabled}
               />
               <span>{t('settings.notifStreakReminder')}</span>
+            </label>
+            <label className="checkbox-field">
+              <input
+                type="checkbox"
+                checked={notificationPrefs.poke}
+                onChange={() => toggleNotificationPref('poke')}
+                disabled={!notificationPrefs.enabled}
+              />
+              <span>{t('settings.notifPoke')}</span>
             </label>
           </div>
         )}

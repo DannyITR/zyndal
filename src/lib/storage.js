@@ -977,6 +977,14 @@ export async function shareStreakWithFriend(senderId, receiverId, _senderStreak)
   return result
 }
 
+// ---------- Pokes ----------
+// No dashboard cache invalidation needed here (unlike sendFriendRequest/
+// shareStreakWithFriend above) — a poke doesn't change anything
+// get-friends.js returns, it's a fire-and-forget nudge to the recipient.
+export async function pokeFriend(receiverId, presetKey) {
+  return callSocialApi('POST', 'poke', { receiver_id: receiverId, preset_key: presetKey })
+}
+
 // Every share involving this user, in either direction — used client-side to
 // derive "shared with this friend today" and the mutual share streak per
 // friend without an extra round trip per friend.

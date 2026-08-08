@@ -237,7 +237,12 @@
     "shareStreakDay_other": "🔥 {{count}} day share streak",
     "shareFailed": "Couldn't share your score. Please try again.",
     "wantsToFollow": "wants to follow you",
-    "requestFailed": "Couldn't update this request. Please try again."
+    "requestFailed": "Couldn't update this request. Please try again.",
+    "pokeButton": "Poke",
+    "pokeModalTitle": "Send @{{username}} a nudge",
+    "pokeModalSubtitle": "Pick a message to send",
+    "pokeSent": "Poked! 👋",
+    "pokeFailed": "Couldn't send that poke. Please try again."
   },
   "share": {
     "sharedWithYouToday": "Shared with you today",
@@ -294,6 +299,7 @@
     "notifScoreShare": "When a friend shares their score with me",
     "notifFriendRequest": "When someone sends me a friend request",
     "notifStreakReminder": "Streak at risk reminder (9pm if not answered today)",
+    "notifPoke": "When a friend pokes me",
     "saveChanges": "Save Changes",
     "saving": "Saving…",
     "saved": "Saved!",
@@ -671,7 +677,9 @@
     "NO_EMAIL": "No email address is on file for this account.",
     "NOT_CORRECT": "That answer wasn't correct.",
     "NOT_FOUND": "We couldn't find that.",
+    "NOT_FRIENDS": "You can only poke friends.",
     "NOT_MATH": "This is only available for Math.",
+    "POKE_LIMIT_REACHED": "You've already poked this friend the max number of times today.",
     "RATE_LIMITED": "Too many attempts. Please wait a moment and try again.",
     "REVIEW_FAILED": "Something went wrong while reviewing your work. Please try again.",
     "SERVER_ERROR": "Something went wrong. Please try again.",

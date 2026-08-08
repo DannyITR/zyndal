@@ -10,6 +10,7 @@ import {
   getIncomingShares,
   markShareSeen,
   shareStreakWithFriend,
+  pokeFriend,
 } from '../../../lib/storage'
 import { hasSharedToday, computeShareStreak } from '../../../lib/streakShare'
 import { todayStr } from '../../../lib/streak'
@@ -18,6 +19,7 @@ import { getErrorMessage } from '../../../lib/errors'
 import TopBar from '../../shared/TopBar'
 import FriendRequestBanner from './FriendRequestBanner'
 import FriendScoreCardModal from '../share/FriendScoreCardModal'
+import PokePickerModal from './PokePickerModal'
 
 export default function FriendsScreen({ user, canShareToday, onBack, onLogout, onLogoClick }) {
   const { t } = useTranslation()
@@ -28,6 +30,11 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
   const [viewingShare, setViewingShare] = useState(null)
   const [sendingToId, setSendingToId] = useState(null)
   const [shareError, setShareError] = useState('')
+
+  const [pokeTarget, setPokeTarget] = useState(null) // the friend object currently in the picker modal
+  const [pokeSending, setPokeSending] = useState(false)
+  const [pokeError, setPokeError] = useState('')
+  const [pokedIds, setPokedIds] = useState(() => new Set()) // transient "Poked!" badge, cleared after a few seconds
 
   // Live autocomplete search — query.length >= 2 triggers a debounced
   // (300ms) search-users.js call; skipNextSearchRef suppresses the search
@@ -192,6 +199,32 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
     }
   }
 
+  function markPoked(friendId) {
+    setPokedIds((prev) => new Set(prev).add(friendId))
+    setTimeout(() => {
+      setPokedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(friendId)
+        return next
+      })
+    }, 3000)
+  }
+
+  async function handleSendPoke(presetKey) {
+    if (!pokeTarget || pokeSending) return
+    setPokeSending(true)
+    setPokeError('')
+    try {
+      await pokeFriend(pokeTarget.id, presetKey)
+      markPoked(pokeTarget.id)
+      setPokeTarget(null)
+    } catch (err) {
+      setPokeError(getErrorMessage(err, t, 'friends.pokeFailed'))
+    } finally {
+      setPokeSending(false)
+    }
+  }
+
   return (
     <div className="screen student-screen">
       <TopBar
@@ -318,6 +351,21 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
                       {sendingToId === friend.id ? t('common.sending') : t('common.shareCta')}
                     </button>
                   )}
+                  {pokedIds.has(friend.id) ? (
+                    <span className="friend-poked-badge">{t('friends.pokeSent')}</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn-icon"
+                      aria-label={t('friends.pokeButton')}
+                      onClick={() => {
+                        setPokeError('')
+                        setPokeTarget(friend)
+                      }}
+                    >
+                      👋
+                    </button>
+                  )}
                 </div>
               )
             })}
@@ -326,6 +374,16 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
       </div>
 
       {viewingShare && <FriendScoreCardModal share={viewingShare} onClose={() => setViewingShare(null)} />}
+
+      {pokeTarget && (
+        <PokePickerModal
+          friendUsername={pokeTarget.username}
+          sending={pokeSending}
+          error={pokeError}
+          onSend={handleSendPoke}
+          onClose={() => setPokeTarget(null)}
+        />
+      )}
     </div>
   )
 }

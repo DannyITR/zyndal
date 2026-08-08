@@ -5,6 +5,12 @@
 // Mirrors resend.js's per-language-branch pattern, generalized to 3
 // languages and to accepting interpolated params per notification type.
 //
+// src/lib/pokePresets.js is a plain data module (no browser-only deps),
+// unlike src/lib/i18n.js (see the comment on LANG_FOR_PREFERENCE below for
+// why THAT one can't be imported here) — safe to import directly so the
+// poke template doesn't duplicate the ten preset messages a second time.
+import { pokePresetText } from '../../src/lib/pokePresets.js'
+
 // users.language_preference stores a full English word ('English'/'French'/
 // 'Spanish'), not an i18next code — same fact src/lib/i18n.js's own comment
 // documents; duplicated here in miniature (rather than importing that file)
@@ -194,6 +200,14 @@ const TEMPLATES = {
     en: () => ({ title: 'Your Zyndal Premium subscription has ended', body: 'You can resubscribe anytime from Settings.' }),
     fr: () => ({ title: 'Votre abonnement Zyndal Premium a pris fin', body: 'Vous pouvez vous réabonner à tout moment dans Paramètres.' }),
     es: () => ({ title: 'Tu suscripción a Zyndal Premium ha finalizado', body: 'Puedes volver a suscribirte en cualquier momento desde Configuración.' }),
+  },
+  // presetKey is one of POKE_PRESET_KEYS (src/lib/pokePresets.js), validated
+  // server-side in api/social/poke.js before this ever runs — pokePresetText
+  // falls back to English internally if somehow passed an unknown key.
+  poke: {
+    en: ({ senderUsername, presetKey }) => ({ title: `👋 @${senderUsername} poked you!`, body: pokePresetText(presetKey, 'en') }),
+    fr: ({ senderUsername, presetKey }) => ({ title: `👋 @${senderUsername} vous a fait signe !`, body: pokePresetText(presetKey, 'fr') }),
+    es: ({ senderUsername, presetKey }) => ({ title: `👋 ¡@${senderUsername} te dio un toque!`, body: pokePresetText(presetKey, 'es') }),
   },
 }
 

@@ -237,7 +237,12 @@
     "shareStreakDay_other": "🔥 Série de partage de {{count}} jours",
     "shareFailed": "Impossible de partager votre score. Veuillez réessayer.",
     "wantsToFollow": "souhaite vous suivre",
-    "requestFailed": "Impossible de mettre à jour cette demande. Veuillez réessayer."
+    "requestFailed": "Impossible de mettre à jour cette demande. Veuillez réessayer.",
+    "pokeButton": "Faire signe",
+    "pokeModalTitle": "Envoyer un signe à @{{username}}",
+    "pokeModalSubtitle": "Choisissez un message à envoyer",
+    "pokeSent": "Signe envoyé ! 👋",
+    "pokeFailed": "Impossible d'envoyer ce signe. Veuillez réessayer."
   },
   "share": {
     "sharedWithYouToday": "Partagé avec vous aujourd'hui",
@@ -294,6 +299,7 @@
     "notifScoreShare": "Quand un ami partage son score avec moi",
     "notifFriendRequest": "Quand quelqu'un m'envoie une demande d'ami",
     "notifStreakReminder": "Rappel de série à risque (21 h si pas encore répondu aujourd'hui)",
+    "notifPoke": "Quand un ami me fait signe",
     "saveChanges": "Enregistrer les modifications",
     "saving": "Enregistrement…",
     "saved": "Enregistré !",
@@ -671,7 +677,9 @@
     "NO_EMAIL": "Aucune adresse courriel n'est enregistrée pour ce compte.",
     "NOT_CORRECT": "Cette réponse n'était pas correcte.",
     "NOT_FOUND": "Nous n'avons pas trouvé cela.",
+    "NOT_FRIENDS": "Vous ne pouvez faire signe qu'à vos amis.",
     "NOT_MATH": "Ceci est disponible uniquement pour les mathématiques.",
+    "POKE_LIMIT_REACHED": "Vous avez déjà fait signe à cet ami le nombre maximum de fois aujourd'hui.",
     "RATE_LIMITED": "Trop de tentatives. Veuillez patienter un moment et réessayer.",
     "REVIEW_FAILED": "Une erreur est survenue lors de la révision de votre travail. Veuillez réessayer.",
     "SERVER_ERROR": "Une erreur est survenue. Veuillez réessayer.",

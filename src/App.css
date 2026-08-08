@@ -4514,6 +4514,42 @@ div.zyndal-logo {
   font-size: 11px;
 }
 
+/* ---------- Poke ---------- */
+
+.poke-preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 340px;
+  overflow-y: auto;
+  margin: 4px 0;
+}
+
+.poke-preset-btn {
+  text-align: left;
+  background: var(--card-2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.poke-preset-btn:not(:disabled):hover {
+  border-color: var(--purple);
+}
+
+.poke-preset-btn:disabled {
+  opacity: 0.6;
+}
+
+.friend-poked-badge {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--purple);
+}
+
 /* ---------- Notifications ---------- */
 
 .notification-list {

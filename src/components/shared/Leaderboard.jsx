@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getLeaderboard, getFriendsLeaderboard } from '../../lib/storage'
+import { getLeaderboard, getFriendsLeaderboard, pokeFriend } from '../../lib/storage'
+import { getErrorMessage } from '../../lib/errors'
 import TopBar from './TopBar'
+import PokePickerModal from '../student/friends/PokePickerModal'
 
 export default function Leaderboard({
   highlightUserIds,
@@ -19,6 +21,11 @@ export default function Leaderboard({
   const [tab, setTab] = useState('global')
   const [rows, setRows] = useState(null)
   const [error, setError] = useState('')
+
+  const [pokeTarget, setPokeTarget] = useState(null) // { userId, username } currently in the picker modal
+  const [pokeSending, setPokeSending] = useState(false)
+  const [pokeError, setPokeError] = useState('')
+  const [pokedIds, setPokedIds] = useState(() => new Set())
 
   // Refetches every time this screen is opened, and whenever the tab
   // changes, so ranks and XP are always current.
@@ -45,6 +52,32 @@ export default function Leaderboard({
 
   const myIndex = rows ? rows.findIndex((r) => r.userId === currentUserId) : -1
   const myRow = myIndex >= 0 ? rows[myIndex] : null
+
+  function markPoked(userId) {
+    setPokedIds((prev) => new Set(prev).add(userId))
+    setTimeout(() => {
+      setPokedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(userId)
+        return next
+      })
+    }, 3000)
+  }
+
+  async function handleSendPoke(presetKey) {
+    if (!pokeTarget || pokeSending) return
+    setPokeSending(true)
+    setPokeError('')
+    try {
+      await pokeFriend(pokeTarget.userId, presetKey)
+      markPoked(pokeTarget.userId)
+      setPokeTarget(null)
+    } catch (err) {
+      setPokeError(getErrorMessage(err, t, 'friends.pokeFailed'))
+    } finally {
+      setPokeSending(false)
+    }
+  }
 
   return (
     <div className="screen">
@@ -116,6 +149,24 @@ export default function Leaderboard({
                     <span className="leaderboard-streak">🔥 {row.streak}</span>
                     <span className="leaderboard-xp">⚡ {row.xp} XP</span>
                   </div>
+                  {tab === 'friends' &&
+                    currentUserId &&
+                    row.userId !== currentUserId &&
+                    (pokedIds.has(row.userId) ? (
+                      <span className="friend-poked-badge">{t('friends.pokeSent')}</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn-icon"
+                        aria-label={t('friends.pokeButton')}
+                        onClick={() => {
+                          setPokeError('')
+                          setPokeTarget({ userId: row.userId, username: row.username })
+                        }}
+                      >
+                        👋
+                      </button>
+                    ))}
                 </div>
                 {isAheadOfMe && (
                   <p className="leaderboard-nudge">
@@ -126,6 +177,16 @@ export default function Leaderboard({
             )
           })}
         </ol>
+      )}
+
+      {pokeTarget && (
+        <PokePickerModal
+          friendUsername={pokeTarget.username}
+          sending={pokeSending}
+          error={pokeError}
+          onSend={handleSendPoke}
+          onClose={() => setPokeTarget(null)}
+        />
       )}
     </div>
   )
