@@ -560,6 +560,8 @@
     "dueThisWeekLabel": "À remettre cette semaine",
     "myClasses": "🏫 Mes classes",
     "shareWithStudents": "📣 Partager Zyndal avec les élèves",
+    "dashboardEmptyTitle": "Créez une classe pour commencer à utiliser l'application",
+    "dashboardEmptyHint": "Une fois votre première classe créée, vous verrez ici l'activité des élèves, les devoirs, et plus encore.",
     "recentHomework": "Devoirs récents",
     "noHomeworkYet": "Aucun devoir assigné pour le moment — ouvrez une classe pour assigner votre premier devoir.",
     "dueDetail": "À remettre le {{date}} · {{completed}}/{{total}} élèves ont terminé",

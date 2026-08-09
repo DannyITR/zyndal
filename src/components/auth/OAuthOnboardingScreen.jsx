@@ -38,8 +38,9 @@ export default function OAuthOnboardingScreen({ user, onDone }) {
         avatar: user.avatar,
         grade: accountType === 'student' ? Number(grade) : null,
         languagePreference: user.language_preference,
+        accountType,
       })
-      onDone({ ...updated, account_type: accountType })
+      onDone(updated)
     } catch (err) {
       setError(getErrorMessage(err, t))
     } finally {

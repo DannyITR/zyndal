@@ -297,7 +297,13 @@ export async function oauthMerge({ provider, supabaseAccessToken, existingUserna
 // userId isn't sent — the server derives who's editing from the session
 // token (see api/student/update-settings.js) — but stays in the signature
 // since SettingsScreen.jsx calls this positionally.
-export async function updateUserProfile(userId, { displayName, email, schoolName, avatar, grade, languagePreference, notificationPreferences }) {
+// accountType is only ever passed by OAuthOnboardingScreen.jsx, right after
+// a brand-new Google/Facebook signup — see update-settings.js's own comment
+// on why this is the one place account_type can change post-creation.
+// Omitted (undefined) by every other caller (SettingsScreen.jsx), which
+// leaves the field out of the request body entirely, matching the
+// endpoint's existing "absent means don't touch account_type" behavior.
+export async function updateUserProfile(userId, { displayName, email, schoolName, avatar, grade, languagePreference, notificationPreferences, accountType }) {
   return callStudentApi('POST', 'update-settings', {
     display_name: displayName,
     email,
@@ -306,6 +312,7 @@ export async function updateUserProfile(userId, { displayName, email, schoolName
     grade,
     language_preference: languagePreference,
     notification_preferences: notificationPreferences,
+    account_type: accountType,
   })
 }
 

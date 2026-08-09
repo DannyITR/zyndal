@@ -560,6 +560,8 @@
     "dueThisWeekLabel": "Due This Week",
     "myClasses": "🏫 My Classes",
     "shareWithStudents": "📣 Share Zyndal with Students",
+    "dashboardEmptyTitle": "Create a class to start using the app",
+    "dashboardEmptyHint": "Once you create your first class, you'll see student activity, homework, and more here.",
     "recentHomework": "Recent Homework",
     "noHomeworkYet": "No homework assigned yet — open a class to assign your first one.",
     "dueDetail": "Due {{date}} · {{completed}}/{{total}} students completed",

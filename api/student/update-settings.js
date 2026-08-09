@@ -59,14 +59,15 @@ function validate(body) {
   // Only meaningful right after a social-login signup (see
   // OAuthOnboardingScreen.jsx) — api/auth/oauth-callback.js always creates
   // new accounts as 'student', and onboarding lets the person say "actually
-  // I'm a parent" before ever reaching the app. Not exposed anywhere in the
-  // regular Settings UI (SettingsScreen.jsx never sends this field), so an
-  // established account switching its own account_type on a whim isn't a
-  // flow this endpoint is meant to serve — just one it doesn't prevent.
+  // I'm a parent" or "actually I'm a teacher" before ever reaching the app.
+  // Not exposed anywhere in the regular Settings UI (SettingsScreen.jsx
+  // never sends this field), so an established account switching its own
+  // account_type on a whim isn't a flow this endpoint is meant to serve —
+  // just one it doesn't prevent.
   if (body.account_type !== undefined && body.account_type !== null) {
     const accountType = sanitizeAccountType(body.account_type)
     if (!accountType) {
-      return { field: 'account_type', message: "account_type must be 'student' or 'parent'." }
+      return { field: 'account_type', message: "account_type must be 'student', 'parent', or 'teacher'." }
     }
     body.account_type = accountType
   }
@@ -131,6 +132,11 @@ async function handle({ userId, body }) {
     if (!current?.parent_code) {
       updates.parent_code = await generateUniqueParentCode()
     }
+  } else if (accountType === 'teacher') {
+    // No teacher-side equivalent of parent_code needed here — a teacher's
+    // join code is generated per-class (generateUniqueTeacherCode(), see
+    // api/teacher/create-class.js), not once per account.
+    updates.account_type = 'teacher'
   } else if (accountType === 'student') {
     updates.account_type = 'student'
   }

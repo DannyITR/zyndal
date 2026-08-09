@@ -560,6 +560,8 @@
     "dueThisWeekLabel": "Vencen esta semana",
     "myClasses": "🏫 Mis clases",
     "shareWithStudents": "📣 Compartir Zyndal con estudiantes",
+    "dashboardEmptyTitle": "Crea una clase para empezar a usar la aplicación",
+    "dashboardEmptyHint": "Una vez que crees tu primera clase, verás aquí la actividad de los estudiantes, las tareas y más.",
     "recentHomework": "Tareas recientes",
     "noHomeworkYet": "Aún no hay tareas asignadas — abre una clase para asignar la primera.",
     "dueDetail": "Vence el {{date}} · {{completed}}/{{total}} estudiantes completaron",

@@ -156,24 +156,35 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
 
       {statsError && <p className="form-error">{statsError}</p>}
 
-      <div className="teacher-stats-row">
-        <div className="teacher-stat-card">
-          <p className="teacher-stat-value">{stats ? stats.totalClasses : '…'}</p>
-          <p className="teacher-stat-label">{t('teacher.classesLabel')}</p>
+      {stats && stats.totalClasses === 0 ? (
+        <div className="empty-state">
+          <p className="empty-state-emoji">🏫</p>
+          <p>{t('teacher.dashboardEmptyTitle')}</p>
+          <p className="field-hint">{t('teacher.dashboardEmptyHint')}</p>
+          <button type="button" className="btn btn-primary" onClick={() => setView('classes')}>
+            {t('teacher.createClass')}
+          </button>
         </div>
-        <div className="teacher-stat-card">
-          <p className="teacher-stat-value">{stats ? stats.totalStudents : '…'}</p>
-          <p className="teacher-stat-label">{t('teacher.studentsLabel')}</p>
+      ) : (
+        <div className="teacher-stats-row">
+          <div className="teacher-stat-card">
+            <p className="teacher-stat-value">{stats ? stats.totalClasses : '…'}</p>
+            <p className="teacher-stat-label">{t('teacher.classesLabel')}</p>
+          </div>
+          <div className="teacher-stat-card">
+            <p className="teacher-stat-value">{stats ? stats.totalStudents : '…'}</p>
+            <p className="teacher-stat-label">{t('teacher.studentsLabel')}</p>
+          </div>
+          <div className="teacher-stat-card">
+            <p className="teacher-stat-value">{stats ? stats.activeToday : '…'}</p>
+            <p className="teacher-stat-label">{t('teacher.activeTodayLabel')}</p>
+          </div>
+          <div className="teacher-stat-card">
+            <p className="teacher-stat-value">{stats ? stats.assignmentsDueThisWeek : '…'}</p>
+            <p className="teacher-stat-label">{t('teacher.dueThisWeekLabel')}</p>
+          </div>
         </div>
-        <div className="teacher-stat-card">
-          <p className="teacher-stat-value">{stats ? stats.activeToday : '…'}</p>
-          <p className="teacher-stat-label">{t('teacher.activeTodayLabel')}</p>
-        </div>
-        <div className="teacher-stat-card">
-          <p className="teacher-stat-value">{stats ? stats.assignmentsDueThisWeek : '…'}</p>
-          <p className="teacher-stat-label">{t('teacher.dueThisWeekLabel')}</p>
-        </div>
-      </div>
+      )}
 
       <TrialBanner
         subscriptionStatus={user.subscription_status}
@@ -194,34 +205,38 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
         {shareStatus === 'copied' ? t('addChild.linkCopied') : t('teacher.shareWithStudents')}
       </button>
 
-      <h3 className="section-heading">{t('teacher.recentHomework')}</h3>
-      {recentHomeworkError && <p className="form-error">{recentHomeworkError}</p>}
-      {!recentHomework && !recentHomeworkError && <p className="loading-text">{t('common.loading')}</p>}
-      {recentHomework && recentHomework.length === 0 && (
-        <p className="field-hint">{t('teacher.noHomeworkYet')}</p>
-      )}
-      {recentHomework && recentHomework.length > 0 && (
-        <div className="teacher-recent-homework-list">
-          {recentHomework.map((h) => (
-            <button
-              key={h.id}
-              type="button"
-              className="teacher-recent-homework-row"
-              onClick={() => handleOpenClass(h.classId)}
-            >
-              <p className="teacher-class-name">
-                {h.className} — {h.title}
-              </p>
-              <p className="teacher-class-detail">
-                {t('teacher.dueDetail', {
-                  date: new Date(`${h.dueDate}T00:00:00Z`).toLocaleDateString(LOCALE_FOR_LANGUAGE[i18n.language] || 'en-US', { timeZone: 'UTC' }),
-                  completed: h.completedCount,
-                  total: h.totalEnrolled,
-                })}
-              </p>
-            </button>
-          ))}
-        </div>
+      {(!stats || stats.totalClasses > 0) && (
+        <>
+          <h3 className="section-heading">{t('teacher.recentHomework')}</h3>
+          {recentHomeworkError && <p className="form-error">{recentHomeworkError}</p>}
+          {!recentHomework && !recentHomeworkError && <p className="loading-text">{t('common.loading')}</p>}
+          {recentHomework && recentHomework.length === 0 && (
+            <p className="field-hint">{t('teacher.noHomeworkYet')}</p>
+          )}
+          {recentHomework && recentHomework.length > 0 && (
+            <div className="teacher-recent-homework-list">
+              {recentHomework.map((h) => (
+                <button
+                  key={h.id}
+                  type="button"
+                  className="teacher-recent-homework-row"
+                  onClick={() => handleOpenClass(h.classId)}
+                >
+                  <p className="teacher-class-name">
+                    {h.className} — {h.title}
+                  </p>
+                  <p className="teacher-class-detail">
+                    {t('teacher.dueDetail', {
+                      date: new Date(`${h.dueDate}T00:00:00Z`).toLocaleDateString(LOCALE_FOR_LANGUAGE[i18n.language] || 'en-US', { timeZone: 'UTC' }),
+                      completed: h.completedCount,
+                      total: h.totalEnrolled,
+                    })}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {showUpgradeModal && <UpgradeModal user={user} context={showUpgradeModal} onClose={() => setShowUpgradeModal(null)} />}
