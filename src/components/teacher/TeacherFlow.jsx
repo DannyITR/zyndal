@@ -11,6 +11,7 @@ import MyClassesScreen from './MyClassesScreen'
 import ClassDetailScreen from './ClassDetailScreen'
 import AssignHomeworkScreen from './AssignHomeworkScreen'
 import TeacherLeaderboardScreen from './TeacherLeaderboardScreen'
+import CreateClassModal from './CreateClassModal'
 
 const SHARE_URL_BASE = 'https://zyndal.ca'
 
@@ -30,6 +31,7 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
   const [assignHomeworkClass, setAssignHomeworkClass] = useState(null) // { id, name } — the class Assign Homework was opened from
   const [shareStatus, setShareStatus] = useState('') // '' | 'copied'
   const [showUpgradeModal, setShowUpgradeModal] = useState(null) // null | 'default' | 'trial'
+  const [showCreateClass, setShowCreateClass] = useState(false)
 
   function loadStats() {
     getTeacherStats()
@@ -161,7 +163,7 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
           <p className="empty-state-emoji">🏫</p>
           <p>{t('teacher.dashboardEmptyTitle')}</p>
           <p className="field-hint">{t('teacher.dashboardEmptyHint')}</p>
-          <button type="button" className="btn btn-primary" onClick={() => setView('classes')}>
+          <button type="button" className="btn btn-primary" onClick={() => setShowCreateClass(true)}>
             {t('teacher.createClass')}
           </button>
         </div>
@@ -240,6 +242,20 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
       )}
 
       {showUpgradeModal && <UpgradeModal user={user} context={showUpgradeModal} onClose={() => setShowUpgradeModal(null)} />}
+
+      {showCreateClass && (
+        <CreateClassModal
+          onCreated={() => {
+            loadStats()
+            loadRecentHomework()
+          }}
+          onClose={() => {
+            setShowCreateClass(false)
+            loadStats()
+            loadRecentHomework()
+          }}
+        />
+      )}
     </div>
   )
 }
