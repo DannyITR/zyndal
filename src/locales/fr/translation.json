@@ -6,6 +6,8 @@
     "logIn": "Se connecter",
     "privacyPolicy": "Politique de confidentialité",
     "termsOfService": "Conditions d'utilisation",
+    "dataDeletion": "Suppression des données",
+    "backToZyndal": "← Retour à Zyndal",
     "copyright": "© 2026 Zyndal. Tous droits réservés."
   },
   "auth": {

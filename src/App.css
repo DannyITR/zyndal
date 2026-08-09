@@ -1974,6 +1974,44 @@ div.zyndal-logo {
   text-decoration: underline;
 }
 
+/* ---------- Standalone legal pages (/privacy, /terms, /data-deletion) ---------- */
+
+.legal-page {
+  min-height: 100svh;
+  display: flex;
+  justify-content: center;
+  padding: 32px 18px 48px;
+}
+
+.legal-page-card {
+  width: 100%;
+  max-width: 680px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 28px 26px 32px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.legal-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.legal-page-title {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  margin: 0 0 18px;
+}
+
+.legal-page-back {
+  margin-top: 24px;
+}
+
 /* ---------- Checkbox fields (signup consent) ---------- */
 
 .checkbox-field {

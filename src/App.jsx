@@ -15,6 +15,7 @@ import TeacherFlow from './components/teacher/TeacherFlow'
 import InstallPrompt from './components/shared/InstallPrompt'
 import UpgradeModal from './components/shared/UpgradeModal'
 import AdminApp from './components/admin/AdminApp'
+import LegalPage from './components/legal/LegalPage'
 import './App.css'
 
 function App() {
@@ -56,6 +57,16 @@ function App() {
   // (e.g. /admin/users/:id for the Edit User page), all handled by
   // AdminApp's own internal routing, not this component's.
   const [isAdminPage] = useState(() => window.location.pathname.startsWith('/admin'))
+  // Directly-linkable standalone equivalents of LegalModal.jsx's in-app
+  // modal — needed because an external link (Facebook App Settings' Data
+  // Deletion Instructions URL, a search result, anyone bookmarking the
+  // policy) hits these with no session and no prior in-app navigation at
+  // all. See vercel.json for the matching rewrites. No setter, same
+  // rationale as isResetPasswordPage above — LegalPage never logs anyone
+  // in or hands control back to App.
+  const [isPrivacyPage] = useState(() => window.location.pathname === '/privacy')
+  const [isTermsPage] = useState(() => window.location.pathname === '/terms')
+  const [isDataDeletionPage] = useState(() => window.location.pathname === '/data-deletion')
 
   // A parent's "Add Child" invite link (Share Code tab, or the invite
   // email's Create-my-account button) — read once on mount, same pattern
@@ -211,6 +222,18 @@ function App() {
 
   if (isAdminPage) {
     return <AdminApp />
+  }
+
+  if (isPrivacyPage) {
+    return <LegalPage type="privacy" />
+  }
+
+  if (isTermsPage) {
+    return <LegalPage type="terms" />
+  }
+
+  if (isDataDeletionPage) {
+    return <LegalPage type="data-deletion" />
   }
 
   if (isResetPasswordPage) {

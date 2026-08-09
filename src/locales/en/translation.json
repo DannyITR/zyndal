@@ -6,6 +6,8 @@
     "logIn": "Log In",
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
+    "dataDeletion": "Data Deletion",
+    "backToZyndal": "← Back to Zyndal",
     "copyright": "© 2026 Zyndal. All rights reserved."
   },
   "auth": {
