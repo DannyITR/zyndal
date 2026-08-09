@@ -9,6 +9,12 @@ import { supabase } from '../_lib/auth.js'
 // $CRON_SECRET, matching every other cron in this codebase (streak-
 // reminder.js, homework-reminder.js) and Vercel's own documented cron
 // invocation method.
+//
+// Teachers excluded — getSubscriptionStatus already exempts them from
+// premium checks unconditionally, regardless of is_premium's raw value, so
+// flipping it here would be functionally harmless but a pointlessly
+// confusing DB/admin-panel state for an account whose trial dates were
+// never meant to mean anything.
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'Method not allowed. Use GET.' })
@@ -29,6 +35,7 @@ export default async function handler(req, res) {
       .lt('trial_ends_at', new Date().toISOString())
       .eq('is_premium', true)
       .eq('is_paying_subscriber', false)
+      .neq('account_type', 'teacher')
       .select('id')
     if (error) throw error
 

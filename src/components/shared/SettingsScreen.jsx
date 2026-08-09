@@ -485,44 +485,57 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
 
       <div className="finance-section-card">
         <h3 className="section-heading">{t('settings.subscriptionHeading')}</h3>
-        {user.subscription_status === 'trial_active' && (
+        {user.account_type === 'teacher' ? (
+          // Teachers get subscription_status: 'premium' from
+          // getSubscriptionStatus (see api/_lib/subscription.js) same as a
+          // real subscriber, but is_subscription_owner is never set for
+          // them (they never actually go through Stripe) — checked first,
+          // ahead of the subscription_status branches below, so they never
+          // see the "via your parent's Family plan" copy that condition
+          // would otherwise match.
+          <p className="field-hint">{t('settings.subscriptionTeacherFree')}</p>
+        ) : (
           <>
-            <p className="field-hint">
-              {user.days_remaining_in_trial <= 1
-                ? t('settings.subscriptionTrialLastDay')
-                : t('settings.subscriptionTrialActive', { count: user.days_remaining_in_trial })}
-            </p>
-            <button type="button" className="btn btn-primary btn-block" onClick={() => setShowSubscriptionUpgradeModal(true)}>
-              {t('settings.subscriptionUpgradeNow')}
-            </button>
-          </>
-        )}
-        {user.subscription_status === 'premium' && user.is_subscription_owner && (
-          <>
-            <p className="field-hint">
-              {user.subscription_current_period_end
-                ? t('settings.subscriptionPremiumRenews', { date: formatRenewalDate(user.subscription_current_period_end, i18n.language) })
-                : t('settings.subscriptionPremiumActive')}
-            </p>
-            {portalError && <p className="form-error">{portalError}</p>}
-            <button type="button" className="btn btn-secondary btn-block" disabled={portalLoading} onClick={handleManageSubscription}>
-              {portalLoading ? t('settings.subscriptionOpeningPortal') : t('settings.subscriptionManage')}
-            </button>
-          </>
-        )}
-        {user.subscription_status === 'premium' && !user.is_subscription_owner && (
-          <p className="field-hint">
-            {user.subscription_current_period_end
-              ? t('settings.subscriptionPremiumViaFamily', { date: formatRenewalDate(user.subscription_current_period_end, i18n.language) })
-              : t('settings.subscriptionPremiumViaFamilyNoDate')}
-          </p>
-        )}
-        {(user.subscription_status === 'trial_expired' || user.subscription_status === 'free') && (
-          <>
-            <p className="field-hint">{t('settings.subscriptionFreePlan')}</p>
-            <button type="button" className="btn btn-primary btn-block" onClick={() => setShowSubscriptionUpgradeModal(true)}>
-              {t('settings.subscriptionUpgradeNow')}
-            </button>
+            {user.subscription_status === 'trial_active' && (
+              <>
+                <p className="field-hint">
+                  {user.days_remaining_in_trial <= 1
+                    ? t('settings.subscriptionTrialLastDay')
+                    : t('settings.subscriptionTrialActive', { count: user.days_remaining_in_trial })}
+                </p>
+                <button type="button" className="btn btn-primary btn-block" onClick={() => setShowSubscriptionUpgradeModal(true)}>
+                  {t('settings.subscriptionUpgradeNow')}
+                </button>
+              </>
+            )}
+            {user.subscription_status === 'premium' && user.is_subscription_owner && (
+              <>
+                <p className="field-hint">
+                  {user.subscription_current_period_end
+                    ? t('settings.subscriptionPremiumRenews', { date: formatRenewalDate(user.subscription_current_period_end, i18n.language) })
+                    : t('settings.subscriptionPremiumActive')}
+                </p>
+                {portalError && <p className="form-error">{portalError}</p>}
+                <button type="button" className="btn btn-secondary btn-block" disabled={portalLoading} onClick={handleManageSubscription}>
+                  {portalLoading ? t('settings.subscriptionOpeningPortal') : t('settings.subscriptionManage')}
+                </button>
+              </>
+            )}
+            {user.subscription_status === 'premium' && !user.is_subscription_owner && (
+              <p className="field-hint">
+                {user.subscription_current_period_end
+                  ? t('settings.subscriptionPremiumViaFamily', { date: formatRenewalDate(user.subscription_current_period_end, i18n.language) })
+                  : t('settings.subscriptionPremiumViaFamilyNoDate')}
+              </p>
+            )}
+            {(user.subscription_status === 'trial_expired' || user.subscription_status === 'free') && (
+              <>
+                <p className="field-hint">{t('settings.subscriptionFreePlan')}</p>
+                <button type="button" className="btn btn-primary btn-block" onClick={() => setShowSubscriptionUpgradeModal(true)}>
+                  {t('settings.subscriptionUpgradeNow')}
+                </button>
+              </>
+            )}
           </>
         )}
       </div>

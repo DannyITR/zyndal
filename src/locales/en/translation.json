@@ -347,6 +347,7 @@
     "subscriptionPremiumViaFamily": "Premium — renews {{date}} (via your parent's Family plan)",
     "subscriptionPremiumViaFamilyNoDate": "Premium (via your parent's Family plan)",
     "subscriptionFreePlan": "Free plan",
+    "subscriptionTeacherFree": "Premium — free for teachers",
     "subscriptionPortalFailed": "Couldn't open the billing portal. Please try again."
   },
   "subscriptionSuccess": {

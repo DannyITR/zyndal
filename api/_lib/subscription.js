@@ -6,12 +6,16 @@ import { supabase } from './auth.js'
 
 export const TRIAL_DAYS = 30
 
-// Priority order matters: is_paying_subscriber always wins (a paying
-// subscriber's trial_ends_at, if any, becomes irrelevant the moment they
-// convert); then trial_ends_at (future = active, past = expired); 'free'
-// is the fallback for a row with no trial data at all — pre-trial-system
-// accounts that were never grandfathered, or a genuinely brand-new row
-// that somehow missed trial activation.
+// Priority order matters: teacher accounts always win — full access for
+// free, regardless of trial_ends_at/is_premium/is_paying_subscriber, and
+// immune to any drift in those fields (an admin toggle, a lapsed trial
+// date, a cron sweep) since account_type is never touched by any of that
+// machinery. Then is_paying_subscriber (a paying subscriber's
+// trial_ends_at, if any, becomes irrelevant the moment they convert); then
+// trial_ends_at (future = active, past = expired); 'free' is the fallback
+// for a row with no trial data at all — pre-trial-system accounts that
+// were never grandfathered, or a genuinely brand-new row that somehow
+// missed trial activation.
 // Returns snake_case keys (subscription_status/days_remaining_in_trial)
 // deliberately, not camelCase — every call site spreads this straight into
 // a JSON API response (get-profile.js, login.js, oauth-callback.js,
@@ -19,6 +23,8 @@ export const TRIAL_DAYS = 30
 // on those same user objects is already snake_case, so this matches
 // rather than needing a transform at each call site.
 export function getSubscriptionStatus(user) {
+  if (user.account_type === 'teacher') return { subscription_status: 'premium', days_remaining_in_trial: null }
+
   if (user.is_paying_subscriber) return { subscription_status: 'premium', days_remaining_in_trial: null }
 
   if (user.trial_ends_at) {
@@ -45,6 +51,11 @@ export function getSubscriptionStatus(user) {
 // user object with is_premium corrected if needed, so callers can hand
 // back the accurate value without a second round trip.
 export async function syncTrialExpiry(user) {
+  // Teachers are exempt from premium checks entirely (see
+  // getSubscriptionStatus above) — flipping is_premium false here would be
+  // functionally harmless but pointlessly confusing in the DB/admin panel
+  // for an account whose trial dates were never meant to mean anything.
+  if (user.account_type === 'teacher') return user
   if (!user.is_premium || user.is_paying_subscriber || !user.trial_ends_at) return user
   if (new Date(user.trial_ends_at).getTime() > Date.now()) return user
 
@@ -68,7 +79,7 @@ export async function syncTrialExpiry(user) {
 export async function requirePremium(userId) {
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, is_premium, trial_ends_at, is_paying_subscriber')
+    .select('id, account_type, is_premium, trial_ends_at, is_paying_subscriber')
     .eq('id', userId)
     .maybeSingle()
   if (error) throw error
