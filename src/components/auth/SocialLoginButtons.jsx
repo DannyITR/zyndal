@@ -1,9 +1,14 @@
 import { useState } from 'react'
 import { supabaseAuth } from '../../lib/supabaseAuthClient'
 
-// Shared by LoginForm.jsx and SignupChooser.jsx. Google is the only live
-// OAuth provider (Facebook and Snapchat were removed — neither is active
-// yet, and showing disabled/dead buttons wasn't worth the confusion).
+// Shared by LoginForm.jsx and SignupChooser.jsx, for every account type
+// (there's no per-account-type login/signup screen in this app — Teacher is
+// picked post-auth on OAuthOnboardingScreen.jsx, same as it already is for
+// Google). Facebook was previously removed only because it wasn't wired up
+// to a real Supabase provider yet ("showing a dead button wasn't worth the
+// confusion") — both api/auth/oauth-callback.js and the oauth_identities
+// table's own check constraint already special-case 'facebook' by name, so
+// this restores the button rather than introducing new backend support.
 // "Continue with Email" isn't OAuth at all — it just tells the parent to
 // move to the next step (see onContinueWithEmail below). LoginForm shows
 // its username/password fields immediately rather than gating them behind
@@ -12,18 +17,21 @@ import { supabaseAuth } from '../../lib/supabaseAuthClient'
 const STRINGS = {
   en: {
     google: 'Continue with Google',
+    facebook: 'Continue with Facebook',
     email: 'Continue with Email',
     redirecting: 'Redirecting…',
     error: 'Could not start sign-in. Please try again.',
   },
   fr: {
     google: 'Continuer avec Google',
+    facebook: 'Continuer avec Facebook',
     email: 'Continuer avec e-mail',
     redirecting: 'Redirection…',
     error: 'Impossible de démarrer la connexion. Veuillez réessayer.',
   },
   es: {
     google: 'Continuar con Google',
+    facebook: 'Continuar con Facebook',
     email: 'Continuar con correo electrónico',
     redirecting: 'Redirigiendo…',
     error: 'No se pudo iniciar el inicio de sesión. Inténtalo de nuevo.',
@@ -49,6 +57,17 @@ function GoogleIcon() {
   )
 }
 
+function FacebookIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path
+        fill="#fff"
+        d="M18 9a9 9 0 1 0-10.4 8.9v-6.3H5.3V9h2.3V7c0-2.3 1.35-3.55 3.44-3.55.99 0 2.03.18 2.03.18v2.24h-1.14c-1.13 0-1.48.7-1.48 1.42V9h2.52l-.4 2.6h-2.12v6.3A9 9 0 0 0 18 9Z"
+      />
+    </svg>
+  )
+}
+
 function EmailIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -60,30 +79,44 @@ function EmailIcon() {
 
 export default function SocialLoginButtons({ lang = 'en', onError, onContinueWithEmail }) {
   const t = STRINGS[lang] || STRINGS.en
-  const [redirecting, setRedirecting] = useState(false)
+  const [redirecting, setRedirecting] = useState(null) // null | 'google' | 'facebook'
 
-  async function handleGoogle() {
+  async function handleOAuth(provider) {
     onError?.('')
-    setRedirecting(true)
+    setRedirecting(provider)
     const { error } = await supabaseAuth.auth.signInWithOAuth({
-      provider: 'google',
+      provider,
       options: { redirectTo: REDIRECT_URL },
     })
     if (error) {
-      setRedirecting(false)
+      setRedirecting(null)
       onError?.(t.error)
     }
-    // On success the browser navigates away to Google immediately — nothing left to do here.
+    // On success the browser navigates away to the provider immediately — nothing left to do here.
   }
 
   return (
     <div className="social-login">
-      <button type="button" className="btn social-btn social-btn--google" disabled={redirecting} onClick={handleGoogle}>
+      <button
+        type="button"
+        className="btn social-btn social-btn--google"
+        disabled={redirecting !== null}
+        onClick={() => handleOAuth('google')}
+      >
         <GoogleIcon />
-        {redirecting ? t.redirecting : t.google}
+        {redirecting === 'google' ? t.redirecting : t.google}
+      </button>
+      <button
+        type="button"
+        className="btn social-btn social-btn--facebook"
+        disabled={redirecting !== null}
+        onClick={() => handleOAuth('facebook')}
+      >
+        <FacebookIcon />
+        {redirecting === 'facebook' ? t.redirecting : t.facebook}
       </button>
       {onContinueWithEmail && (
-        <button type="button" className="btn social-btn social-btn--email" onClick={onContinueWithEmail}>
+        <button type="button" className="btn social-btn social-btn--email" disabled={redirecting !== null} onClick={onContinueWithEmail}>
           <EmailIcon />
           {t.email}
         </button>

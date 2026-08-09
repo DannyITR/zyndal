@@ -502,6 +502,15 @@ div.zyndal-logo {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
+.social-btn--facebook {
+  background: #1877f2;
+  color: #fff;
+}
+
+.social-btn--facebook:not(:disabled):hover {
+  box-shadow: 0 10px 30px rgba(24, 119, 242, 0.4);
+}
+
 .social-btn--email {
   background: var(--card-2);
   color: var(--text);
