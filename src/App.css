@@ -521,6 +521,12 @@ div.zyndal-logo {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
+.social-login-cancel-row {
+  width: 100%;
+  text-align: center;
+  margin-top: 2px;
+}
+
 .account-type-selector {
   display: flex;
   flex-direction: column;

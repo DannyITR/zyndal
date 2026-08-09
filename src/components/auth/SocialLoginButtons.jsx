@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabaseAuth } from '../../lib/supabaseAuthClient'
 
 // Shared by LoginForm.jsx and SignupChooser.jsx, for every account type
@@ -21,6 +21,7 @@ const STRINGS = {
     email: 'Continue with Email',
     redirecting: 'Redirecting…',
     error: 'Could not start sign-in. Please try again.',
+    cancel: 'Taking too long? Cancel and try again',
   },
   fr: {
     google: 'Continuer avec Google',
@@ -28,6 +29,7 @@ const STRINGS = {
     email: 'Continuer avec e-mail',
     redirecting: 'Redirection…',
     error: 'Impossible de démarrer la connexion. Veuillez réessayer.',
+    cancel: "C'est long ? Annuler et réessayer",
   },
   es: {
     google: 'Continuar con Google',
@@ -35,8 +37,16 @@ const STRINGS = {
     email: 'Continuar con correo electrónico',
     redirecting: 'Redirigiendo…',
     error: 'No se pudo iniciar el inicio de sesión. Inténtalo de nuevo.',
+    cancel: '¿Tarda demasiado? Cancelar y volver a intentar',
   },
 }
+
+// How long the "Redirecting…" state is given before offering a way out —
+// long enough that the normal case (the browser navigates away to the
+// provider almost immediately) never shows it at all, short enough that a
+// hung redirect (network hiccup, a provider that never responds, etc.)
+// doesn't leave someone stuck on a disabled button with no escape.
+const CANCEL_DELAY_MS = 3000
 
 // See https://zyndal.ca/auth/callback — App.jsx renders OAuthCallbackScreen
 // for this exact path (no client-side router in this app; see App.jsx's
@@ -80,19 +90,43 @@ function EmailIcon() {
 export default function SocialLoginButtons({ lang = 'en', onError, onContinueWithEmail }) {
   const t = STRINGS[lang] || STRINGS.en
   const [redirecting, setRedirecting] = useState(null) // null | 'google' | 'facebook'
+  const [showCancel, setShowCancel] = useState(false)
+  const cancelTimerRef = useRef(null)
+
+  // Covers the case the redirect itself hangs or silently fails (a network
+  // hiccup, a provider that never responds, a popup blocker eating it,
+  // etc.) — without this, setRedirecting(provider) above disables every
+  // button with no way back, and a stuck user has to reload the whole page.
+  // Cleared on unmount so a leftover timer can't fire setState after this
+  // component is gone (e.g. switching from Login to Signup mid-redirect).
+  useEffect(() => {
+    return () => {
+      if (cancelTimerRef.current) clearTimeout(cancelTimerRef.current)
+    }
+  }, [])
 
   async function handleOAuth(provider) {
     onError?.('')
     setRedirecting(provider)
+    setShowCancel(false)
+    cancelTimerRef.current = setTimeout(() => setShowCancel(true), CANCEL_DELAY_MS)
     const { error } = await supabaseAuth.auth.signInWithOAuth({
       provider,
       options: { redirectTo: REDIRECT_URL },
     })
     if (error) {
+      clearTimeout(cancelTimerRef.current)
       setRedirecting(null)
+      setShowCancel(false)
       onError?.(t.error)
     }
     // On success the browser navigates away to the provider immediately — nothing left to do here.
+  }
+
+  function handleCancel() {
+    clearTimeout(cancelTimerRef.current)
+    setRedirecting(null)
+    setShowCancel(false)
   }
 
   return (
@@ -120,6 +154,13 @@ export default function SocialLoginButtons({ lang = 'en', onError, onContinueWit
           <EmailIcon />
           {t.email}
         </button>
+      )}
+      {redirecting !== null && showCancel && (
+        <div className="social-login-cancel-row">
+          <button type="button" className="auth-link-btn" onClick={handleCancel}>
+            {t.cancel}
+          </button>
+        </div>
       )}
     </div>
   )
