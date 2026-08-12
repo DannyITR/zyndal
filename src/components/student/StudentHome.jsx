@@ -241,34 +241,45 @@ export default function StudentHome({
     // options once locked, but this is the authoritative guard.
     if (firstAttemptMade) return
 
-    const isWrong = index !== question.correctIndex
-    const offerReview = isMathSubject && isWrong && !usedRetry && !scratchpadRef.current?.isEmpty()
+    // MANDATE DISABLED — this used to offer a scratchpad-gated retry on a
+    // wrong Math answer: a second, AI-reviewed attempt at full marks, but
+    // only if the student had already drawn work on the scratchpad. That
+    // made scratchpad use a de facto requirement to recover full marks
+    // after a wrong guess. Scratchpad use is now entirely optional and has
+    // no effect on marks — every question is one try, same as every other
+    // subject. Uncomment this block (and its matching JSX further down) to
+    // re-enable the scratchpad-gated retry.
+    //
+    // const isWrong = index !== question.correctIndex
+    // const offerReview = isMathSubject && isWrong && !usedRetry && !scratchpadRef.current?.isEmpty()
+    //
+    // if (!offerReview) {
+    //   await finalizeAnswer(index)
+    //   return
+    // }
+    //
+    // setPendingIndex(index)
+    // setReviewing(true)
+    // setReviewError('')
+    // try {
+    //   const dataUrl = scratchpadRef.current.toDataURL()
+    //   const review = await reviewWrongAnswer(dataUrl)
+    //   setReviewing(false)
+    //   if (review.has_work) {
+    //     setUsedRetry(true)
+    //     setRetryInfo({ feedback: review.feedback, onRightTrack: review.on_right_track })
+    //     setPendingIndex(null)
+    //   } else {
+    //     setNoWorkHint(true)
+    //     await finalizeAnswer(index)
+    //   }
+    // } catch (err) {
+    //   setReviewing(false)
+    //   setReviewError(getErrorMessage(err, t, 'home.reviewErrorFallback'))
+    //   await finalizeAnswer(index)
+    // }
 
-    if (!offerReview) {
-      await finalizeAnswer(index)
-      return
-    }
-
-    setPendingIndex(index)
-    setReviewing(true)
-    setReviewError('')
-    try {
-      const dataUrl = scratchpadRef.current.toDataURL()
-      const review = await reviewWrongAnswer(dataUrl)
-      setReviewing(false)
-      if (review.has_work) {
-        setUsedRetry(true)
-        setRetryInfo({ feedback: review.feedback, onRightTrack: review.on_right_track })
-        setPendingIndex(null)
-      } else {
-        setNoWorkHint(true)
-        await finalizeAnswer(index)
-      }
-    } catch (err) {
-      setReviewing(false)
-      setReviewError(getErrorMessage(err, t, 'home.reviewErrorFallback'))
-      await finalizeAnswer(index)
-    }
+    await finalizeAnswer(index)
   }
 
   // Scratchpad is Math-only — other subjects may be added in future.
