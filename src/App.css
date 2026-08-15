@@ -4537,6 +4537,7 @@ div.zyndal-logo {
 .friend-picker-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   background: var(--card-2);
   border: 1.5px solid var(--border);
@@ -4554,10 +4555,17 @@ div.zyndal-logo {
   color: var(--green);
 }
 
+/* flex-basis: 100% (with .friend-picker-row's flex-wrap: wrap) forces this
+   onto its own line below the avatar/username every time, regardless of
+   username length or viewport width — .share-friend-info's flex: 1 always
+   claims the rest of line 1, so this can never fit there. Avoids the
+   overlap a long @username used to cause when this sat beside it in a
+   width capped at 140px and text-align: right. margin-left lines it up
+   under the username text (36px avatar + 12px row gap). */
 .friend-picker-hint {
-  flex-shrink: 0;
-  max-width: 140px;
-  text-align: right;
+  flex: 1 0 100%;
+  margin: 2px 0 0 48px;
+  text-align: left;
 }
 
 .share-friend-locked-hint {
