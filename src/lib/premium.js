@@ -12,6 +12,15 @@
 // can't drift the same way.
 // Takes subscription_status directly (not the whole user object) so call
 // sites can list it as a precise, primitive useEffect/useMemo dependency.
+//
+// Temporary promo switch — mirrors api/_lib/subscription.js's
+// PREMIUM_ENFORCEMENT_ENABLED exactly (same flag name/meaning, kept as a
+// separate constant since this is a different bundle) so client-side
+// gating can't unlock anything the server would still reject, or vice
+// versa. Flip both back to true together to restore normal gating.
+export const PREMIUM_ENFORCEMENT_ENABLED = false
+
 export function isPremiumUnlocked(subscriptionStatus) {
+  if (!PREMIUM_ENFORCEMENT_ENABLED) return true
   return subscriptionStatus === 'trial_active' || subscriptionStatus === 'premium'
 }

@@ -1,5 +1,6 @@
 import { useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PREMIUM_ENFORCEMENT_ENABLED } from '../../lib/premium'
 
 const LONG_PRESS_MS = 500
 
@@ -14,7 +15,9 @@ const LONG_PRESS_MS = 500
 export default function PremiumFeatureButton({ subscriptionStatus, onClick, className = 'btn btn-secondary btn-small', children }) {
   const { t } = useTranslation()
   const tooltipId = useId()
-  const isPremiumUser = subscriptionStatus === 'premium' || subscriptionStatus === 'trial_active'
+  // Temporary promo switch (see src/lib/premium.js) — no crown/tooltip on
+  // any gated button while this is off; every account renders as unlocked.
+  const isPremiumUser = !PREMIUM_ENFORCEMENT_ENABLED || subscriptionStatus === 'premium' || subscriptionStatus === 'trial_active'
   const [longPressActive, setLongPressActive] = useState(false)
   const pressTimerRef = useRef(null)
 

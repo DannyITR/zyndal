@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { PREMIUM_ENFORCEMENT_ENABLED } from '../../lib/premium'
 
 // Days 30-8: normal (purple). Days 7-4: warning (amber). Days 3-1: urgent
 // (red), with day 1 getting its own "ends today" copy instead of the
@@ -18,6 +19,10 @@ function tierFor(days) {
 // from get-profile.js.
 export default function TrialBanner({ subscriptionStatus, daysRemainingInTrial, onUpgradeClick }) {
   const { t } = useTranslation()
+
+  // Temporary promo switch (see src/lib/premium.js) — no trial/upgrade
+  // messaging while this is off, regardless of the account's real status.
+  if (!PREMIUM_ENFORCEMENT_ENABLED) return null
 
   if (subscriptionStatus === 'trial_expired') {
     return (

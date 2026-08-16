@@ -6,6 +6,18 @@ import { supabase } from './auth.js'
 
 export const TRIAL_DAYS = 30
 
+// Temporary promo switch — premium ENFORCEMENT only, flip back to true to
+// restore normal gating. Every account is treated as fully unlocked
+// regardless of its real subscription_status while this is false; nothing
+// else changes. trial_started_at/trial_ends_at are still computed at
+// signup exactly as before, syncTrialExpiry still flips is_premium false
+// once a trial genuinely lapses, the daily expire-trials cron still runs,
+// and getSubscriptionStatus still returns the real subscription_status/
+// days_remaining_in_trial to the client (used by the admin panel) — this
+// flag only affects the allow/deny decision requirePremium hands back, so
+// none of that underlying machinery needs to be touched or rebuilt later.
+export const PREMIUM_ENFORCEMENT_ENABLED = false
+
 // Priority order matters: teacher accounts always win — full access for
 // free, regardless of trial_ends_at/is_premium/is_paying_subscriber, and
 // immune to any drift in those fields (an admin toggle, a lapsed trial
@@ -87,7 +99,7 @@ export async function requirePremium(userId) {
 
   const synced = await syncTrialExpiry(user)
   const { subscription_status } = getSubscriptionStatus(synced)
-  const allowed = subscription_status === 'trial_active' || subscription_status === 'premium'
+  const allowed = !PREMIUM_ENFORCEMENT_ENABLED || subscription_status === 'trial_active' || subscription_status === 'premium'
   return allowed ? { allowed: true } : { allowed: false, code: 'PREMIUM_REQUIRED' }
 }
 

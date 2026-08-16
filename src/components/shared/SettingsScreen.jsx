@@ -16,6 +16,7 @@ import {
 } from '../../lib/storage'
 import { languageCodeForPreference } from '../../lib/i18n'
 import { getErrorMessage } from '../../lib/errors'
+import { PREMIUM_ENFORCEMENT_ENABLED } from '../../lib/premium'
 import { AVATARS } from '../../lib/avatars'
 import TopBar from './TopBar'
 import LegalModal from '../legal/LegalModal'
@@ -483,6 +484,10 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
         </button>
       </form>
 
+      {/* Temporary promo switch (see src/lib/premium.js) — the whole
+          subscription-status card (trial countdown, Upgrade Now, Manage
+          Subscription, Family-plan copy) is hidden while this is off. */}
+      {PREMIUM_ENFORCEMENT_ENABLED && (
       <div className="finance-section-card">
         <h3 className="section-heading">{t('settings.subscriptionHeading')}</h3>
         {user.account_type === 'teacher' ? (
@@ -539,6 +544,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
           </>
         )}
       </div>
+      )}
 
       {isStudent && pendingParentRequests && pendingParentRequests.length > 0 && (
         <div className="finance-section-card">
