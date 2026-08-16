@@ -147,8 +147,18 @@ export default function CalendarScreen({ user, progress, today, onSelectDay, onB
           const dateStr = `${viewYear}-${pad(viewMonth)}-${pad(d)}`
           const isFuture = dateStr > today
           const isToday = dateStr === today
-          const isTappable = !isFuture && !isToday
+          const isTappable = !isFuture
           const colorClass = colorClassFor(dayStates[dateStr], isFuture)
+
+          // Today has no separate "day detail" view of its own — the main
+          // screen already shows today by default — so tapping it just
+          // leaves the calendar exactly like the back button does, rather
+          // than routing through onSelectDay (which is for past dates only).
+          function handleClick() {
+            if (!isTappable) return
+            if (isToday) onBack()
+            else onSelectDay(dateStr)
+          }
 
           return (
             <button
@@ -156,7 +166,7 @@ export default function CalendarScreen({ user, progress, today, onSelectDay, onB
               type="button"
               className={`calendar-day ${colorClass} ${isToday ? 'calendar-day--today' : ''}`}
               disabled={!isTappable}
-              onClick={() => isTappable && onSelectDay(dateStr)}
+              onClick={handleClick}
             >
               {d}
             </button>
