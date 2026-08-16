@@ -113,10 +113,14 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [homework, setHomework] = useState([])
   const [activeHomework, setActiveHomework] = useState(null)
-  // Which assignment ids the Notifications screen's "Open Homework" button
-  // can actually act on — anything already completed has no questions left
-  // to answer (see get-homework.js), so the button just wouldn't be shown.
-  const openHomeworkIds = useMemo(() => new Set(homework.filter((h) => !h.completed).map((h) => h.id)), [homework])
+  // Not-yet-completed assignments — the only ones the home screen's banner
+  // list or the Notifications screen's "Open Homework" button can act on;
+  // anything already completed has no questions left to answer (see
+  // get-homework.js), and completed status is already visible on the class
+  // calendar (HomeworkCalendar.jsx), so it doesn't need its own home-screen
+  // banner too.
+  const openHomework = useMemo(() => homework.filter((h) => !h.completed), [homework])
+  const openHomeworkIds = useMemo(() => new Set(openHomework.map((h) => h.id)), [openHomework])
   const [showClasses, setShowClasses] = useState(false)
   // The share currently shown in the read-only friend-score-card modal,
   // opened from the home-screen notification box below.
@@ -769,21 +773,19 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           </div>
         )}
 
-        {homework.length > 0 && (
+        {/* Completed homework used to get its own "✅ completed" banner here
+            too, but that's redundant with the class calendar (see
+            HomeworkCalendar.jsx), which already marks completed days —
+            the home screen only needs to prompt for homework still due. */}
+        {openHomework.length > 0 && (
           <div className="friend-request-banner-list">
-            {homework.map((hw) =>
-              hw.completed ? (
-                <div key={hw.id} className="homework-banner homework-banner--done">
-                  <p className="homework-banner-text">{t('home.homeworkCompleted', { title: hw.title })}</p>
-                </div>
-              ) : (
-                <button key={hw.id} type="button" className="homework-banner" onClick={() => setActiveHomework(hw)}>
-                  <p className="homework-banner-text">
-                    {t('home.homeworkDue', { date: formatLongDate(hw.dueDate), title: hw.title })}
-                  </p>
-                </button>
-              )
-            )}
+            {openHomework.map((hw) => (
+              <button key={hw.id} type="button" className="homework-banner" onClick={() => setActiveHomework(hw)}>
+                <p className="homework-banner-text">
+                  {t('home.homeworkDue', { date: formatLongDate(hw.dueDate), title: hw.title })}
+                </p>
+              </button>
+            ))}
           </div>
         )}
 

@@ -129,7 +129,6 @@
     "parentDeletedBanner": "La cuenta de tu padre/madre fue desactivada. Pídele a un padre/madre que cree una nueva cuenta y se vuelva a vincular.",
     "previousDay": "Día anterior",
     "nextDay": "Día siguiente",
-    "homeworkCompleted": "✅ {{title}} — completado",
     "homeworkDue": "📚 Tarea vence el {{date}}: {{title}}",
     "sharedScoreWithYouBang": "¡compartió su puntaje diario contigo!",
     "viewScore": "Ver puntaje",

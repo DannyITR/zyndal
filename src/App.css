@@ -5130,12 +5130,6 @@ div.zyndal-logo {
   cursor: pointer;
 }
 
-.homework-banner--done {
-  background: var(--card);
-  border-color: var(--border);
-  cursor: default;
-}
-
 .homework-banner-text {
   font-size: 14px;
   flex: 1;

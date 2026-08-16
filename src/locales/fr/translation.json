@@ -129,7 +129,6 @@
     "parentDeletedBanner": "Le compte de votre parent a été désactivé. Demandez à un parent de créer un nouveau compte et de se relier.",
     "previousDay": "Jour précédent",
     "nextDay": "Jour suivant",
-    "homeworkCompleted": "✅ {{title}} — terminé",
     "homeworkDue": "📚 Devoir à remettre le {{date}} : {{title}}",
     "sharedScoreWithYouBang": "a partagé son score du jour avec vous !",
     "viewScore": "Voir le score",
