@@ -328,6 +328,32 @@ export default function StudentHome({
         <StatPill icon="🪙" label={t('home.coins')} value={progress.coins} />
       </div>
 
+      <div className="home-actions">
+        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenTestPrep}>
+          {t('home.testPrep')}
+        </PremiumFeatureButton>
+        {!planForThisSubject && (
+          <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenStudyGuide}>
+            {t('home.studyGuide')}
+          </PremiumFeatureButton>
+        )}
+        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenUpload}>
+          {t('home.upload')}
+        </PremiumFeatureButton>
+        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenMyUploads}>
+          {t('home.myUploads')}
+        </PremiumFeatureButton>
+        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenPractice}>
+          {t('home.practice')}
+        </PremiumFeatureButton>
+        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={onOpenGrades}>
+          {t('home.myGrades')}
+        </PremiumFeatureButton>
+        <button type="button" className="btn btn-secondary btn-small" onClick={onOpenCurriculum}>
+          {t('home.curriculum')}
+        </button>
+      </div>
+
       {isToday ? (
         <>
           {!question && !questionError && <p className="loading-text">{t('home.loadingQuestion')}</p>}
@@ -485,32 +511,6 @@ export default function StudentHome({
           </div>
         </div>
       )}
-
-      <div className="home-actions">
-        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenTestPrep}>
-          {t('home.testPrep')}
-        </PremiumFeatureButton>
-        {!planForThisSubject && (
-          <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenStudyGuide}>
-            {t('home.studyGuide')}
-          </PremiumFeatureButton>
-        )}
-        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenUpload}>
-          {t('home.upload')}
-        </PremiumFeatureButton>
-        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenMyUploads}>
-          {t('home.myUploads')}
-        </PremiumFeatureButton>
-        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenPractice}>
-          {t('home.practice')}
-        </PremiumFeatureButton>
-        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={onOpenGrades}>
-          {t('home.myGrades')}
-        </PremiumFeatureButton>
-        <button type="button" className="btn btn-secondary btn-small" onClick={onOpenCurriculum}>
-          {t('home.curriculum')}
-        </button>
-      </div>
 
       <MilestoneModal milestone={milestone} onClose={() => setMilestone(null)} />
       {perfectWeekBonus !== null && (
