@@ -2,8 +2,13 @@
   color-scheme: dark;
 
   --bg: #12081f;
-  --bg-glow-1: #3a0f7a;
-  --bg-glow-2: #0f1f5e;
+  /* Full rgba (alpha baked in), not a flat hex — these paint directly as
+     the two radial-gradient stops in body's background below, and each
+     theme needs its own alpha (a light theme's glow has to be much
+     fainter than a dark theme's or it muddies the page) as well as its
+     own hue. */
+  --bg-glow-1: rgba(58, 15, 122, 0.55);
+  --bg-glow-2: rgba(15, 31, 94, 0.55);
   --bg-elevated: #1b0f31;
   --card: #221336;
   --card-2: #2a1743;
@@ -21,6 +26,22 @@
   --text-dim: #b9aede;
   --text-faint: #8577a8;
 
+  /* -text variants: what --purple/--blue/--green/--red/--gold/--amber
+     become specifically when used as plain TEXT color on a card/page
+     background (badges, links, result labels) — as opposed to a border,
+     fill, or icon-on-a-same-hue-chip, none of which need this. Default
+     here just aliases the fill color, so this theme renders byte-identical
+     to before these tokens existed; only [data-theme="daylight"] below
+     actually overrides them, with darker/more-saturated variants that
+     stay legible on a near-white surface instead of washing out the way
+     a color tuned for a near-black background does. */
+  --purple-text: var(--purple);
+  --blue-text: var(--blue);
+  --green-text: var(--green);
+  --red-text: var(--red);
+  --gold-text: var(--gold);
+  --amber-text: #ffb066;
+
   --gradient-primary: linear-gradient(135deg, #8a2be2 0%, #6c3bff 45%, #47bfff 100%);
   --gradient-gold: linear-gradient(135deg, #ffce54 0%, #ff9f4a 100%);
   --shadow-glow: 0 8px 30px rgba(139, 61, 255, 0.35);
@@ -32,6 +53,60 @@
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------- Themes ----------
+   Selectable in Settings (see src/lib/theme.js / ThemeContext.jsx) via a
+   data-theme attribute on <html>. 'default' (above) is the app's original,
+   only-ever theme and is never written to data-theme at all — everything
+   below only needs to override what actually differs from it, not restate
+   every token. Equal-specificity attribute selector vs :root, so source
+   order (both blocks after :root) is what makes these win. */
+
+[data-theme='midnight'] {
+  --bg: #0f0a1a;
+  --bg-glow-1: rgba(124, 58, 237, 0.35);
+  --bg-glow-2: rgba(56, 189, 248, 0.25);
+  --bg-elevated: #18112c;
+  --card: #1e1530;
+  --card-2: #26193d;
+
+  --text: #e5e0f5;
+  --text-dim: #a89cc8;
+  --text-faint: #746592;
+
+  /* Same brand gradient as daylight below — matches the logo, per spec —
+     rather than default's own separate 3-stop purple-to-blue. */
+  --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #38bdf8 100%);
+}
+
+[data-theme='daylight'] {
+  color-scheme: light;
+
+  --bg: #f7f5fb;
+  --bg-glow-1: rgba(124, 58, 237, 0.06);
+  --bg-glow-2: rgba(56, 189, 248, 0.06);
+  --bg-elevated: #efebf7;
+  --card: #ffffff;
+  --card-2: #f3f0fa;
+  /* :root's border tokens are a white-based alpha — invisible on a light
+     card, so this needs its own dark-based alpha instead. */
+  --border: rgba(30, 21, 48, 0.1);
+  --border-strong: rgba(30, 21, 48, 0.18);
+
+  --text: #1e1530;
+  --text-dim: #6b6280;
+  --text-faint: #837aa0;
+
+  --purple-text: #6d28d9;
+  --blue-text: #0369a1;
+  --green-text: #0f9d6a;
+  --red-text: #c81e4d;
+  --gold-text: #a16207;
+  --amber-text: #b45309;
+
+  --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #38bdf8 100%);
+  --shadow-glow: 0 8px 30px rgba(124, 58, 237, 0.18);
 }
 
 * {
@@ -47,8 +122,8 @@ body {
 body {
   min-height: 100svh;
   background:
-    radial-gradient(circle at 15% 0%, rgba(58, 15, 122, 0.55), transparent 55%),
-    radial-gradient(circle at 85% 20%, rgba(15, 31, 94, 0.55), transparent 50%),
+    radial-gradient(circle at 15% 0%, var(--bg-glow-1), transparent 55%),
+    radial-gradient(circle at 85% 20%, var(--bg-glow-2), transparent 50%),
     var(--bg);
   background-attachment: fixed;
 }

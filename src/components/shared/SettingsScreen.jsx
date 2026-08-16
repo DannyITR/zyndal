@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   updateUserProfile,
+  updateThemePreference,
   changePassword,
   getFriendCount,
   exportMyData,
@@ -15,6 +16,8 @@ import {
   openCustomerPortal,
 } from '../../lib/storage'
 import { languageCodeForPreference } from '../../lib/i18n'
+import { useTheme } from '../../lib/ThemeContext'
+import { THEMES, THEME_PREVIEW_COLORS } from '../../lib/theme'
 import { getErrorMessage } from '../../lib/errors'
 import { PREMIUM_ENFORCEMENT_ENABLED } from '../../lib/premium'
 import { AVATARS } from '../../lib/avatars'
@@ -31,8 +34,15 @@ function formatRenewalDate(iso, language) {
   return new Date(iso).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })
 }
 
+// THEMES' values ('default'/'midnight'/'daylight') to their translation
+// keys — kept as camelCase literals here (matching every other key in
+// translation.json) rather than building the key string dynamically from
+// the theme value itself.
+const THEME_LABEL_KEYS = { default: 'settings.themeDefault', midnight: 'settings.themeMidnight', daylight: 'settings.themeDaylight' }
+
 export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogoClick }) {
   const { t, i18n } = useTranslation()
+  const { theme, setTheme } = useTheme()
   const isStudent = user.account_type === 'student'
 
   const [friendCount, setFriendCount] = useState(null)
@@ -161,6 +171,7 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [themeError, setThemeError] = useState('')
 
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -240,6 +251,23 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
     const preference = e.target.value
     setLanguagePreference(preference)
     i18n.changeLanguage(languageCodeForPreference(preference))
+  }
+
+  // Unlike language above, a theme change persists immediately rather than
+  // waiting for the profile form's Save button — expected behavior for a
+  // theme switcher (flip it, see it, done). setTheme's own DOM/localStorage
+  // application never fails, so a failed DB sync (rare — network hiccup)
+  // only surfaces as themeError below; the visual choice still sticks on
+  // this device either way.
+  async function handleSelectTheme(value) {
+    setTheme(value)
+    setThemeError('')
+    try {
+      await updateThemePreference(value)
+    } catch (err) {
+      console.error('[Settings] theme save failed:', err)
+      setThemeError(getErrorMessage(err, t, 'settings.themeSaveFailed'))
+    }
   }
 
   async function handleSaveProfile(e) {
@@ -381,6 +409,28 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
             <p className="field-hint">{t('settings.languageHint')}</p>
           </div>
         )}
+
+        <div className="field">
+          <label>{t('settings.appearance')}</label>
+          <div className="theme-grid">
+            {THEMES.map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={`theme-option ${theme === value ? 'theme-option--selected' : ''}`}
+                onClick={() => handleSelectTheme(value)}
+              >
+                <span
+                  className="theme-option-swatch"
+                  style={{ background: `linear-gradient(135deg, ${THEME_PREVIEW_COLORS[value][0]} 50%, ${THEME_PREVIEW_COLORS[value][1]} 50%)` }}
+                  aria-hidden="true"
+                />
+                {t(THEME_LABEL_KEYS[value])}
+              </button>
+            ))}
+          </div>
+          {themeError && <p className="form-error">{themeError}</p>}
+        </div>
 
         {isStudent && (
           <div className="field">

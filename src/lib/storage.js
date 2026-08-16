@@ -316,6 +316,18 @@ export async function updateUserProfile(userId, { displayName, email, schoolName
   })
 }
 
+// A standalone call, separate from updateUserProfile above — unlike
+// language (which only takes effect once the whole profile form is
+// submitted, see SettingsScreen.jsx's handleLanguageChange/handleSaveProfile
+// split), picking a theme persists immediately, the way a theme switcher is
+// expected to behave. Sending only theme_preference leaves every other
+// field out of the request body entirely, so update-settings.js's handler
+// doesn't touch them (same "absent means don't touch" behavior
+// account_type relies on above).
+export async function updateThemePreference(theme) {
+  return callStudentApi('POST', 'update-settings', { theme_preference: theme })
+}
+
 // userId isn't sent — the server derives who's changing their password from
 // the session token (see api/student/change-password.js) — but stays in
 // the signature since SettingsScreen.jsx calls this positionally.

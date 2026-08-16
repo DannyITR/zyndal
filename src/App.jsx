@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getCurrentUser, clearSession, setSessionExpiredHandler, setPremiumRequiredHandler, lookupParentCode } from './lib/storage'
 import { languageCodeForPreference } from './lib/i18n'
+import { useTheme } from './lib/ThemeContext'
 import LandingPage from './components/landing/LandingPage'
 import AuthScreen from './components/auth/AuthScreen'
 import OAuthCallbackScreen from './components/auth/OAuthCallbackScreen'
@@ -20,6 +21,7 @@ import './App.css'
 
 function App() {
   const { i18n } = useTranslation()
+  const { setTheme } = useTheme()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showLanding, setShowLanding] = useState(false)
@@ -131,6 +133,23 @@ function App() {
     i18n.changeLanguage(languageCodeForPreference(user.language_preference))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.language_preference])
+
+  // Same rationale as the language effect just above: syncs the theme
+  // context to whichever account is current (so a saved theme_preference
+  // follows a returning user onto a new device) from one place, covering
+  // every path that ever calls setUser. Before login, ThemeProvider's own
+  // localStorage fallback (see src/lib/theme.js) already applies — this
+  // only fires once a real user object exists. Deliberately NOT depending
+  // on `setTheme` (a useCallback identity that's stable for the app's whole
+  // lifetime) for the same reason the language effect excludes `i18n` —
+  // adding it would re-fire this immediately after SettingsScreen.jsx's own
+  // instant-apply setTheme() call, stomping it right back to whatever's
+  // still saved on `user` before that save request resolves.
+  useEffect(() => {
+    if (!user?.theme_preference) return
+    setTheme(user.theme_preference)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.theme_preference])
 
   // Fires from anywhere a /api/student or /api/questions call gets a 401
   // mid-session (session row deleted or expired while the user was active)

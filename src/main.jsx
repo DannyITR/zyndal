@@ -1,17 +1,25 @@
-// i18n must be the very first import — it runs i18next.init() as an import
-// side effect, which needs to happen before App (or anything it renders)
-// can call useTranslation()/access the i18next instance.
+// theme must be imported before the render call below — it applies the
+// stored theme to <html> as an import side effect, the same anti-flash
+// timing i18n's own init() (next import) relies on for language: both need
+// to land before the app's first paint, not after React mounts.
+import './lib/theme'
+// i18n must be imported before App (or anything it renders) can call
+// useTranslation()/access the i18next instance — it runs i18next.init() as
+// an import side effect.
 import i18n from './lib/i18n'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { I18nextProvider } from 'react-i18next'
+import { ThemeProvider } from './lib/ThemeContext'
 import './index.css'
 import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <I18nextProvider i18n={i18n}>
-      <App />
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
     </I18nextProvider>
   </StrictMode>,
 )

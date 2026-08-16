@@ -31,6 +31,10 @@ create table if not exists users (
   milestone_settings jsonb not null default '{"7":10,"14":20,"30":50}'::jsonb,
   is_premium boolean not null default false,
   language_preference text default 'English',
+  -- Selectable in Settings (src/lib/theme.js) — 'default' is the app's
+  -- original, only-ever theme; 'midnight' and 'daylight' are the two
+  -- alternates. Cosmetic only, set for every account type.
+  theme_preference text default 'default',
   -- Soft delete (Quebec Law 25 right-to-deletion flow — see
   -- api/auth/delete-account.js). Null = active account. Set to the deletion
   -- timestamp on self-delete; data is retained 90 days from this date to
@@ -395,3 +399,8 @@ alter table oauth_identities enable row level security;
 -- study guide / test prep language preference existed:
 --
 -- ALTER TABLE users ADD COLUMN IF NOT EXISTS language_preference text default 'English';
+--
+-- Run against a database that already has a `users` table from before the
+-- selectable theme system existed:
+--
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_preference text default 'default';

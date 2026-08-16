@@ -49,7 +49,7 @@
   bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%) translateY(4px);
-  background: #1a0f2e;
+  background: var(--card);
   border: 1px solid rgba(255, 193, 7, 0.4);
   color: var(--text);
   font-size: 11px;
@@ -128,7 +128,7 @@ a.btn {
 
 .btn-danger-outline {
   background: transparent;
-  color: var(--red);
+  color: var(--red-text);
   border: 1.5px solid rgba(255, 92, 122, 0.5);
 }
 
@@ -174,7 +174,7 @@ a.btn {
 .form-error {
   background: rgba(255, 92, 122, 0.12);
   border: 1px solid rgba(255, 92, 122, 0.4);
-  color: #ffb3c1;
+  color: var(--red-text);
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 13px;
@@ -184,7 +184,7 @@ a.btn {
 .form-success {
   background: rgba(52, 224, 161, 0.12);
   border: 1px solid rgba(52, 224, 161, 0.4);
-  color: var(--green);
+  color: var(--green-text);
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 13px;
@@ -266,6 +266,53 @@ a.btn {
   border-color: var(--purple);
   background: rgba(155, 77, 255, 0.16);
   box-shadow: 0 0 0 2px rgba(155, 77, 255, 0.35);
+}
+
+/* ---------- Theme picker (Settings) ---------- */
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.theme-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px;
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+
+.theme-option:hover {
+  border-color: var(--purple);
+}
+
+.theme-option:active {
+  transform: scale(0.97);
+}
+
+.theme-option--selected {
+  border-color: var(--purple);
+  background: rgba(155, 77, 255, 0.16);
+  box-shadow: 0 0 0 2px rgba(155, 77, 255, 0.35);
+  color: var(--text);
+}
+
+.theme-option-swatch {
+  display: block;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
 }
 
 /* ---------- Auth screen ---------- */
@@ -695,7 +742,7 @@ div.zyndal-logo {
 .premium-feature-banner {
   font-size: 12px;
   font-weight: 600;
-  color: var(--gold);
+  color: var(--gold-text);
   margin: 6px 0 0;
 }
 
@@ -880,14 +927,14 @@ div.zyndal-logo {
 }
 
 .subject-dashboard-lead--done {
-  color: var(--green);
+  color: var(--green-text);
   font-weight: 600;
 }
 
 .streak-risk-banner {
   background: rgba(255, 158, 68, 0.12);
   border: 1.5px solid rgba(255, 158, 68, 0.4);
-  color: #ffb066;
+  color: var(--amber-text);
   border-radius: 14px;
   padding: 12px 16px;
   font-family: var(--font-heading);
@@ -902,7 +949,7 @@ div.zyndal-logo {
   gap: 10px;
   background: rgba(255, 92, 122, 0.12);
   border: 1.5px solid rgba(255, 92, 122, 0.4);
-  color: #ffb3c1;
+  color: var(--red-text);
   border-radius: 14px;
   padding: 12px 14px;
   font-size: 13px;
@@ -934,7 +981,7 @@ div.zyndal-logo {
   gap: 10px;
   background: rgba(255, 158, 68, 0.12);
   border: 1.5px solid rgba(255, 158, 68, 0.4);
-  color: #ffb066;
+  color: var(--amber-text);
   border-radius: 14px;
   padding: 12px 14px;
   font-size: 13px;
@@ -1027,7 +1074,7 @@ div.zyndal-logo {
   padding: 3px 8px;
   border-radius: 999px;
   background: rgba(52, 224, 161, 0.18);
-  color: var(--green);
+  color: var(--green-text);
 }
 
 .subject-card--completed {
@@ -1036,7 +1083,7 @@ div.zyndal-logo {
 
 .subject-card-badge--incorrect {
   background: rgba(255, 92, 122, 0.18);
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .subject-card--incorrect {
@@ -1066,7 +1113,7 @@ div.zyndal-logo {
 }
 
 .daily-score-box--celebrate .daily-score-box-text {
-  color: var(--green);
+  color: var(--green-text);
 }
 
 .daily-score-box-share {
@@ -1257,13 +1304,13 @@ div.zyndal-logo {
 .calendar-day--correct {
   background: rgba(52, 224, 161, 0.22);
   border-color: rgba(52, 224, 161, 0.5);
-  color: var(--green);
+  color: var(--green-text);
 }
 
 .calendar-day--wrong {
   background: rgba(255, 92, 122, 0.18);
   border-color: rgba(255, 92, 122, 0.45);
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .calendar-day--mixed {
@@ -1290,7 +1337,7 @@ div.zyndal-logo {
 .late-answer-notice {
   font-size: 12px;
   font-weight: 600;
-  color: #ffb066;
+  color: var(--amber-text);
   background: rgba(255, 158, 68, 0.12);
   border: 1px solid rgba(255, 158, 68, 0.35);
   border-radius: 10px;
@@ -1418,7 +1465,7 @@ div.zyndal-logo {
 }
 
 .option--correct .option-icon {
-  color: var(--green);
+  color: var(--green-text);
 }
 
 .option--wrong {
@@ -1432,7 +1479,7 @@ div.zyndal-logo {
 }
 
 .option--wrong .option-icon {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .option--muted {
@@ -1571,13 +1618,13 @@ div.zyndal-logo {
 .work-submission-status--approved {
   background: rgba(52, 224, 161, 0.12);
   border: 1px solid rgba(52, 224, 161, 0.4);
-  color: #34e0a1;
+  color: var(--green-text);
 }
 
 .work-submission-status--rejected {
   background: rgba(255, 92, 122, 0.12);
   border: 1px solid rgba(255, 92, 122, 0.4);
-  color: #ffb3c1;
+  color: var(--red-text);
 }
 
 .scratchpad-review-image {
@@ -1615,7 +1662,7 @@ div.zyndal-logo {
 .daily-status-banner--done {
   background: rgba(52, 224, 161, 0.1);
   border-color: rgba(52, 224, 161, 0.4);
-  color: var(--green);
+  color: var(--green-text);
 }
 
 .daily-status-banner--pending {
@@ -1762,11 +1809,11 @@ div.zyndal-logo {
 }
 
 .answer-summary-value--correct {
-  color: var(--green);
+  color: var(--green-text);
 }
 
 .answer-summary-value--wrong {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .history-icon {
@@ -1783,12 +1830,12 @@ div.zyndal-logo {
 
 .history-item--correct .history-icon {
   background: rgba(52, 224, 161, 0.2);
-  color: var(--green);
+  color: var(--green-text);
 }
 
 .history-item--wrong .history-icon {
   background: rgba(255, 92, 122, 0.2);
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .history-body {
@@ -1812,7 +1859,7 @@ div.zyndal-logo {
 .history-reward {
   font-size: 12px;
   font-weight: 700;
-  color: var(--gold);
+  color: var(--gold-text);
   white-space: nowrap;
 }
 
@@ -1970,7 +2017,7 @@ div.zyndal-logo {
 }
 
 .legal-content a {
-  color: var(--blue);
+  color: var(--blue-text);
   text-decoration: underline;
 }
 
@@ -2042,7 +2089,7 @@ div.zyndal-logo {
   border: none;
   padding: 0;
   font: inherit;
-  color: var(--blue);
+  color: var(--blue-text);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -2053,7 +2100,7 @@ div.zyndal-logo {
   padding: 0;
   font: inherit;
   font-size: 13px;
-  color: var(--blue);
+  color: var(--blue-text);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -2161,7 +2208,7 @@ div.zyndal-logo {
 
 .preset-btn:hover {
   border-color: var(--gold);
-  color: var(--gold);
+  color: var(--gold-text);
 }
 
 .preset-btn--active {
@@ -2201,7 +2248,7 @@ div.zyndal-logo {
 .milestone-bonus {
   font-family: var(--font-heading);
   font-weight: 700;
-  color: var(--gold);
+  color: var(--gold-text);
   font-size: 16px;
 }
 
@@ -2547,7 +2594,7 @@ div.zyndal-logo {
 }
 
 .leaderboard-streak {
-  color: var(--gold);
+  color: var(--gold-text);
 }
 
 .leaderboard-xp {
@@ -2644,7 +2691,7 @@ div.zyndal-logo {
   font-size: 54px;
   line-height: 1;
   margin: 0 0 6px;
-  color: var(--gold);
+  color: var(--gold-text);
 }
 
 .share-card-username {
@@ -2937,7 +2984,7 @@ div.zyndal-logo {
 .payout-history-amount {
   font-family: var(--font-heading);
   font-weight: 700;
-  color: var(--green);
+  color: var(--green-text);
   font-size: 15px;
 }
 
@@ -3043,7 +3090,7 @@ div.zyndal-logo {
 .weekly-progress-hint {
   font-size: 12px;
   font-weight: 600;
-  color: var(--gold);
+  color: var(--gold-text);
 }
 
 /* ---------- Perfect week bonus ---------- */
@@ -3132,7 +3179,7 @@ div.zyndal-logo {
 
 .perfect-week-bonus-saved {
   font-size: 12px;
-  color: var(--green);
+  color: var(--green-text);
   font-weight: 600;
 }
 
@@ -3357,14 +3404,14 @@ div.zyndal-logo {
 
 .friend-search-status {
   font-size: 12px;
-  color: var(--green);
+  color: var(--green-text);
   font-weight: 600;
 }
 
 .friend-search-error {
   width: 100%;
   font-size: 11px;
-  color: var(--red);
+  color: var(--red-text);
   margin-top: 4px;
 }
 
@@ -3451,12 +3498,12 @@ div.zyndal-logo {
 
 .testprep-icon-btn--done:hover {
   border-color: var(--green);
-  color: var(--green);
+  color: var(--green-text);
 }
 
 .testprep-icon-btn--cancel:hover {
   border-color: var(--red);
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .plan-history-list {
@@ -3506,17 +3553,17 @@ div.zyndal-logo {
 
 .plan-status-badge--completed {
   background: rgba(52, 224, 161, 0.18);
-  color: var(--green);
+  color: var(--green-text);
 }
 
 .plan-status-badge--cancelled {
   background: rgba(255, 92, 122, 0.18);
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .plan-status-badge--pending {
   background: rgba(255, 158, 68, 0.18);
-  color: #ffb066;
+  color: var(--amber-text);
 }
 
 .testprep-header-card {
@@ -3538,7 +3585,7 @@ div.zyndal-logo {
 .testprep-readiness {
   font-size: 13px;
   font-weight: 600;
-  color: var(--gold);
+  color: var(--gold-text);
 }
 
 .testprep-day {
@@ -3600,11 +3647,11 @@ div.zyndal-logo {
 }
 
 .testprep-question-result--correct {
-  color: var(--green);
+  color: var(--green-text);
 }
 
 .testprep-question-result--wrong {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .testprep-question-explanation {
@@ -3790,13 +3837,13 @@ div.zyndal-logo {
 .trial-banner--warning {
   border-color: rgba(255, 193, 7, 0.5);
   background: rgba(255, 193, 7, 0.12);
-  color: var(--gold);
+  color: var(--gold-text);
 }
 
 .trial-banner--urgent {
   border-color: rgba(255, 92, 122, 0.5);
   background: rgba(255, 92, 122, 0.12);
-  color: var(--red);
+  color: var(--red-text);
 }
 
 /* ---------- Document uploads ---------- */
@@ -4062,14 +4109,14 @@ div.zyndal-logo {
 }
 
 .upload-question-options--correct {
-  color: var(--green);
+  color: var(--green-text);
   font-weight: 700;
 }
 
 .upload-question-answer {
   font-size: 13px;
   font-weight: 700;
-  color: var(--gold);
+  color: var(--gold-text);
 }
 
 .testprep-parent-row--inline {
@@ -4091,27 +4138,27 @@ div.zyndal-logo {
 
 .grade-badge--a-plus {
   background: rgba(52, 224, 161, 0.18);
-  color: var(--green);
+  color: var(--green-text);
 }
 
 .grade-badge--a {
   background: rgba(71, 191, 255, 0.18);
-  color: var(--blue);
+  color: var(--blue-text);
 }
 
 .grade-badge--b {
   background: rgba(255, 206, 84, 0.18);
-  color: var(--gold);
+  color: var(--gold-text);
 }
 
 .grade-badge--c {
   background: rgba(255, 159, 74, 0.18);
-  color: #ff9f4a;
+  color: var(--amber-text);
 }
 
 .grade-badge--fail {
   background: rgba(255, 92, 122, 0.18);
-  color: var(--red);
+  color: var(--red-text);
 }
 
 /* ---------- Grade rewards (parent) ---------- */
@@ -4218,11 +4265,11 @@ div.zyndal-logo {
 .practice-results-coins {
   font-size: 15px;
   font-weight: 700;
-  color: var(--gold);
+  color: var(--gold-text);
 }
 
 .practice-results-weak {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .homework-results-card {
@@ -4233,15 +4280,15 @@ div.zyndal-logo {
 /* ---------- Grades tracker ---------- */
 
 .grade-text--good {
-  color: var(--green);
+  color: var(--green-text);
 }
 
 .grade-text--mid {
-  color: var(--gold);
+  color: var(--gold-text);
 }
 
 .grade-text--bad {
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .grades-overall-card {
@@ -4465,11 +4512,11 @@ div.zyndal-logo {
 }
 
 .share-friend-stat--share {
-  color: var(--blue);
+  color: var(--blue-text);
 }
 
 .share-friend-stat--waiting {
-  color: #ffb066;
+  color: var(--amber-text);
   font-weight: 600;
   font-style: italic;
 }
@@ -4552,7 +4599,7 @@ div.zyndal-logo {
   gap: 4px;
   font-size: 12px;
   font-weight: 700;
-  color: var(--green);
+  color: var(--green-text);
 }
 
 /* flex-basis: 100% (with .friend-picker-row's flex-wrap: wrap) forces this
@@ -4608,7 +4655,7 @@ div.zyndal-logo {
   flex-shrink: 0;
   font-size: 12px;
   font-weight: 700;
-  color: var(--purple);
+  color: var(--purple-text);
 }
 
 /* ---------- Notifications ---------- */
@@ -4677,7 +4724,7 @@ div.zyndal-logo {
 }
 
 .notification-item-status--accepted {
-  color: var(--green);
+  color: var(--green-text);
 }
 
 .notification-item-status--declined {
@@ -4911,7 +4958,7 @@ div.zyndal-logo {
 }
 
 .curriculum-box--example .curriculum-box-label {
-  color: var(--blue);
+  color: var(--blue-text);
 }
 
 .curriculum-example-text {
@@ -4924,7 +4971,7 @@ div.zyndal-logo {
 }
 
 .curriculum-box--mistake .curriculum-box-label {
-  color: #ffb3c1;
+  color: var(--red-text);
 }
 
 .curriculum-updated {
@@ -5163,13 +5210,13 @@ div.zyndal-logo {
 .answer-review-correct {
   font-size: 13px;
   font-weight: 600;
-  color: var(--green);
+  color: var(--green-text);
 }
 
 .answer-review-wrong {
   font-size: 13px;
   font-weight: 600;
-  color: var(--red);
+  color: var(--red-text);
 }
 
 .modal-card--wide {
@@ -5312,7 +5359,7 @@ div.zyndal-logo {
 .homework-calendar-badge--completed {
   font-size: 9px;
   font-weight: 800;
-  color: var(--green);
+  color: var(--green-text);
 }
 
 .homework-random-count-input {

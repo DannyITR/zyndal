@@ -5,6 +5,13 @@ import { sanitizeString, sanitizeEmail, sanitizeGrade, sanitizeAccountType } fro
 import { createAndSendVerificationEmail } from '../_lib/verification.js'
 
 const LANGUAGE_PREFERENCES = new Set(['English', 'French', 'Spanish'])
+// Deliberately duplicated from THEMES in src/lib/theme.js rather than
+// imported — that file's own bottom-of-file bootstrap line touches
+// document/localStorage as an import side effect (see its header comment),
+// which would crash this serverless function the moment it's imported, the
+// same browser-only-dependency hazard src/lib/streak.js's own header
+// comment warns about. Same reasoning as LANGUAGE_PREFERENCES just above.
+const THEME_PREFERENCES = new Set(['default', 'midnight', 'daylight'])
 const NOTIFICATION_PREFERENCE_KEYS = ['enabled', 'score_share', 'friend_request', 'streak_reminder']
 
 // Backs updateUserProfile() in src/lib/storage.js. grade and
@@ -44,6 +51,12 @@ function validate(body) {
     return { field: 'language_preference', message: "language_preference must be 'English', 'French', or 'Spanish'." }
   }
 
+  // Cosmetic-only, unlike language/grade above — sent by every account type
+  // (SettingsScreen.jsx's theme picker isn't gated behind isStudent).
+  if (body.theme_preference !== undefined && body.theme_preference !== null && !THEME_PREFERENCES.has(body.theme_preference)) {
+    return { field: 'theme_preference', message: "theme_preference must be 'default', 'midnight', or 'daylight'." }
+  }
+
   if (body.notification_preferences !== undefined && body.notification_preferences !== null) {
     const prefs = body.notification_preferences
     if (typeof prefs !== 'object' || Array.isArray(prefs)) {
@@ -76,7 +89,7 @@ function validate(body) {
 }
 
 async function handle({ userId, body }) {
-  const { display_name, email, school, avatar, grade, language_preference, notification_preferences, account_type: accountType } = body
+  const { display_name, email, school, avatar, grade, language_preference, theme_preference, notification_preferences, account_type: accountType } = body
 
   const updates = {
     display_name: display_name || null,
@@ -85,6 +98,7 @@ async function handle({ userId, body }) {
     avatar: avatar || null,
     grade: grade ?? null,
     language_preference,
+    theme_preference,
     notification_preferences,
   }
 
