@@ -551,6 +551,9 @@
     "trialActive_other": "✨ Essai Premium — {{count}} jours restants",
     "premium": "✨ Zyndal Premium"
   },
+  "uploads": {
+    "weeklyLimitReached": "Vous avez atteint la limite de téléversement de cette semaine pour {{subject}} ({{limit}} pages). Réessayez la semaine prochaine, ou passez à Premium pour des limites plus élevées."
+  },
   "teacher": {
     "loadStatsFailed": "Échec du chargement des statistiques.",
     "loadHomeworkFailed": "Échec du chargement des devoirs récents.",
@@ -688,6 +691,7 @@
     "REVIEW_FAILED": "Une erreur est survenue lors de la révision de votre travail. Veuillez réessayer.",
     "SERVER_ERROR": "Une erreur est survenue. Veuillez réessayer.",
     "UNAUTHENTICATED": "Votre session a expiré. Veuillez vous reconnecter.",
+    "UPLOAD_LIMIT_REACHED": "Vous avez atteint la limite de téléversement de cette semaine pour cette matière.",
     "USERNAME_TAKEN": "Ce nom d'utilisateur est déjà pris.",
     "VALIDATION_ERROR": "Veuillez vérifier vos informations et réessayer."
   },

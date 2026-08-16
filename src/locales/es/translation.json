@@ -551,6 +551,9 @@
     "trialActive_other": "✨ Prueba Premium — {{count}} días restantes",
     "premium": "✨ Zyndal Premium"
   },
+  "uploads": {
+    "weeklyLimitReached": "Has alcanzado el límite de subidas de esta semana para {{subject}} ({{limit}} páginas). Inténtalo de nuevo la próxima semana, o mejora a Premium para límites más altos."
+  },
   "teacher": {
     "loadStatsFailed": "Error al cargar las estadísticas.",
     "loadHomeworkFailed": "Error al cargar las tareas recientes.",
@@ -688,6 +691,7 @@
     "REVIEW_FAILED": "Algo salió mal al revisar tu trabajo. Inténtalo de nuevo.",
     "SERVER_ERROR": "Algo salió mal. Inténtalo de nuevo.",
     "UNAUTHENTICATED": "Tu sesión ha expirado. Inicia sesión de nuevo.",
+    "UPLOAD_LIMIT_REACHED": "Has alcanzado el límite de subidas de esta semana para esta materia.",
     "USERNAME_TAKEN": "Ese nombre de usuario ya está en uso.",
     "VALIDATION_ERROR": "Verifica tu información e inténtalo de nuevo."
   },

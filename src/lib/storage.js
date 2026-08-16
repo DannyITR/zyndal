@@ -734,6 +734,7 @@ export async function saveUpload({ userId: _userId, documentType, subject, topic
     key_concepts: aiResult.key_concepts,
     document_type: documentType,
     pages_count: pagesCount,
+    timezone: getUserTimeZone(),
   })
   if (aiResult.questions && aiResult.questions.length > 0) {
     await callUploadsApi('POST', 'save-questions', { upload_id: upload.id, questions: aiResult.questions })
@@ -746,7 +747,7 @@ export async function saveUpload({ userId: _userId, documentType, subject, topic
 // track that more pages were added later (see UploadCaptureScreen's
 // existingUpload mode).
 export async function addPagesToUpload({ uploadId, questions, pagesAdded }) {
-  await callUploadsApi('POST', 'save-questions', { upload_id: uploadId, questions, pages_added: pagesAdded })
+  await callUploadsApi('POST', 'save-questions', { upload_id: uploadId, questions, pages_added: pagesAdded, timezone: getUserTimeZone() })
 }
 
 // userId isn't sent — the server scopes to the caller's own uploads from

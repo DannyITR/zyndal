@@ -197,6 +197,22 @@ create table if not exists uploads (
 );
 create index if not exists uploads_user_id_idx on uploads(user_id);
 
+-- Soft per-subject weekly usage cap on uploads (see WEEKLY_UPLOAD_PAGE_LIMIT
+-- in src/lib/uploads.js, enforced by api/_lib/uploadLimits.js), independent
+-- of the premium paywall. A dedicated ledger rather than summing
+-- uploads.pages_count by created_at — a single upload row can grow across
+-- multiple weeks via "Add Pages" (see save-questions.js) without its
+-- created_at ever moving, so summing by created_at would let an old upload
+-- dodge the cap indefinitely. week_start is the Monday (inclusive) of the
+-- ISO week, matching mondayOfWeek in src/lib/streak.js.
+create table if not exists upload_weekly_usage (
+  user_id uuid not null references users(id) on delete cascade,
+  subject text not null,
+  week_start date not null,
+  pages_used integer not null default 0,
+  primary key (user_id, subject, week_start)
+);
+
 -- Questions the AI extracted from an upload. Used both to show "what was on
 -- this document" in the uploads library, and as the primary source for test
 -- prep plans on a matching subject/topic (see getUploadedQuestions).
@@ -358,6 +374,7 @@ alter table friends enable row level security;
 alter table streak_shares enable row level security;
 alter table uploads enable row level security;
 alter table upload_questions enable row level security;
+alter table upload_weekly_usage enable row level security;
 alter table grades enable row level security;
 alter table grade_bonuses enable row level security;
 alter table study_plans enable row level security;

@@ -8,6 +8,11 @@ import { getActiveLanguage } from './streak.js'
 
 export const MAX_UPLOAD_PAGES = 5
 
+// Soft usage cap, independent of the premium paywall — see
+// api/_lib/uploadLimits.js for the server-side enforcement and
+// upload_weekly_usage in supabase/schema.sql for how it's tracked.
+export const WEEKLY_UPLOAD_PAGE_LIMIT = 10
+
 const LOCALE_FOR_LANGUAGE = { en: 'en-US', fr: 'fr-CA', es: 'es-ES' }
 
 export function formatShortDate(dateStr) {

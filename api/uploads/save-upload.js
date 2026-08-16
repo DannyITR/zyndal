@@ -2,6 +2,7 @@ import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { getLinkedParents } from '../_lib/db.js'
 import { assertPremium } from '../_lib/subscription.js'
+import { assertUploadPagesAllowed } from '../_lib/uploadLimits.js'
 import { computeSuggestedBonusCents } from '../../src/lib/gradeReward.js'
 import { sanitizeSubject, sanitizeString, sanitizeInteger } from '../_lib/sanitize.js'
 import { insertNotification } from '../_lib/notifications.js'
@@ -87,7 +88,13 @@ async function maybeCreateGradeBonus({ userId, gradePercentage, uploadId }) {
 
 async function handle({ userId, body }) {
   await assertPremium(userId)
-  const { subject, topic, grade_received: gradeReceived, test_date: testDate, summary, key_concepts: keyConcepts, document_type: documentType, pages_count: pagesCount, notes } = body
+  const { subject, topic, grade_received: gradeReceived, test_date: testDate, summary, key_concepts: keyConcepts, document_type: documentType, pages_count: pagesCount, notes, timezone } = body
+  const newPages = pagesCount ?? 1
+
+  // Soft weekly cap, checked (and recorded) before the insert — a rejected
+  // upload here means nothing gets persisted at all, matching "block
+  // further uploads for that subject" rather than saving a partial row.
+  await assertUploadPagesAllowed({ userId, subject, timezone, newPages })
 
   const { data, error } = await supabase
     .from('uploads')
@@ -101,7 +108,7 @@ async function handle({ userId, body }) {
       notes: notes ?? null,
       summary: summary ?? null,
       key_concepts: keyConcepts ?? null,
-      pages_count: pagesCount ?? 1,
+      pages_count: newPages,
     })
     .select()
     .single()
