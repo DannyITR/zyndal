@@ -470,6 +470,81 @@ div.zyndal-logo {
   z-index: 1;
 }
 
+.landing-audiences {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 1;
+}
+
+.landing-audience-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+}
+
+.landing-audience-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--card-2);
+  font-size: 24px;
+}
+
+.landing-audience-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--text);
+  margin: 0;
+}
+
+.landing-audience-body {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.landing-audience-card--students {
+  border-color: color-mix(in srgb, var(--purple) 35%, var(--border));
+  background: linear-gradient(160deg, color-mix(in srgb, var(--purple) 14%, transparent), var(--card) 55%);
+}
+
+.landing-audience-card--students .landing-audience-icon {
+  background: color-mix(in srgb, var(--purple) 22%, var(--card-2));
+}
+
+.landing-audience-card--parents {
+  border-color: color-mix(in srgb, var(--gold) 35%, var(--border));
+  background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 14%, transparent), var(--card) 55%);
+}
+
+.landing-audience-card--parents .landing-audience-icon {
+  background: color-mix(in srgb, var(--gold) 22%, var(--card-2));
+}
+
+.landing-audience-card--teachers {
+  border-color: color-mix(in srgb, var(--blue) 35%, var(--border));
+  background: linear-gradient(160deg, color-mix(in srgb, var(--blue) 14%, transparent), var(--card) 55%);
+}
+
+.landing-audience-card--teachers .landing-audience-icon {
+  background: color-mix(in srgb, var(--blue) 22%, var(--card-2));
+}
+
 .auth-tagline {
   color: var(--text-dim);
   font-size: 14px;

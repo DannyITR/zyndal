@@ -27,6 +27,18 @@ export default function LandingPage({ onSignUp, onLogIn }) {
         </button>
       </div>
 
+      <div className="landing-audiences">
+        {['students', 'parents', 'teachers'].map((audience) => (
+          <div key={audience} className={`landing-audience-card landing-audience-card--${audience}`}>
+            <span className="landing-audience-icon" aria-hidden="true">
+              {t(`landing.audiences.${audience}.icon`)}
+            </span>
+            <h2 className="landing-audience-title">{t(`landing.audiences.${audience}.title`)}</h2>
+            <p className="landing-audience-body">{t(`landing.audiences.${audience}.body`)}</p>
+          </div>
+        ))}
+      </div>
+
       <footer className="landing-footer">
         <div className="landing-footer-links">
           <button type="button" onClick={() => setOpenLegal('privacy')}>

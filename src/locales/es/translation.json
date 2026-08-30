@@ -8,10 +8,26 @@
     "termsOfService": "Términos de servicio",
     "dataDeletion": "Eliminación de datos",
     "backToZyndal": "← Volver a Zyndal",
-    "copyright": "© 2026 Zyndal. Todos los derechos reservados."
+    "copyright": "© 2026 Zyndal. Todos los derechos reservados.",
+    "audiences": {
+      "students": {
+        "icon": "📷",
+        "title": "Estudiar, por fin vale la pena",
+        "body": "Escanea tu tarea, obtén preguntas de práctica al instante y sigue el progreso de cada materia, mientras ganas XP y compites con tus amigos. Estudiar por fin se siente como un juego."
+      },
+      "parents": {
+        "icon": "💰",
+        "title": "Sabe exactamente qué necesita estudiar tu hijo",
+        "body": "Deja de adivinar qué necesita estudiar tu hijo. Zyndal sigue el progreso de sus materias, genera preguntas de práctica específicas y te permite recompensar el esfuerzo real con dinero real, para que la hora de la tarea se resuelva sola."
+      },
+      "teachers": {
+        "icon": "📋",
+        "title": "Tareas que los estudiantes sí quieren terminar",
+        "body": "Asigna tareas en segundos. Los estudiantes envían sus respuestas, ganan XP y compiten con sus compañeros, para que la tarea se haga y se haga bien."
+      }
+    }
   },
   "auth": {
-    "tagline": "Sube de nivel en cada materia, un día a la vez.",
     "inviteBanner": "🎉 ¡@{{username}} te invitó a Zyndal! Crea tu cuenta a continuación.",
     "login": {
       "username": "Nombre de usuario",

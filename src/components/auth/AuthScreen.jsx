@@ -36,7 +36,6 @@ export default function AuthScreen({ initialMode = 'login', onAuth, onLogoClick,
 
       <div className="auth-card">
         <Logo size="large" />
-        <p className="auth-tagline">{t('auth.tagline')}</p>
 
         {inviteParentCode && inviteParentUsername && view === 'signupForm' && (
           <p className="auth-invite-banner">{t('auth.inviteBanner', { username: inviteParentUsername })}</p>
