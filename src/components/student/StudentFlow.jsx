@@ -28,6 +28,8 @@ import UpgradeModal from '../shared/UpgradeModal'
 // deleted, for the upcoming class-card work (see TodaysQuestionCard below).
 // import SubjectDashboard from './SubjectDashboard'
 import TodaysQuestionCard from './TodaysQuestionCard'
+import ClassCardsGrid from './ClassCardsGrid'
+import ClassCard from './ClassCard'
 import StudentHome from './StudentHome'
 import CalendarScreen from './CalendarScreen'
 import Leaderboard from '../shared/Leaderboard'
@@ -84,6 +86,11 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [progress, setProgress] = useState(null)
   const [dailyProgress, setDailyProgress] = useState(null)
   const [pickedSubjectId, setPickedSubjectId] = useState(null)
+  // Which class card (see ClassCard.jsx/ClassCardsGrid.jsx) is open — kept
+  // separate from pickedSubjectId (the daily-question flow) so the two can
+  // never be confused with each other, even though both ultimately resolve
+  // to a SUBJECTS entry for now.
+  const [pickedClassSubjectId, setPickedClassSubjectId] = useState(null)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [infoModalKey, setInfoModalKey] = useState(null)
@@ -229,6 +236,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     setShowClasses(false)
     setSelectedDate(today)
     setPickedSubjectId(null)
+    setPickedClassSubjectId(null)
   }
 
   async function handleMarkDone() {
@@ -397,6 +405,10 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     new Date().getHours() >= 20
 
   const activeSubject = useMemo(() => (pickedSubjectId ? getSubject(pickedSubjectId) : null), [pickedSubjectId])
+  const activeClassSubject = useMemo(
+    () => (pickedClassSubjectId ? getSubject(pickedClassSubjectId) : null),
+    [pickedClassSubjectId]
+  )
   // The one subject shown on the home screen for the currently browsed date
   // — same for every student, rotating on a fixed 6-day cycle (see
   // getTodaysSubjectId). Recomputed per selectedDate so browsing past days
@@ -514,7 +526,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     return (
       <TestPrepSetupScreen
         user={user}
-        lockedSubjectId={pickedSubjectId}
+        lockedSubjectId={pickedClassSubjectId}
         onPlanCreated={(plan) => {
           setActivePlan(plan)
           setShowTestPrepSetup(false)
@@ -544,7 +556,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     return (
       <StudyGuideScreen
         user={user}
-        subject={activeSubject}
+        subject={activeClassSubject}
         onBack={() => setShowStudyGuide(false)}
         onLogout={onLogout}
         onLogoClick={handleLogoClick}
@@ -557,7 +569,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       <UploadsFlow
         user={user}
         initialView={uploadsView}
-        lockedSubjectId={pickedSubjectId}
+        lockedSubjectId={pickedClassSubjectId}
         onExit={() => setUploadsView(null)}
         onLogout={onLogout}
         onLogoClick={handleLogoClick}
@@ -569,7 +581,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     return (
       <PracticeFlow
         user={user}
-        lockedSubjectId={pickedSubjectId}
+        lockedSubjectId={pickedClassSubjectId}
         onExit={() => setShowPractice(false)}
         onLogout={onLogout}
         onLogoClick={handleLogoClick}
@@ -581,7 +593,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     return (
       <GradesScreen
         user={user}
-        lockedSubjectId={pickedSubjectId}
+        lockedSubjectId={pickedClassSubjectId}
         onBack={() => setShowGrades(false)}
         onLogout={onLogout}
         onLogoClick={handleLogoClick}
@@ -609,11 +621,16 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     )
   }
 
-  if (showCurriculum && activeSubject) {
+  // Two entry points share this screen: the Class Card's plain "Curriculum"
+  // button (activeClassSubject) and the daily question's inline "Read about
+  // this topic" link (activeSubject) — only one of the two is ever set at a
+  // time in practice, so either resolves correctly here.
+  const curriculumSubject = activeClassSubject || activeSubject
+  if (showCurriculum && curriculumSubject) {
     return (
       <CurriculumOutlineScreen
         user={user}
-        subject={activeSubject}
+        subject={curriculumSubject}
         initialUnitNumber={curriculumFocus?.unitNumber}
         initialTopicTitle={curriculumFocus?.topicTitle}
         onBack={() => {
@@ -656,6 +673,31 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           setShowCalendar(false)
         }}
         onBack={() => setShowCalendar(false)}
+        onLogout={onLogout}
+        onLogoClick={handleLogoClick}
+      />
+    )
+  }
+
+  if (activeClassSubject) {
+    return (
+      <ClassCard
+        user={user}
+        subject={activeClassSubject}
+        progress={progress}
+        activePlan={activePlan}
+        isPremium={isPremiumUnlocked(user.subscription_status)}
+        onOpenTestPrep={() => setShowTestPrepSetup(true)}
+        onOpenStudyGuide={() => setShowStudyGuide(true)}
+        onOpenStudyPlan={() => setShowStudyPlan(true)}
+        onMarkDonePlan={handleMarkDone}
+        onCancelPlan={handleCancelPlan}
+        onOpenUpload={() => setUploadsView('select-type')}
+        onOpenMyUploads={() => setUploadsView('library')}
+        onOpenPractice={() => setShowPractice(true)}
+        onOpenGrades={() => setShowGrades(true)}
+        onOpenCurriculum={() => setShowCurriculum(true)}
+        onBack={() => setPickedClassSubjectId(null)}
         onLogout={onLogout}
         onLogoClick={handleLogoClick}
       />
@@ -871,6 +913,8 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           onShareClick={() => setShowShareScreen(true)}
           isToday={isViewingToday}
         />
+
+        <ClassCardsGrid onSelectClass={setPickedClassSubjectId} />
 
         {infoModalKey && (
           <InfoModal

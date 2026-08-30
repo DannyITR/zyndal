@@ -15,6 +15,16 @@ export function getSubject(subjectId) {
   return SUBJECTS.find((s) => s.id === subjectId) || null
 }
 
+// Placeholder "classes" until the real schools/classes feature (auto-grouped,
+// teacher-claimed) ships — one per default subject, 1:1 with a SUBJECTS entry
+// for now. Swap the data source here (not the grid UI) once real per-student
+// class enrollment exists. Not related to the classes/class_students tables
+// behind the existing "Classes" nav button (ClassesFlow.jsx) — that's a
+// separate teacher-roster/homework-assignment feature.
+export function getPlaceholderClasses() {
+  return SUBJECTS.map((s) => ({ id: s.id, subjectId: s.id, name: s.name, icon: s.icon, color: s.color }))
+}
+
 // The single subject shown on the home screen each day, same for every
 // student — cycles through all 6 on a 6-day rotation so each gets equal
 // coverage. Order is a product spec (not SUBJECTS' own array order) and the
