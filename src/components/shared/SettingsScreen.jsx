@@ -14,6 +14,8 @@ import {
   respondToParentLinkRequest,
   getLinkedParents,
   openCustomerPortal,
+  getSchools,
+  setStudentSchool,
 } from '../../lib/storage'
 import { languageCodeForPreference } from '../../lib/i18n'
 import { useTheme } from '../../lib/ThemeContext'
@@ -87,6 +89,49 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
       setJoinError(getErrorMessage(err, t, 'settings.joinClassFailed'))
     } finally {
       setJoinSaving(false)
+    }
+  }
+
+  // Structured school reference — separate from the free-text `schoolName`
+  // field below (which stays as the "Other/not listed" fallback and, for
+  // students, is hidden from the main profile form in favor of this
+  // section, so the two never appear side by side meaning the same thing).
+  const [schools, setSchools] = useState([])
+  const [schoolPickerId, setSchoolPickerId] = useState('')
+  const [schoolOtherName, setSchoolOtherName] = useState('')
+  const [schoolSaving, setSchoolSaving] = useState(false)
+  const [schoolError, setSchoolError] = useState('')
+  const [schoolSuccess, setSchoolSuccess] = useState('')
+
+  useEffect(() => {
+    if (!isStudent) return
+    getSchools()
+      .then((data) => setSchools(data.schools))
+      .catch(() => {})
+  }, [isStudent])
+
+  // Only meaningful once user.school_id is set — schools may still be
+  // loading, so this can briefly be undefined even then.
+  const currentSchoolName = user.school_id ? schools.find((s) => s.id === user.school_id)?.name : null
+
+  async function handleSetSchool(e) {
+    e.preventDefault()
+    setSchoolError('')
+    setSchoolSuccess('')
+    const isOtherSchool = schoolPickerId === 'other'
+    if (!schoolPickerId || (isOtherSchool && !schoolOtherName.trim())) return
+    setSchoolSaving(true)
+    try {
+      const updated = await setStudentSchool({
+        schoolId: isOtherSchool ? null : schoolPickerId,
+        schoolName: isOtherSchool ? schoolOtherName.trim() : null,
+      })
+      onSaved(updated)
+      setSchoolSuccess(t('settings.schoolSaved'))
+    } catch (err) {
+      setSchoolError(getErrorMessage(err, t, 'settings.schoolSaveFailed'))
+    } finally {
+      setSchoolSaving(false)
     }
   }
 
@@ -279,7 +324,10 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
       const updated = await updateUserProfile(user.id, {
         displayName: displayName.trim(),
         email: email.trim(),
-        schoolName: schoolName.trim(),
+        // Students edit school through the dedicated "School" section
+        // instead (its own save action) — leaving this undefined here means
+        // update-settings.js won't touch it from this form for them.
+        schoolName: isStudent ? undefined : schoolName.trim(),
         avatar,
         grade: isStudent ? (grade ? Number(grade) : null) : user.grade,
         languagePreference: isStudent ? languagePreference : user.language_preference,
@@ -374,15 +422,19 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
           />
         </div>
 
-        <div className="field">
-          <label htmlFor="settings-school">{t('settings.schoolName')}</label>
-          <input
-            id="settings-school"
-            value={schoolName}
-            onChange={(e) => setSchoolName(e.target.value)}
-            placeholder={t('settings.schoolPlaceholder')}
-          />
-        </div>
+        {/* Students set their school via the structured "School" section
+            below instead — this free-text field stays for parents/teachers. */}
+        {!isStudent && (
+          <div className="field">
+            <label htmlFor="settings-school">{t('settings.schoolName')}</label>
+            <input
+              id="settings-school"
+              value={schoolName}
+              onChange={(e) => setSchoolName(e.target.value)}
+              placeholder={t('settings.schoolPlaceholder')}
+            />
+          </div>
+        )}
 
         {isStudent && (
           <div className="field">
@@ -652,6 +704,45 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
               {linkParentSaving ? t('settings.linking') : t('settings.linkParent')}
             </button>
           </form>
+        </div>
+      )}
+
+      {isStudent && (
+        <div className="finance-section-card">
+          <h3 className="section-heading">{t('settings.schoolHeading')}</h3>
+          {user.school_id ? (
+            <p className="field-hint">
+              {t('settings.currentSchool', { school: currentSchoolName || t('common.loading') })}
+            </p>
+          ) : (
+            <form className="auth-form" onSubmit={handleSetSchool}>
+              <p className="field-hint">{t('settings.selectSchoolHint')}</p>
+              <div className="field">
+                <label htmlFor="settings-school-picker">{t('auth.signup.school')}</label>
+                <select id="settings-school-picker" value={schoolPickerId} onChange={(e) => setSchoolPickerId(e.target.value)}>
+                  <option value="">{t('auth.signup.selectSchool')}</option>
+                  {schools.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                  <option value="other">{t('auth.signup.schoolOther')}</option>
+                </select>
+                {schoolPickerId === 'other' && (
+                  <input
+                    value={schoolOtherName}
+                    onChange={(e) => setSchoolOtherName(e.target.value)}
+                    placeholder={t('settings.schoolPlaceholder')}
+                  />
+                )}
+              </div>
+              {schoolError && <p className="form-error">{schoolError}</p>}
+              {schoolSuccess && <p className="form-success">{schoolSuccess}</p>}
+              <button type="submit" className="btn btn-secondary btn-block" disabled={schoolSaving}>
+                {schoolSaving ? t('settings.saving') : t('settings.saveChanges')}
+              </button>
+            </form>
+          )}
         </div>
       )}
 

@@ -118,6 +118,10 @@ function callClassesApi(method, endpoint, body) {
   return callApi('/api/classes', method, endpoint, body)
 }
 
+function callSchoolsApi(method, endpoint, body) {
+  return callApi('/api/schools', method, endpoint, body)
+}
+
 function callNotificationsApi(method, endpoint, body) {
   return callApi('/api/notifications', method, endpoint, body)
 }
@@ -303,11 +307,12 @@ export async function oauthMerge({ provider, supabaseAccessToken, existingUserna
 // Omitted (undefined) by every other caller (SettingsScreen.jsx), which
 // leaves the field out of the request body entirely, matching the
 // endpoint's existing "absent means don't touch account_type" behavior.
-export async function updateUserProfile(userId, { displayName, email, schoolName, avatar, grade, languagePreference, notificationPreferences, accountType }) {
+export async function updateUserProfile(userId, { displayName, email, schoolName, schoolId, avatar, grade, languagePreference, notificationPreferences, accountType }) {
   return callStudentApi('POST', 'update-settings', {
     display_name: displayName,
     email,
     school: schoolName,
+    school_id: schoolId,
     avatar,
     grade,
     language_preference: languagePreference,
@@ -1089,6 +1094,30 @@ export async function getMyClasses() {
 
 export async function joinClass(teacherCode) {
   return callStudentApi('POST', 'join-class', { teacher_code: teacherCode })
+}
+
+// ---------- Schools / school-subject groups (student self-organization) ----------
+
+// Public — no session required, since SignupForm.jsx needs this before an
+// account exists.
+export async function getSchools() {
+  return callSchoolsApi('GET', 'list')
+}
+
+// Sets the student's structured school reference for the first time only —
+// see update-settings.js's SCHOOL_ALREADY_SET guard. schoolName (the
+// existing free-text column) is the "Other/not listed" fallback and has no
+// such restriction.
+export async function setStudentSchool({ schoolId, schoolName }) {
+  return callStudentApi('POST', 'update-settings', { school_id: schoolId, school: schoolName })
+}
+
+export async function getMySchoolSubjectGroups() {
+  return callStudentApi('GET', 'get-school-subject-groups')
+}
+
+export async function joinSchoolSubjectGroup(groupId) {
+  return callStudentApi('POST', 'join-school-subject-group', { group_id: groupId })
 }
 
 // ---------- Homework (student side) ----------

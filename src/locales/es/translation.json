@@ -47,6 +47,9 @@
       "confirmPassword": "Confirmar contraseña",
       "grade": "Grado (opcional)",
       "selectGrade": "Seleccionar grado",
+      "school": "Escuela",
+      "selectSchool": "Selecciona tu escuela",
+      "schoolOther": "Otra / no aparece en la lista",
       "parentCode": "Código de padre/madre (opcional)",
       "parentCodePlaceholder": "ej. 7F3K9Q",
       "parentCodeHint": "Pide a tu padre/madre el código de su panel.",
@@ -137,6 +140,7 @@
     "chooseSubject": "La pregunta de hoy",
     "todaysQuestion": "Pregunta de Hoy",
     "myClasses": "Mis Materias",
+    "noSchoolSetPrompt": "Configura tu escuela en Ajustes para ver tus materias →",
     "dismiss": "Cerrar",
     "verifyEmailBanner": "📧 Por favor verifica tu correo — revisa tu bandeja de entrada.",
     "sentBang": "¡Enviado!",
@@ -350,6 +354,11 @@
     "linkedSuccess": "✅ ¡Vinculado a @{{username}} con éxito!",
     "linkParentFailed": "No se pudo vincular ese código. Verifícalo e inténtalo de nuevo.",
     "respondRequestFailed": "No se pudo actualizar esta solicitud. Inténtalo de nuevo.",
+    "schoolHeading": "Escuela",
+    "selectSchoolHint": "Elige tu escuela — solo se puede establecer una vez aquí; cambiarla después requiere una solicitud de revisión.",
+    "currentSchool": "Tu escuela: {{school}}",
+    "schoolSaved": "✅ ¡Escuela guardada!",
+    "schoolSaveFailed": "No se pudo guardar tu escuela. Inténtalo de nuevo.",
     "joinClass": "Unirse a una clase",
     "enterClassCode": "Ingresa el código de 6 caracteres que tu profesor compartió contigo. Puedes unirte a más de una clase.",
     "classCode": "Código de clase",
@@ -723,6 +732,11 @@
     "legendHomework": "Tarea",
     "legendCompleted": "Completado",
     "legendOverdue": "Atrasado"
+  },
+  "classCard": {
+    "joinGroup": "Unirse al grupo",
+    "joining": "Uniéndose…",
+    "unclaimedStatus": "{{grade}}.° {{school}}"
   },
   "curriculum": {
     "lastUpdated": "Última actualización: {{date}}"

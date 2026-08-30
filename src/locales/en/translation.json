@@ -47,6 +47,9 @@
       "confirmPassword": "Confirm password",
       "grade": "Grade (optional)",
       "selectGrade": "Select grade",
+      "school": "School",
+      "selectSchool": "Select your school",
+      "schoolOther": "Other / not listed",
       "parentCode": "Parent code (optional)",
       "parentCodePlaceholder": "e.g. 7F3K9Q",
       "parentCodeHint": "Ask your parent for the code on their dashboard.",
@@ -137,6 +140,7 @@
     "chooseSubject": "Today's question",
     "todaysQuestion": "Today's Question",
     "myClasses": "My Subjects",
+    "noSchoolSetPrompt": "Set your school in Settings to see your classes →",
     "dismiss": "Dismiss",
     "verifyEmailBanner": "📧 Please verify your email — check your inbox.",
     "sentBang": "Sent!",
@@ -350,6 +354,11 @@
     "linkedSuccess": "✅ Linked to @{{username}} successfully!",
     "linkParentFailed": "Couldn't link that code. Please check it and try again.",
     "respondRequestFailed": "Couldn't update this request. Please try again.",
+    "schoolHeading": "School",
+    "selectSchoolHint": "Pick your school — this can only be set once here; changing it later needs a review request.",
+    "currentSchool": "Your school: {{school}}",
+    "schoolSaved": "✅ School saved!",
+    "schoolSaveFailed": "Couldn't save your school. Please try again.",
     "joinClass": "Join a Class",
     "enterClassCode": "Enter the 6-character code your teacher shared with you. You can join more than one class.",
     "classCode": "Class code",
@@ -723,6 +732,11 @@
     "legendHomework": "Homework",
     "legendCompleted": "Completed",
     "legendOverdue": "Overdue"
+  },
+  "classCard": {
+    "joinGroup": "Join Group",
+    "joining": "Joining…",
+    "unclaimedStatus": "Gr {{grade}} {{school}}"
   },
   "curriculum": {
     "lastUpdated": "Last updated: {{date}}"

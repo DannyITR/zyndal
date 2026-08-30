@@ -29,7 +29,7 @@ import { findQuestionByPrompt } from '../../src/lib/questions.js'
 // stripe_subscription_id are deliberately NOT in this list and must never
 // be added to it; raw Stripe IDs are never shown to users.
 export const SAFE_USER_COLUMNS =
-  'id, username, account_type, grade, parent_code, created_at, display_name, email, school, avatar, wallet_balance_cents, total_added_cents, total_paid_out_cents, coin_to_dollar_rate, milestone_settings, is_premium, language_preference, theme_preference, email_verified, notification_preferences, trial_started_at, trial_ends_at, is_paying_subscriber, subscription_plan, subscription_current_period_end, is_subscription_owner'
+  'id, username, account_type, grade, parent_code, created_at, display_name, email, school, school_id, avatar, wallet_balance_cents, total_added_cents, total_paid_out_cents, coin_to_dollar_rate, milestone_settings, is_premium, language_preference, theme_preference, email_verified, notification_preferences, trial_started_at, trial_ends_at, is_paying_subscriber, subscription_plan, subscription_current_period_end, is_subscription_owner'
 
 // Deliberately duplicated from the local (unexported) generateUniqueParentCode
 // in api/auth/signup.js rather than importing it from there — signup.js is

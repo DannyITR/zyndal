@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { signup, updateUserProfile, checkEmailAvailable, linkParentByCode } from '../../lib/storage'
+import { signup, updateUserProfile, checkEmailAvailable, linkParentByCode, getSchools } from '../../lib/storage'
 import { getErrorMessage } from '../../lib/errors'
 import LegalModal from '../legal/LegalModal'
 import AccountTypeSelector from './AccountTypeSelector'
@@ -31,12 +31,25 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang])
 
+  // Public endpoint — no session exists yet at this point in the flow.
+  useEffect(() => {
+    getSchools()
+      .then((data) => setSchools(data.schools))
+      .catch(() => {
+        // A failed fetch just leaves the dropdown showing only "Other/not
+        // listed" — not worth blocking signup over.
+      })
+  }, [])
+
   const [accountType, setAccountType] = useState('student')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState(initialEmail)
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [grade, setGrade] = useState('')
+  const [schools, setSchools] = useState([])
+  const [schoolId, setSchoolId] = useState('')
+  const [otherSchoolName, setOtherSchoolName] = useState('')
   const [parentCode, setParentCode] = useState(initialParentCode)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [confirmedAge, setConfirmedAge] = useState(false)
@@ -106,12 +119,14 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
       // passed back through too: update-settings.js overwrites every field
       // it's given, so omitting them would null out the grade/parent-code
       // signup just set.
+      const isOtherSchool = accountType === 'student' && schoolId === 'other'
       let finalUser = newUser
       try {
         finalUser = await updateUserProfile(newUser.id, {
           displayName: newUser.display_name,
           email: trimmedEmail,
-          schoolName: newUser.school,
+          schoolName: isOtherSchool ? otherSchoolName.trim() || null : newUser.school,
+          schoolId: accountType === 'student' && schoolId && !isOtherSchool ? schoolId : null,
           avatar: newUser.avatar,
           grade: newUser.grade,
           languagePreference: newUser.language_preference,
@@ -231,6 +246,25 @@ export default function SignupForm({ lang, onLangChange, onAuth, onBack, onSwitc
               <option value="10">10</option>
               <option value="11">11</option>
             </select>
+          </div>
+          <div className="field">
+            <label htmlFor="signup-school">{t('auth.signup.school')}</label>
+            <select id="signup-school" value={schoolId} onChange={(e) => setSchoolId(e.target.value)}>
+              <option value="">{t('auth.signup.selectSchool')}</option>
+              {schools.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+              <option value="other">{t('auth.signup.schoolOther')}</option>
+            </select>
+            {schoolId === 'other' && (
+              <input
+                value={otherSchoolName}
+                onChange={(e) => setOtherSchoolName(e.target.value)}
+                placeholder={t('settings.schoolPlaceholder')}
+              />
+            )}
           </div>
           <div className="field">
             <label htmlFor="signup-parent-code">{t('auth.signup.parentCode')}</label>

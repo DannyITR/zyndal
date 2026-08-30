@@ -387,6 +387,115 @@ alter table curriculum_outlines enable row level security;
 alter table sessions enable row level security;
 alter table oauth_identities enable row level security;
 
+-- ---------- Schools + open student self-organization ----------
+-- Added alongside the existing classes/class_students tables (themselves
+-- not in this file — see the note at the top about drift). Phase 1 (schools,
+-- school_subject_groups, school_subject_group_students, users.school_id) is
+-- wired up in the app; teacher_claims and school_change_requests exist here
+-- now but their application code (teacher claim flow, admin review, school-
+-- change requests) ships in later phases.
+
+create table if not exists schools (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  domain text,
+  created_at timestamptz not null default now()
+);
+
+-- The unclaimed "school + subject + grade" entity — seeded, one row per
+-- (school, subject, grade) combination.
+create table if not exists school_subject_groups (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
+  subject text not null,
+  grade integer not null,
+  created_at timestamptz not null default now(),
+  unique (school_id, subject, grade)
+);
+create index if not exists school_subject_groups_school_id_idx on school_subject_groups(school_id);
+
+-- Student membership in an unclaimed group (parallels class_students).
+create table if not exists school_subject_group_students (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references school_subject_groups(id) on delete cascade,
+  student_id uuid not null references users(id) on delete cascade,
+  joined_at timestamptz not null default now(),
+  unique (group_id, student_id)
+);
+create index if not exists school_subject_group_students_student_id_idx on school_subject_group_students(student_id);
+
+-- Structured school reference alongside the existing free-text users.school
+-- (kept as-is, used when a student picks "Other/not listed").
+alter table users add column if not exists school_id uuid references schools(id);
+
+-- Additive columns so a teacher-claimed class can carry a subject/course
+-- number and link back to the group it was claimed from. All nullable —
+-- existing self-created classes are unaffected. (classes itself predates
+-- this file and isn't defined above — see the drift note at the top.)
+alter table classes add column if not exists school_id uuid references schools(id);
+alter table classes add column if not exists subject text;
+alter table classes add column if not exists course_number text;
+alter table classes add column if not exists group_id uuid references school_subject_groups(id);
+
+-- Phase 2: teacher requests to claim an unclaimed group.
+create table if not exists teacher_claims (
+  id uuid primary key default gen_random_uuid(),
+  teacher_id uuid not null references users(id) on delete cascade,
+  group_id uuid not null references school_subject_groups(id) on delete cascade,
+  course_number text not null,
+  bio_link text not null,
+  status text not null default 'pending' check (status in ('pending','approved','rejected')),
+  created_class_id uuid references classes(id),
+  resolved_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists teacher_claims_status_idx on teacher_claims(status);
+
+-- Phase 3: student requests to change their school (proof-gated, admin-reviewed).
+create table if not exists school_change_requests (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references users(id) on delete cascade,
+  requested_school_id uuid references schools(id),
+  requested_school_name text,
+  proof_image_base64 text not null,
+  status text not null default 'pending' check (status in ('pending','approved','rejected')),
+  resolved_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists school_change_requests_status_idx on school_change_requests(status);
+
+alter table schools enable row level security;
+alter table school_subject_groups enable row level security;
+alter table school_subject_group_students enable row level security;
+alter table teacher_claims enable row level security;
+alter table school_change_requests enable row level security;
+
+-- Seed: 11 LBPSB (Lester B. Pearson School Board, West Island Montreal) high
+-- schools, one shared board domain (used for the Phase 2 teacher email-
+-- domain check).
+insert into schools (name, domain) values
+  ('Beaconsfield High School', 'lbpsb.qc.ca'),
+  ('Beurling Academy High School', 'lbpsb.qc.ca'),
+  ('Horizon High School', 'lbpsb.qc.ca'),
+  ('John Rennie High School', 'lbpsb.qc.ca'),
+  ('Lakeside Academy High School', 'lbpsb.qc.ca'),
+  ('LaSalle Community Comprehensive High School', 'lbpsb.qc.ca'),
+  ('Macdonald High School', 'lbpsb.qc.ca'),
+  ('Pierrefonds Community High School', 'lbpsb.qc.ca'),
+  ('St. Thomas High School', 'lbpsb.qc.ca'),
+  ('Westwood High School (Junior Campus)', 'lbpsb.qc.ca'),
+  ('Westwood High School (Senior Campus)', 'lbpsb.qc.ca')
+on conflict do nothing;
+
+-- Seed: 6 subjects x grades 7-11 (sanitizeGrade in api/_lib/sanitize.js is
+-- the app's only supported range) for every seeded school = 330 rows.
+insert into school_subject_groups (school_id, subject, grade)
+select s.id, subj.subject, g.grade
+from schools s
+cross join (values ('math'),('science'),('history'),('geography'),('english'),('french')) as subj(subject)
+cross join (values (7),(8),(9),(10),(11)) as g(grade)
+on conflict (school_id, subject, grade) do nothing;
+
 -- ---------- Migrations ----------
 -- Run against a database that already has an `uploads` table from before
 -- multi-page upload support existed (the `create table if not exists`

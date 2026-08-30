@@ -23,6 +23,10 @@ export default function ClassCard({
   progress,
   activePlan,
   isPremium,
+  grade,
+  schoolName,
+  joined,
+  onJoin,
   onOpenTestPrep,
   onOpenStudyGuide,
   onOpenStudyPlan,
@@ -41,6 +45,7 @@ export default function ClassCard({
   const today = todayStr(new Date(), getUserTimeZone())
   const [showPremiumModal, setShowPremiumModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
+  const [joining, setJoining] = useState(false)
 
   const displayStreak = getEffectiveStreak(progress, today)
   const planForThisSubject = activePlan && activePlan.subject === subject.id ? activePlan : null
@@ -78,6 +83,16 @@ export default function ClassCard({
     setShowCancelModal(false)
   }
 
+  async function handleJoin() {
+    if (joining) return
+    setJoining(true)
+    try {
+      await onJoin()
+    } finally {
+      setJoining(false)
+    }
+  }
+
   return (
     <div className="screen student-screen">
       <TopBar
@@ -93,6 +108,14 @@ export default function ClassCard({
         <StatPill icon="⚡" label={t('home.xp')} value={progress.xp} />
         <StatPill icon="🪙" label={t('home.coins')} value={progress.coins} />
       </div>
+
+      {/* Joining is additive, not a gate — Test Prep/Study Guide/Practice/etc.
+          below are usable either way, exactly as before this feature. */}
+      {!joined && (
+        <button type="button" className="btn btn-primary btn-block" onClick={handleJoin} disabled={joining}>
+          {joining ? t('classCard.joining') : t('classCard.joinGroup')}
+        </button>
+      )}
 
       <div className="home-actions">
         <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenTestPrep}>
@@ -154,6 +177,11 @@ export default function ClassCard({
           </div>
         </div>
       )}
+
+      {/* Claim status — unclaimed for now (Phase 1: no teacher claims exist
+          yet); a later phase adds the claimed variant ("Math 416 Mr. Smith")
+          once claimedClasses is populated. */}
+      <p className="class-card-status">{t('classCard.unclaimedStatus', { grade, school: schoolName })}</p>
 
       {showPremiumModal && <UpgradeModal user={user} onClose={() => setShowPremiumModal(false)} />}
       {showCancelModal && planForThisSubject && (

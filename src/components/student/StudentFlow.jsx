@@ -13,6 +13,7 @@ import {
   getNotifications,
   resendVerificationEmail,
   getMyHomework,
+  joinSchoolSubjectGroup,
 } from '../../lib/storage'
 import { getSubject, getTodaysSubjectId } from '../../lib/questions'
 import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE, TOTAL_SUBJECTS } from '../../lib/streak'
@@ -91,6 +92,13 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   // never be confused with each other, even though both ultimately resolve
   // to a SUBJECTS entry for now.
   const [pickedClassSubjectId, setPickedClassSubjectId] = useState(null)
+  // The full school_subject_group the student tapped on the home screen's
+  // class grid — { id, subject, joined, schoolName, grade } from
+  // ClassCardsGrid.jsx. subject drives pickedClassSubjectId above (so the
+  // existing Test Prep/Study Guide/etc. wiring needs no changes); the rest
+  // (id/joined/schoolName/grade) is only needed by ClassCard.jsx itself for
+  // the Join button and the claim-status footer text.
+  const [pickedGroup, setPickedGroup] = useState(null)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [infoModalKey, setInfoModalKey] = useState(null)
@@ -237,6 +245,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     setSelectedDate(today)
     setPickedSubjectId(null)
     setPickedClassSubjectId(null)
+    setPickedGroup(null)
   }
 
   async function handleMarkDone() {
@@ -687,6 +696,13 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         progress={progress}
         activePlan={activePlan}
         isPremium={isPremiumUnlocked(user.subscription_status)}
+        grade={pickedGroup?.grade}
+        schoolName={pickedGroup?.schoolName}
+        joined={Boolean(pickedGroup?.joined)}
+        onJoin={async () => {
+          await joinSchoolSubjectGroup(pickedGroup.id)
+          setPickedGroup((g) => (g ? { ...g, joined: true } : g))
+        }}
         onOpenTestPrep={() => setShowTestPrepSetup(true)}
         onOpenStudyGuide={() => setShowStudyGuide(true)}
         onOpenStudyPlan={() => setShowStudyPlan(true)}
@@ -697,7 +713,10 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         onOpenPractice={() => setShowPractice(true)}
         onOpenGrades={() => setShowGrades(true)}
         onOpenCurriculum={() => setShowCurriculum(true)}
-        onBack={() => setPickedClassSubjectId(null)}
+        onBack={() => {
+          setPickedClassSubjectId(null)
+          setPickedGroup(null)
+        }}
         onLogout={onLogout}
         onLogoClick={handleLogoClick}
       />
@@ -914,7 +933,13 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           isToday={isViewingToday}
         />
 
-        <ClassCardsGrid onSelectClass={setPickedClassSubjectId} />
+        <ClassCardsGrid
+          onSelectClass={(group) => {
+            setPickedGroup(group)
+            setPickedClassSubjectId(group.subject)
+          }}
+          onOpenSettings={() => setShowSettings(true)}
+        />
 
         {infoModalKey && (
           <InfoModal

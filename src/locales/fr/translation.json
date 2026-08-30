@@ -47,6 +47,9 @@
       "confirmPassword": "Confirmer le mot de passe",
       "grade": "Niveau scolaire (optionnel)",
       "selectGrade": "Sélectionner un niveau",
+      "school": "École",
+      "selectSchool": "Sélectionnez votre école",
+      "schoolOther": "Autre / non répertoriée",
       "parentCode": "Code parent (optionnel)",
       "parentCodePlaceholder": "ex. 7F3K9Q",
       "parentCodeHint": "Demandez à votre parent le code sur son tableau de bord.",
@@ -137,6 +140,7 @@
     "chooseSubject": "La question du jour",
     "todaysQuestion": "Question du Jour",
     "myClasses": "Mes Matières",
+    "noSchoolSetPrompt": "Configurez votre école dans les Paramètres pour voir vos matières →",
     "dismiss": "Fermer",
     "verifyEmailBanner": "📧 Veuillez vérifier votre courriel — consultez votre boîte de réception.",
     "sentBang": "Envoyé !",
@@ -350,6 +354,11 @@
     "linkedSuccess": "✅ Lié à @{{username}} avec succès !",
     "linkParentFailed": "Impossible de lier ce code. Veuillez le vérifier et réessayer.",
     "respondRequestFailed": "Impossible de mettre à jour cette demande. Veuillez réessayer.",
+    "schoolHeading": "École",
+    "selectSchoolHint": "Choisissez votre école — elle ne peut être définie qu'une seule fois ici; la changer ensuite nécessite une demande de révision.",
+    "currentSchool": "Votre école : {{school}}",
+    "schoolSaved": "✅ École enregistrée !",
+    "schoolSaveFailed": "Impossible d'enregistrer votre école. Veuillez réessayer.",
     "joinClass": "Rejoindre une classe",
     "enterClassCode": "Entrez le code à 6 caractères que votre enseignant vous a partagé. Vous pouvez rejoindre plusieurs classes.",
     "classCode": "Code de classe",
@@ -723,6 +732,11 @@
     "legendHomework": "Devoir",
     "legendCompleted": "Terminé",
     "legendOverdue": "En retard"
+  },
+  "classCard": {
+    "joinGroup": "Rejoindre le groupe",
+    "joining": "Adhésion en cours…",
+    "unclaimedStatus": "{{grade}}e année {{school}}"
   },
   "curriculum": {
     "lastUpdated": "Dernière mise à jour : {{date}}"
