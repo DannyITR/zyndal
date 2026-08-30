@@ -15,6 +15,27 @@ export function getSubject(subjectId) {
   return SUBJECTS.find((s) => s.id === subjectId) || null
 }
 
+// The single subject shown on the home screen each day, same for every
+// student — cycles through all 6 on a 6-day rotation so each gets equal
+// coverage. Order is a product spec (not SUBJECTS' own array order) and the
+// day-index math matches the existing daysSinceEpoch pattern used elsewhere
+// in this file and in getTodaysGuideSubject (src/lib/ai.js), so all three
+// stay in step with each other. Takes a 'YYYY-MM-DD' string (not a Date) to
+// match how selectedDate/date are already passed around the app; noon UTC
+// keeps this on the correct calendar day the same way getDailyQuestion does
+// for past dates.
+const DAILY_ROTATION_ORDER = ['math', 'science', 'history', 'geography', 'english', 'french']
+
+export function getTodaysSubjectId(dateStr) {
+  const date = dateStr ? new Date(`${dateStr}T12:00:00Z`) : new Date()
+  const daysSinceEpoch = Math.floor(date.getTime() / 86400000)
+  return DAILY_ROTATION_ORDER[daysSinceEpoch % DAILY_ROTATION_ORDER.length]
+}
+
+export function getTodaysSubject(dateStr) {
+  return getSubject(getTodaysSubjectId(dateStr))
+}
+
 // The app's internal `grade` field (stored on users, questions, study plans,
 // etc.) always uses the North American grade number (7-11) — that's the
 // number the question bank and every other table is keyed by, and it must

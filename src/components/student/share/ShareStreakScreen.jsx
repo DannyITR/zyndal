@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getFriendsWithStreaks, getStreakSharesForUser, getTodaysReceivedShares, shareStreakWithFriend } from '../../../lib/storage'
 import { hasSharedToday, computeShareStreak } from '../../../lib/streakShare'
-import { SCORE_COLORS, formatLongDate } from '../../../lib/streak'
+import { SCORE_COLORS, TOTAL_SUBJECTS, formatLongDate } from '../../../lib/streak'
 import TopBar from '../../shared/TopBar'
 import FriendSharePickerModal from './FriendSharePickerModal'
 
@@ -39,7 +39,10 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, canSha
       ? receivedToday.filter((r) => computeShareStreak(shares, user.id, r.senderId, today) === 0)
       : []
 
-  const scoreColor = SCORE_COLORS[Math.min(Math.max(todayScore, 0), 6)]
+  // Scaled proportionally against TOTAL_SUBJECTS (the day's max possible
+  // score) rather than a fixed clamp, so a full day always lands on the
+  // gradient's green end regardless of what that max is.
+  const scoreColor = SCORE_COLORS[Math.round((Math.min(Math.max(todayScore, 0), TOTAL_SUBJECTS) / TOTAL_SUBJECTS) * (SCORE_COLORS.length - 1))]
 
   // Only friends with an established (1+ day) mutual share streak are worth
   // surfacing as a card here — everyone else is reachable via the picker
@@ -103,7 +106,7 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, canSha
           await navigator.share({
             files: [file],
             title: t('share.myScoreTitle'),
-            text: t('share.myScoreText', { score: todayScore }),
+            text: t('share.myScoreText', { score: todayScore, total: TOTAL_SUBJECTS }),
           })
           shared = true
         } catch (err) {
@@ -237,7 +240,7 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, canSha
         <div className="share-card-middle">
           <p className="share-card-date">{formattedDate}</p>
           <p className="share-card-score" style={{ color: scoreColor }}>
-            {todayScore}/6
+            {todayScore}/{TOTAL_SUBJECTS}
           </p>
           <p className="share-card-username">@{user.username}</p>
           <p className="share-card-xp">⚡ {xp} XP</p>

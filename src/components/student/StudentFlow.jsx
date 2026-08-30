@@ -14,7 +14,7 @@ import {
   resendVerificationEmail,
   getMyHomework,
 } from '../../lib/storage'
-import { getSubject } from '../../lib/questions'
+import { getSubject, getTodaysSubjectId } from '../../lib/questions'
 import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE, TOTAL_SUBJECTS } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
 import { isPushSupported, subscribeToPush } from '../../lib/push'
@@ -23,7 +23,11 @@ import { getErrorMessage } from '../../lib/errors'
 import TopBar from '../shared/TopBar'
 import TrialBanner from '../shared/TrialBanner'
 import UpgradeModal from '../shared/UpgradeModal'
-import SubjectDashboard from './SubjectDashboard'
+// SubjectDashboard (the old 6-subject grid) is no longer rendered now that
+// the home screen shows a single rotating subject instead — kept, not
+// deleted, for the upcoming class-card work (see TodaysQuestionCard below).
+// import SubjectDashboard from './SubjectDashboard'
+import TodaysQuestionCard from './TodaysQuestionCard'
 import StudentHome from './StudentHome'
 import CalendarScreen from './CalendarScreen'
 import Leaderboard from '../shared/Leaderboard'
@@ -393,6 +397,12 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     new Date().getHours() >= 20
 
   const activeSubject = useMemo(() => (pickedSubjectId ? getSubject(pickedSubjectId) : null), [pickedSubjectId])
+  // The one subject shown on the home screen for the currently browsed date
+  // — same for every student, rotating on a fixed 6-day cycle (see
+  // getTodaysSubjectId). Recomputed per selectedDate so browsing past days
+  // via the date-nav arrows/calendar shows that day's own rotated subject.
+  const todaysSubjectId = useMemo(() => getTodaysSubjectId(selectedDate), [selectedDate])
+  const todaysSubject = useMemo(() => getSubject(todaysSubjectId), [todaysSubjectId])
   const greetingName = user.display_name || user.username
   const avatarPrefix = user.avatar ? `${user.avatar} ` : ''
 
@@ -842,12 +852,23 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           </div>
         )}
 
+        {/* Old 6-subject grid — kept, not deleted, for the upcoming
+            class-card work (see the SubjectDashboard import comment above).
         <SubjectDashboard
           completedSubjectIds={completedSubjectIds}
           incorrectSubjectIds={incorrectSubjectIds}
           onSelectSubject={setPickedSubjectId}
           onShareClick={() => setShowShareScreen(true)}
           date={selectedDate}
+          isToday={isViewingToday}
+        /> */}
+
+        <TodaysQuestionCard
+          subject={todaysSubject}
+          isCompleted={completedSubjectIds.has(todaysSubjectId)}
+          isIncorrect={incorrectSubjectIds.has(todaysSubjectId)}
+          onSelect={() => setPickedSubjectId(todaysSubjectId)}
+          onShareClick={() => setShowShareScreen(true)}
           isToday={isViewingToday}
         />
 

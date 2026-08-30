@@ -1211,6 +1211,114 @@ div.zyndal-logo {
   transform: scale(0.92);
 }
 
+/* ---------- Today's Question card ----------
+   The home screen's single entry point into the daily question, replacing
+   the old 6-subject grid above (.subject-grid/.subject-card, kept but no
+   longer rendered — see TodaysQuestionCard.jsx). Deliberately its own look
+   rather than a reuse of those, which are reserved for the upcoming
+   class-card work. */
+
+.todays-question-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.todays-question-card {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 28px 20px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s ease, transform 0.1s ease, background 0.15s ease;
+}
+
+.todays-question-card:hover {
+  border-color: var(--subject-color, var(--purple));
+  background: linear-gradient(160deg, color-mix(in srgb, var(--subject-color, var(--purple)) 14%, transparent), var(--card) 65%);
+}
+
+.todays-question-card:active {
+  transform: scale(0.98);
+}
+
+.todays-question-label {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.todays-question-icon {
+  font-size: 44px;
+  margin-top: 4px;
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--subject-color, var(--purple)) 55%, transparent));
+}
+
+.todays-question-name {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--text);
+}
+
+.todays-question-badge {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(52, 224, 161, 0.18);
+  color: var(--green-text);
+}
+
+.todays-question-badge--incorrect {
+  background: rgba(255, 92, 122, 0.18);
+  color: var(--red-text);
+}
+
+.todays-question-card--completed {
+  border-color: rgba(52, 224, 161, 0.45);
+}
+
+.todays-question-card--incorrect {
+  border-color: rgba(255, 92, 122, 0.45);
+}
+
+.todays-question-share {
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: none;
+  background: var(--card-2);
+  color: var(--text-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  transition: transform 0.12s ease;
+}
+
+.todays-question-share:active {
+  transform: scale(0.92);
+}
+
 .calendar-icon-btn {
   flex-shrink: 0;
   width: 44px;

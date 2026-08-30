@@ -11,7 +11,7 @@ import {
   COINS_PER_CORRECT,
   LATE_ANSWER_WINDOW_DAYS,
 } from '../../src/lib/streak.js'
-import { getDailyQuestion, SUBJECTS } from '../../src/lib/questions.js'
+import { getDailyQuestion, SUBJECTS, getTodaysSubjectId } from '../../src/lib/questions.js'
 
 // Backs the home screen's date-nav bar → past date → "Answer now" flow
 // (StudentHome.jsx) — catching up on a subject that was never answered on a
@@ -41,6 +41,15 @@ async function handle({ userId, body }) {
 
   if (date >= today) {
     const err = new Error('date must be a past day — use the regular daily question endpoint for today.')
+    err.status = 400
+    err.code = 'VALIDATION_ERROR'
+    throw err
+  }
+
+  // Only one subject rotates in per day, same for every student (see
+  // getTodaysSubjectId) — reject catch-up answers for any other subject too.
+  if (subject !== getTodaysSubjectId(date)) {
+    const err = new Error("That subject isn't that day's rotated subject.")
     err.status = 400
     err.code = 'VALIDATION_ERROR'
     throw err

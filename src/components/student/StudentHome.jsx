@@ -2,17 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { submitAnswer, submitLateAnswer, getTodayQuestion, reviewWrongAnswer, logRetryCorrect } from '../../lib/storage'
 import { getDailyQuestion, formatQuestionSubtitle } from '../../lib/questions'
-import {
-  getEffectiveStreak,
-  countCorrectSubjectsToday,
-  todayStr,
-  diffDays,
-  TOTAL_SUBJECTS,
-  LATE_ANSWER_WINDOW_DAYS,
-  formatLongDate,
-} from '../../lib/streak'
+import { getEffectiveStreak, todayStr, diffDays, LATE_ANSWER_WINDOW_DAYS, formatLongDate } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
-import { countdownLabel, computeReadiness } from '../../lib/testprep'
 import { getErrorMessage } from '../../lib/errors'
 import TopBar from '../shared/TopBar'
 import StreakFlame from './StreakFlame'
@@ -22,9 +13,15 @@ import Scratchpad from './Scratchpad'
 import WorkSubmissionPanel from './WorkSubmissionPanel'
 import MilestoneModal from './MilestoneModal'
 import PerfectWeekCelebration from './PerfectWeekCelebration'
-import UpgradeModal from '../shared/UpgradeModal'
-import PremiumFeatureButton from '../shared/PremiumFeatureButton'
-import CancelTestPlanModal from './testprep/CancelTestPlanModal'
+// Test Prep/Study Guide/Upload/My Uploads/Practice/My Grades/Curriculum and
+// the active-test-plan card are removed from this daily-question page —
+// they move to the upcoming class-card structure instead (separate work).
+// Their imports and JSX are commented out, not deleted, alongside that code
+// further down.
+// import { countdownLabel, computeReadiness } from '../../lib/testprep'
+// import UpgradeModal from '../shared/UpgradeModal'
+// import PremiumFeatureButton from '../shared/PremiumFeatureButton'
+// import CancelTestPlanModal from './testprep/CancelTestPlanModal'
 
 export default function StudentHome({
   user,
@@ -115,8 +112,11 @@ export default function StudentHome({
   const [perfectWeekBonus, setPerfectWeekBonus] = useState(null) // dollars, or null
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
-  const [showPremiumModal, setShowPremiumModal] = useState(false)
-  const [showCancelModal, setShowCancelModal] = useState(false)
+  // Only used by the Test Prep/Study Guide/Upload/etc. button row and the
+  // active-test-plan card, both commented out below (see the import comment
+  // at the top of this file).
+  // const [showPremiumModal, setShowPremiumModal] = useState(false)
+  // const [showCancelModal, setShowCancelModal] = useState(false)
 
   // Past-date "Answer now" catch-up flow — only relevant when !isToday. Earns
   // XP only via api/student/submit-late-answer.js (see StudentFlow.jsx's
@@ -136,40 +136,43 @@ export default function StudentHome({
   // decision, so it's fine for the client to compute it for display.
   const withinLateWindow = !isToday && diffDays(today, date) <= LATE_ANSWER_WINDOW_DAYS
 
-  const planForThisSubject = activePlan && activePlan.subject === subject.id ? activePlan : null
-
-  // Test Prep, the Study Guide, Upload, My Uploads, and Practice are all
-  // premium features; a trial_expired/free student sees the upgrade pitch
-  // instead. isPremium is StudentFlow's isPremiumUnlocked(user) (see
-  // src/lib/premium.js) — true whenever subscription_status is
-  // 'trial_active' or 'premium' — deliberately NOT the raw user.is_premium
-  // column, which can drift out of sync with the trial dates (e.g. an admin
-  // extending trial_ends_at without also flipping is_premium back on).
-  function handleOpenTestPrep() {
-    if (isPremium) onOpenTestPrep()
-    else setShowPremiumModal(true)
-  }
-  function handleOpenStudyGuide() {
-    if (isPremium) onOpenStudyGuide()
-    else setShowPremiumModal(true)
-  }
-  function handleOpenUpload() {
-    if (isPremium) onOpenUpload()
-    else setShowPremiumModal(true)
-  }
-  function handleOpenMyUploads() {
-    if (isPremium) onOpenMyUploads()
-    else setShowPremiumModal(true)
-  }
-  function handleOpenPractice() {
-    if (isPremium) onOpenPractice()
-    else setShowPremiumModal(true)
-  }
-
-  async function handleCancelPlan() {
-    await onCancelPlan()
-    setShowCancelModal(false)
-  }
+  // Test Prep/Study Guide/Upload/My Uploads/Practice/the active-test-plan
+  // card are removed from this daily-question page (see the import comment
+  // above) — commented out, not deleted, along with the JSX further down.
+  // const planForThisSubject = activePlan && activePlan.subject === subject.id ? activePlan : null
+  //
+  // // Test Prep, the Study Guide, Upload, My Uploads, and Practice are all
+  // // premium features; a trial_expired/free student sees the upgrade pitch
+  // // instead. isPremium is StudentFlow's isPremiumUnlocked(user) (see
+  // // src/lib/premium.js) — true whenever subscription_status is
+  // // 'trial_active' or 'premium' — deliberately NOT the raw user.is_premium
+  // // column, which can drift out of sync with the trial dates (e.g. an admin
+  // // extending trial_ends_at without also flipping is_premium back on).
+  // function handleOpenTestPrep() {
+  //   if (isPremium) onOpenTestPrep()
+  //   else setShowPremiumModal(true)
+  // }
+  // function handleOpenStudyGuide() {
+  //   if (isPremium) onOpenStudyGuide()
+  //   else setShowPremiumModal(true)
+  // }
+  // function handleOpenUpload() {
+  //   if (isPremium) onOpenUpload()
+  //   else setShowPremiumModal(true)
+  // }
+  // function handleOpenMyUploads() {
+  //   if (isPremium) onOpenMyUploads()
+  //   else setShowPremiumModal(true)
+  // }
+  // function handleOpenPractice() {
+  //   if (isPremium) onOpenPractice()
+  //   else setShowPremiumModal(true)
+  // }
+  //
+  // async function handleCancelPlan() {
+  //   await onCancelPlan()
+  //   setShowCancelModal(false)
+  // }
 
   const todaysEntry = [...progress.history].reverse().find((h) => h.date === today && h.subjectId === subject.id)
 
@@ -197,7 +200,6 @@ export default function StudentHome({
   const correctAnswerText = question ? question.options[question.correctIndex] : ''
 
   const displayStreak = getEffectiveStreak(progress, today)
-  const subjectsLeftToday = TOTAL_SUBJECTS - countCorrectSubjectsToday(progress.history, today)
 
   // The final, scored submission — only ever called once per subject/day,
   // whichever pick ends up being the student's last one. submit-answer.js
@@ -328,6 +330,9 @@ export default function StudentHome({
         <StatPill icon="🪙" label={t('home.coins')} value={progress.coins} />
       </div>
 
+      {/* Test Prep/Study Guide/Upload/My Uploads/Practice/My Grades/Curriculum
+          — removed from this daily-question page; moving to the upcoming
+          class-card structure instead (separate work). Kept, not deleted.
       <div className="home-actions">
         <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenTestPrep}>
           {t('home.testPrep')}
@@ -353,6 +358,7 @@ export default function StudentHome({
           {t('home.curriculum')}
         </button>
       </div>
+      */}
 
       {isToday ? (
         <>
@@ -415,11 +421,7 @@ export default function StudentHome({
                   <p className="result-headline">
                     {t('home.correctResult', { coins: coinsEarnedDisplay, xp: xpEarnedDisplay })}
                   </p>
-                  <p className="result-next">
-                    {subjectsLeftToday === 0
-                      ? t('home.allDoneToday')
-                      : t('home.streakSaved', { count: subjectsLeftToday })}
-                  </p>
+                  <p className="result-next">{t('home.dailyQuestionAllDone')}</p>
                 </>
               ) : (
                 <>
@@ -477,6 +479,9 @@ export default function StudentHome({
         </>
       )}
 
+      {/* Active-test-plan card — removed from this daily-question page along
+          with Study Guide/Test Prep above; moving to the class-card
+          structure instead (separate work). Kept, not deleted.
       {planForThisSubject && (
         <div className="testprep-home-card">
           <button type="button" className="testprep-home-card-main" onClick={onOpenStudyPlan}>
@@ -511,15 +516,16 @@ export default function StudentHome({
           </div>
         </div>
       )}
+      */}
 
       <MilestoneModal milestone={milestone} onClose={() => setMilestone(null)} />
       {perfectWeekBonus !== null && (
         <PerfectWeekCelebration amount={perfectWeekBonus} onClose={() => setPerfectWeekBonus(null)} />
       )}
-      {showPremiumModal && <UpgradeModal user={user} onClose={() => setShowPremiumModal(false)} />}
+      {/* {showPremiumModal && <UpgradeModal user={user} onClose={() => setShowPremiumModal(false)} />}
       {showCancelModal && planForThisSubject && (
         <CancelTestPlanModal onConfirm={handleCancelPlan} onClose={() => setShowCancelModal(false)} />
-      )}
+      )} */}
     </div>
   )
 }

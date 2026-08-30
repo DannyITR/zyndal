@@ -161,19 +161,23 @@ export function formatMonthYear(year, month) {
   })
 }
 
-// Number of daily subjects — still used for the "X/6 completed today"
-// display and score box, but no longer gates the day streak itself (see
-// applyDailyAnswer below: one correct first-attempt answer, in any subject,
-// is now enough to keep the streak alive for the day).
-export const TOTAL_SUBJECTS = 6
+// Number of subjects answerable per day — one shared, rotating subject for
+// the whole app (see getTodaysSubjectId in src/lib/questions.js), not one
+// per subject anymore. Still used for the "completed today" gate (canShareToday,
+// streak_safe) and the score/share-card total, but never gated the day
+// streak itself (see applyDailyAnswer below: one correct first-attempt
+// answer is enough to keep the streak alive for the day, same as before).
+export const TOTAL_SUBJECTS = 1
 
 // Index 0-6 maps to today's correct-answer count — red at 0, full green at
 // 6. Used by the visual share card (ShareStreakScreen.jsx) and the
 // read-only friend score card (FriendScoreCardModal.jsx).
 export const SCORE_COLORS = ['#ff5c7a', '#ff8c42', '#ffab5e', '#ffe066', '#d4e157', '#8bc34a', '#34e0a1']
 
-// 6 subjects × 7 days of first-attempt-correct answers, Monday through Sunday.
-export const PERFECT_WEEK_TARGET = 42
+// 1 (rotating) subject × 7 days of first-attempt-correct answers, Monday
+// through Sunday — the new max now that only one subject a day is
+// answerable at all (see TOTAL_SUBJECTS above).
+export const PERFECT_WEEK_TARGET = 7
 
 // The Monday (inclusive) that starts the ISO week containing dateStr.
 export function mondayOfWeek(dateStr = todayStr()) {
@@ -206,8 +210,8 @@ export function countCorrectSubjectsToday(history, today = todayStr()) {
 
 // The streak as it should be displayed *before* today's question is answered.
 // A gap of more than one day since the streak was last credited means a full
-// day (all 6 subjects correct) was missed, so the streak is already broken
-// even if the user hasn't opened the app to "confirm" it.
+// day was missed (no correct first-attempt answer at all), so the streak is
+// already broken even if the user hasn't opened the app to "confirm" it.
 export function getEffectiveStreak(progress, today = todayStr()) {
   if (!progress.lastCorrectDate) return 0
   const gap = diffDays(today, progress.lastCorrectDate)
@@ -225,8 +229,6 @@ export function applyDailyAnswer(
   const correct = selectedIndex === question.correctIndex
   const effStreak = getEffectiveStreak(progress, today)
 
-  // Coins/XP are awarded per correct answer regardless of how many subjects
-  // are done today — only the day-streak itself is gated on completing all 6.
   const baseEarned = correct ? XP_PER_CORRECT : 0
 
   const entry = {

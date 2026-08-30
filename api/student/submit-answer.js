@@ -3,7 +3,7 @@ import { supabase } from '../_lib/auth.js'
 import { getProgressForUser, getLinkedParents, normalizeMilestoneBonuses, recordPerfectWeekAchievement, syncUserTimezone } from '../_lib/db.js'
 import { resolveDailyQuestion } from '../_lib/dailyQuestion.js'
 import { applyDailyAnswer, getWeeklyCorrectCount, PERFECT_WEEK_TARGET, todayStr, isValidTimeZone, DEFAULT_TIMEZONE } from '../../src/lib/streak.js'
-import { SUBJECTS } from '../../src/lib/questions.js'
+import { SUBJECTS, getTodaysSubjectId } from '../../src/lib/questions.js'
 import { insertNotification } from '../_lib/notifications.js'
 import { notificationText } from '../_lib/notificationText.js'
 import { sendPushToUser } from '../_lib/push.js'
@@ -40,6 +40,16 @@ async function handle({ userId, body }) {
   const timezone = isValidTimeZone(body.timezone) ? body.timezone : DEFAULT_TIMEZONE
   const today = todayStr(new Date(), timezone)
   await syncUserTimezone(userId, timezone)
+
+  // Only one subject rotates in per day, same for every student (see
+  // getTodaysSubjectId) — reject anything else server-side too, not just by
+  // never offering it in the UI.
+  if (subject !== getTodaysSubjectId(today)) {
+    const err = new Error("That subject isn't today's rotated subject.")
+    err.status = 400
+    err.code = 'VALIDATION_ERROR'
+    throw err
+  }
 
   const question = await resolveDailyQuestion({ userId, subject, timezone })
 

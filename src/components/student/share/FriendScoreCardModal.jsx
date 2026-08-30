@@ -12,7 +12,10 @@ export default function FriendScoreCardModal({ share, onClose }) {
   const { t } = useTranslation()
   const today = todayStr(new Date(), getUserTimeZone())
   const { correct, total } = share.senderScore
-  const scoreColor = SCORE_COLORS[Math.min(Math.max(correct, 0), 6)]
+  // Scaled proportionally against the day's actual max (total) rather than a
+  // fixed clamp, so a full score always lands on the gradient's green end —
+  // see ShareStreakScreen.jsx's identical fix for the logged-in user's own card.
+  const scoreColor = SCORE_COLORS[Math.round((Math.min(Math.max(correct, 0), total) / total) * (SCORE_COLORS.length - 1))]
 
   return (
     <div className="modal-overlay" onClick={onClose}>
