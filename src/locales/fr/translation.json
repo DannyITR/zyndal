@@ -11,17 +11,17 @@
     "copyright": "© 2026 Zyndal. Tous droits réservés.",
     "audiences": {
       "students": {
-        "icon": "📷",
+        "label": "Pour les élèves",
         "title": "Étudier, enfin utile",
         "body": "Scanne tes devoirs, obtiens des questions d'entraînement instantanées et suis la progression de chaque matière — tout en gagnant de l'XP et en te mesurant à tes amis. Étudier ressemble enfin à un jeu."
       },
       "parents": {
-        "icon": "💰",
+        "label": "Pour les parents",
         "title": "Sachez exactement ce que votre enfant doit réviser",
         "body": "Arrêtez de deviner ce que votre enfant doit étudier. Zyndal suit sa progression dans chaque matière, génère des questions d'entraînement ciblées et vous permet de récompenser les vrais efforts avec de l'argent réel — pour que les devoirs se gèrent tout seuls."
       },
       "teachers": {
-        "icon": "📋",
+        "label": "Pour les enseignants",
         "title": "Des devoirs que les élèves ont vraiment envie de terminer",
         "body": "Assignez des devoirs en quelques secondes. Les élèves soumettent leurs réponses, gagnent de l'XP et se mesurent à leurs camarades — pour que les devoirs soient faits, et bien faits."
       }

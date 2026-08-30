@@ -11,17 +11,17 @@
     "copyright": "© 2026 Zyndal. All rights reserved.",
     "audiences": {
       "students": {
-        "icon": "📷",
+        "label": "For Students",
         "title": "Studying, finally worth doing",
         "body": "Scan your homework, get instant practice questions, and track every subject's progress — all while earning XP and competing with friends. Studying finally feels like a game."
       },
       "parents": {
-        "icon": "💰",
+        "label": "For Parents",
         "title": "Know exactly what your kid needs to study",
         "body": "Stop guessing what your kid needs to study. Zyndal tracks their course progress, generates targeted practice questions, and lets you reward real effort with real money — so homework time takes care of itself."
       },
       "teachers": {
-        "icon": "📋",
+        "label": "For Teachers",
         "title": "Homework students actually want to finish",
         "body": "Assign homework in seconds. Students submit their answers, earn XP, and compete with classmates — so homework gets done, and done well."
       }

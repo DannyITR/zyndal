@@ -487,20 +487,18 @@ div.zyndal-logo {
   padding: 22px 20px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
-  text-align: left;
+  text-align: center;
 }
 
-.landing-audience-icon {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 14px;
-  background: var(--card-2);
-  font-size: 24px;
+.landing-audience-label {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
 }
 
 .landing-audience-title {
@@ -523,8 +521,8 @@ div.zyndal-logo {
   background: linear-gradient(160deg, color-mix(in srgb, var(--purple) 14%, transparent), var(--card) 55%);
 }
 
-.landing-audience-card--students .landing-audience-icon {
-  background: color-mix(in srgb, var(--purple) 22%, var(--card-2));
+.landing-audience-card--students .landing-audience-label {
+  color: var(--purple-text);
 }
 
 .landing-audience-card--parents {
@@ -532,8 +530,8 @@ div.zyndal-logo {
   background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 14%, transparent), var(--card) 55%);
 }
 
-.landing-audience-card--parents .landing-audience-icon {
-  background: color-mix(in srgb, var(--gold) 22%, var(--card-2));
+.landing-audience-card--parents .landing-audience-label {
+  color: var(--gold-text);
 }
 
 .landing-audience-card--teachers {
@@ -541,8 +539,8 @@ div.zyndal-logo {
   background: linear-gradient(160deg, color-mix(in srgb, var(--blue) 14%, transparent), var(--card) 55%);
 }
 
-.landing-audience-card--teachers .landing-audience-icon {
-  background: color-mix(in srgb, var(--blue) 22%, var(--card-2));
+.landing-audience-card--teachers .landing-audience-label {
+  color: var(--blue-text);
 }
 
 .auth-tagline {

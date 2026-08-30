@@ -30,9 +30,7 @@ export default function LandingPage({ onSignUp, onLogIn }) {
       <div className="landing-audiences">
         {['students', 'parents', 'teachers'].map((audience) => (
           <div key={audience} className={`landing-audience-card landing-audience-card--${audience}`}>
-            <span className="landing-audience-icon" aria-hidden="true">
-              {t(`landing.audiences.${audience}.icon`)}
-            </span>
+            <span className="landing-audience-label">{t(`landing.audiences.${audience}.label`)}</span>
             <h2 className="landing-audience-title">{t(`landing.audiences.${audience}.title`)}</h2>
             <p className="landing-audience-body">{t(`landing.audiences.${audience}.body`)}</p>
           </div>
