@@ -8,6 +8,13 @@ import { getUserTimeZone } from '../../../lib/timezone'
 // .share-card markup ShareStreakScreen renders for the logged-in user's own
 // card, just populated with the friend's data instead. No XP line — none of
 // the three call sites' data sources include the friend's XP.
+//
+// Unlike ShareStreakScreen's own card — captured via html2canvas as a
+// downloadable/shareable image, so it deliberately keeps a fixed "Zyndal"
+// look regardless of the viewer's theme, the same way the exported PNG will
+// look to whoever it's shared with — this one is pure in-app UI with no
+// export step, so it gets the --themed modifier to follow the active theme
+// (dark/midnight/daylight) instead of always rendering the dark gradient.
 export default function FriendScoreCardModal({ share, onClose }) {
   const { t } = useTranslation()
   const today = todayStr(new Date(), getUserTimeZone())
@@ -20,7 +27,7 @@ export default function FriendScoreCardModal({ share, onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card modal-card--friend-score" onClick={(e) => e.stopPropagation()}>
-        <div className="share-card">
+        <div className="share-card share-card--themed">
           <div className="share-card-glow share-card-glow--1" />
           <div className="share-card-glow share-card-glow--2" />
 
