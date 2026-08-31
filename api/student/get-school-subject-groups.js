@@ -13,7 +13,9 @@ import { SUBJECTS } from '../../src/lib/questions.js'
 async function handle({ userId }) {
   const { data: user, error: userError } = await supabase.from('users').select('school_id, grade').eq('id', userId).maybeSingle()
   if (userError) throw userError
-  if (!user?.school_id || !user?.grade) return { schoolId: user?.school_id ?? null, schoolName: null, groups: [] }
+  if (!user?.school_id || !user?.grade) {
+    return { schoolId: user?.school_id ?? null, schoolName: null, grade: user?.grade ?? null, groups: [] }
+  }
 
   const { data: school, error: schoolError } = await supabase.from('schools').select('name').eq('id', user.school_id).maybeSingle()
   if (schoolError) throw schoolError

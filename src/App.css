@@ -1173,6 +1173,14 @@ div.zyndal-logo {
   border-color: rgba(255, 92, 122, 0.45);
 }
 
+/* Class grid tiles (ClassCardsGrid.jsx) reuse .subject-card/.subject-grid
+   above but never the done/incorrect badge variants — this "not joined yet"
+   hint is its own neutral (brand-purple) color instead. */
+.subject-card-badge--neutral {
+  background: color-mix(in srgb, var(--purple) 18%, transparent);
+  color: var(--purple-text);
+}
+
 .daily-score-box {
   display: flex;
   align-items: center;
