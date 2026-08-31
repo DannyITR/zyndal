@@ -111,6 +111,9 @@ export default function ClassCardsGrid({ onSelectClass, onOpenSettings }) {
               >
                 <span className="subject-card-icon">{subject.icon}</span>
                 <span className="subject-card-name">{t(`subjects.${subject.id}`)}</span>
+                {group.claimedClasses.length > 0 && (
+                  <span className="subject-card-detail">{group.claimedClasses.map((c) => c.name).join(' · ')}</span>
+                )}
                 {!group.joined && <span className="subject-card-badge subject-card-badge--neutral">{t('home.joinBadge')}</span>}
               </button>
             )
