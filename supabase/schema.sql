@@ -390,11 +390,10 @@ alter table oauth_identities enable row level security;
 -- ---------- Schools + open student self-organization ----------
 -- Added alongside the existing classes/class_students tables (themselves
 -- not in this file — see the note at the top about drift). Phase 1 (schools,
--- school_subject_groups, school_subject_group_students, users.school_id) and
+-- school_subject_groups, school_subject_group_students, users.school_id),
 -- Phase 2 (teacher_claims: submission, admin approval/rejection, claimed-
--- class creation) are both wired up in the app; school_change_requests
--- exists here now but its application code (student school-change requests
--- + admin review) ships in a later phase.
+-- class creation), and Phase 3 (school_change_requests: proof-gated student
+-- school changes, admin approval/rejection) are all wired up in the app.
 
 create table if not exists schools (
   id uuid primary key default gen_random_uuid(),
@@ -471,6 +470,10 @@ create table if not exists school_change_requests (
   created_at timestamptz not null default now()
 );
 create index if not exists school_change_requests_status_idx on school_change_requests(status);
+
+-- Phase 3 addition: optional admin-supplied reason on rejection, matching
+-- teacher_claims.rejection_reason.
+alter table school_change_requests add column if not exists rejection_reason text;
 
 alter table schools enable row level security;
 alter table school_subject_groups enable row level security;

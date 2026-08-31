@@ -222,6 +222,34 @@ const TEMPLATES = {
       body: reason ? `Motivo: ${reason}` : 'Puedes revisar los detalles y enviar una nueva solicitud cuando quieras.',
     }),
   },
+  school_change_approved: {
+    en: ({ schoolName }) => ({
+      title: `✅ Your school change to ${schoolName} was approved!`,
+      body: 'You can now see your new school\'s classes on your home screen.',
+    }),
+    fr: ({ schoolName }) => ({
+      title: `✅ Votre changement d'école vers ${schoolName} a été approuvé !`,
+      body: "Vous pouvez maintenant voir les classes de votre nouvelle école sur votre écran d'accueil.",
+    }),
+    es: ({ schoolName }) => ({
+      title: `✅ ¡Tu cambio de escuela a ${schoolName} fue aprobado!`,
+      body: 'Ahora puedes ver las clases de tu nueva escuela en tu pantalla de inicio.',
+    }),
+  },
+  school_change_rejected: {
+    en: ({ reason }) => ({
+      title: 'Your school change request was not approved',
+      body: reason ? `Reason: ${reason}` : 'You can review the details and submit a new request anytime.',
+    }),
+    fr: ({ reason }) => ({
+      title: "Votre demande de changement d'école n'a pas été approuvée",
+      body: reason ? `Motif : ${reason}` : 'Vous pouvez revoir les détails et soumettre une nouvelle demande à tout moment.',
+    }),
+    es: ({ reason }) => ({
+      title: 'Tu solicitud de cambio de escuela no fue aprobada',
+      body: reason ? `Motivo: ${reason}` : 'Puedes revisar los detalles y enviar una nueva solicitud cuando quieras.',
+    }),
+  },
   subscription_payment_failed: {
     en: () => ({ title: '⚠️ Payment failed — update your payment method to keep Premium' }),
     fr: () => ({ title: '⚠️ Échec du paiement — mettez à jour votre moyen de paiement pour conserver Premium' }),

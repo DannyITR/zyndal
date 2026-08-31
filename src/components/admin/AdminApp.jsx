@@ -3,7 +3,7 @@ import { getAdminSession, adminLogout } from '../../lib/adminApi'
 import AdminLogin from './AdminLogin'
 import AdminDashboard from './AdminDashboard'
 import AdminEditUserScreen from './AdminEditUserScreen'
-import AdminTeacherClaimsScreen from './AdminTeacherClaimsScreen'
+import AdminApprovalsScreen from './AdminApprovalsScreen'
 import './admin.css'
 
 function parseEditUserId(pathname) {
@@ -51,15 +51,15 @@ export default function AdminApp() {
   }
 
   const editUserId = parseEditUserId(pathname)
-  const showTeacherClaims = pathname === '/admin/teacher-claims'
+  const showApprovals = pathname === '/admin/approvals'
 
   return (
     <>
-      <div style={editUserId || showTeacherClaims ? { display: 'none' } : undefined}>
+      <div style={editUserId || showApprovals ? { display: 'none' } : undefined}>
         <AdminDashboard
           onLogout={handleLogout}
           onEditUser={(userId) => navigate(`/admin/users/${encodeURIComponent(userId)}`)}
-          onOpenTeacherClaims={() => navigate('/admin/teacher-claims')}
+          onOpenApprovals={() => navigate('/admin/approvals')}
           refreshKey={dashboardRefreshKey}
         />
       </div>
@@ -73,7 +73,7 @@ export default function AdminApp() {
           onLogout={handleLogout}
         />
       )}
-      {showTeacherClaims && <AdminTeacherClaimsScreen onBack={() => navigate('/admin')} onLogout={handleLogout} />}
+      {showApprovals && <AdminApprovalsScreen onBack={() => navigate('/admin')} onLogout={handleLogout} />}
     </>
   )
 }

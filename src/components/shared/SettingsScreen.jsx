@@ -16,7 +16,10 @@ import {
   openCustomerPortal,
   getSchools,
   setStudentSchool,
+  getMySchoolChangeRequest,
+  submitSchoolChangeRequest,
 } from '../../lib/storage'
+import { resizeImageToBase64 } from '../../lib/imageUtils'
 import { languageCodeForPreference } from '../../lib/i18n'
 import { useTheme } from '../../lib/ThemeContext'
 import { THEMES, THEME_PREVIEW_COLORS } from '../../lib/theme'
@@ -113,6 +116,76 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
   // Only meaningful once user.school_id is set — schools may still be
   // loading, so this can briefly be undefined even then.
   const currentSchoolName = user.school_id ? schools.find((s) => s.id === user.school_id)?.name : null
+
+  // Phase 3 — changing an already-set school requires proof + admin review.
+  // undefined = still loading, null = no request on file (or the most
+  // recent one was already approved and is now stale, since user.school_id
+  // already reflects it) — both render the same "current school + Request
+  // Change button" UI as far as this screen is concerned.
+  const [myChangeRequest, setMyChangeRequest] = useState(undefined)
+  const [showChangeForm, setShowChangeForm] = useState(false)
+  const [changeSchoolPickerId, setChangeSchoolPickerId] = useState('')
+  const [changeSchoolOtherName, setChangeSchoolOtherName] = useState('')
+  const [proofFile, setProofFile] = useState(null)
+  const [proofPreviewUrl, setProofPreviewUrl] = useState('')
+  const [changeSaving, setChangeSaving] = useState(false)
+  const [changeError, setChangeError] = useState('')
+  const [changeSuccess, setChangeSuccess] = useState('')
+
+  function loadMyChangeRequest() {
+    getMySchoolChangeRequest()
+      .then((data) => setMyChangeRequest(data.request))
+      .catch(() => setMyChangeRequest(null))
+  }
+
+  useEffect(() => {
+    if (!isStudent || !user.school_id) return
+    loadMyChangeRequest()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStudent, user.school_id])
+
+  function handleProofFileChange(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setChangeError('')
+    if (!file.type.startsWith('image/')) {
+      setChangeError(t('settings.schoolChangeProofTypeError'))
+      return
+    }
+    if (proofPreviewUrl) URL.revokeObjectURL(proofPreviewUrl)
+    setProofFile(file)
+    setProofPreviewUrl(URL.createObjectURL(file))
+  }
+
+  async function handleSubmitSchoolChange(e) {
+    e.preventDefault()
+    setChangeError('')
+    setChangeSuccess('')
+    const isOtherSchool = changeSchoolPickerId === 'other'
+    if (!changeSchoolPickerId || (isOtherSchool && !changeSchoolOtherName.trim()) || !proofFile) return
+    setChangeSaving(true)
+    try {
+      const { base64 } = await resizeImageToBase64(proofFile)
+      await submitSchoolChangeRequest({
+        schoolId: isOtherSchool ? null : changeSchoolPickerId,
+        schoolName: isOtherSchool ? changeSchoolOtherName.trim() : null,
+        proofImageBase64: base64,
+      })
+      setChangeSuccess(t('settings.schoolChangeSubmitted'))
+      setShowChangeForm(false)
+      setChangeSchoolPickerId('')
+      setChangeSchoolOtherName('')
+      if (proofPreviewUrl) URL.revokeObjectURL(proofPreviewUrl)
+      setProofFile(null)
+      setProofPreviewUrl('')
+      loadMyChangeRequest()
+    } catch (err) {
+      setChangeError(getErrorMessage(err, t, 'settings.schoolChangeSubmitFailed'))
+    } finally {
+      setChangeSaving(false)
+    }
+  }
 
   async function handleSetSchool(e) {
     e.preventDefault()
@@ -711,9 +784,77 @@ export default function SettingsScreen({ user, onBack, onLogout, onSaved, onLogo
         <div className="finance-section-card">
           <h3 className="section-heading">{t('settings.schoolHeading')}</h3>
           {user.school_id ? (
-            <p className="field-hint">
-              {t('settings.currentSchool', { school: currentSchoolName || t('common.loading') })}
-            </p>
+            <>
+              <p className="field-hint">
+                {t('settings.currentSchool', { school: currentSchoolName || t('common.loading') })}
+              </p>
+
+              {myChangeRequest?.status === 'pending' ? (
+                <p className="field-hint">{t('settings.schoolChangePending')}</p>
+              ) : (
+                <>
+                  {myChangeRequest?.status === 'rejected' && (
+                    <p className="form-error">
+                      {t('settings.schoolChangeRejected')}
+                      {myChangeRequest.rejectionReason ? ` ${myChangeRequest.rejectionReason}` : ''}
+                    </p>
+                  )}
+                  {changeSuccess && <p className="form-success">{changeSuccess}</p>}
+
+                  {!showChangeForm && (
+                    <button type="button" className="btn btn-secondary btn-block" onClick={() => setShowChangeForm(true)}>
+                      {t('settings.requestSchoolChange')}
+                    </button>
+                  )}
+
+                  {showChangeForm && (
+                    <form className="auth-form" onSubmit={handleSubmitSchoolChange}>
+                      <p className="field-hint">{t('settings.schoolChangeHint')}</p>
+                      <div className="field">
+                        <label htmlFor="change-school-picker">{t('auth.signup.school')}</label>
+                        <select
+                          id="change-school-picker"
+                          value={changeSchoolPickerId}
+                          onChange={(e) => setChangeSchoolPickerId(e.target.value)}
+                        >
+                          <option value="">{t('auth.signup.selectSchool')}</option>
+                          {schools.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                          <option value="other">{t('auth.signup.schoolOther')}</option>
+                        </select>
+                        {changeSchoolPickerId === 'other' && (
+                          <input
+                            value={changeSchoolOtherName}
+                            onChange={(e) => setChangeSchoolOtherName(e.target.value)}
+                            placeholder={t('settings.schoolPlaceholder')}
+                          />
+                        )}
+                      </div>
+
+                      <div className="field">
+                        <label htmlFor="change-proof-photo">{t('settings.proofPhoto')}</label>
+                        {proofPreviewUrl && <img src={proofPreviewUrl} alt="" className="school-change-proof-preview" />}
+                        <input id="change-proof-photo" type="file" accept="image/*" onChange={handleProofFileChange} />
+                        <p className="field-hint">{t('settings.proofPhotoHint')}</p>
+                      </div>
+
+                      {changeError && <p className="form-error">{changeError}</p>}
+                      <div className="modal-actions">
+                        <button type="button" className="btn btn-secondary" onClick={() => setShowChangeForm(false)} disabled={changeSaving}>
+                          {t('common.cancel')}
+                        </button>
+                        <button type="submit" className="btn btn-primary" disabled={changeSaving}>
+                          {changeSaving ? t('settings.schoolChangeSubmitting') : t('settings.schoolChangeSubmit')}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </>
+              )}
+            </>
           ) : (
             <form className="auth-form" onSubmit={handleSetSchool}>
               <p className="field-hint">{t('settings.selectSchoolHint')}</p>

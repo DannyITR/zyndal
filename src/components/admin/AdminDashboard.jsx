@@ -53,7 +53,7 @@ const STAT_CARDS = [
   { key: 'questionsToday', label: 'Questions Answered Today', get: (s) => s.questionsAnsweredToday },
 ]
 
-export default function AdminDashboard({ onLogout, onEditUser, onOpenTeacherClaims, refreshKey }) {
+export default function AdminDashboard({ onLogout, onEditUser, onOpenApprovals, refreshKey }) {
   const [stats, setStats] = useState(null)
   const [statsError, setStatsError] = useState('')
 
@@ -195,8 +195,8 @@ export default function AdminDashboard({ onLogout, onEditUser, onOpenTeacherClai
       <header className="admin-header">
         <h1>Zyndal Admin</h1>
         <div className="admin-header-actions">
-          <button type="button" className="admin-btn admin-btn-secondary" onClick={onOpenTeacherClaims}>
-            Teacher Claims
+          <button type="button" className="admin-btn admin-btn-secondary" onClick={onOpenApprovals}>
+            Approvals
           </button>
           <button type="button" className="admin-btn admin-btn-secondary" onClick={onLogout}>
             Log Out

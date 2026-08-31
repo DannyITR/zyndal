@@ -120,3 +120,11 @@ export function getAdminTeacherClaims() {
 export function resolveAdminTeacherClaim(payload) {
   return callAdminApi('POST', 'resolve-teacher-claim', payload)
 }
+
+export function getAdminSchoolChangeRequests() {
+  return callAdminApi('GET', 'get-school-change-requests')
+}
+
+export function resolveAdminSchoolChangeRequest(payload) {
+  return callAdminApi('POST', 'resolve-school-change-request', payload)
+}

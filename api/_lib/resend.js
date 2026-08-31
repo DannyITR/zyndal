@@ -342,6 +342,80 @@ export async function sendClassClaimRejectedEmail({ email, languagePreference, r
   if (error) throw new Error(error.message || 'Failed to send class-claim-rejected email.')
 }
 
+const SCHOOL_CHANGE_APPROVED_STRINGS = {
+  en: {
+    subject: 'Your school change was approved!',
+    heading: 'Your school is updated 🎉',
+    body: 'Your school change request has been approved — open Zyndal to see your new school\'s classes.',
+    button: 'Open Zyndal',
+  },
+  fr: {
+    subject: "Votre changement d'école a été approuvé!",
+    heading: 'Votre école est mise à jour 🎉',
+    body: "Votre demande de changement d'école a été approuvée — ouvrez Zyndal pour voir les classes de votre nouvelle école.",
+    button: 'Ouvrir Zyndal',
+  },
+  es: {
+    subject: 'Tu cambio de escuela fue aprobado!',
+    heading: 'Tu escuela ha sido actualizada 🎉',
+    body: 'Tu solicitud de cambio de escuela fue aprobada — abre Zyndal para ver las clases de tu nueva escuela.',
+    button: 'Abrir Zyndal',
+  },
+}
+
+function schoolChangeApprovedEmailContent(languagePreference) {
+  const s = SCHOOL_CHANGE_APPROVED_STRINGS[langFor(languagePreference)]
+  const html = renderEmailHtml({ heading: s.heading, body: s.body, buttonText: s.button, buttonLink: ZYNDAL_HOME_URL, footer: '' })
+  return { subject: s.subject, html }
+}
+
+export async function sendSchoolChangeApprovedEmail({ email, languagePreference }) {
+  const resend = getResendClient()
+  const { subject, html } = schoolChangeApprovedEmailContent(languagePreference)
+  const { error } = await resend.emails.send({ from: 'Zyndal <hello@zyndal.ca>', replyTo: 'hello@zyndal.ca', to: email, subject, html })
+  if (error) throw new Error(error.message || 'Failed to send school-change-approved email.')
+}
+
+const SCHOOL_CHANGE_REJECTED_STRINGS = {
+  en: {
+    subject: 'Your school change request was not approved',
+    heading: 'Your request was not approved',
+    body: 'Your recent school change request was not approved this time. You can review the details and submit a new request anytime from Zyndal.',
+    button: 'Open Zyndal',
+  },
+  fr: {
+    subject: "Votre demande de changement d'école n'a pas été approuvée",
+    heading: "Votre demande n'a pas été approuvée",
+    body: "Votre récente demande de changement d'école n'a pas été approuvée cette fois-ci. Vous pouvez revoir les détails et soumettre une nouvelle demande à tout moment depuis Zyndal.",
+    button: 'Ouvrir Zyndal',
+  },
+  es: {
+    subject: 'Tu solicitud de cambio de escuela no fue aprobada',
+    heading: 'Tu solicitud no fue aprobada',
+    body: 'Tu reciente solicitud de cambio de escuela no fue aprobada esta vez. Puedes revisar los detalles y enviar una nueva solicitud cuando quieras desde Zyndal.',
+    button: 'Abrir Zyndal',
+  },
+}
+
+function schoolChangeRejectedEmailContent(languagePreference, reason) {
+  const s = SCHOOL_CHANGE_REJECTED_STRINGS[langFor(languagePreference)]
+  const html = renderEmailHtml({
+    heading: s.heading,
+    body: s.body,
+    buttonText: s.button,
+    buttonLink: ZYNDAL_HOME_URL,
+    footer: reason ? `<p style="color:#8f7ba8;font-size:13px;margin:28px 0 0;">${reason}</p>` : '',
+  })
+  return { subject: s.subject, html }
+}
+
+export async function sendSchoolChangeRejectedEmail({ email, languagePreference, reason }) {
+  const resend = getResendClient()
+  const { subject, html } = schoolChangeRejectedEmailContent(languagePreference, reason)
+  const { error } = await resend.emails.send({ from: 'Zyndal <hello@zyndal.ca>', replyTo: 'hello@zyndal.ca', to: email, subject, html })
+  if (error) throw new Error(error.message || 'Failed to send school-change-rejected email.')
+}
+
 // Three Stripe-subscription-lifecycle emails, sent by api/_lib/stripeSubscription.js.
 // Always addressed to the actual payer (the subscription owner — see that
 // file's is_subscription_owner-scoped lookups), never a student whose

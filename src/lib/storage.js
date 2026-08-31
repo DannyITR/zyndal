@@ -1120,6 +1120,21 @@ export async function joinSchoolSubjectGroup(groupId) {
   return callStudentApi('POST', 'join-school-subject-group', { group_id: groupId })
 }
 
+// Proof-gated — only usable once school_id is already set (see
+// submit-school-change-request.js's guard); a first-time set uses
+// setStudentSchool() above instead, no proof required.
+export async function submitSchoolChangeRequest({ schoolId, schoolName, proofImageBase64 }) {
+  return callStudentApi('POST', 'submit-school-change-request', {
+    requested_school_id: schoolId || null,
+    requested_school_name: schoolId ? null : schoolName,
+    proof_image_base64: proofImageBase64,
+  })
+}
+
+export async function getMySchoolChangeRequest() {
+  return callStudentApi('GET', 'get-my-school-change-request')
+}
+
 // ---------- Homework (student side) ----------
 
 export async function getMyHomework() {
