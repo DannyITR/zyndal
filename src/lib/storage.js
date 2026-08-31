@@ -1178,6 +1178,21 @@ export async function createClass({ name, grade, school }) {
   return callTeacherApi('POST', 'create-class', { name, grade, school })
 }
 
+// ---------- Teacher: claim an unclaimed school-subject group ----------
+
+export async function getTeacherSchoolSubjectGroups({ schoolId, grade }) {
+  return callTeacherApi('GET', `get-school-subject-groups?school_id=${encodeURIComponent(schoolId)}&grade=${encodeURIComponent(grade)}`)
+}
+
+export async function submitClassClaim({ groupId, bioLink, courseNumber, displayName }) {
+  return callTeacherApi('POST', 'submit-class-claim', {
+    group_id: groupId,
+    bio_link: bioLink,
+    course_number: courseNumber,
+    display_name: displayName,
+  })
+}
+
 export async function getClassDetail(classId) {
   return callTeacherApi('GET', `get-class-detail?class_id=${encodeURIComponent(classId)}`)
 }

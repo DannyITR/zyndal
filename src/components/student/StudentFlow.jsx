@@ -699,6 +699,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         grade={pickedGroup?.grade}
         schoolName={pickedGroup?.schoolName}
         joined={Boolean(pickedGroup?.joined)}
+        claimedClasses={pickedGroup?.claimedClasses}
         onJoin={async () => {
           await joinSchoolSubjectGroup(pickedGroup.id)
           setPickedGroup((g) => (g ? { ...g, joined: true } : g))

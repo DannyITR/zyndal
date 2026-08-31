@@ -266,6 +266,82 @@ export async function sendHomeworkAssignedEmail({ email, title, className, dueDa
   if (error) throw new Error(error.message || 'Failed to send homework assignment email.')
 }
 
+const ZYNDAL_HOME_URL = 'https://zyndal.ca'
+
+const CLASS_CLAIM_APPROVED_STRINGS = {
+  en: {
+    subject: 'Your class claim was approved!',
+    heading: 'Your class is live 🎉',
+    body: 'Your claim has been approved and your class is ready — open Zyndal to find your join code and start assigning homework.',
+    button: 'Open Zyndal',
+  },
+  fr: {
+    subject: 'Votre demande de classe a été approuvée!',
+    heading: 'Votre classe est active 🎉',
+    body: "Votre demande a été approuvée et votre classe est prête — ouvrez Zyndal pour trouver votre code d'accès et commencer à assigner des devoirs.",
+    button: 'Ouvrir Zyndal',
+  },
+  es: {
+    subject: '¡Tu solicitud de clase fue aprobada!',
+    heading: 'Tu clase ya está activa 🎉',
+    body: 'Tu solicitud fue aprobada y tu clase está lista — abre Zyndal para encontrar tu código de acceso y empezar a asignar tareas.',
+    button: 'Abrir Zyndal',
+  },
+}
+
+function classClaimApprovedEmailContent(languagePreference) {
+  const s = CLASS_CLAIM_APPROVED_STRINGS[langFor(languagePreference)]
+  const html = renderEmailHtml({ heading: s.heading, body: s.body, buttonText: s.button, buttonLink: ZYNDAL_HOME_URL, footer: '' })
+  return { subject: s.subject, html }
+}
+
+export async function sendClassClaimApprovedEmail({ email, languagePreference }) {
+  const resend = getResendClient()
+  const { subject, html } = classClaimApprovedEmailContent(languagePreference)
+  const { error } = await resend.emails.send({ from: 'Zyndal <hello@zyndal.ca>', replyTo: 'hello@zyndal.ca', to: email, subject, html })
+  if (error) throw new Error(error.message || 'Failed to send class-claim-approved email.')
+}
+
+const CLASS_CLAIM_REJECTED_STRINGS = {
+  en: {
+    subject: 'Your class claim was not approved',
+    heading: 'Your claim was not approved',
+    body: 'Your recent class claim was not approved this time. You can review the details and submit a new claim anytime from Zyndal.',
+    button: 'Open Zyndal',
+  },
+  fr: {
+    subject: "Votre demande de classe n'a pas été approuvée",
+    heading: "Votre demande n'a pas été approuvée",
+    body: "Votre récente demande de classe n'a pas été approuvée cette fois-ci. Vous pouvez revoir les détails et soumettre une nouvelle demande à tout moment depuis Zyndal.",
+    button: 'Ouvrir Zyndal',
+  },
+  es: {
+    subject: 'Tu solicitud de clase no fue aprobada',
+    heading: 'Tu solicitud no fue aprobada',
+    body: 'Tu reciente solicitud de clase no fue aprobada esta vez. Puedes revisar los detalles y enviar una nueva solicitud cuando quieras desde Zyndal.',
+    button: 'Abrir Zyndal',
+  },
+}
+
+function classClaimRejectedEmailContent(languagePreference, reason) {
+  const s = CLASS_CLAIM_REJECTED_STRINGS[langFor(languagePreference)]
+  const html = renderEmailHtml({
+    heading: s.heading,
+    body: s.body,
+    buttonText: s.button,
+    buttonLink: ZYNDAL_HOME_URL,
+    footer: reason ? `<p style="color:#8f7ba8;font-size:13px;margin:28px 0 0;">${reason}</p>` : '',
+  })
+  return { subject: s.subject, html }
+}
+
+export async function sendClassClaimRejectedEmail({ email, languagePreference, reason }) {
+  const resend = getResendClient()
+  const { subject, html } = classClaimRejectedEmailContent(languagePreference, reason)
+  const { error } = await resend.emails.send({ from: 'Zyndal <hello@zyndal.ca>', replyTo: 'hello@zyndal.ca', to: email, subject, html })
+  if (error) throw new Error(error.message || 'Failed to send class-claim-rejected email.')
+}
+
 // Three Stripe-subscription-lifecycle emails, sent by api/_lib/stripeSubscription.js.
 // Always addressed to the actual payer (the subscription owner — see that
 // file's is_subscription_owner-scoped lookups), never a student whose

@@ -27,6 +27,7 @@ export default function ClassCard({
   schoolName,
   joined,
   onJoin,
+  claimedClasses,
   onOpenTestPrep,
   onOpenStudyGuide,
   onOpenStudyPlan,
@@ -178,10 +179,16 @@ export default function ClassCard({
         </div>
       )}
 
-      {/* Claim status — unclaimed for now (Phase 1: no teacher claims exist
-          yet); a later phase adds the claimed variant ("Math 416 Mr. Smith")
-          once claimedClasses is populated. */}
-      <p className="class-card-status">{t('classCard.unclaimedStatus', { grade, school: schoolName })}</p>
+      {/* Claim status — once the student has joined one of this group's
+          claimed classes (existing join-by-code flow, unrelated to the Join
+          Group button above), its name ("Math 416 Mr. Smith", already
+          formatted this way at approval time — see resolve-teacher-claim.js)
+          replaces the plain unclaimed "Gr 9 St. Thomas" text. */}
+      <p className="class-card-status">
+        {claimedClasses && claimedClasses.length > 0
+          ? claimedClasses.map((c) => c.name).join(' · ')
+          : t('classCard.unclaimedStatus', { grade, school: schoolName })}
+      </p>
 
       {showPremiumModal && <UpgradeModal user={user} onClose={() => setShowPremiumModal(false)} />}
       {showCancelModal && planForThisSubject && (

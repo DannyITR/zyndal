@@ -112,3 +112,11 @@ export function deleteAdminUpload(payload) {
 export function deleteAdminGrade(payload) {
   return callAdminApi('POST', 'delete-grade', payload)
 }
+
+export function getAdminTeacherClaims() {
+  return callAdminApi('GET', 'get-teacher-claims')
+}
+
+export function resolveAdminTeacherClaim(payload) {
+  return callAdminApi('POST', 'resolve-teacher-claim', payload)
+}

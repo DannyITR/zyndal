@@ -390,10 +390,11 @@ alter table oauth_identities enable row level security;
 -- ---------- Schools + open student self-organization ----------
 -- Added alongside the existing classes/class_students tables (themselves
 -- not in this file — see the note at the top about drift). Phase 1 (schools,
--- school_subject_groups, school_subject_group_students, users.school_id) is
--- wired up in the app; teacher_claims and school_change_requests exist here
--- now but their application code (teacher claim flow, admin review, school-
--- change requests) ships in later phases.
+-- school_subject_groups, school_subject_group_students, users.school_id) and
+-- Phase 2 (teacher_claims: submission, admin approval/rejection, claimed-
+-- class creation) are both wired up in the app; school_change_requests
+-- exists here now but its application code (student school-change requests
+-- + admin review) ships in a later phase.
 
 create table if not exists schools (
   id uuid primary key default gen_random_uuid(),
@@ -450,6 +451,13 @@ create table if not exists teacher_claims (
   created_at timestamptz not null default now()
 );
 create index if not exists teacher_claims_status_idx on teacher_claims(status);
+
+-- Phase 2 additions: how the class should be named for students (e.g.
+-- "Mr. Smith", combined with course_number as "Math 416 Mr. Smith" on
+-- approval — the app has no first/last-name or honorific data to derive
+-- this automatically) and an optional admin-supplied reason on rejection.
+alter table teacher_claims add column if not exists display_name text;
+alter table teacher_claims add column if not exists rejection_reason text;
 
 -- Phase 3: student requests to change their school (proof-gated, admin-reviewed).
 create table if not exists school_change_requests (

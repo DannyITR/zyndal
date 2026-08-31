@@ -65,6 +65,7 @@
 }
 
 .admin-field input,
+.admin-field textarea,
 .admin-edit-row select,
 .admin-filters select {
   font-family: inherit;
@@ -74,6 +75,10 @@
   border-radius: 6px;
   color: #1a1a1a;
   background: #fff;
+}
+
+.admin-field textarea {
+  resize: vertical;
 }
 
 .admin-error {
@@ -127,6 +132,12 @@
   padding: 18px 28px;
   background: #fff;
   border-bottom: 1px solid #e2e4e8;
+}
+
+.admin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .admin-header h1 {

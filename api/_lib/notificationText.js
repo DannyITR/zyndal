@@ -191,6 +191,37 @@ const TEMPLATES = {
   // (status: past_due) — see api/_lib/stripeSubscription.js's own comment on
   // why these aren't deduped against each other (Stripe treats them as
   // logically separate events, both firing for one real failed charge).
+  // className is the newly-created class's name ("Math 416 Mr. Smith"),
+  // teacherCode its join code — the teacher needs it right away to start
+  // sharing it with students; it's also visible later in My Classes.
+  class_claim_approved: {
+    en: ({ className, teacherCode }) => ({
+      title: `🎉 Your claim for "${className}" was approved!`,
+      body: `Your class is live — share join code ${teacherCode} with your students.`,
+    }),
+    fr: ({ className, teacherCode }) => ({
+      title: `🎉 Votre demande pour « ${className} » a été approuvée !`,
+      body: `Votre classe est active — partagez le code ${teacherCode} avec vos élèves.`,
+    }),
+    es: ({ className, teacherCode }) => ({
+      title: `🎉 ¡Tu solicitud para "${className}" fue aprobada!`,
+      body: `Tu clase ya está activa — comparte el código ${teacherCode} con tus estudiantes.`,
+    }),
+  },
+  class_claim_rejected: {
+    en: ({ courseNumber, reason }) => ({
+      title: `Your claim for "${courseNumber}" was not approved`,
+      body: reason ? `Reason: ${reason}` : 'You can review the details and submit a new claim anytime.',
+    }),
+    fr: ({ courseNumber, reason }) => ({
+      title: `Votre demande pour « ${courseNumber} » n'a pas été approuvée`,
+      body: reason ? `Motif : ${reason}` : 'Vous pouvez revoir les détails et soumettre une nouvelle demande à tout moment.',
+    }),
+    es: ({ courseNumber, reason }) => ({
+      title: `Tu solicitud para "${courseNumber}" no fue aprobada`,
+      body: reason ? `Motivo: ${reason}` : 'Puedes revisar los detalles y enviar una nueva solicitud cuando quieras.',
+    }),
+  },
   subscription_payment_failed: {
     en: () => ({ title: '⚠️ Payment failed — update your payment method to keep Premium' }),
     fr: () => ({ title: '⚠️ Échec du paiement — mettez à jour votre moyen de paiement pour conserver Premium' }),

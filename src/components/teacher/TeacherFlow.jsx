@@ -12,6 +12,7 @@ import ClassDetailScreen from './ClassDetailScreen'
 import AssignHomeworkScreen from './AssignHomeworkScreen'
 import TeacherLeaderboardScreen from './TeacherLeaderboardScreen'
 import CreateClassModal from './CreateClassModal'
+import ClaimClassScreen from './ClaimClassScreen'
 
 const SHARE_URL_BASE = 'https://zyndal.ca'
 
@@ -26,7 +27,7 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
   const [statsError, setStatsError] = useState('')
   const [recentHomework, setRecentHomework] = useState(null)
   const [recentHomeworkError, setRecentHomeworkError] = useState('')
-  const [view, setView] = useState('home') // home | classes | class-detail | assign-homework | leaderboard | settings
+  const [view, setView] = useState('home') // home | classes | class-detail | assign-homework | leaderboard | settings | claim-class
   const [selectedClassId, setSelectedClassId] = useState(null)
   const [assignHomeworkClass, setAssignHomeworkClass] = useState(null) // { id, name } — the class Assign Homework was opened from
   const [shareStatus, setShareStatus] = useState('') // '' | 'copied'
@@ -101,6 +102,10 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
 
   if (view === 'leaderboard') {
     return <TeacherLeaderboardScreen user={user} onBack={goHome} onLogout={onLogout} onLogoClick={goHome} />
+  }
+
+  if (view === 'claim-class') {
+    return <ClaimClassScreen user={user} onBack={goHome} onLogout={onLogout} onLogoClick={goHome} />
   }
 
   if (view === 'assign-homework' && assignHomeworkClass) {
@@ -200,6 +205,9 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
         </button>
         <button type="button" className="btn btn-secondary btn-small" onClick={() => setView('leaderboard')}>
           {t('nav.leaderboard')}
+        </button>
+        <button type="button" className="btn btn-secondary btn-small" onClick={() => setView('claim-class')}>
+          {t('teacher.claimAClass')}
         </button>
       </div>
 
