@@ -14,6 +14,14 @@ import { getSubject } from '../../lib/questions'
 // data (api/student/get-school-subject-groups.js) now that the schools
 // feature exists — each group is this student's own school+grade's
 // unclaimed subject group until a teacher claim attaches a real class to it.
+// "Joined" covers both ways a student can belong to a class: the open
+// unclaimed group itself (group.joined) and a teacher-claimed class born
+// from that group (group.claimedClasses — a separate class_students
+// membership, see api/student/get-school-subject-groups.js).
+function isJoined(group) {
+  return group.joined || group.claimedClasses.length > 0
+}
+
 export default function ClassCardsGrid({ onSelectClass, onOpenSettings }) {
   const { t } = useTranslation()
   const [groups, setGroups] = useState(null) // null while loading
@@ -91,7 +99,7 @@ export default function ClassCardsGrid({ onSelectClass, onOpenSettings }) {
         <p className="field-hint">{t('home.noClassesForSchool')}</p>
       ) : (
         <div className="subject-grid">
-          {groups.map((group) => {
+          {[...groups.filter(isJoined), ...groups.filter((g) => !isJoined(g))].map((group) => {
             const subject = getSubject(group.subject)
             return (
               <button
