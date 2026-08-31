@@ -507,6 +507,29 @@ cross join (values ('math'),('science'),('history'),('geography'),('english'),('
 cross join (values (7),(8),(9),(10),(11)) as g(grade)
 on conflict (school_id, subject, grade) do nothing;
 
+-- ---------- Daily question resolution lock ----------
+-- resolveDailyQuestion (api/_lib/dailyQuestion.js) is called independently
+-- at display time and at submit time, and is meant to always agree on
+-- "today's question" for a given student+subject — but a generated_questions
+-- pool that goes from empty to populated (background generation finishing)
+-- in between those two calls can flip which branch (hardcoded vs pool) gets
+-- picked, scoring the student's answer against a different question than the
+-- one they saw. This records the exact question the moment it's first
+-- resolved for a (user, subject, day), so every later call that same day —
+-- another display fetch or the submit call — reuses that same choice
+-- instead of recomputing selection from scratch.
+create table if not exists daily_question_locks (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  subject text not null,
+  date text not null,
+  question_text text not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, subject, date)
+);
+create index if not exists daily_question_locks_user_date_idx on daily_question_locks(user_id, date);
+alter table daily_question_locks enable row level security;
+
 -- ---------- Migrations ----------
 -- Run against a database that already has an `uploads` table from before
 -- multi-page upload support existed (the `create table if not exists`

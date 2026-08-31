@@ -183,6 +183,63 @@ async function resolveAnsweredQuestion(subject, questionText) {
   }
 }
 
+// Bug fix: the "already answered" guard further down only helps once an
+// answer row exists — this closes the gap *before* that, for the window
+// between a display fetch and the student's first submission that same day
+// (see resolveDailyQuestion's own header comment for the exact race this
+// closes). Best-effort: a missing/broken lock table (e.g. before the
+// migration has been run in a given environment) just means this returns
+// null and resolveDailyQuestion falls back to a fresh selection, same as
+// before this fix existed.
+async function getLockedQuestion(userId, subject, today) {
+  try {
+    const { data, error } = await supabase
+      .from('daily_question_locks')
+      .select('question_text')
+      .eq('user_id', userId)
+      .eq('subject', subject)
+      .eq('date', today)
+      .maybeSingle()
+    if (error) throw error
+    if (!data) return null
+    return await resolveAnsweredQuestion(subject, data.question_text)
+  } catch (err) {
+    console.error('[dailyQuestion] failed to read daily question lock:', err)
+    return null
+  }
+}
+
+// Best-effort — a failed write just leaves the race window open for this
+// one resolution, not a broken question (the caller still has its own
+// freshly-computed `resolved` to fall back to). ignoreDuplicates so two
+// near-simultaneous first resolutions for the same (user, subject, day)
+// don't error on the unique constraint; the caller re-reads the lock
+// afterward so both requests end up agreeing on whichever one won.
+async function lockDailyQuestion(userId, subject, today, questionText) {
+  try {
+    const { error } = await supabase
+      .from('daily_question_locks')
+      .upsert(
+        { user_id: userId, subject, date: today, question_text: questionText },
+        { onConflict: 'user_id,subject,date', ignoreDuplicates: true }
+      )
+    if (error) throw error
+  } catch (err) {
+    console.error('[dailyQuestion] failed to persist daily question lock:', err)
+  }
+}
+
+// Persists a freshly-computed selection as today's lock, then re-reads it —
+// if a concurrent request locked a *different* question first (the
+// ignoreDuplicates upsert loses that race), this returns THAT one instead
+// of `resolved`, so both requests agree on a single winner rather than each
+// trusting its own pick.
+async function lockAndReturn(userId, subject, today, resolved) {
+  await lockDailyQuestion(userId, subject, today, resolved.prompt)
+  const winner = await getLockedQuestion(userId, subject, today)
+  return winner || resolved
+}
+
 // Shared by api/questions/get-daily-question.js (client display) and
 // api/student/submit-answer.js (scoring) so both always agree on exactly
 // which question is "today's" for a given student+subject — the server
@@ -214,6 +271,18 @@ export async function resolveDailyQuestion({ userId, subject, timezone }) {
     const resolved = await resolveAnsweredQuestion(subject, todayAnswer.question_text)
     if (resolved) return resolved
   }
+
+  // Bug fix: closes the gap *before* an answer exists. resolveDailyQuestion
+  // is called independently at display time and at submit time; if a
+  // subject/grade/unit's generated_questions pool is empty at display time,
+  // the hardcoded-bank branch below runs and fires background generation.
+  // If that finishes before the student submits, the submit-time call would
+  // otherwise take the pool branch instead and score against a different
+  // question. Once today's question has been picked once, this lock makes
+  // every later call that day reuse it via the same resolveAnsweredQuestion
+  // lookup used above, regardless of which branch computed it originally.
+  const locked = await getLockedQuestion(userId, subject, today)
+  if (locked) return locked
 
   let scheduledUnits = []
   try {
@@ -257,7 +326,7 @@ export async function resolveDailyQuestion({ userId, subject, timezone }) {
     // The hardcoded bank has no authored explanation text (unlike
     // AI-generated pool questions below) — explicitly null rather than
     // absent, so callers can rely on the field always being present.
-    return { ...hardcoded, source: 'hardcoded', explanation: null }
+    return lockAndReturn(userId, subject, today, { ...hardcoded, source: 'hardcoded', explanation: null })
   }
 
   const index = simpleHash(`${userId}:${today}:${subject}`) % pool.length
@@ -277,7 +346,7 @@ export async function resolveDailyQuestion({ userId, subject, timezone }) {
     selected = pool[index]
   }
 
-  return {
+  return lockAndReturn(userId, subject, today, {
     id: selected.id,
     prompt: selected.question,
     options: selected.options,
@@ -288,5 +357,5 @@ export async function resolveDailyQuestion({ userId, subject, timezone }) {
     topicTitle: selected.topic_title,
     source: 'generated',
     explanation: selected.explanation ?? null,
-  }
+  })
 }

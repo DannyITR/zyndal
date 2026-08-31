@@ -99,28 +99,67 @@ export default function CurriculumOutlineScreen({ user, subject, initialUnitNumb
     const container = unitListRef.current
     if (!container) return
 
-    const unitEl = [...container.querySelectorAll('details[data-unit-number]')].find(
-      (el) => Number(el.dataset.unitNumber) === Number(initialUnitNumber)
-    )
-    if (!unitEl) return
-    unitEl.open = true
+    let cancelled = false
 
-    let scrollTarget = unitEl
-    if (initialTopicTitle) {
-      const topicEl = [...unitEl.querySelectorAll('details[data-topic-title]')].find(
-        (el) => el.dataset.topicTitle === initialTopicTitle
+    async function expandAndScroll() {
+      const unitEl = [...container.querySelectorAll('details[data-unit-number]')].find(
+        (el) => Number(el.dataset.unitNumber) === Number(initialUnitNumber)
       )
-      if (topicEl) {
-        topicEl.open = true
-        scrollTarget = topicEl
+      if (!unitEl) return
+      unitEl.open = true
+
+      let scrollTarget = unitEl
+      if (initialTopicTitle) {
+        let topicEl = [...unitEl.querySelectorAll('details[data-topic-title]')].find(
+          (el) => el.dataset.topicTitle === initialTopicTitle
+        )
+
+        // The question's topic_title is stored in English even when this
+        // outline is displayed in French/Spanish — generated_questions keeps
+        // unit/topic titles in English for every language (see
+        // api/_lib/multilingualGeneration.js) — so the direct match above
+        // only ever succeeds for English students. Fall back to
+        // cross-referencing the English outline: find the topic's position
+        // within its unit there, then apply that same position here.
+        // Translated outlines are a strict 1:1 translation of the English
+        // one (see translateOutlines in api/_lib/multilingualGeneration.js),
+        // so unit/topic order and count always line up even when the topic
+        // text itself doesn't match.
+        if (!topicEl) {
+          try {
+            const english = await getOrGenerateCurriculumOutline(subject.id, grade, 'en')
+            if (cancelled) return
+            const englishUnit = english.outline_data?.units?.find(
+              (u) => Number(u.unit_number) === Number(initialUnitNumber)
+            )
+            const topicIndex = englishUnit?.topics?.findIndex((topic) => topic.topic_title === initialTopicTitle)
+            if (topicIndex != null && topicIndex >= 0) {
+              const topicEls = [...unitEl.querySelectorAll('details[data-topic-title]')]
+              topicEl = topicEls[topicIndex] || null
+            }
+          } catch (err) {
+            console.error('[Curriculum] English cross-reference for deep-link failed:', err)
+          }
+        }
+
+        if (topicEl) {
+          topicEl.open = true
+          scrollTarget = topicEl
+        }
       }
+
+      if (cancelled) return
+      // Let the newly-opened <details> content lay out before scrolling, so
+      // the target lands at its real (expanded) position instead of its
+      // stale collapsed one.
+      requestAnimationFrame(() => scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' }))
     }
 
-    // Let the newly-opened <details> content lay out before scrolling, so
-    // the target lands at its real (expanded) position instead of its
-    // stale collapsed one.
-    requestAnimationFrame(() => scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' }))
-  }, [outline, initialUnitNumber, initialTopicTitle])
+    expandAndScroll()
+    return () => {
+      cancelled = true
+    }
+  }, [outline, initialUnitNumber, initialTopicTitle, subject.id, grade])
 
   return (
     <div className="screen student-screen">

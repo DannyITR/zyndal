@@ -1063,8 +1063,9 @@ export async function subscribeToPushNotifications(subscription) {
 // /api/curriculum/get-outline does the check-generate-save orchestration
 // server-side. See CurriculumOutlineScreen.jsx for the corresponding client
 // change.
-export async function getOrGenerateCurriculumOutline(subject, grade) {
-  return callCurriculumApi('GET', `get-outline?subject=${encodeURIComponent(subject)}&grade=${encodeURIComponent(grade)}`)
+export async function getOrGenerateCurriculumOutline(subject, grade, language) {
+  const languageParam = language ? `&language=${encodeURIComponent(language)}` : ''
+  return callCurriculumApi('GET', `get-outline?subject=${encodeURIComponent(subject)}&grade=${encodeURIComponent(grade)}${languageParam}`)
 }
 
 // ---------- Parent linking (student side) ----------

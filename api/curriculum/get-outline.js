@@ -9,10 +9,13 @@ import { LANG_FOR_PREFERENCE } from '../_lib/notificationText.js'
 // result) into one server-side call, as spec'd. curriculum_outlines is a
 // shared global cache (no user_id — see schema.sql), so this never needs
 // per-user scoping beyond the session-auth check itself.
+const VALID_LANGUAGES = ['en', 'fr', 'es']
+
 function validate(body) {
   if (!body.subject || !SUBJECTS.some((s) => s.id === body.subject)) return 'subject is invalid.'
   const grade = Number(body.grade)
   if (!Number.isFinite(grade)) return 'grade is required and must be a number.'
+  if (body.language !== undefined && !VALID_LANGUAGES.includes(body.language)) return 'language is invalid.'
   return null
 }
 
@@ -22,9 +25,17 @@ async function handle({ userId, body }) {
   const subject = body.subject
   const grade = Number(body.grade)
 
-  const { data: user, error: userError } = await supabase.from('users').select('language_preference').eq('id', userId).maybeSingle()
-  if (userError) throw userError
-  const language = LANG_FOR_PREFERENCE[user?.language_preference] || 'en'
+  // Optional override so a caller can fetch a specific language's outline
+  // regardless of the student's own preference — used by
+  // CurriculumOutlineScreen's deep-link fallback to cross-reference the
+  // English outline's topic order/positions (see that component for why).
+  // Every other caller omits it and keeps today's profile-derived behavior.
+  let language = body.language
+  if (!language) {
+    const { data: user, error: userError } = await supabase.from('users').select('language_preference').eq('id', userId).maybeSingle()
+    if (userError) throw userError
+    language = LANG_FOR_PREFERENCE[user?.language_preference] || 'en'
+  }
 
   const { data: existing, error } = await supabase
     .from('curriculum_outlines')
