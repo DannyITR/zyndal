@@ -403,14 +403,25 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const incorrectSubjectIds = isViewingToday ? todayIncorrectIds : (pastDayState?.incorrectIds ?? new Set())
 
   // Only worth warning about if there's an actual streak in progress to
-  // lose, the student hasn't gotten a single correct answer yet today (one
-  // is now all it takes to keep the streak — see applyDailyAnswer), and
-  // it's after 8pm local time so it doesn't nag all day.
+  // lose, today's single rotating question hasn't been answered yet at all
+  // (see canShareToday — with only one question a day, there's no "try
+  // again" once it's been attempted, right or wrong, so the warning has
+  // nothing left to prompt once it's answered), and it's after 8pm local
+  // time so it doesn't nag all day.
+  //
+  // Bug fix: this used to gate on dailyProgress.total_completed === 0,
+  // which only counts CORRECT answers — so after answering today's one
+  // question incorrectly, this stayed true and kept showing "answer at
+  // least one question correctly to keep it alive," implying another
+  // attempt was still possible when the day's only question was already
+  // spent. Gating on "attempted at all" (canShareToday) instead makes the
+  // banner disappear the moment today's question is answered, correct or
+  // not.
   const showStreakRiskWarning =
     Boolean(progress) &&
     Boolean(dailyProgress) &&
     getEffectiveStreak(progress, today) > 0 &&
-    dailyProgress.total_completed === 0 &&
+    !canShareToday &&
     new Date().getHours() >= 20
 
   const activeSubject = useMemo(() => (pickedSubjectId ? getSubject(pickedSubjectId) : null), [pickedSubjectId])
@@ -910,7 +921,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
 
         {showStreakRiskWarning && (
           <div className="streak-risk-banner">
-            ⚠️ Your streak expires at midnight — answer at least one question correctly to keep it alive!
+            ⚠️ Your streak expires at midnight — answer today's question correctly to keep it alive!
           </div>
         )}
 
