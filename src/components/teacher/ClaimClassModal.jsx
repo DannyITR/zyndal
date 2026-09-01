@@ -3,6 +3,11 @@ import { useTranslation } from 'react-i18next'
 import { submitClassClaim } from '../../lib/storage'
 import { getErrorMessage } from '../../lib/errors'
 
+// Temporarily off for testing, so a claim can be submitted with any email —
+// mirrors EMAIL_DOMAIN_CHECK_ENABLED (api/teacher/submit-class-claim.js).
+// Flip both back to true together to restore the real domain-match gate.
+const EMAIL_DOMAIN_CHECK_ENABLED = false
+
 // The teacher's account email isn't a form field — it's already on their
 // account and just needs to be shown + checked against the target school's
 // domain (the actual match is re-verified server-side in
@@ -17,7 +22,7 @@ export default function ClaimClassModal({ user, group, schoolDomain, onSubmitted
   const [error, setError] = useState('')
 
   const email = (user.email || '').toLowerCase()
-  const emailMatches = Boolean(schoolDomain) && email.endsWith(`@${schoolDomain.toLowerCase()}`)
+  const emailMatches = !EMAIL_DOMAIN_CHECK_ENABLED || (Boolean(schoolDomain) && email.endsWith(`@${schoolDomain.toLowerCase()}`))
 
   async function handleSubmit(e) {
     e.preventDefault()
