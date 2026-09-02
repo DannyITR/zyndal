@@ -10,6 +10,8 @@ import UpgradeModal from '../shared/UpgradeModal'
 import PremiumFeatureButton from '../shared/PremiumFeatureButton'
 import CancelTestPlanModal from './testprep/CancelTestPlanModal'
 import LeaveClassModal from './LeaveClassModal'
+import HomeworkCalendar from './classes/HomeworkCalendar'
+import HomeworkDetailScreen from './classes/HomeworkDetailScreen'
 
 // The full per-class page — Test Prep, Study Guide, Upload, My Uploads,
 // Practice, My Grades, Curriculum, and the active-test-plan card, carried
@@ -29,9 +31,13 @@ export default function ClassCard({
   entryKind, // 'group' | 'class' — which single class this card represents
   entryId, // the group's or class's own id
   entryName, // the claimed class's display name ('class' entries only)
+  currentUnitNumber, // 'class' entries only — classes.current_unit_number
+  currentUnitTitle, // 'class' entries only — classes.current_unit_title
+  classCreatedAt, // 'class' entries only — bounds the homework calendar's earliest month
   joined, // 'group' entries only — a 'class' entry is always joined
   onJoin,
   onLeave,
+  onStartHomework, // 'class' entries only — (assignmentId) => boolean, see StudentFlow.jsx
   onOpenForum,
   onOpenTestPrep,
   onOpenStudyGuide,
@@ -53,6 +59,12 @@ export default function ClassCard({
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [showLeaveModal, setShowLeaveModal] = useState(false)
   const [joining, setJoining] = useState(false)
+  // 'class' entries only — { date, assignments } when a calendar day is
+  // selected, swapping the page to HomeworkDetailScreen internally (same
+  // self-contained internal-navigation pattern as ForumScreen.jsx) instead
+  // of pushing yet another top-level view into StudentFlow.jsx.
+  const [dayDetail, setDayDetail] = useState(null)
+  const [startError, setStartError] = useState('')
 
   const displayStreak = getEffectiveStreak(progress, today)
   const planForThisSubject = activePlan && activePlan.subject === subject.id ? activePlan : null
@@ -108,6 +120,33 @@ export default function ClassCard({
   async function handleLeave() {
     await onLeave()
     onBack()
+  }
+
+  // onStartHomework looks the assignment up in StudentFlow's already-loaded
+  // homework list and hands off to its top-level activeHomework/HomeworkFlow
+  // takeover — returns false if the assignment can't be found or has no
+  // questions, matching the old ClassesFlow.jsx's own guard.
+  function handleStartFromDetail(assignmentId) {
+    setStartError('')
+    const started = onStartHomework(assignmentId)
+    if (!started) setStartError(t('errors.NOT_FOUND'))
+  }
+
+  if (dayDetail) {
+    return (
+      <>
+        {startError && <p className="form-error">{startError}</p>}
+        <HomeworkDetailScreen
+          user={user}
+          date={dayDetail.date}
+          assignments={dayDetail.assignments}
+          onBack={() => setDayDetail(null)}
+          onLogout={onLogout}
+          onLogoClick={onLogoClick}
+          onStart={handleStartFromDetail}
+        />
+      </>
+    )
   }
 
   return (
@@ -181,6 +220,31 @@ export default function ClassCard({
           </button>
         )}
       </div>
+
+      {/* Homework calendar only exists for a real class — an unclaimed
+          group has no homework mechanism (teachers assign it per
+          classes.id). Reuses HomeworkCalendar/HomeworkDetailScreen exactly
+          as they were under the old, now-removed ClassesFlow/
+          ClassHomeScreen — this is that same functionality, just reached
+          from this one canonical class page instead of a separate one. */}
+      {entryKind === 'class' && (
+        <>
+          <div className="parent-code-card">
+            <p className="parent-code-label">{t('classCard.currentlyStudying')}</p>
+            <p className="class-home-unit">
+              {t('classCard.unitLabel', { number: currentUnitNumber })}
+              {currentUnitTitle ? ` — ${currentUnitTitle}` : ''}
+            </p>
+          </div>
+
+          <h3 className="section-heading">{t('classCard.homeworkCalendarHeading')}</h3>
+          <HomeworkCalendar
+            classId={entryId}
+            classCreatedAt={classCreatedAt}
+            onSelectDay={(date, assignments) => setDayDetail({ date, assignments })}
+          />
+        </>
+      )}
 
       {planForThisSubject && (
         <div className="testprep-home-card">

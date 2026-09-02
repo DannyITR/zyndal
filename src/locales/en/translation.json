@@ -785,7 +785,10 @@
     "leaveWarning": "You'll lose access to {{class}}'s forum, homework, and roster. Your recorded grades and answers stay as they are — you can rejoin later.",
     "leaveConfirm": "Leave",
     "leaving": "Leaving…",
-    "leaveFailed": "Couldn't leave this class. Please try again."
+    "leaveFailed": "Couldn't leave this class. Please try again.",
+    "currentlyStudying": "Currently studying",
+    "unitLabel": "📖 Unit {{number}}",
+    "homeworkCalendarHeading": "Homework Calendar"
   },
   "forum": {
     "title": "Forum",

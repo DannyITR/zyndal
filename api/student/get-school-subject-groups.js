@@ -1,6 +1,7 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { SUBJECTS } from '../../src/lib/questions.js'
+import { resolveClassSubject } from '../_lib/classSubject.js'
 
 // One entry per actual class the student can see on the home screen's "My
 // Subjects" grid: one 'group' entry per (school, subject, grade) — the
@@ -13,14 +14,13 @@ import { SUBJECTS } from '../../src/lib/questions.js'
 // group entry, and each renders as its own tile.
 //
 // Bug fix (kept from the earlier nested version): a joined class surfaces
-// here by its own subject (classes.subject, set at teacher-claim approval
-// time — see api/admin/resolve-teacher-claim.js) rather than by matching
-// classes.group_id against this grade's groups, so it still shows up even
-// if its group is a different grade than the student's current profile
-// grade, or if it's a legacy class from the older join-by-teacher-code flow
-// (api/teacher/create-class.js) that never captured group_id/subject at
-// all — those fall back to a name-keyword match against the 6 canonical
-// subjects, the only signal they carry.
+// here by its own subject (resolveClassSubject — classes.subject, set at
+// teacher-claim approval time, or a name-keyword fallback for a legacy
+// class with none) rather than by matching classes.group_id against this
+// grade's groups, so it still shows up even if its group is a different
+// grade than the student's current profile grade. api/classes/get-student-
+// classes.js (My Classes) uses the exact same helper, so a class resolves
+// to the same subject regardless of which screen reaches it.
 async function handle({ userId }) {
   const { data: user, error: userError } = await supabase.from('users').select('school_id, grade').eq('id', userId).maybeSingle()
   if (userError) throw userError
@@ -53,13 +53,25 @@ async function handle({ userId }) {
   const myClassIds = (myClassRows || []).map((c) => c.class_id)
 
   if (myClassIds.length > 0) {
-    const { data: myClasses, error: classesError } = await supabase.from('classes').select('id, name, course_number, subject').in('id', myClassIds)
+    const { data: myClasses, error: classesError } = await supabase
+      .from('classes')
+      .select('id, name, course_number, subject, current_unit_number, current_unit_title, created_at')
+      .in('id', myClassIds)
     if (classesError) throw classesError
     for (const c of myClasses || []) {
-      const subjectId = c.subject || SUBJECTS.find((s) => c.name.toLowerCase().includes(s.name.toLowerCase()))?.id
+      const subjectId = resolveClassSubject(c)
       if (!subjectId) continue
       if (!classEntriesBySubject[subjectId]) classEntriesBySubject[subjectId] = []
-      classEntriesBySubject[subjectId].push({ kind: 'class', id: c.id, subject: subjectId, name: c.name, courseNumber: c.course_number })
+      classEntriesBySubject[subjectId].push({
+        kind: 'class',
+        id: c.id,
+        subject: subjectId,
+        name: c.name,
+        courseNumber: c.course_number,
+        currentUnitNumber: c.current_unit_number ?? 1,
+        currentUnitTitle: c.current_unit_title || null,
+        classCreatedAt: c.created_at,
+      })
     }
   }
 

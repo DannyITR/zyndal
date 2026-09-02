@@ -24,7 +24,7 @@ export default function MyClassesScreen({ user, classes, onBack, onLogout, onLog
       ) : (
         <div className="teacher-class-list">
           {classes.map((c) => (
-            <button key={c.id} type="button" className="teacher-class-card" onClick={() => onOpenClass(c.id)}>
+            <button key={c.id} type="button" className="teacher-class-card" onClick={() => onOpenClass(c)}>
               <div className="teacher-class-card-header">
                 <p className="teacher-class-name">{c.name}</p>
               </div>

@@ -15,6 +15,7 @@ import {
   getMyHomework,
   joinSchoolSubjectGroup,
   leaveClass,
+  getStudentClasses,
 } from '../../lib/storage'
 import { getSubject, getTodaysSubjectId } from '../../lib/questions'
 import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE, TOTAL_SUBJECTS } from '../../lib/streak'
@@ -53,7 +54,7 @@ import GradesScreen from './grades/GradesScreen'
 import WalletScreen from './wallet/WalletScreen'
 import CurriculumOutlineScreen from './curriculum/CurriculumOutlineScreen'
 import HomeworkFlow from './homework/HomeworkFlow'
-import ClassesFlow from './classes/ClassesFlow'
+import MyClassesScreen from './classes/MyClassesScreen'
 import ForumScreen from '../shared/forum/ForumScreen'
 
 // Push-permission banner dismissal cooldown — see showPushBanner below.
@@ -147,6 +148,11 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const openHomework = useMemo(() => homework.filter((h) => !h.completed), [homework])
   const openHomeworkIds = useMemo(() => new Set(openHomework.map((h) => h.id)), [openHomework])
   const [showClasses, setShowClasses] = useState(false)
+  // "My Classes" (nav.classes) list — fetched on demand when that screen
+  // opens, not eagerly on mount, since it's not needed anywhere else.
+  // Tapping a class here routes into the exact same ClassCard branch below
+  // that the home-grid entry point uses (see MyClassesScreen's onOpenClass).
+  const [myClasses, setMyClasses] = useState(null)
   // The share currently shown in the read-only friend-score-card modal,
   // opened from the home-screen notification box below.
   const [viewingShare, setViewingShare] = useState(null)
@@ -352,6 +358,12 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     getMyHomework()
       .then((data) => setHomework(data.homework))
       .catch(() => {})
+  }
+
+  function loadMyClasses() {
+    getStudentClasses()
+      .then((data) => setMyClasses(data.classes))
+      .catch(() => setMyClasses([]))
   }
 
   useEffect(() => {
@@ -670,7 +682,31 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   }
 
   if (showClasses) {
-    return <ClassesFlow user={user} onExit={() => setShowClasses(false)} onLogout={onLogout} onLogoClick={handleLogoClick} />
+    return (
+      <MyClassesScreen
+        user={user}
+        classes={myClasses}
+        onBack={() => setShowClasses(false)}
+        onLogout={onLogout}
+        onLogoClick={handleLogoClick}
+        onJoined={loadMyClasses}
+        onOpenClass={(classInfo) => {
+          setPickedEntry({
+            kind: 'class',
+            id: classInfo.id,
+            subject: classInfo.subject,
+            name: classInfo.name,
+            schoolName: classInfo.school,
+            grade: classInfo.grade,
+            currentUnitNumber: classInfo.currentUnitNumber,
+            currentUnitTitle: classInfo.currentUnitTitle,
+            classCreatedAt: classInfo.createdAt,
+          })
+          setPickedClassSubjectId(classInfo.subject)
+          setShowClasses(false)
+        }}
+      />
+    )
   }
 
   if (forumTarget) {
@@ -732,12 +768,21 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         entryKind={pickedEntry?.kind}
         entryId={pickedEntry?.id}
         entryName={pickedEntry?.name}
+        currentUnitNumber={pickedEntry?.currentUnitNumber}
+        currentUnitTitle={pickedEntry?.currentUnitTitle}
+        classCreatedAt={pickedEntry?.classCreatedAt}
         joined={Boolean(pickedEntry?.joined)}
         onJoin={async () => {
           await joinSchoolSubjectGroup(pickedEntry.id)
           setPickedEntry((e) => (e ? { ...e, joined: true } : e))
         }}
         onLeave={() => leaveClass(pickedEntry.kind, pickedEntry.id)}
+        onStartHomework={(assignmentId) => {
+          const found = homework.find((h) => h.id === assignmentId)
+          if (!found || !found.questions) return false
+          setActiveHomework(found)
+          return true
+        }}
         onOpenForum={setForumTarget}
         onOpenTestPrep={() => setShowTestPrepSetup(true)}
         onOpenStudyGuide={() => setShowStudyGuide(true)}
@@ -916,7 +961,14 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowCalendar(true)}>
             {t('nav.calendar')}
           </button>
-          <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowClasses(true)}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-small"
+            onClick={() => {
+              setShowClasses(true)
+              loadMyClasses()
+            }}
+          >
             {t('nav.classes')}
           </button>
         </div>

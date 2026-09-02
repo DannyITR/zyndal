@@ -785,7 +785,10 @@
     "leaveWarning": "Perderás el acceso al foro, la tarea y la lista de miembros de {{class}}. Tus calificaciones y respuestas registradas permanecen igual — puedes volver a unirte más tarde.",
     "leaveConfirm": "Salir",
     "leaving": "Saliendo…",
-    "leaveFailed": "No se pudo salir de esta clase. Inténtalo de nuevo."
+    "leaveFailed": "No se pudo salir de esta clase. Inténtalo de nuevo.",
+    "currentlyStudying": "Estudiando actualmente",
+    "unitLabel": "📖 Unidad {{number}}",
+    "homeworkCalendarHeading": "Calendario de tareas"
   },
   "forum": {
     "title": "Foro",

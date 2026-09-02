@@ -1,5 +1,6 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
+import { resolveClassSubject } from '../_lib/classSubject.js'
 
 async function handle({ userId }) {
   const { data: enrollments, error } = await supabase.from('class_students').select('class_id, joined_at').eq('student_id', userId)
@@ -19,17 +20,25 @@ async function handle({ userId }) {
   const joinedAtByClass = Object.fromEntries(enrollments.map((e) => [e.class_id, e.joined_at]))
 
   return {
-    classes: (classes || []).map((c) => ({
-      id: c.id,
-      name: c.name,
-      grade: c.grade,
-      school: c.school,
-      teacherUsername: teacherUsernameById[c.teacher_id] || 'Unknown',
-      currentUnitNumber: c.current_unit_number ?? 1,
-      currentUnitTitle: c.current_unit_title || null,
-      createdAt: c.created_at,
-      joinedAt: joinedAtByClass[c.id],
-    })),
+    // A class with no resolvable subject (legacy, no subject column, and a
+    // name that doesn't match any of the 6 canonical subjects) is skipped
+    // here too — it has no renderable Class Card to route into (see
+    // StudentFlow.jsx's onOpenClass), matching how the home grid
+    // (get-school-subject-groups.js) already treats the same case.
+    classes: (classes || [])
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        subject: resolveClassSubject(c),
+        grade: c.grade,
+        school: c.school,
+        teacherUsername: teacherUsernameById[c.teacher_id] || 'Unknown',
+        currentUnitNumber: c.current_unit_number ?? 1,
+        currentUnitTitle: c.current_unit_title || null,
+        createdAt: c.created_at,
+        joinedAt: joinedAtByClass[c.id],
+      }))
+      .filter((c) => c.subject),
   }
 }
 

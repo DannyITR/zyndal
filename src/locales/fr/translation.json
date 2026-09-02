@@ -785,7 +785,10 @@
     "leaveWarning": "Vous perdrez l'accès au forum, aux devoirs et à la liste des membres de {{class}}. Vos notes et réponses enregistrées restent inchangées — vous pourrez rejoindre plus tard.",
     "leaveConfirm": "Quitter",
     "leaving": "Sortie en cours…",
-    "leaveFailed": "Impossible de quitter cette classe. Veuillez réessayer."
+    "leaveFailed": "Impossible de quitter cette classe. Veuillez réessayer.",
+    "currentlyStudying": "Étudie actuellement",
+    "unitLabel": "📖 Unité {{number}}",
+    "homeworkCalendarHeading": "Calendrier des devoirs"
   },
   "forum": {
     "title": "Forum",
