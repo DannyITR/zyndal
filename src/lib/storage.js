@@ -126,6 +126,10 @@ function callNotificationsApi(method, endpoint, body) {
   return callApi('/api/notifications', method, endpoint, body)
 }
 
+function callForumApi(method, endpoint, body) {
+  return callApi('/api/forum', method, endpoint, body)
+}
+
 function callStripeApi(method, endpoint, body) {
   return callApi('/api/stripe', method, endpoint, body)
 }
@@ -1255,5 +1259,37 @@ export async function createHomework({ title, subject, dueDate, classIds, questi
 
 export async function getTeacherLeaderboard(classId) {
   return callTeacherApi('GET', `get-leaderboard${classId ? `?class_id=${encodeURIComponent(classId)}` : ''}`)
+}
+
+export async function getTeacherForumReports() {
+  return callTeacherApi('GET', 'get-forum-reports')
+}
+
+export async function resolveTeacherForumReport(payload) {
+  return callTeacherApi('POST', 'resolve-forum-report', payload)
+}
+
+// Forum endpoints (api/forum/*) are built on createStudentHandler, but any
+// authenticated user (student or teacher — see that file's own comment on
+// why the "student" name is misleading here) can call them; the real gate
+// is each endpoint's own class-membership check.
+export async function getForumThreads(classType, classId) {
+  return callForumApi('GET', `get-threads?class_type=${encodeURIComponent(classType)}&class_id=${encodeURIComponent(classId)}`)
+}
+
+export async function getForumThread(threadId) {
+  return callForumApi('GET', `get-thread?thread_id=${encodeURIComponent(threadId)}`)
+}
+
+export async function createForumThread(payload) {
+  return callForumApi('POST', 'create-thread', payload)
+}
+
+export async function createForumReply(payload) {
+  return callForumApi('POST', 'create-reply', payload)
+}
+
+export async function reportForumContent(payload) {
+  return callForumApi('POST', 'report', payload)
 }
 

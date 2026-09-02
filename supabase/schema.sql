@@ -530,6 +530,51 @@ create table if not exists daily_question_locks (
 create index if not exists daily_question_locks_user_date_idx on daily_question_locks(user_id, date);
 alter table daily_question_locks enable row level security;
 
+-- ---------- Forum ----------
+-- Basic per-class forum: every unclaimed school_subject_groups row and
+-- every teacher-claimed classes row gets its own separate forum. Those are
+-- two genuinely different id spaces (see the schools/classes note above),
+-- so forum_threads uses a class_type discriminator + class_id rather than a
+-- single FK — mirrors forum_reports' own target_type/target_id polymorphic
+-- column pair below. No FK on class_id itself since it points at two
+-- different tables depending on class_type; every api/forum/*.js endpoint
+-- re-derives and re-checks membership itself (api/_lib/forumAuth.js), same
+-- as this file's existing RLS-enabled-with-no-policies pattern elsewhere.
+create table if not exists forum_threads (
+  id uuid primary key default gen_random_uuid(),
+  class_type text not null check (class_type in ('group', 'class')),
+  class_id uuid not null,
+  author_id uuid not null references users(id) on delete cascade,
+  title text not null,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists forum_threads_class_idx on forum_threads(class_type, class_id);
+
+create table if not exists forum_replies (
+  id uuid primary key default gen_random_uuid(),
+  thread_id uuid not null references forum_threads(id) on delete cascade,
+  author_id uuid not null references users(id) on delete cascade,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists forum_replies_thread_idx on forum_replies(thread_id);
+
+create table if not exists forum_reports (
+  id uuid primary key default gen_random_uuid(),
+  target_type text not null check (target_type in ('thread', 'reply')),
+  target_id uuid not null,
+  reporter_id uuid not null references users(id) on delete cascade,
+  reason text not null,
+  status text not null default 'pending' check (status in ('pending', 'reviewed')),
+  created_at timestamptz not null default now()
+);
+create index if not exists forum_reports_status_idx on forum_reports(status);
+
+alter table forum_threads enable row level security;
+alter table forum_replies enable row level security;
+alter table forum_reports enable row level security;
+
 -- ---------- Migrations ----------
 -- Run against a database that already has an `uploads` table from before
 -- multi-page upload support existed (the `create table if not exists`

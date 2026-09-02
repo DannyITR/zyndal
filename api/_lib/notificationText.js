@@ -260,6 +260,24 @@ const TEMPLATES = {
     fr: () => ({ title: 'Votre abonnement Zyndal Premium a pris fin', body: 'Vous pouvez vous réabonner à tout moment dans Paramètres.' }),
     es: () => ({ title: 'Tu suscripción a Zyndal Premium ha finalizado', body: 'Puedes volver a suscribirte en cualquier momento desde Configuración.' }),
   },
+  // Sent to a thread's author when someone else replies (api/forum/create-
+  // reply.js) — never to the replier themselves. threadTitle is truncated
+  // by the caller if needed; kept untruncated here since this is just text
+  // interpolation.
+  forum_reply: {
+    en: ({ replierUsername, threadTitle }) => ({
+      title: `💬 @${replierUsername} replied to your thread`,
+      body: `New reply on "${threadTitle}"`,
+    }),
+    fr: ({ replierUsername, threadTitle }) => ({
+      title: `💬 @${replierUsername} a répondu à votre sujet`,
+      body: `Nouvelle réponse sur « ${threadTitle} »`,
+    }),
+    es: ({ replierUsername, threadTitle }) => ({
+      title: `💬 @${replierUsername} respondió a tu tema`,
+      body: `Nueva respuesta en "${threadTitle}"`,
+    }),
+  },
   // presetKey is one of POKE_PRESET_KEYS (src/lib/pokePresets.js), validated
   // server-side in api/social/poke.js before this ever runs — pokePresetText
   // falls back to English internally if somehow passed an unknown key.

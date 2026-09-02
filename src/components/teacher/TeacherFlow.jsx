@@ -13,6 +13,8 @@ import AssignHomeworkScreen from './AssignHomeworkScreen'
 import TeacherLeaderboardScreen from './TeacherLeaderboardScreen'
 import CreateClassModal from './CreateClassModal'
 import ClaimClassScreen from './ClaimClassScreen'
+import TeacherForumReportsScreen from './TeacherForumReportsScreen'
+import ForumScreen from '../shared/forum/ForumScreen'
 
 const SHARE_URL_BASE = 'https://zyndal.ca'
 
@@ -27,9 +29,10 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
   const [statsError, setStatsError] = useState('')
   const [recentHomework, setRecentHomework] = useState(null)
   const [recentHomeworkError, setRecentHomeworkError] = useState('')
-  const [view, setView] = useState('home') // home | classes | class-detail | assign-homework | leaderboard | settings | claim-class
+  const [view, setView] = useState('home') // home | classes | class-detail | assign-homework | leaderboard | settings | claim-class | forum-reports | forum
   const [selectedClassId, setSelectedClassId] = useState(null)
   const [assignHomeworkClass, setAssignHomeworkClass] = useState(null) // { id, name } — the class Assign Homework was opened from
+  const [forumTarget, setForumTarget] = useState(null) // { classType, classId, className } — the class Forum was opened from
   const [shareStatus, setShareStatus] = useState('') // '' | 'copied'
   const [showUpgradeModal, setShowUpgradeModal] = useState(null) // null | 'default' | 'trial'
   const [showCreateClass, setShowCreateClass] = useState(false)
@@ -74,6 +77,11 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
     setView('assign-homework')
   }
 
+  function handleOpenForum(target) {
+    setForumTarget(target)
+    setView('forum')
+  }
+
   async function handleShare() {
     const url = `${SHARE_URL_BASE}?ref=${encodeURIComponent(user.username)}`
     const shareData = { title: 'Zyndal', text: t('teacher.shareText'), url }
@@ -108,6 +116,24 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
     return <ClaimClassScreen user={user} onBack={goHome} onLogout={onLogout} onLogoClick={goHome} />
   }
 
+  if (view === 'forum-reports') {
+    return <TeacherForumReportsScreen user={user} onBack={goHome} onLogout={onLogout} onLogoClick={goHome} />
+  }
+
+  if (view === 'forum' && forumTarget) {
+    return (
+      <ForumScreen
+        user={user}
+        classType={forumTarget.classType}
+        classId={forumTarget.classId}
+        className={forumTarget.className}
+        onBack={() => setView('class-detail')}
+        onLogout={onLogout}
+        onLogoClick={goHome}
+      />
+    )
+  }
+
   if (view === 'assign-homework' && assignHomeworkClass) {
     return (
       <AssignHomeworkScreen
@@ -131,6 +157,7 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
         onLogout={onLogout}
         onLogoClick={goHome}
         onAssignHomework={handleAssignHomework}
+        onOpenForum={handleOpenForum}
       />
     )
   }
@@ -208,6 +235,9 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
         </button>
         <button type="button" className="btn btn-secondary btn-small" onClick={() => setView('claim-class')}>
           {t('teacher.claimAClass')}
+        </button>
+        <button type="button" className="btn btn-secondary btn-small" onClick={() => setView('forum-reports')}>
+          {t('teacher.forumReportsNav')}
         </button>
       </div>
 

@@ -53,6 +53,7 @@ import WalletScreen from './wallet/WalletScreen'
 import CurriculumOutlineScreen from './curriculum/CurriculumOutlineScreen'
 import HomeworkFlow from './homework/HomeworkFlow'
 import ClassesFlow from './classes/ClassesFlow'
+import ForumScreen from '../shared/forum/ForumScreen'
 
 // Push-permission banner dismissal cooldown — see showPushBanner below.
 // localStorage (not the server) is the right place for this: permission
@@ -97,7 +98,8 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   // ClassCardsGrid.jsx. subject drives pickedClassSubjectId above (so the
   // existing Test Prep/Study Guide/etc. wiring needs no changes); the rest
   // (id/joined/schoolName/grade) is only needed by ClassCard.jsx itself for
-  // the Join button and the claim-status footer text.
+  // the Join button, the claim-status footer text, and (id) the Forum
+  // section's group-scoped forum link.
   const [pickedGroup, setPickedGroup] = useState(null)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -120,6 +122,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   // which unit/topic to auto-expand and scroll to. null for the plain
   // "📖 Curriculum" nav button, which opens the full reference as before.
   const [curriculumFocus, setCurriculumFocus] = useState(null)
+  const [forumTarget, setForumTarget] = useState(null) // null | { classType, classId, className } — the forum opened from ClassCard's Forum section
   const [showCalendar, setShowCalendar] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   // Shares received today that the student hasn't marked seen yet — powers
@@ -667,6 +670,20 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     return <ClassesFlow user={user} onExit={() => setShowClasses(false)} onLogout={onLogout} onLogoClick={handleLogoClick} />
   }
 
+  if (forumTarget) {
+    return (
+      <ForumScreen
+        user={user}
+        classType={forumTarget.classType}
+        classId={forumTarget.classId}
+        className={forumTarget.className}
+        onBack={() => setForumTarget(null)}
+        onLogout={onLogout}
+        onLogoClick={handleLogoClick}
+      />
+    )
+  }
+
   if (activeHomework) {
     return (
       <HomeworkFlow
@@ -709,12 +726,14 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         isPremium={isPremiumUnlocked(user.subscription_status)}
         grade={pickedGroup?.grade}
         schoolName={pickedGroup?.schoolName}
+        groupId={pickedGroup?.id}
         joined={Boolean(pickedGroup?.joined)}
         claimedClasses={pickedGroup?.claimedClasses}
         onJoin={async () => {
           await joinSchoolSubjectGroup(pickedGroup.id)
           setPickedGroup((g) => (g ? { ...g, joined: true } : g))
         }}
+        onOpenForum={setForumTarget}
         onOpenTestPrep={() => setShowTestPrepSetup(true)}
         onOpenStudyGuide={() => setShowStudyGuide(true)}
         onOpenStudyPlan={() => setShowStudyPlan(true)}

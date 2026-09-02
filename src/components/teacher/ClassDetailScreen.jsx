@@ -12,7 +12,7 @@ function formatDate(value, language) {
   return new Date(value).toLocaleDateString(LOCALE_FOR_LANGUAGE[language] || 'en-US', { timeZone: 'UTC' })
 }
 
-export default function ClassDetailScreen({ user, classId, onBack, onLogout, onLogoClick, onAssignHomework }) {
+export default function ClassDetailScreen({ user, classId, onBack, onLogout, onLogoClick, onAssignHomework, onOpenForum }) {
   const { t, i18n } = useTranslation()
   const [detail, setDetail] = useState(null)
   const [error, setError] = useState('')
@@ -90,6 +90,14 @@ export default function ClassDetailScreen({ user, classId, onBack, onLogout, onL
 
       <button type="button" className="btn btn-primary btn-block" onClick={() => onAssignHomework(detail.class)}>
         {t('teacher.assignHomework')}
+      </button>
+
+      <button
+        type="button"
+        className="btn btn-secondary btn-block"
+        onClick={() => onOpenForum({ classType: 'class', classId: detail.class.id, className: detail.class.name })}
+      >
+        {t('forum.title')}
       </button>
 
       <div className="finance-section-card">

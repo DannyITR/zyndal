@@ -128,3 +128,11 @@ export function getAdminSchoolChangeRequests() {
 export function resolveAdminSchoolChangeRequest(payload) {
   return callAdminApi('POST', 'resolve-school-change-request', payload)
 }
+
+export function getAdminForumReports() {
+  return callAdminApi('GET', 'get-forum-reports')
+}
+
+export function resolveAdminForumReport(payload) {
+  return callAdminApi('POST', 'resolve-forum-report', payload)
+}

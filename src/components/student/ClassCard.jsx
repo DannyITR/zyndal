@@ -25,9 +25,11 @@ export default function ClassCard({
   isPremium,
   grade,
   schoolName,
+  groupId,
   joined,
   onJoin,
   claimedClasses,
+  onOpenForum,
   onOpenTestPrep,
   onOpenStudyGuide,
   onOpenStudyPlan,
@@ -143,6 +145,40 @@ export default function ClassCard({
           {t('home.curriculum')}
         </button>
       </div>
+
+      {/* One row per forum this student can actually access for this
+          subject — the open group's own forum (once joined) plus one row
+          per already-joined claimed class (claimedClasses is already
+          filtered to classes this student belongs to — see
+          api/student/get-school-subject-groups.js), since a subject tile
+          can have both at once. Omitted entirely if there's nothing to
+          show yet (not joined, no claimed classes). */}
+      {(joined || (claimedClasses && claimedClasses.length > 0)) && (
+        <div className="forum-section">
+          <h3 className="section-heading">{t('classCard.forumSectionHeading')}</h3>
+          <div className="forum-entry-list">
+            {joined && (
+              <button
+                type="button"
+                className="forum-entry-row"
+                onClick={() => onOpenForum({ classType: 'group', classId: groupId, className: t('classCard.forumOpenGroup', { subject: t(`subjects.${subject.id}`) }) })}
+              >
+                {t('classCard.forumOpenGroup', { subject: t(`subjects.${subject.id}`) })}
+              </button>
+            )}
+            {claimedClasses?.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className="forum-entry-row"
+                onClick={() => onOpenForum({ classType: 'class', classId: c.id, className: c.name })}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {planForThisSubject && (
         <div className="testprep-home-card">

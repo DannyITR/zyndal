@@ -4,6 +4,8 @@ import {
   resolveAdminTeacherClaim,
   getAdminSchoolChangeRequests,
   resolveAdminSchoolChangeRequest,
+  getAdminForumReports,
+  resolveAdminForumReport,
 } from '../../lib/adminApi'
 import AdminRejectClaimModal from './AdminRejectClaimModal'
 
@@ -12,15 +14,21 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString()
 }
 
-// Covers both pending-approval queues this admin panel has (teacher class
-// claims, student school-change requests) as two sections of one screen —
-// they share the same pending/approved/rejected shape and the same generic
-// AdminRejectClaimModal, so one screen is simpler to maintain than two.
+// Covers every pending-review queue this admin panel has (teacher class
+// claims, student school-change requests, reported forum content) as
+// sections of one screen. The first two share the same pending/approved/
+// rejected shape and the same generic AdminRejectClaimModal; the forum
+// reports section is its own simpler pending/reviewed shape (delete or
+// dismiss, no rejection-reason modal needed) but lives here too rather than
+// as a separate screen, since this is already the admin's one-stop review
+// queue.
 export default function AdminApprovalsScreen({ onBack, onLogout }) {
   const [claims, setClaims] = useState(null)
   const [claimsLoadError, setClaimsLoadError] = useState('')
   const [requests, setRequests] = useState(null)
   const [requestsLoadError, setRequestsLoadError] = useState('')
+  const [reports, setReports] = useState(null)
+  const [reportsLoadError, setReportsLoadError] = useState('')
   const [busyId, setBusyId] = useState(null)
   const [actionError, setActionError] = useState('')
   const [rejectTarget, setRejectTarget] = useState(null) // { type: 'claim' | 'request', item }
@@ -37,10 +45,45 @@ export default function AdminApprovalsScreen({ onBack, onLogout }) {
       .catch((err) => setRequestsLoadError(err.message || 'Failed to load school-change requests.'))
   }
 
+  function loadReports() {
+    getAdminForumReports()
+      .then((data) => setReports(data.reports))
+      .catch((err) => setReportsLoadError(err.message || 'Failed to load forum reports.'))
+  }
+
   useEffect(() => {
     loadClaims()
     loadRequests()
+    loadReports()
   }, [])
+
+  async function handleDeleteReport(report) {
+    if (busyId) return
+    setActionError('')
+    setBusyId(report.id)
+    try {
+      await resolveAdminForumReport({ report_id: report.id, action: 'delete' })
+      setReports((prev) => prev.filter((r) => r.id !== report.id))
+    } catch (err) {
+      setActionError(err.message || 'Failed to delete this content.')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function handleDismissReport(report) {
+    if (busyId) return
+    setActionError('')
+    setBusyId(report.id)
+    try {
+      await resolveAdminForumReport({ report_id: report.id, action: 'dismiss' })
+      setReports((prev) => prev.filter((r) => r.id !== report.id))
+    } catch (err) {
+      setActionError(err.message || 'Failed to dismiss this report.')
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   async function handleApproveClaim(claim) {
     if (busyId) return
@@ -271,6 +314,79 @@ export default function AdminApprovalsScreen({ onBack, onLogout }) {
                       onClick={() => setRejectTarget({ type: 'request', item: request })}
                     >
                       Reject
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="admin-panel">
+        <div className="admin-panel-header">
+          <h2>Reported Forum Content</h2>
+        </div>
+
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Content</th>
+                <th>Class</th>
+                <th>Reporter</th>
+                <th>Reason</th>
+                <th>Submitted</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reports === null && !reportsLoadError && (
+                <tr>
+                  <td colSpan={7} className="admin-table-empty">
+                    Loading…
+                  </td>
+                </tr>
+              )}
+              {reportsLoadError && (
+                <tr>
+                  <td colSpan={7} className="admin-table-empty admin-error">
+                    {reportsLoadError}
+                  </td>
+                </tr>
+              )}
+              {reports && reports.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="admin-table-empty">
+                    No pending reports.
+                  </td>
+                </tr>
+              )}
+              {reports?.map((report) => (
+                <tr key={report.id}>
+                  <td>{report.targetType === 'thread' ? 'Thread' : 'Reply'}</td>
+                  <td>{report.contentPreview}</td>
+                  <td>{report.targetClassLabel}</td>
+                  <td>@{report.reporterUsername}</td>
+                  <td>{report.reason}</td>
+                  <td>{formatDate(report.submittedAt)}</td>
+                  <td className="admin-row-actions">
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-small admin-btn-danger"
+                      disabled={busyId === report.id}
+                      onClick={() => handleDeleteReport(report)}
+                    >
+                      Delete
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-small"
+                      disabled={busyId === report.id}
+                      onClick={() => handleDismissReport(report)}
+                    >
+                      Dismiss
                     </button>
                   </td>
                 </tr>
