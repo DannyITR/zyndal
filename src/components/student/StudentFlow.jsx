@@ -14,6 +14,7 @@ import {
   resendVerificationEmail,
   getMyHomework,
   joinSchoolSubjectGroup,
+  leaveClass,
 } from '../../lib/storage'
 import { getSubject, getTodaysSubjectId } from '../../lib/questions'
 import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE, TOTAL_SUBJECTS } from '../../lib/streak'
@@ -736,6 +737,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           await joinSchoolSubjectGroup(pickedEntry.id)
           setPickedEntry((e) => (e ? { ...e, joined: true } : e))
         }}
+        onLeave={() => leaveClass(pickedEntry.kind, pickedEntry.id)}
         onOpenForum={setForumTarget}
         onOpenTestPrep={() => setShowTestPrepSetup(true)}
         onOpenStudyGuide={() => setShowStudyGuide(true)}

@@ -9,6 +9,7 @@ import StatPill from './StatPill'
 import UpgradeModal from '../shared/UpgradeModal'
 import PremiumFeatureButton from '../shared/PremiumFeatureButton'
 import CancelTestPlanModal from './testprep/CancelTestPlanModal'
+import LeaveClassModal from './LeaveClassModal'
 
 // The full per-class page — Test Prep, Study Guide, Upload, My Uploads,
 // Practice, My Grades, Curriculum, and the active-test-plan card, carried
@@ -30,6 +31,7 @@ export default function ClassCard({
   entryName, // the claimed class's display name ('class' entries only)
   joined, // 'group' entries only — a 'class' entry is always joined
   onJoin,
+  onLeave,
   onOpenForum,
   onOpenTestPrep,
   onOpenStudyGuide,
@@ -49,6 +51,7 @@ export default function ClassCard({
   const today = todayStr(new Date(), getUserTimeZone())
   const [showPremiumModal, setShowPremiumModal] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
+  const [showLeaveModal, setShowLeaveModal] = useState(false)
   const [joining, setJoining] = useState(false)
 
   const displayStreak = getEffectiveStreak(progress, today)
@@ -95,6 +98,16 @@ export default function ClassCard({
     } finally {
       setJoining(false)
     }
+  }
+
+  // Leaving navigates back to the home screen immediately after the
+  // membership row is gone — there's nothing left on this page for the
+  // student to see once they're no longer a member. LeaveClassModal itself
+  // catches a thrown error and stays open, so onBack only ever runs on
+  // success.
+  async function handleLeave() {
+    await onLeave()
+    onBack()
   }
 
   return (
@@ -212,9 +225,22 @@ export default function ClassCard({
         {entryKind === 'class' ? entryName : t('classCard.unclaimedStatus', { grade, school: schoolName })}
       </p>
 
+      <div className="settings-danger-zone">
+        <button type="button" className="btn btn-danger-outline btn-block" onClick={() => setShowLeaveModal(true)}>
+          {t('classCard.leaveTitle')}
+        </button>
+      </div>
+
       {showPremiumModal && <UpgradeModal user={user} onClose={() => setShowPremiumModal(false)} />}
       {showCancelModal && planForThisSubject && (
         <CancelTestPlanModal onConfirm={handleCancelPlan} onClose={() => setShowCancelModal(false)} />
+      )}
+      {showLeaveModal && (
+        <LeaveClassModal
+          classLabel={entryKind === 'class' ? entryName : t(`subjects.${subject.id}`)}
+          onConfirm={handleLeave}
+          onClose={() => setShowLeaveModal(false)}
+        />
       )}
     </div>
   )

@@ -1125,6 +1125,10 @@ export async function joinSchoolSubjectGroup(groupId) {
   return callStudentApi('POST', 'join-school-subject-group', { group_id: groupId })
 }
 
+export async function leaveClass(classType, classId) {
+  return callStudentApi('POST', 'leave-class', { class_type: classType, class_id: classId })
+}
+
 // Proof-gated — only usable once school_id is already set (see
 // submit-school-change-request.js's guard); a first-time set uses
 // setStudentSchool() above instead, no proof required.

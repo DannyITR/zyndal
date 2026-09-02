@@ -780,7 +780,12 @@
   "classCard": {
     "joinGroup": "Rejoindre le groupe",
     "joining": "Adhésion en cours…",
-    "unclaimedStatus": "{{grade}}e année {{school}}"
+    "unclaimedStatus": "{{grade}}e année {{school}}",
+    "leaveTitle": "Quitter la classe",
+    "leaveWarning": "Vous perdrez l'accès au forum, aux devoirs et à la liste des membres de {{class}}. Vos notes et réponses enregistrées restent inchangées — vous pourrez rejoindre plus tard.",
+    "leaveConfirm": "Quitter",
+    "leaving": "Sortie en cours…",
+    "leaveFailed": "Impossible de quitter cette classe. Veuillez réessayer."
   },
   "forum": {
     "title": "Forum",

@@ -780,7 +780,12 @@
   "classCard": {
     "joinGroup": "Join Group",
     "joining": "Joining…",
-    "unclaimedStatus": "Gr {{grade}} {{school}}"
+    "unclaimedStatus": "Gr {{grade}} {{school}}",
+    "leaveTitle": "Leave Class",
+    "leaveWarning": "You'll lose access to {{class}}'s forum, homework, and roster. Your recorded grades and answers stay as they are — you can rejoin later.",
+    "leaveConfirm": "Leave",
+    "leaving": "Leaving…",
+    "leaveFailed": "Couldn't leave this class. Please try again."
   },
   "forum": {
     "title": "Forum",
