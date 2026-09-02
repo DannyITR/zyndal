@@ -3,28 +3,31 @@ import { useTranslation } from 'react-i18next'
 import { getMySchoolSubjectGroups } from '../../lib/storage'
 import { getSubject } from '../../lib/questions'
 
-// One tile per class on the home screen, below the Today's Question card —
-// reuses the exact .subject-grid/.subject-card look from the old 6-subject
-// grid (see SubjectDashboard.jsx, still dormant/reserved) since that's the
-// design this was always meant to become. No done/incorrect badge here —
-// unlike the daily question, a class has no single per-day completion
-// state (just a small "Join" hint on a group the student hasn't joined
-// yet — tapping still opens the full Class Card page to actually join, see
-// ClassCard.jsx's Join Group button). Backed by real school_subject_groups
-// data (api/student/get-school-subject-groups.js) now that the schools
-// feature exists — each group is this student's own school+grade's
-// unclaimed subject group until a teacher claim attaches a real class to it.
-// "Joined" covers both ways a student can belong to a class: the open
-// unclaimed group itself (group.joined) and a teacher-claimed class born
-// from that group (group.claimedClasses — a separate class_students
-// membership, see api/student/get-school-subject-groups.js).
-function isJoined(group) {
-  return group.joined || group.claimedClasses.length > 0
+// One tile per class the student belongs to (or could join) on the home
+// screen, below the Today's Question card — reuses the exact
+// .subject-grid/.subject-card look from the old 6-subject grid (see
+// SubjectDashboard.jsx, still dormant/reserved) since that's the design
+// this was always meant to become. No done/incorrect badge here — unlike
+// the daily question, a class has no single per-day completion state (just
+// a small "Join" hint on a group the student hasn't joined yet — tapping
+// still opens the full Class Card page to actually join, see ClassCard.jsx's
+// Join Group button). Backed by real school_subject_groups data
+// (api/student/get-school-subject-groups.js) now that the schools feature
+// exists.
+//
+// One entry per actual class (not one tile per subject) — a subject's open
+// unclaimed group and each teacher-claimed class the student has joined are
+// separate memberships with their own separate Class Card and forum, so
+// each gets its own tile here. A 'class' entry is always joined (the
+// student is already enrolled/teaching it); a 'group' entry may or may not
+// be.
+function isJoined(entry) {
+  return entry.kind === 'class' || entry.joined
 }
 
 export default function ClassCardsGrid({ onSelectClass, onOpenSettings }) {
   const { t } = useTranslation()
-  const [groups, setGroups] = useState(null) // null while loading
+  const [entries, setEntries] = useState(null) // null while loading
   const [hasSchool, setHasSchool] = useState(true)
   const [hasGrade, setHasGrade] = useState(true)
   const [schoolName, setSchoolName] = useState(null)
@@ -40,10 +43,10 @@ export default function ClassCardsGrid({ onSelectClass, onOpenSettings }) {
         setHasGrade(Boolean(data.grade))
         setSchoolName(data.schoolName)
         setGrade(data.grade)
-        setGroups(data.groups)
+        setEntries(data.entries)
       })
       .catch(() => {
-        // Previously left `groups` at null forever on any failure, which
+        // Previously left `entries` at null forever on any failure, which
         // rendered nothing at all (not even the section heading) — this at
         // least tells the student something went wrong instead of the
         // section silently vanishing.
@@ -64,7 +67,7 @@ export default function ClassCardsGrid({ onSelectClass, onOpenSettings }) {
     )
   }
 
-  if (groups === null) return null
+  if (entries === null) return null
 
   if (!hasSchool) {
     return (
@@ -95,26 +98,28 @@ export default function ClassCardsGrid({ onSelectClass, onOpenSettings }) {
   return (
     <div className="class-cards-section">
       <h3 className="section-heading">{t('home.myClasses')}</h3>
-      {groups.length === 0 ? (
+      {entries.length === 0 ? (
         <p className="field-hint">{t('home.noClassesForSchool')}</p>
       ) : (
         <div className="subject-grid">
-          {[...groups.filter(isJoined), ...groups.filter((g) => !isJoined(g))].map((group) => {
-            const subject = getSubject(group.subject)
+          {[...entries.filter(isJoined), ...entries.filter((e) => !isJoined(e))].map((entry) => {
+            const subject = getSubject(entry.subject)
             return (
               <button
-                key={group.id}
+                key={`${entry.kind}-${entry.id}`}
                 type="button"
                 className="subject-card"
                 style={{ '--subject-color': subject.color }}
-                onClick={() => onSelectClass({ ...group, schoolName, grade })}
+                onClick={() => onSelectClass({ ...entry, schoolName, grade })}
               >
                 <span className="subject-card-icon">{subject.icon}</span>
                 <span className="subject-card-name">{t(`subjects.${subject.id}`)}</span>
-                {group.claimedClasses.length > 0 && (
-                  <span className="subject-card-detail">{group.claimedClasses.map((c) => c.name).join(' · ')}</span>
+                <span className="subject-card-detail">
+                  {entry.kind === 'class' ? entry.name : t('classCard.unclaimedStatus', { grade, school: schoolName })}
+                </span>
+                {entry.kind === 'group' && !entry.joined && (
+                  <span className="subject-card-badge subject-card-badge--neutral">{t('home.joinBadge')}</span>
                 )}
-                {!group.joined && <span className="subject-card-badge subject-card-badge--neutral">{t('home.joinBadge')}</span>}
               </button>
             )
           })}

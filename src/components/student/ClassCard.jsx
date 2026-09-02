@@ -25,10 +25,11 @@ export default function ClassCard({
   isPremium,
   grade,
   schoolName,
-  groupId,
-  joined,
+  entryKind, // 'group' | 'class' — which single class this card represents
+  entryId, // the group's or class's own id
+  entryName, // the claimed class's display name ('class' entries only)
+  joined, // 'group' entries only — a 'class' entry is always joined
   onJoin,
-  claimedClasses,
   onOpenForum,
   onOpenTestPrep,
   onOpenStudyGuide,
@@ -113,8 +114,10 @@ export default function ClassCard({
       </div>
 
       {/* Joining is additive, not a gate — Test Prep/Study Guide/Practice/etc.
-          below are usable either way, exactly as before this feature. */}
-      {!joined && (
+          below are usable either way, exactly as before this feature. Only
+          a 'group' entry can be unjoined at all — a 'class' entry means the
+          student is already enrolled/teaching it. */}
+      {entryKind === 'group' && !joined && (
         <button type="button" className="btn btn-primary btn-block" onClick={handleJoin} disabled={joining}>
           {joining ? t('classCard.joining') : t('classCard.joinGroup')}
         </button>
@@ -144,41 +147,27 @@ export default function ClassCard({
         <button type="button" className="btn btn-secondary btn-small" onClick={onOpenCurriculum}>
           {t('home.curriculum')}
         </button>
+        {/* This card represents exactly one class (see entryKind) — its
+            forum is scoped only to that class's own members, no
+            subject-wide/open forum layered on top. A 'group' entry only
+            gets a forum once actually joined; a 'class' entry is always
+            joined. */}
+        {(entryKind === 'class' || joined) && (
+          <button
+            type="button"
+            className="btn btn-secondary btn-small"
+            onClick={() =>
+              onOpenForum({
+                classType: entryKind,
+                classId: entryId,
+                className: entryKind === 'class' ? entryName : t(`subjects.${subject.id}`),
+              })
+            }
+          >
+            {t('forum.title')}
+          </button>
+        )}
       </div>
-
-      {/* One row per forum this student can actually access for this
-          subject — the open group's own forum (once joined) plus one row
-          per already-joined claimed class (claimedClasses is already
-          filtered to classes this student belongs to — see
-          api/student/get-school-subject-groups.js), since a subject tile
-          can have both at once. Omitted entirely if there's nothing to
-          show yet (not joined, no claimed classes). */}
-      {(joined || (claimedClasses && claimedClasses.length > 0)) && (
-        <div className="forum-section">
-          <h3 className="section-heading">{t('classCard.forumSectionHeading')}</h3>
-          <div className="forum-entry-list">
-            {joined && (
-              <button
-                type="button"
-                className="forum-entry-row"
-                onClick={() => onOpenForum({ classType: 'group', classId: groupId, className: t('classCard.forumOpenGroup', { subject: t(`subjects.${subject.id}`) }) })}
-              >
-                {t('classCard.forumOpenGroup', { subject: t(`subjects.${subject.id}`) })}
-              </button>
-            )}
-            {claimedClasses?.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                className="forum-entry-row"
-                onClick={() => onOpenForum({ classType: 'class', classId: c.id, className: c.name })}
-              >
-                {c.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {planForThisSubject && (
         <div className="testprep-home-card">
@@ -215,15 +204,12 @@ export default function ClassCard({
         </div>
       )}
 
-      {/* Claim status — once the student has joined one of this group's
-          claimed classes (existing join-by-code flow, unrelated to the Join
-          Group button above), its name ("Math 416 Mr. Smith", already
-          formatted this way at approval time — see resolve-teacher-claim.js)
-          replaces the plain unclaimed "Gr 9 St. Thomas" text. */}
+      {/* Claim status — a 'class' entry shows its own name ("Math 416 Mr.
+          Smith", already formatted this way at approval time — see
+          resolve-teacher-claim.js); a 'group' entry shows the plain
+          unclaimed "Gr 9 St. Thomas" text. */}
       <p className="class-card-status">
-        {claimedClasses && claimedClasses.length > 0
-          ? claimedClasses.map((c) => c.name).join(' · ')
-          : t('classCard.unclaimedStatus', { grade, school: schoolName })}
+        {entryKind === 'class' ? entryName : t('classCard.unclaimedStatus', { grade, school: schoolName })}
       </p>
 
       {showPremiumModal && <UpgradeModal user={user} onClose={() => setShowPremiumModal(false)} />}

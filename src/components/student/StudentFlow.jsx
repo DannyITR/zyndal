@@ -93,14 +93,16 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   // never be confused with each other, even though both ultimately resolve
   // to a SUBJECTS entry for now.
   const [pickedClassSubjectId, setPickedClassSubjectId] = useState(null)
-  // The full school_subject_group the student tapped on the home screen's
-  // class grid — { id, subject, joined, schoolName, grade } from
-  // ClassCardsGrid.jsx. subject drives pickedClassSubjectId above (so the
-  // existing Test Prep/Study Guide/etc. wiring needs no changes); the rest
-  // (id/joined/schoolName/grade) is only needed by ClassCard.jsx itself for
-  // the Join button, the claim-status footer text, and (id) the Forum
-  // section's group-scoped forum link.
-  const [pickedGroup, setPickedGroup] = useState(null)
+  // The single class-grid entry the student tapped on the home screen —
+  // { kind: 'group' | 'class', id, subject, joined, name, schoolName, grade }
+  // from ClassCardsGrid.jsx. One entry = one specific class (an unclaimed
+  // group, or one particular teacher-claimed class), never a bundle of
+  // several — subject drives pickedClassSubjectId above (so the existing
+  // Test Prep/Study Guide/etc. wiring needs no changes, those stay
+  // subject-scoped); the rest is only needed by ClassCard.jsx itself for
+  // the Join button, the claim-status footer text, and the Forum button's
+  // single class-scoped target.
+  const [pickedEntry, setPickedEntry] = useState(null)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [infoModalKey, setInfoModalKey] = useState(null)
@@ -248,7 +250,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     setSelectedDate(today)
     setPickedSubjectId(null)
     setPickedClassSubjectId(null)
-    setPickedGroup(null)
+    setPickedEntry(null)
   }
 
   async function handleMarkDone() {
@@ -724,14 +726,15 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         progress={progress}
         activePlan={activePlan}
         isPremium={isPremiumUnlocked(user.subscription_status)}
-        grade={pickedGroup?.grade}
-        schoolName={pickedGroup?.schoolName}
-        groupId={pickedGroup?.id}
-        joined={Boolean(pickedGroup?.joined)}
-        claimedClasses={pickedGroup?.claimedClasses}
+        grade={pickedEntry?.grade}
+        schoolName={pickedEntry?.schoolName}
+        entryKind={pickedEntry?.kind}
+        entryId={pickedEntry?.id}
+        entryName={pickedEntry?.name}
+        joined={Boolean(pickedEntry?.joined)}
         onJoin={async () => {
-          await joinSchoolSubjectGroup(pickedGroup.id)
-          setPickedGroup((g) => (g ? { ...g, joined: true } : g))
+          await joinSchoolSubjectGroup(pickedEntry.id)
+          setPickedEntry((e) => (e ? { ...e, joined: true } : e))
         }}
         onOpenForum={setForumTarget}
         onOpenTestPrep={() => setShowTestPrepSetup(true)}
@@ -746,7 +749,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         onOpenCurriculum={() => setShowCurriculum(true)}
         onBack={() => {
           setPickedClassSubjectId(null)
-          setPickedGroup(null)
+          setPickedEntry(null)
         }}
         onLogout={onLogout}
         onLogoClick={handleLogoClick}
@@ -965,9 +968,9 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         />
 
         <ClassCardsGrid
-          onSelectClass={(group) => {
-            setPickedGroup(group)
-            setPickedClassSubjectId(group.subject)
+          onSelectClass={(entry) => {
+            setPickedEntry(entry)
+            setPickedClassSubjectId(entry.subject)
           }}
           onOpenSettings={() => setShowSettings(true)}
         />

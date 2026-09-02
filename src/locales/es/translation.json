@@ -780,9 +780,7 @@
   "classCard": {
     "joinGroup": "Unirse al grupo",
     "joining": "Uniéndose…",
-    "unclaimedStatus": "{{grade}}.° {{school}}",
-    "forumSectionHeading": "Foro",
-    "forumOpenGroup": "{{subject}} — Foro del grupo abierto"
+    "unclaimedStatus": "{{grade}}.° {{school}}"
   },
   "forum": {
     "title": "Foro",
