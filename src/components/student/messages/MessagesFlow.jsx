@@ -11,6 +11,17 @@ function formatDateTime(value, language) {
   return new Date(value).toLocaleString(LOCALE_FOR_LANGUAGE[language] || 'en-US', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
+// This app has no live channel to the database at all — storage.js
+// deliberately never talks to Supabase directly from the browser (RLS
+// blocks the anon key from reading/writing any table with no policies
+// defined, and every screen in this app already goes through its own
+// session-authenticated /api endpoint instead — see storage.js's own
+// header comment), and nothing else in the app uses Supabase Realtime.
+// Polling is the fit here, not a new direct-to-Supabase channel — same
+// "refetch on an interval / on navigation" shape every other screen in
+// this app already uses, just on a timer instead of only on user action.
+const POLL_INTERVAL_MS = 4000
+
 // Self-contained list/thread navigation, same pattern as ForumScreen.jsx.
 // initialFriendId (set when opened from FriendsScreen.jsx's message button)
 // resolves/creates that conversation and jumps straight to the thread,
@@ -64,6 +75,36 @@ export default function MessagesFlow({ user, initialFriendId, onBack, onLogout, 
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialFriendId])
+
+  // Live-updates the open thread — polls quietly (no loading flash, no
+  // error banner on a transient miss) so a message the other participant
+  // sends while this is open just appears on the next tick. Each poll hits
+  // the same get-messages.js call the initial open used, whose own
+  // mark-as-read side effect keeps firing too, so a message that arrives
+  // while the student is actively looking at the thread is marked read
+  // without any extra call.
+  useEffect(() => {
+    if (!activeConversationId) return
+    const interval = setInterval(() => {
+      getMessages(activeConversationId)
+        .then((data) => setMessages(data.messages))
+        .catch(() => {})
+    }, POLL_INTERVAL_MS)
+    return () => clearInterval(interval)
+  }, [activeConversationId])
+
+  // Same idea for the conversation list — unread counts and last-message
+  // previews update live instead of only refreshing when the list is
+  // re-entered.
+  useEffect(() => {
+    if (activeConversationId) return
+    const interval = setInterval(() => {
+      getConversations()
+        .then((data) => setConversations(data.conversations))
+        .catch(() => {})
+    }, POLL_INTERVAL_MS)
+    return () => clearInterval(interval)
+  }, [activeConversationId])
 
   // Refetches the list on the way back, same reasoning as ForumScreen.jsx's
   // handleBackToList — unread counts and last-message previews only change
