@@ -15,6 +15,8 @@ export default function TopBar({
   onSettings,
   onNotifications,
   unreadCount,
+  onMessages,
+  unreadMessageCount,
   onLogoClick,
   subscriptionStatus,
   daysRemainingInTrial,
@@ -40,6 +42,12 @@ export default function TopBar({
         <div className="topbar-actions">
           {username && <p className="topbar-username">@{username}</p>}
           <div className="topbar-buttons">
+            {onMessages && (
+              <button type="button" className="btn btn-ghost btn-icon topbar-icon-btn" onClick={onMessages} aria-label={t('common.messagesLabel')}>
+                💬
+                {unreadMessageCount > 0 && <span className="topbar-badge">{unreadMessageCount}</span>}
+              </button>
+            )}
             {onNotifications && (
               <button type="button" className="btn btn-ghost btn-icon topbar-icon-btn" onClick={onNotifications} aria-label={t('common.notificationsLabel')}>
                 🔔

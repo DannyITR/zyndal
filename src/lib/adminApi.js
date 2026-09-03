@@ -136,3 +136,18 @@ export function getAdminForumReports() {
 export function resolveAdminForumReport(payload) {
   return callAdminApi('POST', 'resolve-forum-report', payload)
 }
+
+export function getAdminMessageReports() {
+  return callAdminApi('GET', 'get-message-reports')
+}
+
+export function resolveAdminMessageReport(payload) {
+  return callAdminApi('POST', 'resolve-message-report', payload)
+}
+
+export function getAdminMessages({ page = 1, limit = 50, search = '', conversationId = '' } = {}) {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) })
+  if (search) params.set('search', search)
+  if (conversationId) params.set('conversation_id', conversationId)
+  return callAdminApi('GET', `get-messages?${params.toString()}`)
+}

@@ -4,6 +4,7 @@ import AdminLogin from './AdminLogin'
 import AdminDashboard from './AdminDashboard'
 import AdminEditUserScreen from './AdminEditUserScreen'
 import AdminApprovalsScreen from './AdminApprovalsScreen'
+import AdminMessagesScreen from './AdminMessagesScreen'
 import './admin.css'
 
 function parseEditUserId(pathname) {
@@ -52,14 +53,16 @@ export default function AdminApp() {
 
   const editUserId = parseEditUserId(pathname)
   const showApprovals = pathname === '/admin/approvals'
+  const showMessages = pathname === '/admin/messages'
 
   return (
     <>
-      <div style={editUserId || showApprovals ? { display: 'none' } : undefined}>
+      <div style={editUserId || showApprovals || showMessages ? { display: 'none' } : undefined}>
         <AdminDashboard
           onLogout={handleLogout}
           onEditUser={(userId) => navigate(`/admin/users/${encodeURIComponent(userId)}`)}
           onOpenApprovals={() => navigate('/admin/approvals')}
+          onOpenMessages={() => navigate('/admin/messages')}
           refreshKey={dashboardRefreshKey}
         />
       </div>
@@ -74,6 +77,7 @@ export default function AdminApp() {
         />
       )}
       {showApprovals && <AdminApprovalsScreen onBack={() => navigate('/admin')} onLogout={handleLogout} />}
+      {showMessages && <AdminMessagesScreen onBack={() => navigate('/admin')} onLogout={handleLogout} />}
     </>
   )
 }

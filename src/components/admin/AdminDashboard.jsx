@@ -53,7 +53,7 @@ const STAT_CARDS = [
   { key: 'questionsToday', label: 'Questions Answered Today', get: (s) => s.questionsAnsweredToday },
 ]
 
-export default function AdminDashboard({ onLogout, onEditUser, onOpenApprovals, refreshKey }) {
+export default function AdminDashboard({ onLogout, onEditUser, onOpenApprovals, onOpenMessages, refreshKey }) {
   const [stats, setStats] = useState(null)
   const [statsError, setStatsError] = useState('')
 
@@ -197,6 +197,9 @@ export default function AdminDashboard({ onLogout, onEditUser, onOpenApprovals, 
         <div className="admin-header-actions">
           <button type="button" className="admin-btn admin-btn-secondary" onClick={onOpenApprovals}>
             Approvals
+          </button>
+          <button type="button" className="admin-btn admin-btn-secondary" onClick={onOpenMessages}>
+            Messages
           </button>
           <button type="button" className="admin-btn admin-btn-secondary" onClick={onLogout}>
             Log Out

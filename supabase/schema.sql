@@ -584,6 +584,56 @@ alter table forum_threads enable row level security;
 alter table forum_replies enable row level security;
 alter table forum_reports enable row level security;
 
+-- ---------- Private messaging (students only) ----------
+-- One row per friend pair, never per direction — check (user_a_id <
+-- user_b_id) forces a canonical ordering so unique(user_a_id, user_b_id)
+-- actually prevents a duplicate conversation regardless of who starts it;
+-- every api/messages/*.js endpoint sorts the pair before querying or
+-- inserting (see api/_lib/messaging.js's sortPairIds). Gated on the
+-- existing friends table (itself already student-only in practice) plus an
+-- explicit account_type check in every endpoint — teachers must never
+-- reach this feature.
+create table if not exists conversations (
+  id uuid primary key default gen_random_uuid(),
+  user_a_id uuid not null references users(id) on delete cascade,
+  user_b_id uuid not null references users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  check (user_a_id < user_b_id),
+  unique (user_a_id, user_b_id)
+);
+create index if not exists conversations_user_a_idx on conversations(user_a_id);
+create index if not exists conversations_user_b_idx on conversations(user_b_id);
+
+create table if not exists messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid not null references conversations(id) on delete cascade,
+  sender_id uuid not null references users(id) on delete cascade,
+  body text not null,
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+create index if not exists messages_conversation_idx on messages(conversation_id, created_at);
+
+-- Separate from forum_reports (rather than widening its target_type check)
+-- since a message report doesn't fit that table's thread/reply/class-shaped
+-- resolution logic — same id/target_type/target_id/reporter_id/reason/
+-- status/created_at shape and pending/reviewed workflow, just its own
+-- queue (api/admin/get-message-reports.js).
+create table if not exists message_reports (
+  id uuid primary key default gen_random_uuid(),
+  target_type text not null default 'message' check (target_type = 'message'),
+  target_id uuid not null,
+  reporter_id uuid not null references users(id) on delete cascade,
+  reason text not null,
+  status text not null default 'pending' check (status in ('pending', 'reviewed')),
+  created_at timestamptz not null default now()
+);
+create index if not exists message_reports_status_idx on message_reports(status);
+
+alter table conversations enable row level security;
+alter table messages enable row level security;
+alter table message_reports enable row level security;
+
 -- ---------- Migrations ----------
 -- Run against a database that already has an `uploads` table from before
 -- multi-page upload support existed (the `create table if not exists`

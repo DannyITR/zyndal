@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getForumThreads, getForumThread, createForumReply, deleteForumThread, deleteForumReply } from '../../../lib/storage'
+import { getForumThreads, getForumThread, createForumReply, deleteForumThread, deleteForumReply, reportForumContent } from '../../../lib/storage'
 import { getErrorMessage } from '../../../lib/errors'
 import { LOCALE_FOR_LANGUAGE } from '../../../lib/i18n'
 import TopBar from '../TopBar'
@@ -185,8 +185,7 @@ export default function ForumScreen({ user, classType, classId, className, initi
 
         {reportTarget && (
           <ReportContentModal
-            targetType={reportTarget.targetType}
-            targetId={reportTarget.targetId}
+            onSubmit={(reason) => reportForumContent({ target_type: reportTarget.targetType, target_id: reportTarget.targetId, reason })}
             onClose={() => setReportTarget(null)}
             onReported={() => setReportTarget(null)}
           />

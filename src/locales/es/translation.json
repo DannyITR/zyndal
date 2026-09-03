@@ -193,6 +193,7 @@
     "gradeLabel": "Grado {{grade}}",
     "backToSubjects": "Volver a las materias",
     "notificationsLabel": "Notificaciones",
+    "messagesLabel": "Mensajes",
     "settingsLabel": "Configuración",
     "searchByUsername": "Buscar amigos por nombre de usuario...",
     "sharedTodayBadge": "✅ Compartido hoy",
@@ -267,6 +268,7 @@
     "wantsToFollow": "quiere seguirte",
     "requestFailed": "No se pudo actualizar esta solicitud. Inténtalo de nuevo.",
     "pokeButton": "Dar un toque",
+    "messageButton": "Mensaje",
     "pokeModalTitle": "Enviar un toque a @{{username}}",
     "pokeModalSubtitle": "Elige un mensaje para enviar",
     "pokeSent": "¡Toque enviado! 👋",
@@ -839,6 +841,17 @@
     "deleteThreadWarning": "Esto ocultará el tema y todas sus respuestas del foro. Esto no se puede deshacer desde aquí.",
     "deleteReplyTitle": "¿Eliminar esta respuesta?",
     "deleteReplyWarning": "Esto ocultará tu respuesta del foro. Esto no se puede deshacer desde aquí."
+  },
+  "messages": {
+    "title": "Mensajes",
+    "noConversationsYet": "Todavía no hay conversaciones — envía un mensaje a un amigo para empezar.",
+    "noMessagesYet": "Todavía no hay mensajes — ¡saluda!",
+    "placeholder": "Escribe un mensaje…",
+    "send": "Enviar",
+    "sending": "Enviando…",
+    "youPrefix": "Tú:",
+    "loadFailed": "No se pudieron cargar los mensajes. Inténtalo de nuevo.",
+    "sendFailed": "No se pudo enviar. Inténtalo de nuevo."
   },
   "curriculum": {
     "lastUpdated": "Última actualización: {{date}}"

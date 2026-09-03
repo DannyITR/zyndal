@@ -193,6 +193,7 @@
     "gradeLabel": "Grade {{grade}}",
     "backToSubjects": "Back to subjects",
     "notificationsLabel": "Notifications",
+    "messagesLabel": "Messages",
     "settingsLabel": "Settings",
     "searchByUsername": "Search friends by username...",
     "sharedTodayBadge": "✅ Shared today",
@@ -267,6 +268,7 @@
     "wantsToFollow": "wants to follow you",
     "requestFailed": "Couldn't update this request. Please try again.",
     "pokeButton": "Poke",
+    "messageButton": "Message",
     "pokeModalTitle": "Send @{{username}} a nudge",
     "pokeModalSubtitle": "Pick a message to send",
     "pokeSent": "Poked! 👋",
@@ -839,6 +841,17 @@
     "deleteThreadWarning": "This will hide the thread and all its replies from the forum. This can't be undone from here.",
     "deleteReplyTitle": "Delete this reply?",
     "deleteReplyWarning": "This will hide your reply from the forum. This can't be undone from here."
+  },
+  "messages": {
+    "title": "Messages",
+    "noConversationsYet": "No conversations yet — message a friend to get started.",
+    "noMessagesYet": "No messages yet — say hi!",
+    "placeholder": "Type a message…",
+    "send": "Send",
+    "sending": "Sending…",
+    "youPrefix": "You:",
+    "loadFailed": "Failed to load messages. Please try again.",
+    "sendFailed": "Failed to send. Please try again."
   },
   "curriculum": {
     "lastUpdated": "Last updated: {{date}}"

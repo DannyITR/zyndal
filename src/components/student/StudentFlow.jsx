@@ -16,6 +16,7 @@ import {
   joinSchoolSubjectGroup,
   leaveClass,
   getStudentClasses,
+  getConversations,
 } from '../../lib/storage'
 import { getSubject, getTodaysSubjectId } from '../../lib/questions'
 import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE, TOTAL_SUBJECTS } from '../../lib/streak'
@@ -56,6 +57,7 @@ import CurriculumOutlineScreen from './curriculum/CurriculumOutlineScreen'
 import HomeworkFlow from './homework/HomeworkFlow'
 import MyClassesScreen from './classes/MyClassesScreen'
 import ForumScreen from '../shared/forum/ForumScreen'
+import MessagesFlow from './messages/MessagesFlow'
 
 // Push-permission banner dismissal cooldown — see showPushBanner below.
 // localStorage (not the server) is the right place for this: permission
@@ -137,6 +139,13 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   // instead of receiving StudentFlow's own copies).
   const [incomingShares, setIncomingShares] = useState([])
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
+  const [showMessages, setShowMessages] = useState(false)
+  // Set when Messages is opened from a specific friend (FriendsScreen.jsx's
+  // message button) so MessagesFlow.jsx can jump straight to that
+  // conversation instead of starting on the list — null when opened from
+  // the TopBar icon, which always starts on the list.
+  const [messagesInitialFriendId, setMessagesInitialFriendId] = useState(null)
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const [homework, setHomework] = useState([])
   const [activeHomework, setActiveHomework] = useState(null)
   // Not-yet-completed assignments — the only ones the home screen's banner
@@ -354,6 +363,23 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     }
   }, [user.id])
 
+  // Same reasoning as refreshNotificationState — the badge on the TopBar's
+  // Messages icon needs a fresh count on mount and whenever Messages or
+  // Friends closes, since opening a conversation (which marks it read) or
+  // starting a new one both happen while this component's own mount effect
+  // isn't re-running. Sums each conversation's own unreadCount rather than
+  // a dedicated endpoint, since get-conversations.js already computes it.
+  function refreshMessagesState() {
+    getConversations()
+      .then((data) => setUnreadMessageCount(data.conversations.reduce((sum, c) => sum + c.unreadCount, 0)))
+      .catch(() => {})
+  }
+
+  useEffect(() => {
+    refreshMessagesState()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.id])
+
   function refreshHomework() {
     getMyHomework()
       .then((data) => setHomework(data.homework))
@@ -503,6 +529,22 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     )
   }
 
+  if (showMessages) {
+    return (
+      <MessagesFlow
+        user={user}
+        initialFriendId={messagesInitialFriendId}
+        onBack={() => {
+          setShowMessages(false)
+          setMessagesInitialFriendId(null)
+          refreshMessagesState()
+        }}
+        onLogout={onLogout}
+        onLogoClick={handleLogoClick}
+      />
+    )
+  }
+
   if (showFriends) {
     return (
       <FriendsScreen
@@ -512,6 +554,10 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         // FriendSharePickerModal.jsx) — this screen now offers the same
         // direct Share action per friend, so it needs the same rule.
         canShareToday={canShareToday}
+        onMessageFriend={(friend) => {
+          setMessagesInitialFriendId(friend.id)
+          setShowMessages(true)
+        }}
         onBack={() => {
           setShowFriends(false)
           refreshNotificationState()
@@ -813,6 +859,8 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           subtitle={t('home.chooseSubject')}
           username={user.username}
           onLogout={onLogout}
+          onMessages={() => setShowMessages(true)}
+          unreadMessageCount={unreadMessageCount}
           onNotifications={() => setShowNotifications(true)}
           unreadCount={unreadNotificationCount}
           onSettings={() => setShowSettings(true)}

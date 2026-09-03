@@ -1,9 +1,14 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { reportForumContent } from '../../../lib/storage'
 import { getErrorMessage } from '../../../lib/errors'
 
-export default function ReportContentModal({ targetType, targetId, onClose, onReported }) {
+// Generic report-reason modal — onSubmit(reason) is provided by the caller
+// so this has no idea whether it's reporting a forum post or a private
+// message; ForumScreen.jsx passes (reason) => reportForumContent({...}),
+// MessagesFlow.jsx passes (reason) => reportMessage({...}). The wording
+// ("Report content", "Why are you reporting this?", etc.) is generic enough
+// to reuse as-is for either content type, so no new i18n keys needed here.
+export default function ReportContentModal({ onSubmit, onClose, onReported }) {
   const { t } = useTranslation()
   const [reason, setReason] = useState('')
   const [error, setError] = useState('')
@@ -16,7 +21,7 @@ export default function ReportContentModal({ targetType, targetId, onClose, onRe
     setError('')
     setSaving(true)
     try {
-      await reportForumContent({ target_type: targetType, target_id: targetId, reason: reason.trim() })
+      await onSubmit(reason.trim())
       setSubmitted(true)
     } catch (err) {
       setError(getErrorMessage(err, t, 'forum.reportFailed'))

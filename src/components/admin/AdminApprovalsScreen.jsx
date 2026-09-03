@@ -6,6 +6,8 @@ import {
   resolveAdminSchoolChangeRequest,
   getAdminForumReports,
   resolveAdminForumReport,
+  getAdminMessageReports,
+  resolveAdminMessageReport,
 } from '../../lib/adminApi'
 import AdminRejectClaimModal from './AdminRejectClaimModal'
 
@@ -29,6 +31,8 @@ export default function AdminApprovalsScreen({ onBack, onLogout }) {
   const [requestsLoadError, setRequestsLoadError] = useState('')
   const [reports, setReports] = useState(null)
   const [reportsLoadError, setReportsLoadError] = useState('')
+  const [messageReports, setMessageReports] = useState(null)
+  const [messageReportsLoadError, setMessageReportsLoadError] = useState('')
   const [busyId, setBusyId] = useState(null)
   const [actionError, setActionError] = useState('')
   const [rejectTarget, setRejectTarget] = useState(null) // { type: 'claim' | 'request', item }
@@ -51,10 +55,17 @@ export default function AdminApprovalsScreen({ onBack, onLogout }) {
       .catch((err) => setReportsLoadError(err.message || 'Failed to load forum reports.'))
   }
 
+  function loadMessageReports() {
+    getAdminMessageReports()
+      .then((data) => setMessageReports(data.reports))
+      .catch((err) => setMessageReportsLoadError(err.message || 'Failed to load message reports.'))
+  }
+
   useEffect(() => {
     loadClaims()
     loadRequests()
     loadReports()
+    loadMessageReports()
   }, [])
 
   async function handleDeleteReport(report) {
@@ -78,6 +89,34 @@ export default function AdminApprovalsScreen({ onBack, onLogout }) {
     try {
       await resolveAdminForumReport({ report_id: report.id, action: 'dismiss' })
       setReports((prev) => prev.filter((r) => r.id !== report.id))
+    } catch (err) {
+      setActionError(err.message || 'Failed to dismiss this report.')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function handleDeleteMessageReport(report) {
+    if (busyId) return
+    setActionError('')
+    setBusyId(report.id)
+    try {
+      await resolveAdminMessageReport({ report_id: report.id, action: 'delete' })
+      setMessageReports((prev) => prev.filter((r) => r.id !== report.id))
+    } catch (err) {
+      setActionError(err.message || 'Failed to delete this message.')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function handleDismissMessageReport(report) {
+    if (busyId) return
+    setActionError('')
+    setBusyId(report.id)
+    try {
+      await resolveAdminMessageReport({ report_id: report.id, action: 'dismiss' })
+      setMessageReports((prev) => prev.filter((r) => r.id !== report.id))
     } catch (err) {
       setActionError(err.message || 'Failed to dismiss this report.')
     } finally {
@@ -388,6 +427,77 @@ export default function AdminApprovalsScreen({ onBack, onLogout }) {
                       className="admin-btn admin-btn-small"
                       disabled={busyId === report.id}
                       onClick={() => handleDismissReport(report)}
+                    >
+                      Dismiss
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="admin-panel">
+        <div className="admin-panel-header">
+          <h2>Reported Private Messages</h2>
+        </div>
+
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Sender</th>
+                <th>Content</th>
+                <th>Reporter</th>
+                <th>Reason</th>
+                <th>Submitted</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {messageReports === null && !messageReportsLoadError && (
+                <tr>
+                  <td colSpan={6} className="admin-table-empty">
+                    Loading…
+                  </td>
+                </tr>
+              )}
+              {messageReportsLoadError && (
+                <tr>
+                  <td colSpan={6} className="admin-table-empty admin-error">
+                    {messageReportsLoadError}
+                  </td>
+                </tr>
+              )}
+              {messageReports && messageReports.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="admin-table-empty">
+                    No pending reports.
+                  </td>
+                </tr>
+              )}
+              {messageReports?.map((report) => (
+                <tr key={report.id}>
+                  <td>@{report.senderUsername}</td>
+                  <td>{report.contentPreview}</td>
+                  <td>@{report.reporterUsername}</td>
+                  <td>{report.reason}</td>
+                  <td>{formatDate(report.submittedAt)}</td>
+                  <td className="admin-row-actions">
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-small admin-btn-danger"
+                      disabled={busyId === report.id}
+                      onClick={() => handleDeleteMessageReport(report)}
+                    >
+                      Delete
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn-small"
+                      disabled={busyId === report.id}
+                      onClick={() => handleDismissMessageReport(report)}
                     >
                       Dismiss
                     </button>

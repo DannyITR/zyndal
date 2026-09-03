@@ -193,6 +193,7 @@
     "gradeLabel": "Niveau {{grade}}",
     "backToSubjects": "Retour aux matières",
     "notificationsLabel": "Notifications",
+    "messagesLabel": "Messages",
     "settingsLabel": "Paramètres",
     "searchByUsername": "Rechercher des amis par nom d'utilisateur...",
     "sharedTodayBadge": "✅ Partagé aujourd'hui",
@@ -267,6 +268,7 @@
     "wantsToFollow": "souhaite vous suivre",
     "requestFailed": "Impossible de mettre à jour cette demande. Veuillez réessayer.",
     "pokeButton": "Faire signe",
+    "messageButton": "Message",
     "pokeModalTitle": "Envoyer un signe à @{{username}}",
     "pokeModalSubtitle": "Choisissez un message à envoyer",
     "pokeSent": "Signe envoyé ! 👋",
@@ -839,6 +841,17 @@
     "deleteThreadWarning": "Cela masquera le sujet et toutes ses réponses du forum. Cette action ne peut pas être annulée depuis ici.",
     "deleteReplyTitle": "Supprimer cette réponse ?",
     "deleteReplyWarning": "Cela masquera votre réponse du forum. Cette action ne peut pas être annulée depuis ici."
+  },
+  "messages": {
+    "title": "Messages",
+    "noConversationsYet": "Aucune conversation pour l'instant — envoyez un message à un ami pour commencer.",
+    "noMessagesYet": "Aucun message pour l'instant — dites bonjour !",
+    "placeholder": "Écrire un message…",
+    "send": "Envoyer",
+    "sending": "Envoi…",
+    "youPrefix": "Vous :",
+    "loadFailed": "Impossible de charger les messages. Veuillez réessayer.",
+    "sendFailed": "Impossible d'envoyer. Veuillez réessayer."
   },
   "curriculum": {
     "lastUpdated": "Dernière mise à jour : {{date}}"

@@ -278,6 +278,14 @@ const TEMPLATES = {
       body: `Nueva respuesta en "${threadTitle}"`,
     }),
   },
+  // Sent to the other participant on every new DM (api/messages/send-
+  // message.js) — bodyPreview is a short, already-truncated snippet of the
+  // message text (truncation happens at the call site, not here).
+  message_received: {
+    en: ({ senderUsername, bodyPreview }) => ({ title: `💬 New message from @${senderUsername}`, body: bodyPreview }),
+    fr: ({ senderUsername, bodyPreview }) => ({ title: `💬 Nouveau message de @${senderUsername}`, body: bodyPreview }),
+    es: ({ senderUsername, bodyPreview }) => ({ title: `💬 Nuevo mensaje de @${senderUsername}`, body: bodyPreview }),
+  },
   // presetKey is one of POKE_PRESET_KEYS (src/lib/pokePresets.js), validated
   // server-side in api/social/poke.js before this ever runs — pokePresetText
   // falls back to English internally if somehow passed an unknown key.

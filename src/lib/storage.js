@@ -130,6 +130,10 @@ function callForumApi(method, endpoint, body) {
   return callApi('/api/forum', method, endpoint, body)
 }
 
+function callMessagesApi(method, endpoint, body) {
+  return callApi('/api/messages', method, endpoint, body)
+}
+
 function callStripeApi(method, endpoint, body) {
   return callApi('/api/stripe', method, endpoint, body)
 }
@@ -1315,5 +1319,29 @@ export async function deleteForumThread(threadId) {
 
 export async function deleteForumReply(replyId) {
   return callForumApi('POST', 'delete-reply', { reply_id: replyId })
+}
+
+// Private friend-to-friend messaging (students only — see api/_lib/
+// messaging.js). getOrCreateConversation is what the Friends screen calls
+// when tapping a friend; getConversations/getMessages/sendMessage/
+// reportMessage back the conversation-list/thread UI (MessagesFlow.jsx).
+export async function getOrCreateConversation(friendId) {
+  return callMessagesApi('POST', 'get-or-create-conversation', { friend_id: friendId })
+}
+
+export async function getConversations() {
+  return callMessagesApi('GET', 'get-conversations')
+}
+
+export async function getMessages(conversationId) {
+  return callMessagesApi('GET', `get-messages?conversation_id=${encodeURIComponent(conversationId)}`)
+}
+
+export async function sendMessage(conversationId, body) {
+  return callMessagesApi('POST', 'send-message', { conversation_id: conversationId, body })
+}
+
+export async function reportMessage(payload) {
+  return callMessagesApi('POST', 'report-message', payload)
 }
 

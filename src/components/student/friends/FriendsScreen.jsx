@@ -21,7 +21,7 @@ import FriendRequestBanner from './FriendRequestBanner'
 import FriendScoreCardModal from '../share/FriendScoreCardModal'
 import PokePickerModal from './PokePickerModal'
 
-export default function FriendsScreen({ user, canShareToday, onBack, onLogout, onLogoClick }) {
+export default function FriendsScreen({ user, canShareToday, onMessageFriend, onBack, onLogout, onLogoClick }) {
   const { t } = useTranslation()
   const [pendingRequests, setPendingRequests] = useState(null)
   const [friends, setFriends] = useState(null)
@@ -366,6 +366,9 @@ export default function FriendsScreen({ user, canShareToday, onBack, onLogout, o
                       👋
                     </button>
                   )}
+                  <button type="button" className="btn-icon" aria-label={t('friends.messageButton')} onClick={() => onMessageFriend(friend)}>
+                    💬
+                  </button>
                 </div>
               )
             })}
