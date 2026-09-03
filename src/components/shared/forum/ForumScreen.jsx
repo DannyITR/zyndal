@@ -20,11 +20,14 @@ function formatDateTime(value, language) {
 // entry point differs. Manages its own list/detail navigation internally
 // instead of pushing that state up into StudentFlow.jsx/TeacherFlow.jsx,
 // since it's really one screen's worth of back-and-forth.
-export default function ForumScreen({ user, classType, classId, className, onBack, onLogout, onLogoClick }) {
+export default function ForumScreen({ user, classType, classId, className, initialThreadId, onBack, onLogout, onLogoClick }) {
   const { t, i18n } = useTranslation()
   const [threads, setThreads] = useState(null)
   const [listError, setListError] = useState('')
-  const [activeThreadId, setActiveThreadId] = useState(null)
+  // Set from ForumThreadPreview.jsx's compact list (ClassCard.jsx) so
+  // tapping a preview row lands straight on that thread's detail view
+  // instead of the plain thread list.
+  const [activeThreadId, setActiveThreadId] = useState(initialThreadId || null)
   const [activeThread, setActiveThread] = useState(null)
   const [detailError, setDetailError] = useState('')
   const [replyBody, setReplyBody] = useState('')

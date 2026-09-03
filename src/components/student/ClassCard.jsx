@@ -12,6 +12,7 @@ import CancelTestPlanModal from './testprep/CancelTestPlanModal'
 import LeaveClassModal from './LeaveClassModal'
 import HomeworkCalendar from './classes/HomeworkCalendar'
 import HomeworkDetailScreen from './classes/HomeworkDetailScreen'
+import ForumThreadPreview from '../shared/forum/ForumThreadPreview'
 
 // The full per-class page — Test Prep, Study Guide, Upload, My Uploads,
 // Practice, My Grades, Curriculum, and the active-test-plan card, carried
@@ -122,6 +123,20 @@ export default function ClassCard({
     onBack()
   }
 
+  // Shared by both the Forum button and ForumThreadPreview's compact rows
+  // below, so the { classType, classId, className } target is only built
+  // in one place. initialThreadId is only ever passed by the preview
+  // (jumping straight to a specific thread's detail view); the plain
+  // button omits it, landing on the thread list as before.
+  function handleOpenForum(initialThreadId) {
+    onOpenForum({
+      classType: entryKind,
+      classId: entryId,
+      className: entryKind === 'class' ? entryName : t(`subjects.${subject.id}`),
+      initialThreadId,
+    })
+  }
+
   // onStartHomework looks the assignment up in StudentFlow's already-loaded
   // homework list and hands off to its top-level activeHomework/HomeworkFlow
   // takeover — returns false if the assignment can't be found or has no
@@ -205,17 +220,7 @@ export default function ClassCard({
             gets a forum once actually joined; a 'class' entry is always
             joined. */}
         {(entryKind === 'class' || joined) && (
-          <button
-            type="button"
-            className="btn btn-secondary btn-small"
-            onClick={() =>
-              onOpenForum({
-                classType: entryKind,
-                classId: entryId,
-                className: entryKind === 'class' ? entryName : t(`subjects.${subject.id}`),
-              })
-            }
-          >
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => handleOpenForum()}>
             {t('forum.title')}
           </button>
         )}
@@ -288,6 +293,13 @@ export default function ClassCard({
       <p className="class-card-status">
         {entryKind === 'class' ? entryName : t('classCard.unclaimedStatus', { grade, school: schoolName })}
       </p>
+
+      {/* Compact forum preview — same access rule as the Forum button above
+          (a 'group' entry needs joined:true; a 'class' entry is always
+          joined), since there's nothing to preview otherwise. */}
+      {(entryKind === 'class' || joined) && (
+        <ForumThreadPreview classType={entryKind} classId={entryId} onSelectThread={(threadId) => handleOpenForum(threadId)} />
+      )}
 
       <div className="settings-danger-zone">
         <button type="button" className="btn btn-danger-outline btn-block" onClick={() => setShowLeaveModal(true)}>

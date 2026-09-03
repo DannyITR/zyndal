@@ -126,7 +126,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   // which unit/topic to auto-expand and scroll to. null for the plain
   // "📖 Curriculum" nav button, which opens the full reference as before.
   const [curriculumFocus, setCurriculumFocus] = useState(null)
-  const [forumTarget, setForumTarget] = useState(null) // null | { classType, classId, className } — the forum opened from ClassCard's Forum section
+  const [forumTarget, setForumTarget] = useState(null) // null | { classType, classId, className, initialThreadId? } — the forum opened from ClassCard's Forum button/thread preview
   const [showCalendar, setShowCalendar] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   // Shares received today that the student hasn't marked seen yet — powers
@@ -716,6 +716,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         classType={forumTarget.classType}
         classId={forumTarget.classId}
         className={forumTarget.className}
+        initialThreadId={forumTarget.initialThreadId}
         onBack={() => setForumTarget(null)}
         onLogout={onLogout}
         onLogoClick={handleLogoClick}

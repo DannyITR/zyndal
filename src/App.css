@@ -5681,6 +5681,51 @@ div.zyndal-logo {
 
 /* ---------- Forum (ClassCard.jsx's Forum button, ForumScreen.jsx) ---------- */
 
+.forum-preview {
+  margin-top: 4px;
+}
+
+.forum-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.forum-preview-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease;
+}
+
+.forum-preview-row:hover {
+  border-color: var(--purple);
+}
+
+.forum-preview-title {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.forum-preview-count {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
 .forum-thread-list {
   display: flex;
   flex-direction: column;
