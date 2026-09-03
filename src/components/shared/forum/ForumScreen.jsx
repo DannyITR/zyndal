@@ -72,10 +72,21 @@ export default function ForumScreen({ user, classType, classId, className, onBac
     }
   }
 
+  // Bug fix: leaving a thread used to just clear activeThreadId, so the list
+  // view kept showing whatever reply counts/last-activity it fetched before
+  // the thread was opened — a reply posted in the meantime (by this student
+  // or a classmate refreshing) never showed up until some unrelated
+  // re-render happened to call loadThreads again. Refetching here keeps
+  // this in sync with forum_replies without needing a live subscription.
+  function handleBackToList() {
+    setActiveThreadId(null)
+    loadThreads()
+  }
+
   if (activeThreadId) {
     return (
       <div className="screen">
-        <TopBar title={className} username={user.username} onBack={() => setActiveThreadId(null)} onLogout={onLogout} onLogoClick={onLogoClick} />
+        <TopBar title={className} username={user.username} onBack={handleBackToList} onLogout={onLogout} onLogoClick={onLogoClick} />
 
         {detailError && <p className="form-error">{detailError}</p>}
 
