@@ -1221,6 +1221,10 @@ export async function getClassDetail(classId) {
   return callTeacherApi('GET', `get-class-detail?class_id=${encodeURIComponent(classId)}`)
 }
 
+export async function getTeacherClassRoster(classId) {
+  return callTeacherApi('GET', `get-class-roster?class_id=${encodeURIComponent(classId)}`)
+}
+
 export async function setCurrentUnit(classId, unitNumber, unitTitle) {
   return callTeacherApi('POST', 'set-current-unit', {
     class_id: classId,

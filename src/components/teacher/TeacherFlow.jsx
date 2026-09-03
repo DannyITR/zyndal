@@ -15,6 +15,7 @@ import CreateClassModal from './CreateClassModal'
 import ClaimClassScreen from './ClaimClassScreen'
 import TeacherForumReportsScreen from './TeacherForumReportsScreen'
 import ForumScreen from '../shared/forum/ForumScreen'
+import ClassRosterScreen from './ClassRosterScreen'
 
 const SHARE_URL_BASE = 'https://zyndal.ca'
 
@@ -29,7 +30,7 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
   const [statsError, setStatsError] = useState('')
   const [recentHomework, setRecentHomework] = useState(null)
   const [recentHomeworkError, setRecentHomeworkError] = useState('')
-  const [view, setView] = useState('home') // home | classes | class-detail | assign-homework | leaderboard | settings | claim-class | forum-reports | forum
+  const [view, setView] = useState('home') // home | classes | class-detail | assign-homework | leaderboard | settings | claim-class | forum-reports | forum | roster
   const [selectedClassId, setSelectedClassId] = useState(null)
   const [assignHomeworkClass, setAssignHomeworkClass] = useState(null) // { id, name } — the class Assign Homework was opened from
   const [forumTarget, setForumTarget] = useState(null) // { classType, classId, className } — the class Forum was opened from
@@ -134,6 +135,10 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
     )
   }
 
+  if (view === 'roster' && selectedClassId) {
+    return <ClassRosterScreen user={user} classId={selectedClassId} onBack={() => setView('class-detail')} onLogout={onLogout} onLogoClick={goHome} />
+  }
+
   if (view === 'assign-homework' && assignHomeworkClass) {
     return (
       <AssignHomeworkScreen
@@ -158,6 +163,7 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
         onLogoClick={goHome}
         onAssignHomework={handleAssignHomework}
         onOpenForum={handleOpenForum}
+        onOpenRoster={() => setView('roster')}
       />
     )
   }

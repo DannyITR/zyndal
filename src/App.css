@@ -5620,6 +5620,53 @@ div.zyndal-logo {
   text-align: center;
 }
 
+/* ---------- Teacher class roster (ClassRosterScreen.jsx) ---------- */
+
+.roster-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.roster-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.roster-table th,
+.roster-table td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.roster-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.roster-th {
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--text-dim);
+  background: var(--bg-elevated);
+}
+
+.roster-th:hover {
+  color: var(--text);
+}
+
+.roster-sort-arrow {
+  color: var(--purple);
+}
+
+.roster-username {
+  color: var(--text-dim);
+}
+
 /* ---------- Forum (ClassCard.jsx's Forum button, ForumScreen.jsx) ---------- */
 
 .forum-thread-list {
