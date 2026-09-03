@@ -547,7 +547,14 @@ create table if not exists forum_threads (
   author_id uuid not null references users(id) on delete cascade,
   title text not null,
   body text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- Author-only edit/soft-delete (api/forum/update-thread.js,
+  -- delete-thread.js) — deleted_at set hides it from every normal read
+  -- (get-threads.js/get-thread.js) but keeps the row for admin/teacher
+  -- moderation review (resolveReportTargetClass in forumAuth.js exposes it
+  -- regardless, tagged "deleted by author").
+  edited_at timestamptz,
+  deleted_at timestamptz
 );
 create index if not exists forum_threads_class_idx on forum_threads(class_type, class_id);
 
@@ -556,7 +563,9 @@ create table if not exists forum_replies (
   thread_id uuid not null references forum_threads(id) on delete cascade,
   author_id uuid not null references users(id) on delete cascade,
   body text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  edited_at timestamptz,
+  deleted_at timestamptz
 );
 create index if not exists forum_replies_thread_idx on forum_replies(thread_id);
 
@@ -592,3 +601,11 @@ alter table forum_reports enable row level security;
 -- selectable theme system existed:
 --
 -- ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_preference text default 'default';
+--
+-- Run against a database that already has forum_threads/forum_replies from
+-- before author edit/soft-delete existed:
+--
+-- ALTER TABLE forum_threads ADD COLUMN IF NOT EXISTS edited_at timestamptz;
+-- ALTER TABLE forum_threads ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+-- ALTER TABLE forum_replies ADD COLUMN IF NOT EXISTS edited_at timestamptz;
+-- ALTER TABLE forum_replies ADD COLUMN IF NOT EXISTS deleted_at timestamptz;

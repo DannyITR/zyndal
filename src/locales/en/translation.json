@@ -664,6 +664,7 @@
     "forumReportReasonBy": "Reported by @{{username}}: {{reason}}",
     "forumReportDelete": "Delete",
     "forumReportDismiss": "Dismiss",
+    "forumReportDeletedByAuthor": "Deleted by author",
     "loadOutlineFailed": "Couldn't load the curriculum outline for this subject.",
     "saveUnitFailed": "Couldn't save the current unit. Please try again.",
     "setCurrentUnit": "Set Current Unit",
@@ -822,7 +823,22 @@
     "profanityWarning": "Your post may contain inappropriate language. Please revise it and try again.",
     "loadFailed": "Failed to load the forum. Please try again.",
     "postFailed": "Failed to post. Please try again.",
-    "reportFailed": "Failed to submit your report. Please try again."
+    "reportFailed": "Failed to submit your report. Please try again.",
+    "edit": "Edit",
+    "delete": "Delete",
+    "edited": "edited",
+    "editThreadTitle": "Edit thread",
+    "editReplyTitle": "Edit reply",
+    "saving": "Saving…",
+    "saveChanges": "Save changes",
+    "editFailed": "Failed to save your changes. Please try again.",
+    "deleting": "Deleting…",
+    "deleteConfirm": "Delete",
+    "deleteFailed": "Failed to delete. Please try again.",
+    "deleteThreadTitle": "Delete this thread?",
+    "deleteThreadWarning": "This will hide the thread and all its replies from the forum. This can't be undone from here.",
+    "deleteReplyTitle": "Delete this reply?",
+    "deleteReplyWarning": "This will hide your reply from the forum. This can't be undone from here."
   },
   "curriculum": {
     "lastUpdated": "Last updated: {{date}}"

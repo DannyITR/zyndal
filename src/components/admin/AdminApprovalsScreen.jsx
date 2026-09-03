@@ -366,7 +366,10 @@ export default function AdminApprovalsScreen({ onBack, onLogout }) {
               {reports?.map((report) => (
                 <tr key={report.id}>
                   <td>{report.targetType === 'thread' ? 'Thread' : 'Reply'}</td>
-                  <td>{report.contentPreview}</td>
+                  <td>
+                    {report.contentPreview}
+                    {report.deletedByAuthor && <span className="admin-deleted-tag"> Deleted by author</span>}
+                  </td>
                   <td>{report.targetClassLabel}</td>
                   <td>@{report.reporterUsername}</td>
                   <td>{report.reason}</td>

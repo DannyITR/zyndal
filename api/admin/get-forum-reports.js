@@ -43,6 +43,10 @@ async function handle() {
         contentPreview: target ? (target.content.title ? `${target.content.title}` : target.content.body) : '[content deleted]',
         targetClassLabel: target ? await classLabel(target.class_type, target.class_id) : '—',
         contentExists: Boolean(target),
+        // Distinct from contentExists: the row is still here (visible below
+        // for review) but its author soft-deleted it — see
+        // api/forum/delete-thread.js / delete-reply.js.
+        deletedByAuthor: Boolean(target?.content.deletedAt),
       }
     })
   )

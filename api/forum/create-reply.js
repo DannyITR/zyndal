@@ -23,7 +23,9 @@ async function handle({ userId, body }) {
   const { thread_id: threadId, body: replyBody } = body
 
   const thread = await resolveThreadClass(threadId)
-  if (!thread) {
+  // Same treatment as get-thread.js — a soft-deleted thread is not-found
+  // for a normal reply attempt too, not just for reading it.
+  if (!thread || thread.deleted_at) {
     const err = new Error('That thread was not found.')
     err.status = 404
     err.code = 'NOT_FOUND'

@@ -61,7 +61,10 @@ export default function TeacherForumReportsScreen({ user, onBack, onLogout, onLo
               <div className="teacher-class-card-header">
                 <p className="teacher-class-name">{report.targetClassLabel}</p>
               </div>
-              <p className="teacher-class-detail">{report.contentPreview}</p>
+              <p className="teacher-class-detail">
+                {report.contentPreview}
+                {report.deletedByAuthor && <span className="deleted-by-author-tag"> {t('teacher.forumReportDeletedByAuthor')}</span>}
+              </p>
               <p className="teacher-class-detail">{t('teacher.forumReportReasonBy', { reason: report.reason, username: report.reporterUsername })}</p>
               <div className="modal-actions">
                 <button type="button" className="btn btn-danger btn-small" disabled={busyId === report.id} onClick={() => handleResolve(report, 'delete')}>

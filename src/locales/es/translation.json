@@ -664,6 +664,7 @@
     "forumReportReasonBy": "Reportado por @{{username}}: {{reason}}",
     "forumReportDelete": "Eliminar",
     "forumReportDismiss": "Descartar",
+    "forumReportDeletedByAuthor": "Eliminado por el autor",
     "loadOutlineFailed": "No se pudo cargar el esquema del currículo para esta materia.",
     "saveUnitFailed": "No se pudo guardar la unidad actual. Inténtalo de nuevo.",
     "setCurrentUnit": "Establecer unidad actual",
@@ -822,7 +823,22 @@
     "profanityWarning": "Tu publicación podría contener lenguaje inapropiado. Por favor revísala e inténtalo de nuevo.",
     "loadFailed": "No se pudo cargar el foro. Por favor intenta de nuevo.",
     "postFailed": "No se pudo publicar. Por favor intenta de nuevo.",
-    "reportFailed": "No se pudo enviar tu reporte. Por favor intenta de nuevo."
+    "reportFailed": "No se pudo enviar tu reporte. Por favor intenta de nuevo.",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "edited": "editado",
+    "editThreadTitle": "Editar tema",
+    "editReplyTitle": "Editar respuesta",
+    "saving": "Guardando…",
+    "saveChanges": "Guardar cambios",
+    "editFailed": "No se pudieron guardar tus cambios. Inténtalo de nuevo.",
+    "deleting": "Eliminando…",
+    "deleteConfirm": "Eliminar",
+    "deleteFailed": "No se pudo eliminar. Inténtalo de nuevo.",
+    "deleteThreadTitle": "¿Eliminar este tema?",
+    "deleteThreadWarning": "Esto ocultará el tema y todas sus respuestas del foro. Esto no se puede deshacer desde aquí.",
+    "deleteReplyTitle": "¿Eliminar esta respuesta?",
+    "deleteReplyWarning": "Esto ocultará tu respuesta del foro. Esto no se puede deshacer desde aquí."
   },
   "curriculum": {
     "lastUpdated": "Última actualización: {{date}}"

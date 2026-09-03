@@ -43,7 +43,7 @@ export async function getForumMembership(userId, classType, classId) {
 export async function resolveThreadClass(threadId) {
   const { data, error } = await supabase
     .from('forum_threads')
-    .select('id, class_type, class_id, author_id, title, body, created_at')
+    .select('id, class_type, class_id, author_id, title, body, created_at, edited_at, deleted_at')
     .eq('id', threadId)
     .maybeSingle()
   if (error) throw error
@@ -54,21 +54,39 @@ export async function resolveThreadClass(threadId) {
 // knows its thread_id, so this joins one level further than
 // resolveThreadClass. Returns the same shape either way (plus the
 // resolved content itself, since api/admin & api/teacher's get-forum-reports
-// need it for display and this is already fetching it).
+// need it for display and this is already fetching it). content.deletedAt
+// is intentionally surfaced here (unlike the normal read path, which hides
+// soft-deleted content entirely) — moderation needs to see it regardless,
+// clearly marked "deleted by author" per the feature spec, since a report
+// may be the only reason anyone reviews it again.
 export async function resolveReportTargetClass(targetType, targetId) {
   if (targetType === 'thread') {
     const thread = await resolveThreadClass(targetId)
     if (!thread) return null
-    return { class_type: thread.class_type, class_id: thread.class_id, thread_id: thread.id, content: { title: thread.title } }
+    return {
+      class_type: thread.class_type,
+      class_id: thread.class_id,
+      thread_id: thread.id,
+      content: { title: thread.title, deletedAt: thread.deleted_at },
+    }
   }
 
   if (targetType === 'reply') {
-    const { data: reply, error } = await supabase.from('forum_replies').select('id, thread_id, body, author_id').eq('id', targetId).maybeSingle()
+    const { data: reply, error } = await supabase
+      .from('forum_replies')
+      .select('id, thread_id, body, author_id, deleted_at')
+      .eq('id', targetId)
+      .maybeSingle()
     if (error) throw error
     if (!reply) return null
     const thread = await resolveThreadClass(reply.thread_id)
     if (!thread) return null
-    return { class_type: thread.class_type, class_id: thread.class_id, thread_id: thread.id, content: { body: reply.body } }
+    return {
+      class_type: thread.class_type,
+      class_id: thread.class_id,
+      thread_id: thread.id,
+      content: { body: reply.body, deletedAt: reply.deleted_at },
+    }
   }
 
   return null

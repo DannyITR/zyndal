@@ -40,6 +40,10 @@ async function handle({ teacherId }) {
       submittedAt: r.created_at,
       contentPreview: target.content.title ? target.content.title : target.content.body,
       targetClassLabel: nameByClassId[target.class_id] || 'Unknown class',
+      // The row still exists (it's already filtered to only reports whose
+      // target resolved above) but its author may have soft-deleted it —
+      // see api/forum/delete-thread.js / delete-reply.js.
+      deletedByAuthor: Boolean(target.content.deletedAt),
     })),
   }
 }

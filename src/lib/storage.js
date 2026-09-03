@@ -1301,3 +1301,19 @@ export async function reportForumContent(payload) {
   return callForumApi('POST', 'report', payload)
 }
 
+export async function updateForumThread(payload) {
+  return callForumApi('POST', 'update-thread', payload)
+}
+
+export async function updateForumReply(payload) {
+  return callForumApi('POST', 'update-reply', payload)
+}
+
+export async function deleteForumThread(threadId) {
+  return callForumApi('POST', 'delete-thread', { thread_id: threadId })
+}
+
+export async function deleteForumReply(replyId) {
+  return callForumApi('POST', 'delete-reply', { reply_id: replyId })
+}
+

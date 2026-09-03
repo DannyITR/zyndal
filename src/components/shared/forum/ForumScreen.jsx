@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getForumThreads, getForumThread, createForumReply } from '../../../lib/storage'
+import { getForumThreads, getForumThread, createForumReply, deleteForumThread, deleteForumReply } from '../../../lib/storage'
 import { getErrorMessage } from '../../../lib/errors'
 import { LOCALE_FOR_LANGUAGE } from '../../../lib/i18n'
 import TopBar from '../TopBar'
 import NewThreadModal from './NewThreadModal'
+import EditThreadModal from './EditThreadModal'
+import EditReplyModal from './EditReplyModal'
+import ConfirmDeleteContentModal from './ConfirmDeleteContentModal'
 import ReportContentModal from './ReportContentModal'
 
 function formatDateTime(value, language) {
@@ -29,6 +32,9 @@ export default function ForumScreen({ user, classType, classId, className, onBac
   const [posting, setPosting] = useState(false)
   const [showNewThread, setShowNewThread] = useState(false)
   const [reportTarget, setReportTarget] = useState(null) // { targetType, targetId }
+  const [editingThread, setEditingThread] = useState(false)
+  const [editingReply, setEditingReply] = useState(null) // the reply object being edited, or null
+  const [deleteTarget, setDeleteTarget] = useState(null) // { type: 'thread' } | { type: 'reply', id }
 
   function loadThreads() {
     setListError('')
@@ -83,6 +89,23 @@ export default function ForumScreen({ user, classType, classId, className, onBac
     loadThreads()
   }
 
+  // Deleting the thread being viewed leaves nothing left to show here — go
+  // straight back to the (refetched) list, same as handleBackToList.
+  async function handleDeleteThread() {
+    await deleteForumThread(activeThreadId)
+    setDeleteTarget(null)
+    handleBackToList()
+  }
+
+  // Deleting a single reply just re-fetches this thread — the deleted reply
+  // is already filtered out server-side (get-thread.js), so it disappears
+  // from the list on this same refetch.
+  async function handleDeleteReply(replyId) {
+    await deleteForumReply(replyId)
+    setDeleteTarget(null)
+    loadThread(activeThreadId)
+  }
+
   if (activeThreadId) {
     return (
       <div className="screen">
@@ -96,22 +119,48 @@ export default function ForumScreen({ user, classType, classId, className, onBac
               <p className="forum-post-title">{activeThread.thread.title}</p>
               <p className="forum-post-meta">
                 @{activeThread.thread.authorUsername} · {formatDateTime(activeThread.thread.createdAt, i18n.language)}
+                {activeThread.thread.editedAt && ` · ${t('forum.edited')}`}
               </p>
               <p className="forum-post-body">{activeThread.thread.body}</p>
-              <button type="button" className="forum-report-link" onClick={() => setReportTarget({ targetType: 'thread', targetId: activeThread.thread.id })}>
-                {t('forum.report')}
-              </button>
+              <div className="forum-post-actions">
+                {activeThread.thread.isAuthor && (
+                  <>
+                    <button type="button" className="forum-report-link" onClick={() => setEditingThread(true)}>
+                      {t('forum.edit')}
+                    </button>
+                    <button type="button" className="forum-report-link" onClick={() => setDeleteTarget({ type: 'thread' })}>
+                      {t('forum.delete')}
+                    </button>
+                  </>
+                )}
+                <button type="button" className="forum-report-link" onClick={() => setReportTarget({ targetType: 'thread', targetId: activeThread.thread.id })}>
+                  {t('forum.report')}
+                </button>
+              </div>
             </div>
 
             {activeThread.replies.map((reply) => (
               <div key={reply.id} className="forum-reply">
                 <p className="forum-post-meta">
                   @{reply.authorUsername} · {formatDateTime(reply.createdAt, i18n.language)}
+                  {reply.editedAt && ` · ${t('forum.edited')}`}
                 </p>
                 <p className="forum-post-body">{reply.body}</p>
-                <button type="button" className="forum-report-link" onClick={() => setReportTarget({ targetType: 'reply', targetId: reply.id })}>
-                  {t('forum.report')}
-                </button>
+                <div className="forum-post-actions">
+                  {reply.isAuthor && (
+                    <>
+                      <button type="button" className="forum-report-link" onClick={() => setEditingReply(reply)}>
+                        {t('forum.edit')}
+                      </button>
+                      <button type="button" className="forum-report-link" onClick={() => setDeleteTarget({ type: 'reply', id: reply.id })}>
+                        {t('forum.delete')}
+                      </button>
+                    </>
+                  )}
+                  <button type="button" className="forum-report-link" onClick={() => setReportTarget({ targetType: 'reply', targetId: reply.id })}>
+                    {t('forum.report')}
+                  </button>
+                </div>
               </div>
             ))}
 
@@ -137,6 +186,46 @@ export default function ForumScreen({ user, classType, classId, className, onBac
             targetId={reportTarget.targetId}
             onClose={() => setReportTarget(null)}
             onReported={() => setReportTarget(null)}
+          />
+        )}
+
+        {editingThread && activeThread && (
+          <EditThreadModal
+            thread={activeThread.thread}
+            onClose={() => setEditingThread(false)}
+            onSaved={() => {
+              setEditingThread(false)
+              loadThread(activeThreadId)
+            }}
+          />
+        )}
+
+        {editingReply && (
+          <EditReplyModal
+            reply={editingReply}
+            onClose={() => setEditingReply(null)}
+            onSaved={() => {
+              setEditingReply(null)
+              loadThread(activeThreadId)
+            }}
+          />
+        )}
+
+        {deleteTarget?.type === 'thread' && (
+          <ConfirmDeleteContentModal
+            titleKey="forum.deleteThreadTitle"
+            warningKey="forum.deleteThreadWarning"
+            onConfirm={handleDeleteThread}
+            onClose={() => setDeleteTarget(null)}
+          />
+        )}
+
+        {deleteTarget?.type === 'reply' && (
+          <ConfirmDeleteContentModal
+            titleKey="forum.deleteReplyTitle"
+            warningKey="forum.deleteReplyWarning"
+            onConfirm={() => handleDeleteReply(deleteTarget.id)}
+            onClose={() => setDeleteTarget(null)}
           />
         )}
       </div>

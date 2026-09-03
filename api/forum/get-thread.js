@@ -12,7 +12,10 @@ function validate(body) {
 
 async function handle({ userId, body }) {
   const thread = await resolveThreadClass(body.thread_id)
-  if (!thread) {
+  // A soft-deleted thread is treated as not-found for every normal reader —
+  // deleting a thread hides all of its replies too, simply by refusing to
+  // serve the thread at all (no need to also mark each reply deleted).
+  if (!thread || thread.deleted_at) {
     const err = new Error('That thread was not found.')
     err.status = 404
     err.code = 'NOT_FOUND'
@@ -29,8 +32,9 @@ async function handle({ userId, body }) {
 
   const { data: replies, error: repliesError } = await supabase
     .from('forum_replies')
-    .select('id, author_id, body, created_at')
+    .select('id, author_id, body, created_at, edited_at')
     .eq('thread_id', thread.id)
+    .is('deleted_at', null)
     .order('created_at', { ascending: true })
   if (repliesError) throw repliesError
 
@@ -46,12 +50,16 @@ async function handle({ userId, body }) {
       body: thread.body,
       authorUsername: usernameById[thread.author_id] || 'Unknown',
       createdAt: thread.created_at,
+      editedAt: thread.edited_at,
+      isAuthor: thread.author_id === userId,
     },
     replies: (replies || []).map((r) => ({
       id: r.id,
       body: r.body,
       authorUsername: usernameById[r.author_id] || 'Unknown',
       createdAt: r.created_at,
+      editedAt: r.edited_at,
+      isAuthor: r.author_id === userId,
     })),
   }
 }

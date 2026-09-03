@@ -5620,6 +5620,18 @@ div.zyndal-logo {
   text-align: center;
 }
 
+.deleted-by-author-tag {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--red) 18%, transparent);
+  color: var(--red-text);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
 /* ---------- Teacher class roster (ClassRosterScreen.jsx) ---------- */
 
 .roster-table-wrap {
@@ -5740,8 +5752,13 @@ div.zyndal-logo {
   white-space: pre-wrap;
 }
 
-.forum-report-link {
+.forum-post-actions {
+  display: flex;
   align-self: flex-start;
+  gap: 14px;
+}
+
+.forum-report-link {
   background: none;
   border: none;
   padding: 0;

@@ -664,6 +664,7 @@
     "forumReportReasonBy": "Signalé par @{{username}} : {{reason}}",
     "forumReportDelete": "Supprimer",
     "forumReportDismiss": "Ignorer",
+    "forumReportDeletedByAuthor": "Supprimé par l'auteur",
     "loadOutlineFailed": "Impossible de charger le plan du programme pour cette matière.",
     "saveUnitFailed": "Impossible d'enregistrer l'unité actuelle. Veuillez réessayer.",
     "setCurrentUnit": "Définir l'unité actuelle",
@@ -822,7 +823,22 @@
     "profanityWarning": "Votre message pourrait contenir un langage inapproprié. Veuillez le modifier et réessayer.",
     "loadFailed": "Impossible de charger le forum. Veuillez réessayer.",
     "postFailed": "Impossible de publier. Veuillez réessayer.",
-    "reportFailed": "Impossible d'envoyer votre signalement. Veuillez réessayer."
+    "reportFailed": "Impossible d'envoyer votre signalement. Veuillez réessayer.",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "edited": "modifié",
+    "editThreadTitle": "Modifier le sujet",
+    "editReplyTitle": "Modifier la réponse",
+    "saving": "Enregistrement…",
+    "saveChanges": "Enregistrer les modifications",
+    "editFailed": "Impossible d'enregistrer vos modifications. Veuillez réessayer.",
+    "deleting": "Suppression…",
+    "deleteConfirm": "Supprimer",
+    "deleteFailed": "Impossible de supprimer. Veuillez réessayer.",
+    "deleteThreadTitle": "Supprimer ce sujet ?",
+    "deleteThreadWarning": "Cela masquera le sujet et toutes ses réponses du forum. Cette action ne peut pas être annulée depuis ici.",
+    "deleteReplyTitle": "Supprimer cette réponse ?",
+    "deleteReplyWarning": "Cela masquera votre réponse du forum. Cette action ne peut pas être annulée depuis ici."
   },
   "curriculum": {
     "lastUpdated": "Dernière mise à jour : {{date}}"

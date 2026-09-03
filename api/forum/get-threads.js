@@ -31,12 +31,17 @@ async function handle({ userId, body }) {
     .select('id, author_id, title, created_at')
     .eq('class_type', classType)
     .eq('class_id', classId)
+    .is('deleted_at', null)
   if (error) throw error
 
   if ((threads || []).length === 0) return { threads: [] }
 
   const threadIds = threads.map((t) => t.id)
-  const { data: replies, error: repliesError } = await supabase.from('forum_replies').select('thread_id, created_at').in('thread_id', threadIds)
+  const { data: replies, error: repliesError } = await supabase
+    .from('forum_replies')
+    .select('thread_id, created_at')
+    .in('thread_id', threadIds)
+    .is('deleted_at', null)
   if (repliesError) throw repliesError
 
   const replyStatsByThread = {}
