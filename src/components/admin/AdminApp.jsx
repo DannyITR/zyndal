@@ -4,6 +4,7 @@ import AdminLogin from './AdminLogin'
 import AdminDashboard from './AdminDashboard'
 import AdminEditUserScreen from './AdminEditUserScreen'
 import AdminApprovalsScreen from './AdminApprovalsScreen'
+import AdminReportsScreen from './AdminReportsScreen'
 import AdminMessagesScreen from './AdminMessagesScreen'
 import './admin.css'
 
@@ -53,15 +54,17 @@ export default function AdminApp() {
 
   const editUserId = parseEditUserId(pathname)
   const showApprovals = pathname === '/admin/approvals'
+  const showReports = pathname === '/admin/reports'
   const showMessages = pathname === '/admin/messages'
 
   return (
     <>
-      <div style={editUserId || showApprovals || showMessages ? { display: 'none' } : undefined}>
+      <div style={editUserId || showApprovals || showReports || showMessages ? { display: 'none' } : undefined}>
         <AdminDashboard
           onLogout={handleLogout}
           onEditUser={(userId) => navigate(`/admin/users/${encodeURIComponent(userId)}`)}
           onOpenApprovals={() => navigate('/admin/approvals')}
+          onOpenReports={() => navigate('/admin/reports')}
           onOpenMessages={() => navigate('/admin/messages')}
           refreshKey={dashboardRefreshKey}
         />
@@ -77,6 +80,15 @@ export default function AdminApp() {
         />
       )}
       {showApprovals && <AdminApprovalsScreen onBack={() => navigate('/admin')} onLogout={handleLogout} />}
+      {showReports && (
+        <AdminReportsScreen
+          onBack={() => {
+            setDashboardRefreshKey((k) => k + 1)
+            navigate('/admin')
+          }}
+          onLogout={handleLogout}
+        />
+      )}
       {showMessages && <AdminMessagesScreen onBack={() => navigate('/admin')} onLogout={handleLogout} />}
     </>
   )

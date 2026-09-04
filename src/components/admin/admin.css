@@ -112,6 +112,28 @@
   cursor: pointer;
 }
 
+.admin-btn-with-badge {
+  position: relative;
+}
+
+.admin-nav-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #b3261e;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
 .admin-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;

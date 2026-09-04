@@ -22,31 +22,47 @@ async function handle() {
   todayStart.setUTCHours(0, 0, 0, 0)
   const todayIso = todayStart.toISOString()
 
-  const [usersByTypeEntries, newToday, newWeek, newMonth, questionsToday, questionsAllTime, activeStreaks, premiumUsers, todaysAnswerRows] =
-    await Promise.all([
-      Promise.all(
-        ACCOUNT_TYPES.map((type) =>
-          countRows('users', (q) => q.eq('account_type', type).is('deleted_at', null)).then((count) => [type, count])
-        )
-      ),
-      countRows('users', (q) => q.is('deleted_at', null).gte('created_at', todayIso)),
-      // "This week"/"this month" are rolling 7/30-day windows, not calendar
-      // week/month boundaries — simpler and avoids a separate timezone
-      // decision for a platform-wide (not per-user-local) admin metric.
-      countRows('users', (q) => q.is('deleted_at', null).gte('created_at', daysAgoIso(7))),
-      countRows('users', (q) => q.is('deleted_at', null).gte('created_at', daysAgoIso(30))),
-      countRows('answers', (q) => q.gte('answered_at', todayIso)),
-      countRows('answers'),
-      countRows('streaks', (q) => q.gt('current_streak', 0)),
-      countRows('users', (q) => q.eq('is_premium', true).is('deleted_at', null)),
-      // Daily active users needs a distinct user_id count, which PostgREST's
-      // head:true count can't express — fetched separately and deduped here.
-      supabase
-        .from('answers')
-        .select('user_id')
-        .gte('answered_at', todayIso)
-        .then((r) => r.data || []),
-    ])
+  const [
+    usersByTypeEntries,
+    newToday,
+    newWeek,
+    newMonth,
+    questionsToday,
+    questionsAllTime,
+    activeStreaks,
+    premiumUsers,
+    todaysAnswerRows,
+    pendingForumReports,
+    pendingMessageReports,
+  ] = await Promise.all([
+    Promise.all(
+      ACCOUNT_TYPES.map((type) =>
+        countRows('users', (q) => q.eq('account_type', type).is('deleted_at', null)).then((count) => [type, count])
+      )
+    ),
+    countRows('users', (q) => q.is('deleted_at', null).gte('created_at', todayIso)),
+    // "This week"/"this month" are rolling 7/30-day windows, not calendar
+    // week/month boundaries — simpler and avoids a separate timezone
+    // decision for a platform-wide (not per-user-local) admin metric.
+    countRows('users', (q) => q.is('deleted_at', null).gte('created_at', daysAgoIso(7))),
+    countRows('users', (q) => q.is('deleted_at', null).gte('created_at', daysAgoIso(30))),
+    countRows('answers', (q) => q.gte('answered_at', todayIso)),
+    countRows('answers'),
+    countRows('streaks', (q) => q.gt('current_streak', 0)),
+    countRows('users', (q) => q.eq('is_premium', true).is('deleted_at', null)),
+    // Daily active users needs a distinct user_id count, which PostgREST's
+    // head:true count can't express — fetched separately and deduped here.
+    supabase
+      .from('answers')
+      .select('user_id')
+      .gte('answered_at', todayIso)
+      .then((r) => r.data || []),
+    // Badge count for the dashboard's "Reports" nav button (AdminDashboard.jsx)
+    // — message_reports already covers both human-reported and AI-flagged
+    // rows (source = 'user' | 'ai'), so no separate AI count is needed here.
+    countRows('forum_reports', (q) => q.eq('status', 'pending')),
+    countRows('message_reports', (q) => q.eq('status', 'pending')),
+  ])
 
   const usersByType = Object.fromEntries(usersByTypeEntries)
   const totalUsers = Object.values(usersByType).reduce((sum, n) => sum + n, 0)
@@ -60,6 +76,7 @@ async function handle() {
     questionsAnsweredAllTime: questionsAllTime,
     activeStreaks,
     premiumUsers,
+    pendingReportsCount: pendingForumReports + pendingMessageReports,
   }
 }
 
