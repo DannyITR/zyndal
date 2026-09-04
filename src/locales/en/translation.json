@@ -431,7 +431,14 @@
     "testGradesHeading": "Test Grades",
     "yourStudents": "Your Students",
     "noStudentsLinked": "No students linked yet.",
-    "shareCodeHint": "Share your code above — they'll enter it when they sign up."
+    "shareCodeHint": "Share your code above — they'll enter it when they sign up.",
+    "messages": "💬 Messages",
+    "newConversation": "New Message",
+    "newConversationSubtitle": "Message your child or one of their teachers",
+    "newConversationNoContacts": "Link a child to start messaging.",
+    "newConversationChildLabel": "Your child",
+    "newConversationTeachersLabel": "{{name}}'s teachers",
+    "newConversationNoTeachers": "No teachers yet."
   },
   "studentCard": {
     "trendImproving": "📈 Improving",
@@ -851,7 +858,8 @@
     "sending": "Sending…",
     "youPrefix": "You:",
     "loadFailed": "Failed to load messages. Please try again.",
-    "sendFailed": "Failed to send. Please try again."
+    "sendFailed": "Failed to send. Please try again.",
+    "adminBadge": "Admin"
   },
   "curriculum": {
     "lastUpdated": "Last updated: {{date}}"

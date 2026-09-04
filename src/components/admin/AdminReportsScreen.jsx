@@ -26,7 +26,7 @@ function MessageFlagBadge({ report }) {
 // forum reports and private-message reports (including AI-flagged rows,
 // source = 'ai', already sorted self-harm-first server-side — see
 // api/admin/get-message-reports.js).
-export default function AdminReportsScreen({ onBack, onLogout }) {
+export default function AdminReportsScreen({ onBack, onLogout, onMessageUser }) {
   const [reports, setReports] = useState(null)
   const [reportsLoadError, setReportsLoadError] = useState('')
   const [messageReports, setMessageReports] = useState(null)
@@ -250,6 +250,11 @@ export default function AdminReportsScreen({ onBack, onLogout }) {
                   <td>{report.reason}</td>
                   <td>{formatDate(report.submittedAt)}</td>
                   <td className="admin-row-actions">
+                    {report.senderId && (
+                      <button type="button" className="admin-btn admin-btn-small" onClick={() => onMessageUser(report.senderId)}>
+                        Message Sender
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="admin-btn admin-btn-small admin-btn-danger"

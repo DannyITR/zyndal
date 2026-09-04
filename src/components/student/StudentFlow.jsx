@@ -144,7 +144,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   // message button) so MessagesFlow.jsx can jump straight to that
   // conversation instead of starting on the list — null when opened from
   // the TopBar icon, which always starts on the list.
-  const [messagesInitialFriendId, setMessagesInitialFriendId] = useState(null)
+  const [messagesInitialOtherUserId, setMessagesInitialOtherUserId] = useState(null)
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const [homework, setHomework] = useState([])
   const [activeHomework, setActiveHomework] = useState(null)
@@ -533,10 +533,10 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     return (
       <MessagesFlow
         user={user}
-        initialFriendId={messagesInitialFriendId}
+        initialOtherUserId={messagesInitialOtherUserId}
         onBack={() => {
           setShowMessages(false)
-          setMessagesInitialFriendId(null)
+          setMessagesInitialOtherUserId(null)
           refreshMessagesState()
         }}
         onLogout={onLogout}
@@ -555,7 +555,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         // direct Share action per friend, so it needs the same rule.
         canShareToday={canShareToday}
         onMessageFriend={(friend) => {
-          setMessagesInitialFriendId(friend.id)
+          setMessagesInitialOtherUserId(friend.id)
           setShowMessages(true)
         }}
         onBack={() => {

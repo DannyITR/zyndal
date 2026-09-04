@@ -769,3 +769,42 @@
 .admin-calendar-day-detail-question {
   color: #444;
 }
+
+.admin-message-log {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding: 4px 4px 16px;
+}
+
+.admin-message-log-row {
+  border: 1px solid #e2e4e8;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.admin-message-log-row p {
+  margin: 4px 0 0;
+}
+
+.admin-message-log-meta {
+  font-size: 12px;
+  color: #888;
+  font-weight: 600;
+}
+
+.admin-message-input {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.admin-message-input input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d5d8dd;
+  border-radius: 8px;
+  font-size: 14px;
+}

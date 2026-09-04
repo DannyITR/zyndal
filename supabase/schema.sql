@@ -13,10 +13,13 @@ create table if not exists users (
   -- 'teacher' added alongside 'parent'/'student' — teacher accounts are
   -- routed into the same ParentDashboard as parent accounts for now (see
   -- api/_lib/parentHandler.js and App.jsx); class-specific teacher features
-  -- are a future session. On an existing database this column's check
+  -- are a future session. 'admin' added later still — every admin account
+  -- now gets a real row here too (api/admin/auth.js), so admin-sent private
+  -- messages are individually attributable instead of coming from one
+  -- shared system identity. On an existing database this column's check
   -- constraint has to be dropped and recreated (ALTER TABLE doesn't touch
   -- an already-created table) — see the ALTER statements below.
-  account_type text not null check (account_type in ('student', 'parent', 'teacher')),
+  account_type text not null check (account_type in ('student', 'parent', 'teacher', 'admin')),
   grade integer,
   parent_code text unique,
   created_at timestamptz not null default now(),
@@ -63,6 +66,13 @@ create table if not exists users (
 -- allow 'teacher' without dropping/recreating the whole table.
 alter table users drop constraint if exists users_account_type_check;
 alter table users add constraint users_account_type_check check (account_type in ('student', 'parent', 'teacher'));
+
+-- Run on an existing database — widens it again to allow 'admin' (see the
+-- account_type column comment above). Safe to run even if the 'teacher'
+-- ALTER above was never run on this database, since this one already
+-- includes it.
+alter table users drop constraint if exists users_account_type_check;
+alter table users add constraint users_account_type_check check (account_type in ('student', 'parent', 'teacher', 'admin'));
 
 -- Run on an existing database — same reason as above, this only applies to
 -- a fresh install otherwise.
@@ -584,15 +594,23 @@ alter table forum_threads enable row level security;
 alter table forum_replies enable row level security;
 alter table forum_reports enable row level security;
 
--- ---------- Private messaging (students only) ----------
--- One row per friend pair, never per direction — check (user_a_id <
+-- ---------- Private messaging ----------
+-- One row per participant pair, never per direction — check (user_a_id <
 -- user_b_id) forces a canonical ordering so unique(user_a_id, user_b_id)
 -- actually prevents a duplicate conversation regardless of who starts it;
--- every api/messages/*.js endpoint sorts the pair before querying or
--- inserting (see api/_lib/messaging.js's sortPairIds). Gated on the
--- existing friends table (itself already student-only in practice) plus an
--- explicit account_type check in every endpoint — teachers must never
--- reach this feature.
+-- every api/messages/*.js (and api/admin/*.js inbox) endpoint sorts the
+-- pair before querying or inserting (see api/_lib/messaging.js's
+-- sortPairIds). Who's allowed to be a pair at all is enforced once, at
+-- conversation-creation time, by api/_lib/messaging.js's
+-- verifyConversationAllowed — a full permission matrix, not just students:
+-- student+student needs an existing friendship (the friends table); a
+-- parent may message their own linked child (parent_student) or that
+-- child's own teacher (parent_student -> class_students -> classes.
+-- teacher_id); a teacher may never be the one to *start* a conversation
+-- with a student, only reply once a parent or admin has opened one; admin
+-- may message anyone, unrestricted. This check only runs on creation, not
+-- on every send, so an existing conversation keeps working even if the
+-- underlying relationship later changes (e.g. a parent unlinks a child).
 -- user_a_last_viewed_at/user_b_last_viewed_at are a lightweight polling-
 -- friendly presence signal, not a general read-receipt (that's messages.
 -- read_at) — api/messages/get-messages.js bumps the caller's own column to

@@ -1321,12 +1321,17 @@ export async function deleteForumReply(replyId) {
   return callForumApi('POST', 'delete-reply', { reply_id: replyId })
 }
 
-// Private friend-to-friend messaging (students only — see api/_lib/
-// messaging.js). getOrCreateConversation is what the Friends screen calls
-// when tapping a friend; getConversations/getMessages/sendMessage/
-// reportMessage back the conversation-list/thread UI (MessagesFlow.jsx).
-export async function getOrCreateConversation(friendId) {
-  return callMessagesApi('POST', 'get-or-create-conversation', { friend_id: friendId })
+// Private messaging — gated by a per-pairing permission matrix, not just
+// friends anymore (see api/_lib/messaging.js's verifyConversationAllowed):
+// student+student stays friends-only, but parent+own-child,
+// parent+child's-teacher, and admin+anyone are also allowed.
+// getOrCreateConversation is what FriendsScreen.jsx (a friend) and
+// ParentNewConversationModal.jsx (a linked child or their teacher) call to
+// start/open a conversation; getConversations/getMessages/sendMessage/
+// reportMessage back the conversation-list/thread UI (MessagesFlow.jsx),
+// shared as-is by students, parents, and teachers alike.
+export async function getOrCreateConversation(otherUserId) {
+  return callMessagesApi('POST', 'get-or-create-conversation', { other_user_id: otherUserId })
 }
 
 export async function getConversations() {
@@ -1343,5 +1348,13 @@ export async function sendMessage(conversationId, body) {
 
 export async function reportMessage(payload) {
   return callMessagesApi('POST', 'report-message', payload)
+}
+
+// Parent's "start a new conversation" picker data — their linked
+// child(ren) and each child's own teacher(s) (api/parent/get-
+// messageable-contacts.js), the only two relationships a parent is
+// actually allowed to message per the matrix above.
+export async function getMessageableContacts() {
+  return callParentApi('GET', 'get-messageable-contacts')
 }
 

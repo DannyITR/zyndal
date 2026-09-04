@@ -16,6 +16,8 @@ import ClaimClassScreen from './ClaimClassScreen'
 import TeacherForumReportsScreen from './TeacherForumReportsScreen'
 import ForumScreen from '../shared/forum/ForumScreen'
 import ClassRosterScreen from './ClassRosterScreen'
+import MessagesFlow from '../student/messages/MessagesFlow'
+import { getConversations } from '../../lib/storage'
 
 const SHARE_URL_BASE = 'https://zyndal.ca'
 
@@ -37,6 +39,24 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
   const [shareStatus, setShareStatus] = useState('') // '' | 'copied'
   const [showUpgradeModal, setShowUpgradeModal] = useState(null) // null | 'default' | 'trial'
   const [showCreateClass, setShowCreateClass] = useState(false)
+  const [showMessages, setShowMessages] = useState(false)
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0)
+
+  // Same reasoning as StudentFlow.jsx's refreshMessagesState — sums each
+  // conversation's own unreadCount for the TopBar badge. Teachers have no
+  // compose entry point (they can't message students, and messaging.js's
+  // permission matrix means only a parent or admin can ever start a
+  // conversation with a teacher) — this inbox is reply-only.
+  function refreshMessagesState() {
+    getConversations()
+      .then((data) => setUnreadMessageCount(data.conversations.reduce((sum, c) => sum + c.unreadCount, 0)))
+      .catch(() => {})
+  }
+
+  useEffect(() => {
+    refreshMessagesState()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.id])
 
   function loadStats() {
     getTeacherStats()
@@ -103,6 +123,20 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
     } catch {
       setShareStatus('')
     }
+  }
+
+  if (showMessages) {
+    return (
+      <MessagesFlow
+        user={user}
+        onBack={() => {
+          setShowMessages(false)
+          refreshMessagesState()
+        }}
+        onLogout={onLogout}
+        onLogoClick={goHome}
+      />
+    )
   }
 
   if (view === 'settings') {
@@ -191,6 +225,8 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
         username={user.username}
         onLogout={onLogout}
         onSettings={() => setView('settings')}
+        onMessages={() => setShowMessages(true)}
+        unreadMessageCount={unreadMessageCount}
         onLogoClick={goHome}
       />
 

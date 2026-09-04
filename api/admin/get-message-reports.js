@@ -38,6 +38,7 @@ async function handle() {
       source: r.source,
       category: r.category,
       reporterUsername: r.reporter_id ? usernameById[r.reporter_id] || 'Unknown' : null,
+      senderId: message ? message.sender_id : null,
       senderUsername: message ? usernameById[message.sender_id] || 'Unknown' : 'Unknown',
       contentPreview: message ? message.body : '[message deleted]',
       reason: r.reason,

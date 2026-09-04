@@ -1,4 +1,4 @@
-import { createStudentHandler } from '../_lib/studentHandler.js'
+import { createAdminHandler } from '../_lib/adminHandler.js'
 import { sanitizeUuid, sanitizeString } from '../_lib/sanitize.js'
 import { getConversationOrThrow, sendMessageInConversation } from '../_lib/messaging.js'
 
@@ -14,10 +14,13 @@ function validate(body) {
   return null
 }
 
-async function handle({ userId, body }) {
+// skipSafetyScreening: true — admin messages are exempt from the AI safety
+// screen per spec (the profanity filter inside sendMessageInConversation
+// still applies uniformly, admin included).
+async function handle({ adminId, body }) {
   const { conversation_id: conversationId, body: messageBody } = body
-  const conversation = await getConversationOrThrow(conversationId, userId)
-  return sendMessageInConversation({ conversation, senderId: userId, body: messageBody, skipSafetyScreening: false })
+  const conversation = await getConversationOrThrow(conversationId, adminId)
+  return sendMessageInConversation({ conversation, senderId: adminId, body: messageBody, skipSafetyScreening: true })
 }
 
-export default createStudentHandler({ method: 'POST', validate, handle })
+export default createAdminHandler({ method: 'POST', validate, handle })

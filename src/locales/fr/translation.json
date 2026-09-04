@@ -431,7 +431,14 @@
     "testGradesHeading": "Notes d'examens",
     "yourStudents": "Vos enfants",
     "noStudentsLinked": "Aucun enfant lié pour le moment.",
-    "shareCodeHint": "Partagez votre code ci-dessus — ils l'entreront lors de leur inscription."
+    "shareCodeHint": "Partagez votre code ci-dessus — ils l'entreront lors de leur inscription.",
+    "messages": "💬 Messages",
+    "newConversation": "Nouveau message",
+    "newConversationSubtitle": "Envoyez un message à votre enfant ou à l'un de ses enseignants",
+    "newConversationNoContacts": "Liez un enfant pour commencer à envoyer des messages.",
+    "newConversationChildLabel": "Votre enfant",
+    "newConversationTeachersLabel": "Enseignants de {{name}}",
+    "newConversationNoTeachers": "Aucun enseignant pour le moment."
   },
   "studentCard": {
     "trendImproving": "📈 En progression",
@@ -851,7 +858,8 @@
     "sending": "Envoi…",
     "youPrefix": "Vous :",
     "loadFailed": "Impossible de charger les messages. Veuillez réessayer.",
-    "sendFailed": "Impossible d'envoyer. Veuillez réessayer."
+    "sendFailed": "Impossible d'envoyer. Veuillez réessayer.",
+    "adminBadge": "Admin"
   },
   "curriculum": {
     "lastUpdated": "Dernière mise à jour : {{date}}"

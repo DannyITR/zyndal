@@ -67,11 +67,15 @@ function useVisibilityAwarePolling(active, pollFn) {
 }
 
 // Self-contained list/thread navigation, same pattern as ForumScreen.jsx.
-// initialFriendId (set when opened from FriendsScreen.jsx's message button)
-// resolves/creates that conversation and jumps straight to the thread,
-// skipping the list entirely — otherwise this starts on the conversation
-// list like ForumScreen starts on the thread list.
-export default function MessagesFlow({ user, initialFriendId, onBack, onLogout, onLogoClick }) {
+// Role-agnostic — used as-is by students, parents, and teachers alike (the
+// permission matrix in api/_lib/messaging.js is what actually decides who
+// can be in a conversation together, not this component). initialOtherUserId
+// (set when opened from FriendsScreen.jsx's message button, or
+// ParentNewConversationModal.jsx's contact picker) resolves/creates that
+// conversation and jumps straight to the thread, skipping the list
+// entirely — otherwise this starts on the conversation list like
+// ForumScreen starts on the thread list.
+export default function MessagesFlow({ user, initialOtherUserId, onBack, onLogout, onLogoClick }) {
   const { t, i18n } = useTranslation()
   const [conversations, setConversations] = useState(null)
   const [listError, setListError] = useState('')
@@ -106,8 +110,8 @@ export default function MessagesFlow({ user, initialFriendId, onBack, onLogout, 
   }
 
   useEffect(() => {
-    if (initialFriendId) {
-      getOrCreateConversation(initialFriendId)
+    if (initialOtherUserId) {
+      getOrCreateConversation(initialOtherUserId)
         .then(({ conversation, otherUser }) => {
           setActiveConversationId(conversation.id)
           setActiveOtherUser(otherUser)
@@ -118,7 +122,7 @@ export default function MessagesFlow({ user, initialFriendId, onBack, onLogout, 
       loadConversations()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialFriendId])
+  }, [initialOtherUserId])
 
   // Live-updates the open thread — polls quietly (no loading flash, no
   // error banner on a transient miss) so a message the other participant
@@ -181,7 +185,11 @@ export default function MessagesFlow({ user, initialFriendId, onBack, onLogout, 
     return (
       <div className="screen">
         <TopBar
-          title={activeOtherUser ? `@${activeOtherUser.username}` : t('messages.title')}
+          title={
+            activeOtherUser
+              ? `@${activeOtherUser.username}${activeOtherUser.isAdmin ? ` · ${t('messages.adminBadge')}` : ''}`
+              : t('messages.title')
+          }
           username={user.username}
           onBack={handleBackToList}
           onLogout={onLogout}
@@ -195,12 +203,18 @@ export default function MessagesFlow({ user, initialFriendId, onBack, onLogout, 
             {messages.length === 0 && <p className="field-hint">{t('messages.noMessagesYet')}</p>}
             {messages.map((m) => (
               <div key={m.id} className={`message-bubble ${m.isMine ? 'message-bubble--mine' : 'message-bubble--theirs'}`}>
+                {m.isAdmin && <span className="message-admin-badge">{t('messages.adminBadge')}</span>}
                 <p className="message-bubble-body">{m.body}</p>
                 <div className="message-bubble-meta">
                   <span>{formatDateTime(m.createdAt, i18n.language)}</span>
-                  <button type="button" className="forum-report-link" onClick={() => setReportTarget(m.id)}>
-                    {t('forum.report')}
-                  </button>
+                  {/* Admin messages are exempt from being reported, per spec
+                      — api/messages/report-message.js rejects it server-side
+                      too, this just avoids offering a button that would fail. */}
+                  {!m.isAdmin && (
+                    <button type="button" className="forum-report-link" onClick={() => setReportTarget(m.id)}>
+                      {t('forum.report')}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -252,7 +266,10 @@ export default function MessagesFlow({ user, initialFriendId, onBack, onLogout, 
             <button key={c.id} type="button" className="conversation-row" onClick={() => openConversation(c)}>
               <span className="conversation-row-avatar">{c.otherUser.avatar || '👤'}</span>
               <div className="conversation-row-info">
-                <p className="conversation-row-name">@{c.otherUser.username}</p>
+                <p className="conversation-row-name">
+                  @{c.otherUser.username}
+                  {c.otherUser.isAdmin && <span className="message-admin-badge"> {t('messages.adminBadge')}</span>}
+                </p>
                 {c.lastMessagePreview && (
                   <p className="conversation-row-preview">
                     {c.lastMessageSenderId === user.id ? `${t('messages.youPrefix')} ` : ''}

@@ -5632,6 +5632,19 @@ div.zyndal-logo {
   letter-spacing: 0.02em;
 }
 
+.message-admin-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--purple) 20%, transparent);
+  color: var(--purple-text);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 4px;
+}
+
 /* ---------- Teacher class roster (ClassRosterScreen.jsx) ---------- */
 
 .roster-table-wrap {

@@ -3,11 +3,15 @@ import { verifyAdminToken } from './adminAuth.js'
 
 // Same shape as createStudentHandler/createParentHandler, but for
 // /api/admin/* endpoints: validates X-Admin-Token (see adminAuth.js)
-// instead of a regular user session — a valid ADMIN_PASSWORD login never
-// creates a `sessions` row or a `users`-table identity, so this deliberately
-// does NOT go through requireAuth/getUserIdFromToken at all. handle()
-// receives only { body } (no userId/parentId) since there's no per-request
-// identity beyond "is this the admin."
+// instead of a regular user session, since every admin now has a real
+// users-table row (account_type = 'admin' — see api/admin/auth.js) but
+// still authenticates via its own separate token, never a regular
+// sessions-table session. handle() receives { body, adminId } — adminId is
+// the calling admin's own users.id (from the token, tamper-proof via its
+// HMAC signature), needed by anything admin-messaging-related that has to
+// attribute a sent message to a specific admin; every existing admin
+// endpoint's handle({ body }) destructuring simply ignores the extra field,
+// so this is non-breaking for the rest of the admin panel.
 export function createAdminHandler({ method = 'GET', validate, handle }) {
   return async function (req, res) {
     if (applyCors(req, res)) return
@@ -18,7 +22,8 @@ export function createAdminHandler({ method = 'GET', validate, handle }) {
     }
 
     const token = req.headers['x-admin-token']
-    if (!verifyAdminToken(token)) {
+    const adminId = verifyAdminToken(token)
+    if (!adminId) {
       res.status(401).json({ error: 'Invalid or expired admin session.', code: 'ADMIN_UNAUTHENTICATED' })
       return
     }
@@ -42,7 +47,7 @@ export function createAdminHandler({ method = 'GET', validate, handle }) {
         }
       }
 
-      const result = await handle({ body })
+      const result = await handle({ body, adminId })
       res.status(200).json(result)
     } catch (err) {
       console.error('[admin api] request failed:', err)

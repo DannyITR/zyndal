@@ -1,4 +1,4 @@
-import { createStudentHandler } from '../_lib/studentHandler.js'
+import { createAdminHandler } from '../_lib/adminHandler.js'
 import { sanitizeUuid } from '../_lib/sanitize.js'
 import { getConversationOrThrow, listMessagesInConversation } from '../_lib/messaging.js'
 
@@ -9,9 +9,9 @@ function validate(body) {
   return null
 }
 
-async function handle({ userId, body }) {
-  const conversation = await getConversationOrThrow(body.conversation_id, userId)
-  return listMessagesInConversation(conversation, userId)
+async function handle({ adminId, body }) {
+  const conversation = await getConversationOrThrow(body.conversation_id, adminId)
+  return listMessagesInConversation(conversation, adminId)
 }
 
-export default createStudentHandler({ method: 'GET', validate, handle })
+export default createAdminHandler({ method: 'GET', validate, handle })

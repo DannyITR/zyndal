@@ -53,7 +53,7 @@ const STAT_CARDS = [
   { key: 'questionsToday', label: 'Questions Answered Today', get: (s) => s.questionsAnsweredToday },
 ]
 
-export default function AdminDashboard({ onLogout, onEditUser, onOpenApprovals, onOpenReports, onOpenMessages, refreshKey }) {
+export default function AdminDashboard({ onLogout, onEditUser, onOpenApprovals, onOpenReports, onOpenMessages, onOpenInbox, onMessageUser, refreshKey }) {
   const [stats, setStats] = useState(null)
   const [statsError, setStatsError] = useState('')
 
@@ -205,6 +205,9 @@ export default function AdminDashboard({ onLogout, onEditUser, onOpenApprovals, 
           <button type="button" className="admin-btn admin-btn-secondary" onClick={onOpenMessages}>
             Messages
           </button>
+          <button type="button" className="admin-btn admin-btn-secondary" onClick={onOpenInbox}>
+            Inbox
+          </button>
           <button type="button" className="admin-btn admin-btn-secondary" onClick={onLogout}>
             Log Out
           </button>
@@ -302,6 +305,9 @@ export default function AdminDashboard({ onLogout, onEditUser, onOpenApprovals, 
                     <td className="admin-row-actions">
                       <button type="button" className="admin-btn admin-btn-small" onClick={() => onEditUser(user.id)}>
                         Edit
+                      </button>
+                      <button type="button" className="admin-btn admin-btn-small" onClick={() => onMessageUser(user.id)}>
+                        Message
                       </button>
                       <button
                         type="button"

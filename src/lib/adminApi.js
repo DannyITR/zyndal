@@ -57,8 +57,8 @@ async function callAdminApi(method, endpoint, body) {
   return data
 }
 
-export async function adminLogin(password) {
-  const { token, expiresAt } = await callAdminApi('POST', 'auth', { username: 'admin', password })
+export async function adminLogin(username, password) {
+  const { token, expiresAt } = await callAdminApi('POST', 'auth', { username, password })
   storeAdminSession(token, expiresAt)
   return { token, expiresAt }
 }
@@ -150,4 +150,23 @@ export function getAdminMessages({ page = 1, limit = 50, search = '', conversati
   if (search) params.set('search', search)
   if (conversationId) params.set('conversation_id', conversationId)
   return callAdminApi('GET', `get-messages?${params.toString()}`)
+}
+
+// Admin's own private conversations — distinct from getAdminMessages above,
+// which is the read-only platform-wide message browse. These power
+// AdminInboxScreen.jsx, where the admin account itself is a participant.
+export function getAdminInboxConversations() {
+  return callAdminApi('GET', 'get-inbox-conversations')
+}
+
+export function getAdminInboxMessages(conversationId) {
+  return callAdminApi('GET', `get-inbox-messages?conversation_id=${encodeURIComponent(conversationId)}`)
+}
+
+export function sendAdminInboxMessage(conversationId, body) {
+  return callAdminApi('POST', 'send-inbox-message', { conversation_id: conversationId, body })
+}
+
+export function startAdminConversation(targetUserId) {
+  return callAdminApi('POST', 'start-conversation', { target_user_id: targetUserId })
 }

@@ -9,6 +9,7 @@ import {
   getStudentGrades,
   getPendingInvitationsForParent,
   getNotifications,
+  getConversations,
 } from '../../lib/storage'
 import { SUBJECTS } from '../../lib/questions'
 import { countdownLabel, computeReadiness } from '../../lib/testprep'
@@ -25,6 +26,8 @@ import FinanceScreen from './finance/FinanceScreen'
 import AddChildScreen from './AddChildScreen'
 import StudentCard from './StudentCard'
 import GradeBadge from '../student/uploads/GradeBadge'
+import MessagesFlow from '../student/messages/MessagesFlow'
+import ParentNewConversationModal from './ParentNewConversationModal'
 
 export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
   const { t } = useTranslation()
@@ -43,6 +46,13 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
   const [showAddChild, setShowAddChild] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(null) // null | 'default' | 'trial'
+  const [showMessages, setShowMessages] = useState(false)
+  const [showNewConversation, setShowNewConversation] = useState(false)
+  // Set when a contact is picked in ParentNewConversationModal.jsx, so
+  // MessagesFlow.jsx can jump straight to that conversation instead of
+  // starting on the list — null when opened from the TopBar icon.
+  const [messagesInitialOtherUserId, setMessagesInitialOtherUserId] = useState(null)
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0)
 
   // The logo always resets to the main dashboard view for a logged-in parent.
   function handleLogoClick() {
@@ -52,6 +62,8 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
     setShowFinances(false)
     setShowAddChild(false)
     setShowNotifications(false)
+    setShowMessages(false)
+    setMessagesInitialOtherUserId(null)
     setViewingEntry(null)
   }
 
@@ -62,6 +74,19 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
   }
 
   useEffect(refreshPendingInvitations, [user.id])
+
+  // Same reasoning as StudentFlow.jsx's refreshMessagesState — sums each
+  // conversation's own unreadCount for the TopBar badge.
+  function refreshMessagesState() {
+    getConversations()
+      .then((data) => setUnreadMessageCount(data.conversations.reduce((sum, c) => sum + c.unreadCount, 0)))
+      .catch(() => {})
+  }
+
+  useEffect(() => {
+    refreshMessagesState()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.id])
 
   useEffect(() => {
     let cancelled = false
@@ -177,6 +202,22 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
     )
   }
 
+  if (showMessages) {
+    return (
+      <MessagesFlow
+        user={user}
+        initialOtherUserId={messagesInitialOtherUserId}
+        onBack={() => {
+          setShowMessages(false)
+          setMessagesInitialOtherUserId(null)
+          refreshMessagesState()
+        }}
+        onLogout={onLogout}
+        onLogoClick={handleLogoClick}
+      />
+    )
+  }
+
   if (showNotifications) {
     return (
       <NotificationsScreen
@@ -203,6 +244,8 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
         onLogout={onLogout}
         onNotifications={() => setShowNotifications(true)}
         unreadCount={unreadNotificationCount}
+        onMessages={() => setShowMessages(true)}
+        unreadMessageCount={unreadMessageCount}
         onSettings={() => setShowSettings(true)}
         onLogoClick={handleLogoClick}
       />
@@ -219,6 +262,9 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
         </PremiumFeatureButton>
         <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowLeaderboard(true)}>
           {t('nav.leaderboard')}
+        </button>
+        <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowNewConversation(true)}>
+          {t('parent.messages')}
         </button>
       </div>
 
@@ -331,6 +377,17 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
       )}
 
       {showUpgradeModal && <UpgradeModal user={user} context={showUpgradeModal} onClose={() => setShowUpgradeModal(null)} />}
+
+      {showNewConversation && (
+        <ParentNewConversationModal
+          onSelect={(otherUserId) => {
+            setShowNewConversation(false)
+            setMessagesInitialOtherUserId(otherUserId)
+            setShowMessages(true)
+          }}
+          onClose={() => setShowNewConversation(false)}
+        />
+      )}
     </div>
   )
 }

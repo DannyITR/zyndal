@@ -13,12 +13,10 @@ export default function AdminLogin({ onLoggedIn }) {
     setError('')
     setSubmitting(true)
     try {
-      // adminLogin itself always sends username: 'admin' (see adminApi.js /
-      // api/admin/auth.js) — this field exists so the form matches the
-      // requested "username/password" shape, but the server never actually
-      // branches on anything other than the fixed "admin" identity.
-      if (username !== 'admin') throw new Error('Invalid admin credentials.')
-      await adminLogin(password)
+      // Every admin now has a real users-table row (account_type = 'admin')
+      // looked up by this actual username — no longer a fixed "admin"
+      // identity, see api/admin/auth.js.
+      await adminLogin(username, password)
       onLoggedIn()
     } catch (err) {
       setError(err.message || 'Login failed.')

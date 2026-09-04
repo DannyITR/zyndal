@@ -6,6 +6,7 @@ import AdminEditUserScreen from './AdminEditUserScreen'
 import AdminApprovalsScreen from './AdminApprovalsScreen'
 import AdminReportsScreen from './AdminReportsScreen'
 import AdminMessagesScreen from './AdminMessagesScreen'
+import AdminInboxScreen from './AdminInboxScreen'
 import './admin.css'
 
 function parseEditUserId(pathname) {
@@ -29,6 +30,7 @@ export default function AdminApp() {
   const [session, setSession] = useState(() => getAdminSession())
   const [pathname, setPathname] = useState(() => window.location.pathname)
   const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0)
+  const [inboxTargetUserId, setInboxTargetUserId] = useState(null)
 
   useEffect(() => {
     function onPopState() {
@@ -41,6 +43,11 @@ export default function AdminApp() {
   function navigate(path) {
     window.history.pushState({}, '', path)
     setPathname(path)
+  }
+
+  function openInbox(targetUserId = null) {
+    setInboxTargetUserId(targetUserId)
+    navigate('/admin/inbox')
   }
 
   function handleLogout() {
@@ -56,16 +63,19 @@ export default function AdminApp() {
   const showApprovals = pathname === '/admin/approvals'
   const showReports = pathname === '/admin/reports'
   const showMessages = pathname === '/admin/messages'
+  const showInbox = pathname === '/admin/inbox'
 
   return (
     <>
-      <div style={editUserId || showApprovals || showReports || showMessages ? { display: 'none' } : undefined}>
+      <div style={editUserId || showApprovals || showReports || showMessages || showInbox ? { display: 'none' } : undefined}>
         <AdminDashboard
           onLogout={handleLogout}
           onEditUser={(userId) => navigate(`/admin/users/${encodeURIComponent(userId)}`)}
           onOpenApprovals={() => navigate('/admin/approvals')}
           onOpenReports={() => navigate('/admin/reports')}
           onOpenMessages={() => navigate('/admin/messages')}
+          onOpenInbox={() => openInbox()}
+          onMessageUser={(userId) => openInbox(userId)}
           refreshKey={dashboardRefreshKey}
         />
       </div>
@@ -87,9 +97,20 @@ export default function AdminApp() {
             navigate('/admin')
           }}
           onLogout={handleLogout}
+          onMessageUser={(userId) => openInbox(userId)}
         />
       )}
       {showMessages && <AdminMessagesScreen onBack={() => navigate('/admin')} onLogout={handleLogout} />}
+      {showInbox && (
+        <AdminInboxScreen
+          onBack={() => {
+            setInboxTargetUserId(null)
+            navigate('/admin')
+          }}
+          onLogout={handleLogout}
+          initialTargetUserId={inboxTargetUserId}
+        />
+      )}
     </>
   )
 }

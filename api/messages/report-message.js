@@ -1,7 +1,7 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeUuid, sanitizeString } from '../_lib/sanitize.js'
-import { assertIsStudent, getConversationOrThrow } from '../_lib/messaging.js'
+import { getConversationOrThrow } from '../_lib/messaging.js'
 
 function validate(body) {
   const messageId = sanitizeUuid(body.message_id)
@@ -18,9 +18,11 @@ function validate(body) {
 async function handle({ userId, body }) {
   const { message_id: messageId, reason } = body
 
-  await assertIsStudent(userId)
-
-  const { data: message, error: messageError } = await supabase.from('messages').select('id, conversation_id').eq('id', messageId).maybeSingle()
+  const { data: message, error: messageError } = await supabase
+    .from('messages')
+    .select('id, conversation_id, sender_id')
+    .eq('id', messageId)
+    .maybeSingle()
   if (messageError) throw messageError
   if (!message) {
     const err = new Error('That message was not found.')
@@ -32,6 +34,16 @@ async function handle({ userId, body }) {
   // Confirms the reporter is actually a participant in this message's
   // conversation before letting them report it.
   await getConversationOrThrow(message.conversation_id, userId)
+
+  // Admin messages are exempt from being reported, per spec.
+  const { data: sender, error: senderError } = await supabase.from('users').select('account_type').eq('id', message.sender_id).maybeSingle()
+  if (senderError) throw senderError
+  if (sender?.account_type === 'admin') {
+    const err = new Error('Messages from Zyndal admins cannot be reported.')
+    err.status = 400
+    err.code = 'VALIDATION_ERROR'
+    throw err
+  }
 
   const { data: report, error } = await supabase
     .from('message_reports')
