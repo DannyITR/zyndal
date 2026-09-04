@@ -2,7 +2,7 @@ import { waitUntil } from '@vercel/functions'
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeUuid, sanitizeString } from '../_lib/sanitize.js'
-import { assertIsStudent, getConversationOrThrow } from '../_lib/messaging.js'
+import { assertIsStudent, getConversationOrThrow, isActivelyViewing } from '../_lib/messaging.js'
 import { containsProfanity } from '../../src/lib/profanityFilter.js'
 import { screenMessageSafety } from '../_lib/messageSafety.js'
 import { notificationText } from '../_lib/notificationText.js'
@@ -72,7 +72,17 @@ async function handle({ userId, body }) {
       data: { conversation_id: conversationId, message_id: message.id },
     })
 
-    await sendPushToUser({ userId: recipientId, type: 'message_received', title, body: notifBody, url: 'https://zyndal.ca' })
+    // Skip only the push (the in-app notification row above is still
+    // logged either way, as a durable record) when the recipient's own
+    // last_viewed_at on this exact conversation was refreshed within the
+    // last few seconds — see api/_lib/messaging.js's isActivelyViewing.
+    // That heartbeat only updates while MessagesFlow.jsx's thread view is
+    // open and polling (which itself pauses once the app is backgrounded —
+    // see useVisibilityAwarePolling there), so a push still fires normally
+    // the moment they're anywhere else in the app or it's backgrounded.
+    if (!isActivelyViewing(conversation, recipientId)) {
+      await sendPushToUser({ userId: recipientId, type: 'message_received', title, body: notifBody, url: 'https://zyndal.ca' })
+    }
   } catch (err) {
     console.error('[messages] failed to notify recipient of new message:', err)
   }

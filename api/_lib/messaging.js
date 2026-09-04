@@ -60,3 +60,43 @@ export async function getConversationOrThrow(conversationId, userId) {
   }
   return conversation
 }
+
+// Which of conversations' two "last viewed" columns belongs to userId —
+// shared by markConversationViewed (called by the viewer) and
+// isActivelyViewing (called for the OTHER participant, to decide whether
+// to skip a push).
+function viewedColumnFor(conversation, userId) {
+  return conversation.user_a_id === userId ? 'user_a_last_viewed_at' : 'user_b_last_viewed_at'
+}
+
+// Called from api/messages/get-messages.js on every fetch — the initial
+// open and every ~4s poll tick while MessagesFlow.jsx's thread view stays
+// open (see useVisibilityAwarePolling there, which already pauses polling
+// once the app is backgrounded) — so this is a live "still looking at this
+// thread" heartbeat, not a one-time read receipt.
+export async function markConversationViewed(conversation, userId) {
+  const column = viewedColumnFor(conversation, userId)
+  const { error } = await supabase
+    .from('conversations')
+    .update({ [column]: new Date().toISOString() })
+    .eq('id', conversation.id)
+  if (error) throw error
+}
+
+// A few seconds wider than MessagesFlow.jsx's own 4s poll interval so a
+// single delayed tick (a slow request, a just-resumed background tab)
+// doesn't wrongly read as "they left" — but still short enough that
+// actually leaving the thread (or the app going to the background, which
+// pauses the poll that keeps this fresh) resumes normal push behavior
+// within a few seconds.
+const ACTIVE_VIEW_WINDOW_MS = 10000
+
+// Called from api/messages/send-message.js for the RECIPIENT (not the
+// sender) right before deciding whether to push — true only if their own
+// last_viewed_at on this exact conversation was refreshed within the
+// window above.
+export function isActivelyViewing(conversation, userId) {
+  const lastViewedAt = conversation[viewedColumnFor(conversation, userId)]
+  if (!lastViewedAt) return false
+  return Date.now() - new Date(lastViewedAt).getTime() < ACTIVE_VIEW_WINDOW_MS
+}

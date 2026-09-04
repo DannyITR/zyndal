@@ -593,11 +593,25 @@ alter table forum_reports enable row level security;
 -- existing friends table (itself already student-only in practice) plus an
 -- explicit account_type check in every endpoint — teachers must never
 -- reach this feature.
+-- user_a_last_viewed_at/user_b_last_viewed_at are a lightweight polling-
+-- friendly presence signal, not a general read-receipt (that's messages.
+-- read_at) — api/messages/get-messages.js bumps the caller's own column to
+-- now() on every fetch (the initial open AND every ~4s poll tick while the
+-- thread stays open, see MessagesFlow.jsx), so it's a live heartbeat while
+-- a participant is actively on this conversation's thread screen, and goes
+-- stale within one poll interval of them leaving (or the app being
+-- backgrounded, which already pauses polling — see
+-- useVisibilityAwarePolling). api/messages/send-message.js checks the
+-- recipient's own column before firing a push, so a message delivered
+-- while they're already looking at it live doesn't also trigger a
+-- redundant push notification.
 create table if not exists conversations (
   id uuid primary key default gen_random_uuid(),
   user_a_id uuid not null references users(id) on delete cascade,
   user_b_id uuid not null references users(id) on delete cascade,
   created_at timestamptz not null default now(),
+  user_a_last_viewed_at timestamptz,
+  user_b_last_viewed_at timestamptz,
   check (user_a_id < user_b_id),
   unique (user_a_id, user_b_id)
 );
@@ -674,3 +688,9 @@ alter table message_reports enable row level security;
 -- ALTER TABLE message_reports ALTER COLUMN reporter_id DROP NOT NULL;
 -- ALTER TABLE message_reports ADD COLUMN IF NOT EXISTS source text not null default 'user' check (source in ('user', 'ai'));
 -- ALTER TABLE message_reports ADD COLUMN IF NOT EXISTS category text check (category in ('self_harm', 'sexual_content_minors', 'threats'));
+--
+-- Run against a database that already has conversations from before the
+-- "currently viewing" presence signal existed:
+--
+-- ALTER TABLE conversations ADD COLUMN IF NOT EXISTS user_a_last_viewed_at timestamptz;
+-- ALTER TABLE conversations ADD COLUMN IF NOT EXISTS user_b_last_viewed_at timestamptz;

@@ -1,7 +1,7 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeUuid } from '../_lib/sanitize.js'
-import { assertIsStudent, getConversationOrThrow } from '../_lib/messaging.js'
+import { assertIsStudent, getConversationOrThrow, markConversationViewed } from '../_lib/messaging.js'
 
 function validate(body) {
   const conversationId = sanitizeUuid(body.conversation_id)
@@ -31,6 +31,12 @@ async function handle({ userId, body }) {
     .neq('sender_id', userId)
     .is('read_at', null)
   if (readError) throw readError
+
+  // Refreshes this caller's own "currently viewing" heartbeat — see
+  // api/_lib/messaging.js's own comment. Best-effort: a failure here
+  // shouldn't turn "load my messages" into an error just because a push
+  // notification later might not get suppressed.
+  markConversationViewed(conversation, userId).catch((err) => console.error('[messages] failed to record conversation view:', err))
 
   return {
     messages: (messages || []).map((m) => ({
