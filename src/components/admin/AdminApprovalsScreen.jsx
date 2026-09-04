@@ -16,6 +16,19 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString()
 }
 
+const MESSAGE_CATEGORY_LABELS = {
+  self_harm: '🚨 Self-Harm',
+  sexual_content_minors: '⚠️ Sexual Content (Minor)',
+  threats: '⚠️ Threat',
+}
+
+function MessageFlagBadge({ report }) {
+  if (report.source !== 'ai') return <span className="admin-flag-badge admin-flag-badge--user">User Report</span>
+  const label = MESSAGE_CATEGORY_LABELS[report.category] || 'AI Flag'
+  const urgent = report.category === 'self_harm'
+  return <span className={`admin-flag-badge admin-flag-badge--ai ${urgent ? 'admin-flag-badge--urgent' : ''}`}>{label}</span>
+}
+
 // Covers every pending-review queue this admin panel has (teacher class
 // claims, student school-change requests, reported forum content) as
 // sections of one screen. The first two share the same pending/approved/
@@ -447,6 +460,7 @@ export default function AdminApprovalsScreen({ onBack, onLogout }) {
           <table className="admin-table">
             <thead>
               <tr>
+                <th>Flag</th>
                 <th>Sender</th>
                 <th>Content</th>
                 <th>Reporter</th>
@@ -458,30 +472,33 @@ export default function AdminApprovalsScreen({ onBack, onLogout }) {
             <tbody>
               {messageReports === null && !messageReportsLoadError && (
                 <tr>
-                  <td colSpan={6} className="admin-table-empty">
+                  <td colSpan={7} className="admin-table-empty">
                     Loading…
                   </td>
                 </tr>
               )}
               {messageReportsLoadError && (
                 <tr>
-                  <td colSpan={6} className="admin-table-empty admin-error">
+                  <td colSpan={7} className="admin-table-empty admin-error">
                     {messageReportsLoadError}
                   </td>
                 </tr>
               )}
               {messageReports && messageReports.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="admin-table-empty">
+                  <td colSpan={7} className="admin-table-empty">
                     No pending reports.
                   </td>
                 </tr>
               )}
               {messageReports?.map((report) => (
-                <tr key={report.id}>
+                <tr key={report.id} className={report.category === 'self_harm' ? 'admin-row-urgent' : ''}>
+                  <td>
+                    <MessageFlagBadge report={report} />
+                  </td>
                   <td>@{report.senderUsername}</td>
                   <td>{report.contentPreview}</td>
-                  <td>@{report.reporterUsername}</td>
+                  <td>{report.reporterUsername ? `@${report.reporterUsername}` : 'AI Screening'}</td>
                   <td>{report.reason}</td>
                   <td>{formatDate(report.submittedAt)}</td>
                   <td className="admin-row-actions">

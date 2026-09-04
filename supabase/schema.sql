@@ -619,11 +619,19 @@ create index if not exists messages_conversation_idx on messages(conversation_id
 -- resolution logic — same id/target_type/target_id/reporter_id/reason/
 -- status/created_at shape and pending/reviewed workflow, just its own
 -- queue (api/admin/get-message-reports.js).
+-- reporter_id is nullable for an AI-sourced row (source = 'ai') — every
+-- message is screened automatically (api/_lib/messageSafety.js, fired via
+-- waitUntil from api/messages/send-message.js so it never delays delivery)
+-- for exactly three narrow categories, independent of the profanity filter
+-- and of a human ever reporting anything. category is only ever set on
+-- those AI-sourced rows.
 create table if not exists message_reports (
   id uuid primary key default gen_random_uuid(),
   target_type text not null default 'message' check (target_type = 'message'),
   target_id uuid not null,
-  reporter_id uuid not null references users(id) on delete cascade,
+  reporter_id uuid references users(id) on delete cascade,
+  source text not null default 'user' check (source in ('user', 'ai')),
+  category text check (category in ('self_harm', 'sexual_content_minors', 'threats')),
   reason text not null,
   status text not null default 'pending' check (status in ('pending', 'reviewed')),
   created_at timestamptz not null default now()
@@ -659,3 +667,10 @@ alter table message_reports enable row level security;
 -- ALTER TABLE forum_threads ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
 -- ALTER TABLE forum_replies ADD COLUMN IF NOT EXISTS edited_at timestamptz;
 -- ALTER TABLE forum_replies ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+--
+-- Run against a database that already has message_reports from before
+-- AI safety screening existed:
+--
+-- ALTER TABLE message_reports ALTER COLUMN reporter_id DROP NOT NULL;
+-- ALTER TABLE message_reports ADD COLUMN IF NOT EXISTS source text not null default 'user' check (source in ('user', 'ai'));
+-- ALTER TABLE message_reports ADD COLUMN IF NOT EXISTS category text check (category in ('self_harm', 'sexual_content_minors', 'threats'));

@@ -1,8 +1,10 @@
+import { waitUntil } from '@vercel/functions'
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeUuid, sanitizeString } from '../_lib/sanitize.js'
 import { assertIsStudent, getConversationOrThrow } from '../_lib/messaging.js'
 import { containsProfanity } from '../../src/lib/profanityFilter.js'
+import { screenMessageSafety } from '../_lib/messageSafety.js'
 import { notificationText } from '../_lib/notificationText.js'
 import { insertNotification } from '../_lib/notifications.js'
 import { sendPushToUser } from '../_lib/push.js'
@@ -41,6 +43,13 @@ async function handle({ userId, body }) {
     .select()
     .single()
   if (error) throw error
+
+  // Fire-and-forget via waitUntil (same pattern as api/_lib/dailyQuestion.js's
+  // background pool generation) — the message is already inserted and about
+  // to be delivered/notified below, so this AI screening pass runs after
+  // the response is sent and never adds latency to sending a message,
+  // regardless of how long the Claude call takes.
+  waitUntil(screenMessageSafety(message.id, messageBody).catch((err) => console.error('[messages] safety screening failed:', err)))
 
   const recipientId = conversation.user_a_id === userId ? conversation.user_b_id : conversation.user_a_id
 

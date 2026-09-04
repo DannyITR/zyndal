@@ -276,6 +276,38 @@
   color: #a02020;
 }
 
+.admin-row-urgent {
+  background: #fff0f0;
+}
+
+.admin-row-urgent:hover {
+  background: #ffe4e4;
+}
+
+.admin-flag-badge {
+  display: inline-block;
+  white-space: nowrap;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.admin-flag-badge--user {
+  background: #e8eef7;
+  color: #2c4a7c;
+}
+
+.admin-flag-badge--ai {
+  background: #fdf1d6;
+  color: #8a5a00;
+}
+
+.admin-flag-badge--urgent {
+  background: #b3261e;
+  color: #fff;
+}
+
 .admin-row-actions {
   display: flex;
   gap: 6px;
