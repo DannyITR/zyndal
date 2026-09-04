@@ -22,6 +22,50 @@ function formatDateTime(value, language) {
 // this app already uses, just on a timer instead of only on user action.
 const POLL_INTERVAL_MS = 4000
 
+// iOS Safari — especially an installed PWA (the "Add to Home Screen" case
+// this app targets) — throttles or fully suspends a running setInterval
+// once the app is backgrounded or the screen locks, far more aggressively
+// than desktop browsers. A plain setInterval alone can't be trusted to
+// keep ticking, and there's no guarantee it fires promptly even once the
+// OS lets it resume — this is the actual cause of "works on desktop, needs
+// a manual refresh on iOS" (there's no WebSocket/Realtime subscription
+// anywhere in this app to reconnect — see the comment on POLL_INTERVAL_MS
+// above — so a dropped connection was never the issue; a stalled timer
+// was). Pausing the interval while hidden and firing one poll immediately
+// on visibilitychange back to 'visible' (restarting a fresh interval right
+// after) closes that gap: returning to the app always triggers an instant
+// resync instead of waiting on a timer that may not fire again for a long
+// time, or ever, until something else happens to wake it.
+function useVisibilityAwarePolling(active, pollFn) {
+  useEffect(() => {
+    if (!active) return
+
+    let interval = setInterval(pollFn, POLL_INTERVAL_MS)
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        pollFn()
+        clearInterval(interval)
+        interval = setInterval(pollFn, POLL_INTERVAL_MS)
+      } else {
+        clearInterval(interval)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+    // pollFn is a fresh closure every render, deliberately not a dependency
+    // — activeConversationId (what pollFn actually closes over) only ever
+    // changes together with `active` itself (null <-> an id, never id-to-
+    // different-id directly — see openConversation/handleBackToList), so
+    // the closure captured when this effect (re)runs is already current.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active])
+}
+
 // Self-contained list/thread navigation, same pattern as ForumScreen.jsx.
 // initialFriendId (set when opened from FriendsScreen.jsx's message button)
 // resolves/creates that conversation and jumps straight to the thread,
@@ -83,28 +127,20 @@ export default function MessagesFlow({ user, initialFriendId, onBack, onLogout, 
   // mark-as-read side effect keeps firing too, so a message that arrives
   // while the student is actively looking at the thread is marked read
   // without any extra call.
-  useEffect(() => {
-    if (!activeConversationId) return
-    const interval = setInterval(() => {
-      getMessages(activeConversationId)
-        .then((data) => setMessages(data.messages))
-        .catch(() => {})
-    }, POLL_INTERVAL_MS)
-    return () => clearInterval(interval)
-  }, [activeConversationId])
+  useVisibilityAwarePolling(Boolean(activeConversationId), () => {
+    getMessages(activeConversationId)
+      .then((data) => setMessages(data.messages))
+      .catch(() => {})
+  })
 
   // Same idea for the conversation list — unread counts and last-message
   // previews update live instead of only refreshing when the list is
   // re-entered.
-  useEffect(() => {
-    if (activeConversationId) return
-    const interval = setInterval(() => {
-      getConversations()
-        .then((data) => setConversations(data.conversations))
-        .catch(() => {})
-    }, POLL_INTERVAL_MS)
-    return () => clearInterval(interval)
-  }, [activeConversationId])
+  useVisibilityAwarePolling(!activeConversationId, () => {
+    getConversations()
+      .then((data) => setConversations(data.conversations))
+      .catch(() => {})
+  })
 
   // Refetches the list on the way back, same reasoning as ForumScreen.jsx's
   // handleBackToList — unread counts and last-message previews only change
