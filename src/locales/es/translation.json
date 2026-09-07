@@ -290,7 +290,9 @@
     "myScoreText": "¡Obtuve {{score}}/{{total}} correctas en Zyndal hoy! 🎯",
     "pickerTitle": "Compartir con amigos",
     "addFriendsFirst": "Agrega algunos amigos primero para compartir con ellos.",
-    "noMatch": "Ningún amigo coincide con tu búsqueda."
+    "noMatch": "Ningún amigo coincide con tu búsqueda.",
+    "loadFriendsFailed": "No se pudieron cargar tus amigos. Inténtalo de nuevo.",
+    "shareResultCta": "👥 Compartir"
   },
   "notifications": {
     "title": "🔔 Notificaciones",

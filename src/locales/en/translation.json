@@ -290,7 +290,9 @@
     "myScoreText": "I got {{score}}/{{total}} correct on Zyndal today! 🎯",
     "pickerTitle": "Share with Friends",
     "addFriendsFirst": "Add some friends first to share with them.",
-    "noMatch": "No friends match your search."
+    "noMatch": "No friends match your search.",
+    "loadFriendsFailed": "Couldn't load your friends. Please try again.",
+    "shareResultCta": "👥 Share"
   },
   "notifications": {
     "title": "🔔 Notifications",

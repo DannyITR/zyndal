@@ -1100,6 +1100,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       subject={activeSubject}
       progress={progress}
       onProgressChange={handleProgressChange}
+      canShareToday={canShareToday}
       date={selectedDate}
       onLateAnswered={handleLateAnswered}
       activePlan={activePlan}

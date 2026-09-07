@@ -1905,6 +1905,28 @@ div.zyndal-logo {
   margin-bottom: 4px;
 }
 
+/* Wraps the coins/XP headline and the Share button onto their own lines on
+   narrow screens instead of forcing them onto one cramped row — the
+   headline text can run long in some locales, and flex-wrap here (rather
+   than a fixed layout) keeps the button from ever being squeezed. */
+.result-headline-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 4px;
+}
+
+.result-headline-row .result-headline {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.result-share-btn {
+  flex-shrink: 0;
+}
+
 .result-next {
   font-size: 13px;
   color: var(--text-faint);

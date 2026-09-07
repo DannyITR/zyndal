@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { submitAnswer, submitLateAnswer, getTodayQuestion, reviewWrongAnswer, logRetryCorrect } from '../../lib/storage'
+import {
+  submitAnswer,
+  submitLateAnswer,
+  getTodayQuestion,
+  reviewWrongAnswer,
+  logRetryCorrect,
+  getFriendsWithStreaks,
+  getStreakSharesForUser,
+  shareStreakWithFriend,
+} from '../../lib/storage'
 import { getDailyQuestion, formatQuestionSubtitle } from '../../lib/questions'
 import { getEffectiveStreak, todayStr, diffDays, LATE_ANSWER_WINDOW_DAYS, formatLongDate } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
@@ -13,6 +22,7 @@ import Scratchpad from './Scratchpad'
 import WorkSubmissionPanel from './WorkSubmissionPanel'
 import MilestoneModal from './MilestoneModal'
 import PerfectWeekCelebration from './PerfectWeekCelebration'
+import FriendSharePickerModal from './share/FriendSharePickerModal'
 // Test Prep/Study Guide/Upload/My Uploads/Practice/My Grades/Curriculum and
 // the active-test-plan card are removed from this daily-question page —
 // they move to the upcoming class-card structure instead (separate work).
@@ -28,6 +38,7 @@ export default function StudentHome({
   subject,
   progress,
   onProgressChange,
+  canShareToday,
   date,
   onLateAnswered,
   activePlan,
@@ -112,6 +123,19 @@ export default function StudentHome({
   const [perfectWeekBonus, setPerfectWeekBonus] = useState(null) // dollars, or null
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
+
+  // "Share" on the just-answered result banner — reuses the same
+  // FriendSharePickerModal + shareStreakWithFriend flow ShareStreakScreen.jsx
+  // already built (same friend list, same "Shared today"/streak badges,
+  // same server-side canShareToday gate requiring all 6 subjects attempted
+  // for the day), just opened inline from here instead of navigating to
+  // that whole separate screen. Friends/shares are only fetched the first
+  // time the picker is opened, not on every visit to this page.
+  const [showSharePicker, setShowSharePicker] = useState(false)
+  const [shareFriends, setShareFriends] = useState(null)
+  const [shareRows, setShareRows] = useState(null)
+  const [shareSendingToId, setShareSendingToId] = useState(null)
+  const [shareError, setShareError] = useState('')
   // Only used by the Test Prep/Study Guide/Upload/etc. button row and the
   // active-test-plan card, both commented out below (see the import comment
   // at the top of this file).
@@ -292,6 +316,36 @@ export default function StudentHome({
     onProgressChange({ ...progress, xp: progress.xp + xpEarned, coins: progress.coins + coinsEarned })
   }
 
+  function openSharePicker() {
+    setShareError('')
+    setShowSharePicker(true)
+    if (shareFriends === null) {
+      Promise.all([getFriendsWithStreaks(user.id), getStreakSharesForUser(user.id)])
+        .then(([friendList, rows]) => {
+          setShareFriends(friendList)
+          setShareRows(rows)
+        })
+        .catch(() => setShareError(t('share.loadFriendsFailed')))
+    }
+  }
+
+  // Mirrors ShareStreakScreen.jsx's own handleShareWithFriend exactly.
+  async function handleShareWithFriend(friendId) {
+    if (shareSendingToId) return
+    setShareSendingToId(friendId)
+    setShareError('')
+    try {
+      await shareStreakWithFriend(user.id, friendId)
+      const rows = await getStreakSharesForUser(user.id)
+      setShareRows(rows)
+    } catch (err) {
+      console.error('[Share] streak share failed:', err)
+      setShareError(t('share.streakShareFailed'))
+    } finally {
+      setShareSendingToId(null)
+    }
+  }
+
   // The already-answered entry for the browsed past date, if any — read-only
   // once it exists, no re-answering.
   const dateEntry = !isToday ? progress.history.find((h) => h.date === date && h.subjectId === subject.id) : null
@@ -418,9 +472,14 @@ export default function StudentHome({
             <div className={`result-banner ${firstAttempt.correct ? 'result-banner--correct' : 'result-banner--wrong'}`}>
               {firstAttempt.correct ? (
                 <>
-                  <p className="result-headline">
-                    {t('home.correctResult', { coins: coinsEarnedDisplay, xp: xpEarnedDisplay })}
-                  </p>
+                  <div className="result-headline-row">
+                    <p className="result-headline">
+                      {t('home.correctResult', { coins: coinsEarnedDisplay, xp: xpEarnedDisplay })}
+                    </p>
+                    <button type="button" className="btn btn-secondary btn-small result-share-btn" onClick={openSharePicker}>
+                      {t('share.shareResultCta')}
+                    </button>
+                  </div>
                   <p className="result-next">{t('home.dailyQuestionAllDone')}</p>
                 </>
               ) : (
@@ -521,6 +580,20 @@ export default function StudentHome({
       <MilestoneModal milestone={milestone} onClose={() => setMilestone(null)} />
       {perfectWeekBonus !== null && (
         <PerfectWeekCelebration amount={perfectWeekBonus} onClose={() => setPerfectWeekBonus(null)} />
+      )}
+
+      {showSharePicker && (
+        <FriendSharePickerModal
+          user={user}
+          friends={shareFriends}
+          shares={shareRows}
+          today={today}
+          sendingToId={shareSendingToId}
+          canShareToday={canShareToday}
+          loadError={shareError}
+          onShare={handleShareWithFriend}
+          onClose={() => setShowSharePicker(false)}
+        />
       )}
       {/* {showPremiumModal && <UpgradeModal user={user} onClose={() => setShowPremiumModal(false)} />}
       {showCancelModal && planForThisSubject && (
