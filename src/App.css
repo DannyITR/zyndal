@@ -4716,10 +4716,17 @@ div.zyndal-logo {
   min-width: 0;
 }
 
+/* overflow/text-overflow/white-space truncate a long username with an
+   ellipsis instead of letting it overflow its flex item's shrunk box (the
+   default with min-width: 0 on the parent) and visually bleed into
+   whatever sits beside it — see .friend-picker-row-top. */
 .share-friend-name {
   font-family: var(--font-heading);
   font-weight: 700;
   font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Same look as .share-friend-name, but a real <button> — used when a
@@ -4729,6 +4736,8 @@ div.zyndal-logo {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+  max-width: 100%;
   border: none;
   background: none;
   padding: 0;
@@ -4738,6 +4747,13 @@ div.zyndal-logo {
   color: inherit;
   cursor: pointer;
   text-align: left;
+}
+
+.share-friend-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .share-friend-stat {
@@ -4815,15 +4831,25 @@ div.zyndal-logo {
   overflow-y: auto;
 }
 
+/* Column layout: a top row (avatar + username/streak + share status/CTA),
+   an optional hint line, then a dedicated actions row (poke + message) —
+   see the comment in FriendsScreen.jsx above this row's JSX for why this
+   is split into rows instead of one flex-wrap line. */
 .friend-picker-row {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
   background: var(--card-2);
   border: 1.5px solid var(--border);
   border-radius: 14px;
   padding: 10px 12px;
+}
+
+.friend-picker-row-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
 .friend-picker-shared {
@@ -4836,17 +4862,22 @@ div.zyndal-logo {
   color: var(--green-text);
 }
 
-/* flex-basis: 100% (with .friend-picker-row's flex-wrap: wrap) forces this
-   onto its own line below the avatar/username every time, regardless of
-   username length or viewport width — .share-friend-info's flex: 1 always
-   claims the rest of line 1, so this can never fit there. Avoids the
-   overlap a long @username used to cause when this sat beside it in a
-   width capped at 140px and text-align: right. margin-left lines it up
-   under the username text (36px avatar + 12px row gap). */
+/* margin-left lines this up under the username text (36px avatar + 12px
+   row gap), same as the top row's own layout. */
 .friend-picker-hint {
-  flex: 1 0 100%;
-  margin: 2px 0 0 48px;
+  margin: 0 0 0 48px;
   text-align: left;
+}
+
+/* Right-aligned, on its own row below the top row and hint — keeps the
+   poke/message icons from ever competing for horizontal space with the
+   username or share status, regardless of username length or screen
+   width. */
+.friend-picker-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .share-friend-locked-hint {

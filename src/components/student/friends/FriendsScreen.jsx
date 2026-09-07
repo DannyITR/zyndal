@@ -323,52 +323,69 @@ export default function FriendsScreen({ user, canShareToday, onMessageFriend, on
               // matches FriendSharePickerModal.jsx's own gate exactly.
               const friendAlreadyShared = shares ? hasSharedToday(shares, friend.id, user.id, today) : false
               const incoming = incomingShares.find((s) => s.senderId === friend.id)
+              // The share status/CTA and the poke/message icons each live in
+              // their own row (see .friend-picker-row-top/.friend-picker-actions
+              // below) instead of all sharing one flex-wrap line — a long
+              // username used to bleed past its own box (min-width: 0 lets a
+              // flex item shrink, but text still overflows visibly unless
+              // truncated — see .share-friend-name's ellipsis) and run
+              // straight into "Shared today"/the poke/message icons beside
+              // it on narrow screens. Splitting them onto separate rows means
+              // nothing beside the username can ever overlap it again,
+              // regardless of how long it is or how narrow the screen is.
               return (
                 <div key={friend.id} className="friend-picker-row">
-                  <span className="share-friend-avatar">{friend.avatar || '👤'}</span>
-                  <div className="share-friend-info">
-                    {incoming ? (
-                      <button type="button" className="share-friend-name-btn" onClick={() => handleViewShare(incoming)}>
-                        @{friend.username}
-                        <span className="friend-share-badge">1</span>
+                  <div className="friend-picker-row-top">
+                    <span className="share-friend-avatar">{friend.avatar || '👤'}</span>
+                    <div className="share-friend-info">
+                      {incoming ? (
+                        <button type="button" className="share-friend-name-btn" onClick={() => handleViewShare(incoming)}>
+                          <span className="share-friend-name-text">@{friend.username}</span>
+                          <span className="friend-share-badge">1</span>
+                        </button>
+                      ) : (
+                        <p className="share-friend-name">@{friend.username}</p>
+                      )}
+                      {shareStreak > 0 && <p className="share-friend-stat share-friend-stat--share">{t('friends.shareStreakDay', { count: shareStreak })}</p>}
+                    </div>
+                    {sharedToday ? (
+                      <span className="friend-picker-shared">{t('common.sharedTodayBadge')}</span>
+                    ) : !friendAlreadyShared && !canShareToday ? null : (
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-small"
+                        disabled={sendingToId === friend.id}
+                        onClick={() => handleShareWithFriend(friend.id)}
+                      >
+                        {sendingToId === friend.id ? t('common.sending') : t('common.shareCta')}
                       </button>
-                    ) : (
-                      <p className="share-friend-name">@{friend.username}</p>
                     )}
-                    {shareStreak > 0 && <p className="share-friend-stat share-friend-stat--share">{t('friends.shareStreakDay', { count: shareStreak })}</p>}
                   </div>
-                  {sharedToday ? (
-                    <span className="friend-picker-shared">{t('common.sharedTodayBadge')}</span>
-                  ) : !friendAlreadyShared && !canShareToday ? (
+
+                  {!sharedToday && !friendAlreadyShared && !canShareToday && (
                     <p className="field-hint friend-picker-hint">{t('common.completeToShareWith', { username: friend.username })}</p>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-small"
-                      disabled={sendingToId === friend.id}
-                      onClick={() => handleShareWithFriend(friend.id)}
-                    >
-                      {sendingToId === friend.id ? t('common.sending') : t('common.shareCta')}
-                    </button>
                   )}
-                  {pokedIds.has(friend.id) ? (
-                    <span className="friend-poked-badge">{t('friends.pokeSent')}</span>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn-icon"
-                      aria-label={t('friends.pokeButton')}
-                      onClick={() => {
-                        setPokeError('')
-                        setPokeTarget(friend)
-                      }}
-                    >
-                      👋
+
+                  <div className="friend-picker-actions">
+                    {pokedIds.has(friend.id) ? (
+                      <span className="friend-poked-badge">{t('friends.pokeSent')}</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn-icon"
+                        aria-label={t('friends.pokeButton')}
+                        onClick={() => {
+                          setPokeError('')
+                          setPokeTarget(friend)
+                        }}
+                      >
+                        👋
+                      </button>
+                    )}
+                    <button type="button" className="btn-icon" aria-label={t('friends.messageButton')} onClick={() => onMessageFriend(friend)}>
+                      💬
                     </button>
-                  )}
-                  <button type="button" className="btn-icon" aria-label={t('friends.messageButton')} onClick={() => onMessageFriend(friend)}>
-                    💬
-                  </button>
+                  </div>
                 </div>
               )
             })}
