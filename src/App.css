@@ -6056,16 +6056,43 @@ div.zyndal-logo {
   padding: 10px;
 }
 
+.map-quiz-svg-host {
+  min-height: 280px;
+}
+
 .map-quiz-svg {
   width: 100%;
   height: auto;
   display: block;
+  overflow: visible;
 }
 
+/* The fetched map's own <style> (a bare, unscoped `path{...}` rule) is
+   stripped on load — see MapQuizScreen.jsx — so its stroke-linejoin/
+   linecap is reapplied here, scoped to just this map. */
+.map-quiz-svg path {
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* Sits behind every region so the source map's masked-out lakes/bays
+   (Hudson Bay, Great Bear Lake, ...) read as water instead of the page
+   background, even though only the three named rects below are actually
+   clickable quiz regions. Not interactive. */
+.map-quiz-base-water {
+  fill: color-mix(in srgb, var(--blue) 22%, var(--card-2));
+  pointer-events: none;
+}
+
+/* Coordinates on this map come from the real source SVG's own (large)
+   viewBox, not a small hand-built one — stroke widths and the ✓ mark's
+   font size are sized in that same coordinate space, so they're much
+   bigger numbers than a typical CSS value despite rendering at a normal
+   on-screen size. */
 .map-quiz-region {
   fill: var(--card-2);
   stroke: var(--border-strong);
-  stroke-width: 2;
+  stroke-width: 260;
   cursor: pointer;
   transition: fill 0.15s ease, stroke 0.15s ease;
 }
@@ -6075,28 +6102,28 @@ div.zyndal-logo {
 }
 
 .map-quiz-region--ocean {
-  fill: color-mix(in srgb, var(--blue) 16%, var(--card-2));
+  fill: color-mix(in srgb, var(--blue) 38%, var(--card-2));
 }
 
 .map-quiz-region--ocean:hover {
-  fill: color-mix(in srgb, var(--blue) 32%, var(--card-2));
+  fill: color-mix(in srgb, var(--blue) 55%, var(--card-2));
 }
 
 .map-quiz-region--active {
   stroke: var(--purple);
-  stroke-width: 4;
+  stroke-width: 550;
 }
 
 .map-quiz-region--correct,
 .map-quiz-region--correct:hover {
-  fill: color-mix(in srgb, var(--green) 40%, var(--card-2));
+  fill: color-mix(in srgb, var(--green) 45%, var(--card-2));
   stroke: var(--green);
   cursor: default;
 }
 
 .map-quiz-region-check {
   fill: var(--green-text);
-  font-size: 22px;
+  font-size: 4600px;
   font-weight: 700;
   text-anchor: middle;
   dominant-baseline: central;

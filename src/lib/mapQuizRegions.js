@@ -1,39 +1,103 @@
 // Canada Map Quiz — region layout (Grade 10 Geography practice activity).
 //
-// This is a schematic "grid cartogram", not a geographically accurate
-// coastline trace (no traced province/territory border data is available in
-// this codebase to draw from) — each region is a simple rounded rectangle,
-// but they're arranged to preserve the real relative geography a Grade 10
-// student is expected to know: territories north of provinces, west-to-east
-// ordering, and oceans on the correct sides (Pacific west, Arctic north,
-// Atlantic east). id doubles as both the region's map key and its
-// translation-name key (locales: mapQuiz.regions.<id>) since it's a 1:1
-// name-to-region quiz — there's never a second region that could take a
-// given name.
-export const MAP_QUIZ_VIEWBOX = '0 0 1140 420'
+// The base map is a real, geographically accurate SVG of Canada's
+// provinces/territories, fetched at runtime from CANADA_MAP_SVG_URL (see
+// MapQuizScreen.jsx) rather than built here — it's the same public-data
+// map already used by the civic-mp-directory project, so its province
+// groups keep their original two-letter ids (BC, AB, SK, ...). This file
+// only holds the quiz's own layer on top of that map: the region list, the
+// id-mapping into the fetched SVG's groups, and the three ocean rectangles
+// (which the source map has no equivalent for — Canada's political map
+// doesn't label surrounding water).
+export const CANADA_MAP_SVG_URL = '/maps/canada-provinces.svg'
+
+// The source file's own viewBox, expanded with margin on the west/north/
+// east so the three oceans have real clickable area outside the landmass
+// — south is left tight since Canada's southern border isn't ocean.
+const SOURCE_VIEWBOX = { minX: -24500, minY: -27050, width: 55700, height: 47100 }
+const WEST_MARGIN = 9000
+const NORTH_MARGIN = 8000
+const EAST_MARGIN = 9000
+
+const EXPANDED = {
+  minX: SOURCE_VIEWBOX.minX - WEST_MARGIN,
+  minY: SOURCE_VIEWBOX.minY - NORTH_MARGIN,
+  width: SOURCE_VIEWBOX.width + WEST_MARGIN + EAST_MARGIN,
+  height: SOURCE_VIEWBOX.height + NORTH_MARGIN,
+}
+export const MAP_QUIZ_VIEWBOX = `${EXPANDED.minX} ${EXPANDED.minY} ${EXPANDED.width} ${EXPANDED.height}`
+
+// Boundaries (in the expanded viewBox's own coordinate space, measured off
+// the real map via getBBox()) splitting the margin into the three named
+// oceans: Arctic spans the full width north of the territories/provinces;
+// Pacific and Atlantic split the remaining southern strip at BC's east
+// edge and New Brunswick's west edge respectively. The gap between them
+// (the Prairies/Ontario/Quebec interior) is deliberately left as neither —
+// the middle of Canada isn't coastal.
+const ARCTIC_BOTTOM_Y = -3478
+const PACIFIC_RIGHT_X = -13214
+const ATLANTIC_LEFT_X = 19218
+const SOUTH_EDGE_Y = EXPANDED.minY + EXPANDED.height
+const EAST_EDGE_X = EXPANDED.minX + EXPANDED.width
+
+export const BASE_WATER_RECT = { x: EXPANDED.minX, y: EXPANDED.minY, width: EXPANDED.width, height: EXPANDED.height }
+
+export const OCEAN_RECTS = {
+  arctic: {
+    x: EXPANDED.minX,
+    y: EXPANDED.minY,
+    width: EXPANDED.width,
+    height: ARCTIC_BOTTOM_Y - EXPANDED.minY,
+  },
+  pacific: {
+    x: EXPANDED.minX,
+    y: ARCTIC_BOTTOM_Y,
+    width: PACIFIC_RIGHT_X - EXPANDED.minX,
+    height: SOUTH_EDGE_Y - ARCTIC_BOTTOM_Y,
+  },
+  atlantic: {
+    x: ATLANTIC_LEFT_X,
+    y: ARCTIC_BOTTOM_Y,
+    width: EAST_EDGE_X - ATLANTIC_LEFT_X,
+    height: SOUTH_EDGE_Y - ARCTIC_BOTTOM_Y,
+  },
+}
+
+// Quiz region id (also its translation key, mapQuiz.regions.<id>) -> the
+// real `<g id="...">` id inside the fetched SVG.
+export const PROVINCE_SVG_IDS = {
+  bc: 'BC',
+  ab: 'AB',
+  sk: 'SK',
+  mb: 'MB',
+  on: 'ON',
+  qc: 'QC',
+  nb: 'NB',
+  ns: 'NS',
+  pe: 'PE',
+  nl: 'NL',
+  yt: 'YT',
+  nt: 'NT',
+  nu: 'NU',
+}
 
 export const MAP_QUIZ_REGIONS = [
-  // Oceans
-  { id: 'arctic', kind: 'ocean', x: 0, y: 0, width: 1140, height: 40 },
-  { id: 'pacific', kind: 'ocean', x: 0, y: 40, width: 100, height: 380 },
-  { id: 'atlantic', kind: 'ocean', x: 1040, y: 40, width: 100, height: 380 },
-
-  // Territories (north row, west to east)
-  { id: 'yt', kind: 'territory', x: 100, y: 40, width: 260, height: 180 },
-  { id: 'nt', kind: 'territory', x: 360, y: 40, width: 300, height: 180 },
-  { id: 'nu', kind: 'territory', x: 660, y: 40, width: 380, height: 180 },
-
-  // Provinces (south row, west to east)
-  { id: 'bc', kind: 'province', x: 100, y: 220, width: 140, height: 200 },
-  { id: 'ab', kind: 'province', x: 240, y: 220, width: 100, height: 200 },
-  { id: 'sk', kind: 'province', x: 340, y: 220, width: 100, height: 200 },
-  { id: 'mb', kind: 'province', x: 440, y: 220, width: 100, height: 200 },
-  { id: 'on', kind: 'province', x: 540, y: 220, width: 140, height: 200 },
-  { id: 'qc', kind: 'province', x: 680, y: 220, width: 140, height: 200 },
-  { id: 'nb', kind: 'province', x: 820, y: 220, width: 60, height: 200 },
-  { id: 'pe', kind: 'province', x: 880, y: 220, width: 40, height: 200 },
-  { id: 'ns', kind: 'province', x: 920, y: 220, width: 60, height: 200 },
-  { id: 'nl', kind: 'province', x: 980, y: 220, width: 60, height: 200 },
+  { id: 'arctic', kind: 'ocean' },
+  { id: 'pacific', kind: 'ocean' },
+  { id: 'atlantic', kind: 'ocean' },
+  { id: 'bc', kind: 'province' },
+  { id: 'ab', kind: 'province' },
+  { id: 'sk', kind: 'province' },
+  { id: 'mb', kind: 'province' },
+  { id: 'on', kind: 'province' },
+  { id: 'qc', kind: 'province' },
+  { id: 'nb', kind: 'province' },
+  { id: 'ns', kind: 'province' },
+  { id: 'pe', kind: 'province' },
+  { id: 'nl', kind: 'province' },
+  { id: 'yt', kind: 'territory' },
+  { id: 'nt', kind: 'territory' },
+  { id: 'nu', kind: 'territory' },
 ]
 
 export const MAP_QUIZ_TOTAL = MAP_QUIZ_REGIONS.length

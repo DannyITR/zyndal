@@ -873,6 +873,7 @@
     "practiceNote": "Solo práctica — sin XP ni monedas, y sin límite diario. ¡Juega tantas veces como quieras!",
     "progress": "{{labeled}}/{{total}} etiquetadas",
     "reset": "Reiniciar",
+    "loadError": "No se pudo cargar el mapa. Revisa tu conexión e inténtalo de nuevo.",
     "unlabeledRegion": "{{kind}} sin etiquetar",
     "kind": {
       "province": "Provincia",

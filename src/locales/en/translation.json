@@ -873,6 +873,7 @@
     "practiceNote": "Practice only — no XP or coins, and no daily limit. Play as many times as you like!",
     "progress": "{{labeled}}/{{total}} labeled",
     "reset": "Start Over",
+    "loadError": "Couldn't load the map. Please check your connection and try again.",
     "unlabeledRegion": "Unlabeled {{kind}}",
     "kind": {
       "province": "province",

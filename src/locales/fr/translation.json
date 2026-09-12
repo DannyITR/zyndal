@@ -873,6 +873,7 @@
     "practiceNote": "Entraînement seulement — pas de XP ni de pièces, et aucune limite quotidienne. Joue autant de fois que tu veux !",
     "progress": "{{labeled}}/{{total}} identifiées",
     "reset": "Recommencer",
+    "loadError": "Impossible de charger la carte. Vérifie ta connexion et réessaie.",
     "unlabeledRegion": "{{kind}} non identifié(e)",
     "kind": {
       "province": "Province",
