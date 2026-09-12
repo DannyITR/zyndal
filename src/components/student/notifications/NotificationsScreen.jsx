@@ -19,6 +19,8 @@ const TYPE_ICON = {
   perfect_week: '🏆',
   grade_bonus: '🏆',
   streak_reminder: '⚠️',
+  streak_reengagement_week: '👋',
+  streak_reengagement_month: '🔥',
   homework_assigned: '📚',
   homework_reminder: '📚',
   parent_link_request: '👨‍👩‍👧',

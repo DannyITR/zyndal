@@ -142,6 +142,39 @@ const TEMPLATES = {
       body: 'Aún no has respondido las preguntas de hoy — responde al menos una para mantener tu llama encendida 🔥',
     }),
   },
+  // Sent once, exactly 7 days after a student's last correct answer (or
+  // account creation, if they never had one) with no streak restarted in
+  // between — see api/cron/streak-reminder.js's WEEK_INACTIVE_DAYS.
+  streak_reengagement_week: {
+    en: () => ({
+      title: '👋 We miss you!',
+      body: "It's been a week since your last streak — come back and start a new one today!",
+    }),
+    fr: () => ({
+      title: '👋 Vous nous manquez !',
+      body: "Cela fait une semaine depuis votre dernière série — revenez commencer une nouvelle série aujourd'hui !",
+    }),
+    es: () => ({
+      title: '👋 ¡Te extrañamos!',
+      body: 'Ha pasado una semana desde tu última racha — ¡vuelve y comienza una nueva hoy!',
+    }),
+  },
+  // Sent every 30 days after that same reference date for a student who's
+  // still inactive a full month later — see MONTH_INACTIVE_DAYS.
+  streak_reengagement_month: {
+    en: () => ({
+      title: "🔥 It's been a while!",
+      body: "You haven't started a streak in a month — jump back in, today's question is waiting for you!",
+    }),
+    fr: () => ({
+      title: '🔥 Ça fait longtemps !',
+      body: "Vous n'avez pas commencé de série depuis un mois — revenez, la question du jour vous attend !",
+    }),
+    es: () => ({
+      title: '🔥 ¡Ha pasado tiempo!',
+      body: '¡No has comenzado una racha en un mes — vuelve, la pregunta de hoy te espera!',
+    }),
+  },
   // amount is a pre-formatted dollar string (e.g. "5.00", via
   // centsToDisplay) — same convention as homework_assigned's dueDate above,
   // rather than passing raw cents and reformatting per-language here.
