@@ -180,7 +180,7 @@ async function step3_relabelHistoricalRecords() {
   console.log('Step 3: relabeling historical subject-tagged rows...')
   const tables = ['answers', 'daily_question_locks', 'practice_sessions', 'grades', 'study_plans', 'uploads', 'upload_weekly_usage', 'generated_questions']
   for (const table of tables) {
-    const { count, error: countError } = await supabase.from(table).select('id', { count: 'exact', head: true }).in('subject', OLD_SUBJECTS)
+    const { count, error: countError } = await supabase.from(table).select('*', { count: 'exact', head: true }).in('subject', OLD_SUBJECTS)
     if (countError) throw countError
     if (count > 0) {
       const { error: updateError } = await supabase.from(table).update({ subject: NEW_SUBJECT }).in('subject', OLD_SUBJECTS)
