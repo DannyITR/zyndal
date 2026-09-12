@@ -3,7 +3,9 @@
 // DEMO_MODE in ai.js. Swap the AI calls back on and this file becomes unused
 // (safe to delete or keep as a fallback).
 //
-// 5 questions per subject per grade (7, 8, 9, 10, 11) = 150 total. Wrong
+// 5 questions per subject per grade (7, 8, 9, 10, 11) = 150 total — except
+// history_geography, which carries 10 per grade (5 from each of the merged
+// History and Geography banks, kept intact rather than trimmed). Wrong
 // options are modeled on common student mistakes, not random noise, matching
 // the style of the AI-generated questions this replaces.
 // Grade range currently 7-11. Elementary grades (1-6) planned for future release.
@@ -467,7 +469,7 @@ const TEST_PREP_QUESTION_BANK = {
     ],
   },
 
-  history: {
+  history_geography: {
     7: [
       {
         topic: 'New France',
@@ -508,6 +510,51 @@ const TEST_PREP_QUESTION_BANK = {
         options: ['Indigenous peoples', 'British colonists', 'Spanish explorers', 'Dutch traders'],
         correct: 0,
         explanation: 'French settlers formed alliances and trading relationships with Indigenous peoples, who were essential to the fur trade and survival in the colony.',
+      },
+      {
+        topic: 'Physical Geography of Canada',
+        difficulty: 'easy',
+        question: 'What is the longest river in Canada?',
+        options: ['The Mackenzie River', 'The Fraser River', 'The St. Lawrence River', 'The Yukon River'],
+        correct: 0,
+        explanation: 'The Mackenzie River, at about 4,241 km, is the longest river in Canada.',
+      },
+      {
+        topic: 'Physical Geography of Canada',
+        difficulty: 'medium',
+        question: 'Which large rocky region covers much of central and eastern Canada?',
+        options: ['The Canadian Shield', 'The Rocky Mountains', 'The Great Plains', 'The Arctic Archipelago'],
+        correct: 0,
+        explanation: 'The Canadian Shield is a vast area of ancient rock covering much of central and eastern Canada.',
+      },
+      {
+        topic: 'Maps and Coordinates',
+        difficulty: 'easy',
+        question: 'What do lines of latitude measure?',
+        options: [
+          'Distance north or south of the equator',
+          'Distance east or west of the Prime Meridian',
+          'Elevation above sea level',
+          'Time zones only',
+        ],
+        correct: 0,
+        explanation: 'Lines of latitude run east-west and measure distance north or south of the equator.',
+      },
+      {
+        topic: 'Maps and Coordinates',
+        difficulty: 'medium',
+        question: 'What is the imaginary line at 0° longitude called?',
+        options: ['The equator', 'The Prime Meridian', 'The Tropic of Cancer', 'The Arctic Circle'],
+        correct: 1,
+        explanation: 'The Prime Meridian, passing through Greenwich, England, marks 0° longitude.',
+      },
+      {
+        topic: 'Physical Geography of Canada',
+        difficulty: 'easy',
+        question: "Which body of water lies along Canada's east coast?",
+        options: ['The Pacific Ocean', 'The Atlantic Ocean', 'The Arctic Ocean', 'The Gulf of Mexico'],
+        correct: 1,
+        explanation: "Canada's east coast borders the Atlantic Ocean.",
       },
     ],
     8: [
@@ -561,6 +608,61 @@ const TEST_PREP_QUESTION_BANK = {
         correct: 0,
         explanation: 'Ontario, Quebec, Nova Scotia, and New Brunswick were the four original provinces of Confederation.',
       },
+      {
+        topic: 'Global Geography',
+        difficulty: 'easy',
+        question: 'How many continents are there?',
+        options: ['5', '6', '7', '8'],
+        correct: 2,
+        explanation: 'There are 7 continents: Africa, Antarctica, Asia, Australia, Europe, North America, and South America.',
+      },
+      {
+        topic: 'Global Geography',
+        difficulty: 'medium',
+        question: 'Which country has the largest population in the world?',
+        options: ['India', 'China', 'United States', 'Indonesia'],
+        correct: 0,
+        explanation: 'As of recent estimates, India has surpassed China to become the most populous country in the world.',
+      },
+      {
+        topic: 'Climate Zones',
+        difficulty: 'medium',
+        question: 'What best describes a temperate climate zone?',
+        options: [
+          'Moderate temperatures with four distinct seasons',
+          'Constant heat and heavy rainfall year-round',
+          'Extremely cold with permafrost year-round',
+          'Very dry with minimal precipitation',
+        ],
+        correct: 0,
+        explanation: 'Temperate climate zones, like much of Canada and Europe, experience moderate temperatures and four distinct seasons.',
+      },
+      {
+        topic: 'Human Geography',
+        difficulty: 'medium',
+        question: 'What is "population density"?',
+        options: [
+          'The number of people living per unit of area',
+          'The total population of a country',
+          'The rate at which a population grows',
+          'The percentage of people living in cities',
+        ],
+        correct: 0,
+        explanation: 'Population density measures how many people live within a given area, such as per square kilometer.',
+      },
+      {
+        topic: 'Human Geography',
+        difficulty: 'medium',
+        question: 'What is migration?',
+        options: [
+          'The movement of people from one place to live in another',
+          'The movement of tectonic plates',
+          'The changing of seasons',
+          'The flow of rivers to the ocean',
+        ],
+        correct: 0,
+        explanation: 'Migration refers to people moving from one region or country to settle in another.',
+      },
     ],
     9: [
       {
@@ -612,6 +714,51 @@ const TEST_PREP_QUESTION_BANK = {
         options: ['Sir John A. Macdonald', 'Wilfrid Laurier', 'Louis St. Laurent', 'William Lyon Mackenzie King'],
         correct: 0,
         explanation: "Sir John A. Macdonald became Canada's first Prime Minister in 1867 and served as a key architect of Confederation.",
+      },
+      {
+        topic: 'Canada',
+        difficulty: 'easy',
+        question: 'What is the capital city of Canada?',
+        options: ['Toronto', 'Montreal', 'Vancouver', 'Ottawa'],
+        correct: 3,
+        explanation: "Ottawa, located in Ontario, has been Canada's capital since 1857.",
+      },
+      {
+        topic: 'Canada',
+        difficulty: 'easy',
+        question: 'Which is the largest province in Canada by land area?',
+        options: ['Quebec', 'Ontario', 'British Columbia', 'Alberta'],
+        correct: 0,
+        explanation: "Quebec is Canada's largest province by area, covering about 1.5 million square kilometers.",
+      },
+      {
+        topic: 'World geography',
+        difficulty: 'easy',
+        question: 'Which is the longest river in the world?',
+        options: ['The Amazon', 'The Nile', 'The Mississippi', 'The Yangtze'],
+        correct: 1,
+        explanation: 'The Nile River, at about 6,650 km, is generally considered the longest river in the world.',
+      },
+      {
+        topic: 'World geography',
+        difficulty: 'easy',
+        question: 'Which continent is the largest by land area?',
+        options: ['Africa', 'North America', 'Asia', 'Europe'],
+        correct: 2,
+        explanation: 'Asia is the largest continent, covering about 44.5 million square kilometers.',
+      },
+      {
+        topic: 'Canada',
+        difficulty: 'medium',
+        question: 'What are the three territories of Canada?',
+        options: [
+          'Yukon, Labrador, and Nunavut',
+          'Northwest Territories, Nunavut, and Newfoundland',
+          'Yukon, Nunavut, and British Columbia',
+          'Yukon, Northwest Territories, and Nunavut',
+        ],
+        correct: 3,
+        explanation: "Canada's three territories are Yukon, the Northwest Territories, and Nunavut, located in the country's north.",
       },
     ],
     10: [
@@ -674,6 +821,51 @@ const TEST_PREP_QUESTION_BANK = {
         ],
         correct: 1,
         explanation: 'The Statute of Westminster granted Canada (and other dominions) legislative independence from the British Parliament.',
+      },
+      {
+        topic: 'Canada',
+        difficulty: 'easy',
+        question: "What climate zone covers most of Canada's Arctic region?",
+        options: ['Tundra', 'Tropical', 'Desert', 'Mediterranean'],
+        correct: 0,
+        explanation: "The tundra climate zone, marked by permafrost and low vegetation, dominates Canada's far north.",
+      },
+      {
+        topic: 'Canada',
+        difficulty: 'medium',
+        question: "Which body of water separates Canada's Vancouver Island from mainland British Columbia?",
+        options: ['Hudson Bay', 'The Strait of Georgia', 'The Gulf of St. Lawrence', 'Lake Winnipeg'],
+        correct: 1,
+        explanation: 'The Strait of Georgia separates Vancouver Island from the British Columbia mainland.',
+      },
+      {
+        topic: 'World geography',
+        difficulty: 'medium',
+        question: 'What causes the different time zones around the world?',
+        options: [
+          "The Earth's orbit around the Sun",
+          'Ocean currents',
+          "The Earth's rotation on its axis",
+          "The tilt of the Earth's axis",
+        ],
+        correct: 2,
+        explanation: 'As the Earth rotates on its axis once every 24 hours, different longitudes face the sun at different times, creating time zones.',
+      },
+      {
+        topic: 'World geography',
+        difficulty: 'medium',
+        question: 'Which mountain range forms much of the border between Europe and Asia?',
+        options: ['The Andes', 'The Rockies', 'The Alps', 'The Ural Mountains'],
+        correct: 3,
+        explanation: 'The Ural Mountains in Russia are traditionally considered the geographical boundary between Europe and Asia.',
+      },
+      {
+        topic: 'Canada',
+        difficulty: 'medium',
+        question: 'What is the main factor that makes the Canadian Prairies suitable for large-scale agriculture?',
+        options: ['Flat, fertile land with rich soil', 'High rainfall year-round', 'Mountainous terrain', 'Tropical climate'],
+        correct: 0,
+        explanation: "The Prairies' flat terrain and fertile soil make them ideal for growing wheat and other grain crops.",
       },
     ],
     11: [
@@ -742,209 +934,6 @@ const TEST_PREP_QUESTION_BANK = {
         correct: 2,
         explanation: "The 1995 referendum was extremely close, with about 50.6% voting 'No' to sovereignty, keeping Quebec in Canada.",
       },
-    ],
-  },
-
-  geography: {
-    7: [
-      {
-        topic: 'Physical Geography of Canada',
-        difficulty: 'easy',
-        question: 'What is the longest river in Canada?',
-        options: ['The Mackenzie River', 'The Fraser River', 'The St. Lawrence River', 'The Yukon River'],
-        correct: 0,
-        explanation: 'The Mackenzie River, at about 4,241 km, is the longest river in Canada.',
-      },
-      {
-        topic: 'Physical Geography of Canada',
-        difficulty: 'medium',
-        question: 'Which large rocky region covers much of central and eastern Canada?',
-        options: ['The Canadian Shield', 'The Rocky Mountains', 'The Great Plains', 'The Arctic Archipelago'],
-        correct: 0,
-        explanation: 'The Canadian Shield is a vast area of ancient rock covering much of central and eastern Canada.',
-      },
-      {
-        topic: 'Maps and Coordinates',
-        difficulty: 'easy',
-        question: 'What do lines of latitude measure?',
-        options: [
-          'Distance north or south of the equator',
-          'Distance east or west of the Prime Meridian',
-          'Elevation above sea level',
-          'Time zones only',
-        ],
-        correct: 0,
-        explanation: 'Lines of latitude run east-west and measure distance north or south of the equator.',
-      },
-      {
-        topic: 'Maps and Coordinates',
-        difficulty: 'medium',
-        question: 'What is the imaginary line at 0° longitude called?',
-        options: ['The equator', 'The Prime Meridian', 'The Tropic of Cancer', 'The Arctic Circle'],
-        correct: 1,
-        explanation: 'The Prime Meridian, passing through Greenwich, England, marks 0° longitude.',
-      },
-      {
-        topic: 'Physical Geography of Canada',
-        difficulty: 'easy',
-        question: "Which body of water lies along Canada's east coast?",
-        options: ['The Pacific Ocean', 'The Atlantic Ocean', 'The Arctic Ocean', 'The Gulf of Mexico'],
-        correct: 1,
-        explanation: "Canada's east coast borders the Atlantic Ocean.",
-      },
-    ],
-    8: [
-      {
-        topic: 'Global Geography',
-        difficulty: 'easy',
-        question: 'How many continents are there?',
-        options: ['5', '6', '7', '8'],
-        correct: 2,
-        explanation: 'There are 7 continents: Africa, Antarctica, Asia, Australia, Europe, North America, and South America.',
-      },
-      {
-        topic: 'Global Geography',
-        difficulty: 'medium',
-        question: 'Which country has the largest population in the world?',
-        options: ['India', 'China', 'United States', 'Indonesia'],
-        correct: 0,
-        explanation: 'As of recent estimates, India has surpassed China to become the most populous country in the world.',
-      },
-      {
-        topic: 'Climate Zones',
-        difficulty: 'medium',
-        question: 'What best describes a temperate climate zone?',
-        options: [
-          'Moderate temperatures with four distinct seasons',
-          'Constant heat and heavy rainfall year-round',
-          'Extremely cold with permafrost year-round',
-          'Very dry with minimal precipitation',
-        ],
-        correct: 0,
-        explanation: 'Temperate climate zones, like much of Canada and Europe, experience moderate temperatures and four distinct seasons.',
-      },
-      {
-        topic: 'Human Geography',
-        difficulty: 'medium',
-        question: 'What is "population density"?',
-        options: [
-          'The number of people living per unit of area',
-          'The total population of a country',
-          'The rate at which a population grows',
-          'The percentage of people living in cities',
-        ],
-        correct: 0,
-        explanation: 'Population density measures how many people live within a given area, such as per square kilometer.',
-      },
-      {
-        topic: 'Human Geography',
-        difficulty: 'medium',
-        question: 'What is migration?',
-        options: [
-          'The movement of people from one place to live in another',
-          'The movement of tectonic plates',
-          'The changing of seasons',
-          'The flow of rivers to the ocean',
-        ],
-        correct: 0,
-        explanation: 'Migration refers to people moving from one region or country to settle in another.',
-      },
-    ],
-    9: [
-      {
-        topic: 'Canada',
-        difficulty: 'easy',
-        question: 'What is the capital city of Canada?',
-        options: ['Toronto', 'Montreal', 'Vancouver', 'Ottawa'],
-        correct: 3,
-        explanation: "Ottawa, located in Ontario, has been Canada's capital since 1857.",
-      },
-      {
-        topic: 'Canada',
-        difficulty: 'easy',
-        question: 'Which is the largest province in Canada by land area?',
-        options: ['Quebec', 'Ontario', 'British Columbia', 'Alberta'],
-        correct: 0,
-        explanation: "Quebec is Canada's largest province by area, covering about 1.5 million square kilometers.",
-      },
-      {
-        topic: 'World geography',
-        difficulty: 'easy',
-        question: 'Which is the longest river in the world?',
-        options: ['The Amazon', 'The Nile', 'The Mississippi', 'The Yangtze'],
-        correct: 1,
-        explanation: 'The Nile River, at about 6,650 km, is generally considered the longest river in the world.',
-      },
-      {
-        topic: 'World geography',
-        difficulty: 'easy',
-        question: 'Which continent is the largest by land area?',
-        options: ['Africa', 'North America', 'Asia', 'Europe'],
-        correct: 2,
-        explanation: 'Asia is the largest continent, covering about 44.5 million square kilometers.',
-      },
-      {
-        topic: 'Canada',
-        difficulty: 'medium',
-        question: 'What are the three territories of Canada?',
-        options: [
-          'Yukon, Labrador, and Nunavut',
-          'Northwest Territories, Nunavut, and Newfoundland',
-          'Yukon, Nunavut, and British Columbia',
-          'Yukon, Northwest Territories, and Nunavut',
-        ],
-        correct: 3,
-        explanation: "Canada's three territories are Yukon, the Northwest Territories, and Nunavut, located in the country's north.",
-      },
-    ],
-    10: [
-      {
-        topic: 'Canada',
-        difficulty: 'easy',
-        question: "What climate zone covers most of Canada's Arctic region?",
-        options: ['Tundra', 'Tropical', 'Desert', 'Mediterranean'],
-        correct: 0,
-        explanation: "The tundra climate zone, marked by permafrost and low vegetation, dominates Canada's far north.",
-      },
-      {
-        topic: 'Canada',
-        difficulty: 'medium',
-        question: "Which body of water separates Canada's Vancouver Island from mainland British Columbia?",
-        options: ['Hudson Bay', 'The Strait of Georgia', 'The Gulf of St. Lawrence', 'Lake Winnipeg'],
-        correct: 1,
-        explanation: 'The Strait of Georgia separates Vancouver Island from the British Columbia mainland.',
-      },
-      {
-        topic: 'World geography',
-        difficulty: 'medium',
-        question: 'What causes the different time zones around the world?',
-        options: [
-          "The Earth's orbit around the Sun",
-          'Ocean currents',
-          "The Earth's rotation on its axis",
-          "The tilt of the Earth's axis",
-        ],
-        correct: 2,
-        explanation: 'As the Earth rotates on its axis once every 24 hours, different longitudes face the sun at different times, creating time zones.',
-      },
-      {
-        topic: 'World geography',
-        difficulty: 'medium',
-        question: 'Which mountain range forms much of the border between Europe and Asia?',
-        options: ['The Andes', 'The Rockies', 'The Alps', 'The Ural Mountains'],
-        correct: 3,
-        explanation: 'The Ural Mountains in Russia are traditionally considered the geographical boundary between Europe and Asia.',
-      },
-      {
-        topic: 'Canada',
-        difficulty: 'medium',
-        question: 'What is the main factor that makes the Canadian Prairies suitable for large-scale agriculture?',
-        options: ['Flat, fertile land with rich soil', 'High rainfall year-round', 'Mountainous terrain', 'Tropical climate'],
-        correct: 0,
-        explanation: "The Prairies' flat terrain and fertile soil make them ideal for growing wheat and other grain crops.",
-      },
-    ],
-    11: [
       {
         topic: 'Canada',
         difficulty: 'medium',
@@ -1007,6 +996,7 @@ const TEST_PREP_QUESTION_BANK = {
       },
     ],
   },
+
 
   english: {
     7: [

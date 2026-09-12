@@ -215,11 +215,13 @@ export default function ClassCard({
         <button type="button" className="btn btn-secondary btn-small" onClick={onOpenCurriculum}>
           {t('home.curriculum')}
         </button>
-        {/* Grade 10 Geography only — a practice-only activity with no
-            XP/coins/streak wiring at all (see MapQuizScreen.jsx), so unlike
-            the PremiumFeatureButtons above it's plain and ungated: every
-            student, including a free/trial-expired one, can play it. */}
-        {subject.id === 'geography' && Number(grade) === 10 && (
+        {/* Grade 10 History & Geography only (the old standalone Geography
+            subject was merged into this combined subject — see
+            scripts/merge-history-geography.mjs) — a practice-only activity
+            with no XP/coins/streak wiring at all (see MapQuizScreen.jsx), so
+            unlike the PremiumFeatureButtons above it's plain and ungated:
+            every student, including a free/trial-expired one, can play it. */}
+        {subject.id === 'history_geography' && Number(grade) === 10 && (
           <button type="button" className="btn btn-secondary btn-small" onClick={onOpenMapQuiz}>
             {t('home.mapQuiz')}
           </button>

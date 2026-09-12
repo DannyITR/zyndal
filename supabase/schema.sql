@@ -508,12 +508,16 @@ insert into schools (name, domain) values
   ('Westwood High School (Senior Campus)', 'lbpsb.qc.ca')
 on conflict do nothing;
 
--- Seed: 6 subjects x grades 7-11 (sanitizeGrade in api/_lib/sanitize.js is
--- the app's only supported range) for every seeded school = 330 rows.
+-- Seed: 5 subjects x grades 7-11 (sanitizeGrade in api/_lib/sanitize.js is
+-- the app's only supported range) for every seeded school = 275 rows.
+-- History and Geography were originally two separate subjects here (6
+-- subjects, 330 rows) — merged into one 'history_geography' subject app-wide
+-- (see scripts/merge-history-geography.mjs for the one-time data migration
+-- this required against already-seeded schools).
 insert into school_subject_groups (school_id, subject, grade)
 select s.id, subj.subject, g.grade
 from schools s
-cross join (values ('math'),('science'),('history'),('geography'),('english'),('french')) as subj(subject)
+cross join (values ('math'),('science'),('history_geography'),('english'),('french')) as subj(subject)
 cross join (values (7),(8),(9),(10),(11)) as g(grade)
 on conflict (school_id, subject, grade) do nothing;
 

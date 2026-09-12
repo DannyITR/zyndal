@@ -1,12 +1,14 @@
-// 6 subjects × 5 hardcoded multiple-choice questions per grade (grades 7-11).
+// 5 subjects × 5 hardcoded multiple-choice questions per grade (grades 7-11).
 // Wrong options are modeled on common student mistakes, not random noise.
 // Grade range currently 7-11. Elementary grades (1-6) planned for future release.
+// History and Geography were merged into one "History & Geography" subject
+// (id history_geography) — see scripts/merge-history-geography.mjs for the
+// one-time data migration this required on the DB side.
 
 export const SUBJECTS = [
   { id: 'math', name: 'Math', icon: '📐', color: '#8a2be2' },
   { id: 'science', name: 'Science', icon: '🧪', color: '#47bfff' },
-  { id: 'geography', name: 'Geography', icon: '🌍', color: '#34e0a1' },
-  { id: 'history', name: 'History', icon: '🏛️', color: '#ffce54' },
+  { id: 'history_geography', name: 'History & Geography', icon: '🗺️', color: '#e0a234' },
   { id: 'english', name: 'English', icon: '📖', color: '#ff5c7a' },
   { id: 'french', name: 'French', icon: '🐓', color: '#b983ff' },
 ]
@@ -16,7 +18,7 @@ export function getSubject(subjectId) {
 }
 
 // The single subject shown on the home screen each day, same for every
-// student — cycles through all 6 on a 6-day rotation so each gets equal
+// student — cycles through all 5 on a 5-day rotation so each gets equal
 // coverage. Order is a product spec (not SUBJECTS' own array order) and the
 // day-index math matches the existing daysSinceEpoch pattern used elsewhere
 // in this file and in getTodaysGuideSubject (src/lib/ai.js), so all three
@@ -24,7 +26,7 @@ export function getSubject(subjectId) {
 // match how selectedDate/date are already passed around the app; noon UTC
 // keeps this on the correct calendar day the same way getDailyQuestion does
 // for past dates.
-const DAILY_ROTATION_ORDER = ['math', 'science', 'history', 'geography', 'english', 'french']
+const DAILY_ROTATION_ORDER = ['math', 'science', 'history_geography', 'english', 'french']
 
 export function getTodaysSubjectId(dateStr) {
   const date = dateStr ? new Date(`${dateStr}T12:00:00Z`) : new Date()
@@ -297,139 +299,7 @@ export const QUESTIONS_BY_SUBJECT = {
       correctIndex: 0,
     },
   ],
-  geography: [
-    {
-      id: 'geography-1',
-      grade: 9,
-      topic: 'Canada',
-      prompt: 'What is the capital city of Canada?',
-      options: ['Toronto', 'Vancouver', 'Ottawa', 'Montreal'],
-      correctIndex: 2,
-    },
-    {
-      id: 'geography-2',
-      grade: 9,
-      topic: 'Canada',
-      prompt: 'Which is the largest province in Canada by area?',
-      options: ['Ontario', 'British Columbia', 'Alberta', 'Quebec'],
-      correctIndex: 3,
-    },
-    {
-      id: 'geography-3',
-      grade: 10,
-      topic: 'World Geography',
-      prompt: 'Which is the longest river in the world?',
-      options: ['The Nile', 'The Amazon', 'The Mississippi', 'The Yangtze'],
-      correctIndex: 0,
-    },
-    {
-      id: 'geography-4',
-      grade: 10,
-      topic: 'World Geography',
-      prompt: 'Which continent is the Sahara Desert located on?',
-      options: ['Asia', 'Africa', 'Australia', 'South America'],
-      correctIndex: 1,
-    },
-    {
-      id: 'geography-5',
-      grade: 11,
-      topic: 'Maps',
-      prompt: 'On a topographic map, what do contour lines represent?',
-      options: ['Temperature zones', 'Political borders', 'Points of equal elevation', 'Population density'],
-      correctIndex: 2,
-    },
-    {
-      id: 'geography-6',
-      grade: 7,
-      topic: 'Physical Geography of Canada',
-      prompt: "Which mountain range runs along Canada's west coast?",
-      options: ['The Rocky Mountains', 'The Appalachian Mountains', 'The Andes', 'The Ural Mountains'],
-      correctIndex: 0,
-    },
-    {
-      id: 'geography-7',
-      grade: 7,
-      topic: 'Physical Geography of Canada',
-      prompt: 'What is the largest lake located entirely within Canada?',
-      options: ['Lake Superior', 'Great Bear Lake', 'Great Slave Lake', 'Lake Winnipeg'],
-      correctIndex: 1,
-    },
-    {
-      id: 'geography-8',
-      grade: 7,
-      topic: 'Maps and Coordinates',
-      prompt: 'On a map, lines that run east-west and measure distance from the equator are called?',
-      options: ['Lines of latitude', 'Lines of longitude', 'The prime meridian', 'Contour lines'],
-      correctIndex: 0,
-    },
-    {
-      id: 'geography-9',
-      grade: 7,
-      topic: 'Maps and Coordinates',
-      prompt: 'What imaginary line measures distance east or west from the Prime Meridian?',
-      options: ['Latitude', 'Longitude', 'The equator', 'The Tropic of Cancer'],
-      correctIndex: 1,
-    },
-    {
-      id: 'geography-10',
-      grade: 7,
-      topic: 'Physical Geography of Canada',
-      prompt: 'What is the Canadian Shield?',
-      options: [
-        'A large area of ancient rock covering much of central and eastern Canada',
-        'A desert region in southern Alberta',
-        'The mountain range in British Columbia',
-        'The flat farmland of the Prairies',
-      ],
-      correctIndex: 0,
-    },
-    {
-      id: 'geography-11',
-      grade: 8,
-      topic: 'Global Geography',
-      prompt: 'Which is the largest ocean on Earth?',
-      options: ['The Pacific Ocean', 'The Atlantic Ocean', 'The Indian Ocean', 'The Arctic Ocean'],
-      correctIndex: 0,
-    },
-    {
-      id: 'geography-12',
-      grade: 8,
-      topic: 'Climate Zones',
-      prompt: 'Which climate zone is found near the equator and is known for heavy rainfall and high heat?',
-      options: ['Tropical', 'Arctic', 'Temperate', 'Arid'],
-      correctIndex: 0,
-    },
-    {
-      id: 'geography-13',
-      grade: 8,
-      topic: 'Human Geography',
-      prompt: 'What term describes the study of how humans interact with and are distributed across the Earth?',
-      options: ['Human geography', 'Physical geography', 'Meteorology', 'Geology'],
-      correctIndex: 0,
-    },
-    {
-      id: 'geography-14',
-      grade: 8,
-      topic: 'Human Geography',
-      prompt: 'What is urbanization?',
-      options: [
-        'The growth of cities as populations shift from rural to urban areas',
-        'The process of building new farmland',
-        'The melting of polar ice',
-        'The movement of tectonic plates',
-      ],
-      correctIndex: 0,
-    },
-    {
-      id: 'geography-15',
-      grade: 8,
-      topic: 'Climate Zones',
-      prompt: 'Which climate zone is characterized by very low precipitation and extreme temperature swings between day and night?',
-      options: ['Desert (arid)', 'Tropical', 'Tundra', 'Mediterranean'],
-      correctIndex: 0,
-    },
-  ],
-  history: [
+  history_geography: [
     {
       id: 'history-1',
       grade: 9,
@@ -558,6 +428,136 @@ export const QUESTIONS_BY_SUBJECT = {
       topic: 'Confederation',
       prompt: "Who is often called a 'Father of Confederation' and became Canada's first Prime Minister?",
       options: ['Sir John A. Macdonald', 'Wilfrid Laurier', 'George-Étienne Cartier', 'Louis Riel'],
+      correctIndex: 0,
+    },
+    {
+      id: 'geography-1',
+      grade: 9,
+      topic: 'Canada',
+      prompt: 'What is the capital city of Canada?',
+      options: ['Toronto', 'Vancouver', 'Ottawa', 'Montreal'],
+      correctIndex: 2,
+    },
+    {
+      id: 'geography-2',
+      grade: 9,
+      topic: 'Canada',
+      prompt: 'Which is the largest province in Canada by area?',
+      options: ['Ontario', 'British Columbia', 'Alberta', 'Quebec'],
+      correctIndex: 3,
+    },
+    {
+      id: 'geography-3',
+      grade: 10,
+      topic: 'World Geography',
+      prompt: 'Which is the longest river in the world?',
+      options: ['The Nile', 'The Amazon', 'The Mississippi', 'The Yangtze'],
+      correctIndex: 0,
+    },
+    {
+      id: 'geography-4',
+      grade: 10,
+      topic: 'World Geography',
+      prompt: 'Which continent is the Sahara Desert located on?',
+      options: ['Asia', 'Africa', 'Australia', 'South America'],
+      correctIndex: 1,
+    },
+    {
+      id: 'geography-5',
+      grade: 11,
+      topic: 'Maps',
+      prompt: 'On a topographic map, what do contour lines represent?',
+      options: ['Temperature zones', 'Political borders', 'Points of equal elevation', 'Population density'],
+      correctIndex: 2,
+    },
+    {
+      id: 'geography-6',
+      grade: 7,
+      topic: 'Physical Geography of Canada',
+      prompt: "Which mountain range runs along Canada's west coast?",
+      options: ['The Rocky Mountains', 'The Appalachian Mountains', 'The Andes', 'The Ural Mountains'],
+      correctIndex: 0,
+    },
+    {
+      id: 'geography-7',
+      grade: 7,
+      topic: 'Physical Geography of Canada',
+      prompt: 'What is the largest lake located entirely within Canada?',
+      options: ['Lake Superior', 'Great Bear Lake', 'Great Slave Lake', 'Lake Winnipeg'],
+      correctIndex: 1,
+    },
+    {
+      id: 'geography-8',
+      grade: 7,
+      topic: 'Maps and Coordinates',
+      prompt: 'On a map, lines that run east-west and measure distance from the equator are called?',
+      options: ['Lines of latitude', 'Lines of longitude', 'The prime meridian', 'Contour lines'],
+      correctIndex: 0,
+    },
+    {
+      id: 'geography-9',
+      grade: 7,
+      topic: 'Maps and Coordinates',
+      prompt: 'What imaginary line measures distance east or west from the Prime Meridian?',
+      options: ['Latitude', 'Longitude', 'The equator', 'The Tropic of Cancer'],
+      correctIndex: 1,
+    },
+    {
+      id: 'geography-10',
+      grade: 7,
+      topic: 'Physical Geography of Canada',
+      prompt: 'What is the Canadian Shield?',
+      options: [
+        'A large area of ancient rock covering much of central and eastern Canada',
+        'A desert region in southern Alberta',
+        'The mountain range in British Columbia',
+        'The flat farmland of the Prairies',
+      ],
+      correctIndex: 0,
+    },
+    {
+      id: 'geography-11',
+      grade: 8,
+      topic: 'Global Geography',
+      prompt: 'Which is the largest ocean on Earth?',
+      options: ['The Pacific Ocean', 'The Atlantic Ocean', 'The Indian Ocean', 'The Arctic Ocean'],
+      correctIndex: 0,
+    },
+    {
+      id: 'geography-12',
+      grade: 8,
+      topic: 'Climate Zones',
+      prompt: 'Which climate zone is found near the equator and is known for heavy rainfall and high heat?',
+      options: ['Tropical', 'Arctic', 'Temperate', 'Arid'],
+      correctIndex: 0,
+    },
+    {
+      id: 'geography-13',
+      grade: 8,
+      topic: 'Human Geography',
+      prompt: 'What term describes the study of how humans interact with and are distributed across the Earth?',
+      options: ['Human geography', 'Physical geography', 'Meteorology', 'Geology'],
+      correctIndex: 0,
+    },
+    {
+      id: 'geography-14',
+      grade: 8,
+      topic: 'Human Geography',
+      prompt: 'What is urbanization?',
+      options: [
+        'The growth of cities as populations shift from rural to urban areas',
+        'The process of building new farmland',
+        'The melting of polar ice',
+        'The movement of tectonic plates',
+      ],
+      correctIndex: 0,
+    },
+    {
+      id: 'geography-15',
+      grade: 8,
+      topic: 'Climate Zones',
+      prompt: 'Which climate zone is characterized by very low precipitation and extreme temperature swings between day and night?',
+      options: ['Desert (arid)', 'Tropical', 'Tundra', 'Mediterranean'],
       correctIndex: 0,
     },
   ],
