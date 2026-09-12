@@ -50,6 +50,7 @@ export default function ClassCard({
   onOpenPractice,
   onOpenGrades,
   onOpenCurriculum,
+  onOpenMapQuiz,
   onBack,
   onLogout,
   onLogoClick,
@@ -214,6 +215,15 @@ export default function ClassCard({
         <button type="button" className="btn btn-secondary btn-small" onClick={onOpenCurriculum}>
           {t('home.curriculum')}
         </button>
+        {/* Grade 10 Geography only — a practice-only activity with no
+            XP/coins/streak wiring at all (see MapQuizScreen.jsx), so unlike
+            the PremiumFeatureButtons above it's plain and ungated: every
+            student, including a free/trial-expired one, can play it. */}
+        {subject.id === 'geography' && Number(grade) === 10 && (
+          <button type="button" className="btn btn-secondary btn-small" onClick={onOpenMapQuiz}>
+            {t('home.mapQuiz')}
+          </button>
+        )}
         {/* This card represents exactly one class (see entryKind) — its
             forum is scoped only to that class's own members, no
             subject-wide/open forum layered on top. A 'group' entry only

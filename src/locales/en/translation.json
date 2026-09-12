@@ -137,6 +137,7 @@
     "practice": "🎯 Practice",
     "myGrades": "📊 My Grades",
     "curriculum": "📖 Curriculum",
+    "mapQuiz": "🗺️ Map Quiz",
     "chooseSubject": "Today's question",
     "todaysQuestion": "Today's Question",
     "myClasses": "My Subjects",
@@ -865,5 +866,41 @@
   },
   "curriculum": {
     "lastUpdated": "Last updated: {{date}}"
+  },
+  "mapQuiz": {
+    "title": "🗺️ Map Quiz",
+    "subtitle": "Canada — provinces, territories & oceans",
+    "practiceNote": "Practice only — no XP or coins, and no daily limit. Play as many times as you like!",
+    "progress": "{{labeled}}/{{total}} labeled",
+    "reset": "Start Over",
+    "unlabeledRegion": "Unlabeled {{kind}}",
+    "kind": {
+      "province": "province",
+      "territory": "territory",
+      "ocean": "ocean"
+    },
+    "popupTitle": "Which region is this?",
+    "popupSubtitle": "Pick the correct name from the list below.",
+    "summaryTitle": "🎉 Map Complete!",
+    "summaryScore": "{{correct}}/{{total}} correct on the first try",
+    "playAgain": "Play Again",
+    "regions": {
+      "bc": "British Columbia",
+      "ab": "Alberta",
+      "sk": "Saskatchewan",
+      "mb": "Manitoba",
+      "on": "Ontario",
+      "qc": "Quebec",
+      "nb": "New Brunswick",
+      "pe": "Prince Edward Island",
+      "ns": "Nova Scotia",
+      "nl": "Newfoundland and Labrador",
+      "yt": "Yukon",
+      "nt": "Northwest Territories",
+      "nu": "Nunavut",
+      "pacific": "Pacific Ocean",
+      "arctic": "Arctic Ocean",
+      "atlantic": "Atlantic Ocean"
+    }
   }
 }

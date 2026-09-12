@@ -137,6 +137,7 @@
     "practice": "🎯 Práctica",
     "myGrades": "📊 Mis notas",
     "curriculum": "📖 Currículo",
+    "mapQuiz": "🗺️ Quiz del Mapa",
     "chooseSubject": "La pregunta de hoy",
     "todaysQuestion": "Pregunta de Hoy",
     "myClasses": "Mis Materias",
@@ -865,5 +866,41 @@
   },
   "curriculum": {
     "lastUpdated": "Última actualización: {{date}}"
+  },
+  "mapQuiz": {
+    "title": "🗺️ Quiz del Mapa",
+    "subtitle": "Canadá — provincias, territorios y océanos",
+    "practiceNote": "Solo práctica — sin XP ni monedas, y sin límite diario. ¡Juega tantas veces como quieras!",
+    "progress": "{{labeled}}/{{total}} etiquetadas",
+    "reset": "Reiniciar",
+    "unlabeledRegion": "{{kind}} sin etiquetar",
+    "kind": {
+      "province": "Provincia",
+      "territory": "Territorio",
+      "ocean": "Océano"
+    },
+    "popupTitle": "¿Qué región es esta?",
+    "popupSubtitle": "Elige el nombre correcto de la lista de abajo.",
+    "summaryTitle": "🎉 ¡Mapa completado!",
+    "summaryScore": "{{correct}}/{{total}} correctas al primer intento",
+    "playAgain": "Jugar de nuevo",
+    "regions": {
+      "bc": "Columbia Británica",
+      "ab": "Alberta",
+      "sk": "Saskatchewan",
+      "mb": "Manitoba",
+      "on": "Ontario",
+      "qc": "Quebec",
+      "nb": "Nuevo Brunswick",
+      "pe": "Isla del Príncipe Eduardo",
+      "ns": "Nueva Escocia",
+      "nl": "Terranova y Labrador",
+      "yt": "Yukón",
+      "nt": "Territorios del Noroeste",
+      "nu": "Nunavut",
+      "pacific": "Océano Pacífico",
+      "arctic": "Océano Ártico",
+      "atlantic": "Océano Atlántico"
+    }
   }
 }

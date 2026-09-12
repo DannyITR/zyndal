@@ -54,6 +54,7 @@ import PracticeFlow from './practice/PracticeFlow'
 import GradesScreen from './grades/GradesScreen'
 import WalletScreen from './wallet/WalletScreen'
 import CurriculumOutlineScreen from './curriculum/CurriculumOutlineScreen'
+import MapQuizScreen from './geography/MapQuizScreen'
 import HomeworkFlow from './homework/HomeworkFlow'
 import MyClassesScreen from './classes/MyClassesScreen'
 import ForumScreen from '../shared/forum/ForumScreen'
@@ -120,6 +121,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [uploadsView, setUploadsView] = useState(null) // null | 'select-type' | 'library'
   const [showPractice, setShowPractice] = useState(false)
   const [showGrades, setShowGrades] = useState(false)
+  const [showMapQuiz, setShowMapQuiz] = useState(false)
   const [showWallet, setShowWallet] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(null) // null | 'default' | 'trial'
   const [showCurriculum, setShowCurriculum] = useState(false)
@@ -685,6 +687,10 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     )
   }
 
+  if (showMapQuiz) {
+    return <MapQuizScreen user={user} onBack={() => setShowMapQuiz(false)} onLogout={onLogout} onLogoClick={handleLogoClick} />
+  }
+
   if (showWallet) {
     // Reachable only via the Coins stat box, which is itself only rendered
     // when user.has_linked_parent is true — but that flag could be stale
@@ -841,6 +847,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         onOpenPractice={() => setShowPractice(true)}
         onOpenGrades={() => setShowGrades(true)}
         onOpenCurriculum={() => setShowCurriculum(true)}
+        onOpenMapQuiz={() => setShowMapQuiz(true)}
         onBack={() => {
           setPickedClassSubjectId(null)
           setPickedEntry(null)

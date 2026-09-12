@@ -137,6 +137,7 @@
     "practice": "🎯 Pratique",
     "myGrades": "📊 Mes notes",
     "curriculum": "📖 Programme",
+    "mapQuiz": "🗺️ Quiz Carte",
     "chooseSubject": "La question du jour",
     "todaysQuestion": "Question du Jour",
     "myClasses": "Mes Matières",
@@ -865,5 +866,41 @@
   },
   "curriculum": {
     "lastUpdated": "Dernière mise à jour : {{date}}"
+  },
+  "mapQuiz": {
+    "title": "🗺️ Quiz Carte",
+    "subtitle": "Canada — provinces, territoires et océans",
+    "practiceNote": "Entraînement seulement — pas de XP ni de pièces, et aucune limite quotidienne. Joue autant de fois que tu veux !",
+    "progress": "{{labeled}}/{{total}} identifiées",
+    "reset": "Recommencer",
+    "unlabeledRegion": "{{kind}} non identifié(e)",
+    "kind": {
+      "province": "Province",
+      "territory": "Territoire",
+      "ocean": "Océan"
+    },
+    "popupTitle": "Quelle est cette région ?",
+    "popupSubtitle": "Choisis le bon nom dans la liste ci-dessous.",
+    "summaryTitle": "🎉 Carte terminée !",
+    "summaryScore": "{{correct}}/{{total}} correctes du premier coup",
+    "playAgain": "Rejouer",
+    "regions": {
+      "bc": "Colombie-Britannique",
+      "ab": "Alberta",
+      "sk": "Saskatchewan",
+      "mb": "Manitoba",
+      "on": "Ontario",
+      "qc": "Québec",
+      "nb": "Nouveau-Brunswick",
+      "pe": "Île-du-Prince-Édouard",
+      "ns": "Nouvelle-Écosse",
+      "nl": "Terre-Neuve-et-Labrador",
+      "yt": "Yukon",
+      "nt": "Territoires du Nord-Ouest",
+      "nu": "Nunavut",
+      "pacific": "Océan Pacifique",
+      "arctic": "Océan Arctique",
+      "atlantic": "Océan Atlantique"
+    }
   }
 }

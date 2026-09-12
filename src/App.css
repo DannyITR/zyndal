@@ -6029,6 +6029,107 @@ div.zyndal-logo {
   resize: vertical;
 }
 
+/* ---------- Map Quiz (Grade 10 Geography practice activity) ---------- */
+
+.map-quiz-progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.map-quiz-progress-pill {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-dim);
+  background: var(--card-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 6px 14px;
+}
+
+.map-quiz-map-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 10px;
+}
+
+.map-quiz-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.map-quiz-region {
+  fill: var(--card-2);
+  stroke: var(--border-strong);
+  stroke-width: 2;
+  cursor: pointer;
+  transition: fill 0.15s ease, stroke 0.15s ease;
+}
+
+.map-quiz-region:hover {
+  fill: color-mix(in srgb, var(--purple) 18%, var(--card-2));
+}
+
+.map-quiz-region--ocean {
+  fill: color-mix(in srgb, var(--blue) 16%, var(--card-2));
+}
+
+.map-quiz-region--ocean:hover {
+  fill: color-mix(in srgb, var(--blue) 32%, var(--card-2));
+}
+
+.map-quiz-region--active {
+  stroke: var(--purple);
+  stroke-width: 4;
+}
+
+.map-quiz-region--correct,
+.map-quiz-region--correct:hover {
+  fill: color-mix(in srgb, var(--green) 40%, var(--card-2));
+  stroke: var(--green);
+  cursor: default;
+}
+
+.map-quiz-region-check {
+  fill: var(--green-text);
+  font-size: 22px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.map-quiz-name-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.map-quiz-name-btn {
+  flex: 1 1 auto;
+}
+
+.map-quiz-name-btn--wrong {
+  animation: map-quiz-shake 0.4s ease;
+  background: rgba(255, 92, 122, 0.16);
+  border-color: rgba(255, 92, 122, 0.6);
+  color: var(--red-text);
+}
+
+@keyframes map-quiz-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
 /* ---------- Responsive ---------- */
 
 @media (min-width: 540px) {
