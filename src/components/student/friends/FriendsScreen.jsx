@@ -314,7 +314,7 @@ export default function FriendsScreen({ user, canShareToday, onMessageFriend, on
         ) : friends.length === 0 ? (
           <p className="field-hint">{t('friends.noFriendsYet')}</p>
         ) : (
-          <div className="friend-picker-list">
+          <div className="friend-list">
             {friends.map((friend) => {
               const shareStreak = shares ? computeShareStreak(shares, user.id, friend.id, today) : 0
               const sharedToday = shares ? hasSharedToday(shares, user.id, friend.id, today) : false
@@ -323,16 +323,17 @@ export default function FriendsScreen({ user, canShareToday, onMessageFriend, on
               // matches FriendSharePickerModal.jsx's own gate exactly.
               const friendAlreadyShared = shares ? hasSharedToday(shares, friend.id, user.id, today) : false
               const incoming = incomingShares.find((s) => s.senderId === friend.id)
-              // The share status/CTA and the poke/message icons each live in
-              // their own row (see .friend-picker-row-top/.friend-picker-actions
-              // below) instead of all sharing one flex-wrap line — a long
-              // username used to bleed past its own box (min-width: 0 lets a
-              // flex item shrink, but text still overflows visibly unless
-              // truncated — see .share-friend-name's ellipsis) and run
-              // straight into "Shared today"/the poke/message icons beside
-              // it on narrow screens. Splitting them onto separate rows means
-              // nothing beside the username can ever overlap it again,
-              // regardless of how long it is or how narrow the screen is.
+              // The share status/CTA and the poke/message/streak icons each
+              // live in their own row (see .friend-picker-row-top/
+              // .friend-picker-actions below) instead of all sharing one
+              // flex-wrap line — a long username used to bleed past its own
+              // box (min-width: 0 lets a flex item shrink, but text still
+              // overflows visibly unless truncated — see
+              // .share-friend-name's ellipsis) and run straight into "Shared
+              // today"/the icons beside it on narrow screens. Splitting them
+              // onto separate rows means nothing beside the username can
+              // ever overlap it again, regardless of how long it is or how
+              // narrow the screen is.
               return (
                 <div key={friend.id} className="friend-picker-row">
                   <div className="friend-picker-row-top">
@@ -346,7 +347,6 @@ export default function FriendsScreen({ user, canShareToday, onMessageFriend, on
                       ) : (
                         <p className="share-friend-name">@{friend.username}</p>
                       )}
-                      {shareStreak > 0 && <p className="share-friend-stat share-friend-stat--share">{t('friends.shareStreakDay', { count: shareStreak })}</p>}
                     </div>
                     {sharedToday ? (
                       <span className="friend-picker-shared">{t('common.sharedTodayBadge')}</span>
@@ -362,11 +362,23 @@ export default function FriendsScreen({ user, canShareToday, onMessageFriend, on
                     )}
                   </div>
 
-                  {!sharedToday && !friendAlreadyShared && !canShareToday && (
-                    <p className="field-hint friend-picker-hint">{t('common.completeToShareWith', { username: friend.username })}</p>
-                  )}
-
+                  {/* Replaces the old "Complete today's questions to share
+                      with @username" hint text — that line, plus the share-
+                      streak line that used to sit under the username, made
+                      every row noticeably taller. The streak now only shows
+                      as a compact, purely informative icon here (no click
+                      handler) when one is actually active. */}
                   <div className="friend-picker-actions">
+                    {shareStreak > 0 && (
+                      <span
+                        className="friend-share-streak-icon"
+                        role="img"
+                        aria-label={t('friends.shareStreakDay', { count: shareStreak })}
+                        title={t('friends.shareStreakDay', { count: shareStreak })}
+                      >
+                        🔥
+                      </span>
+                    )}
                     {pokedIds.has(friend.id) ? (
                       <span className="friend-poked-badge">{t('friends.pokeSent')}</span>
                     ) : (

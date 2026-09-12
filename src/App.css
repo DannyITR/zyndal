@@ -4853,6 +4853,19 @@ div.zyndal-logo {
   overflow-y: auto;
 }
 
+/* FriendsScreen.jsx's own top-level "Your Friends" list — unlike
+   .friend-picker-list above (used inside FriendSharePickerModal.jsx, a
+   fixed-size modal that needs its own internal scroll), this one has no
+   height cap: it just flows with the page, so the whole screen scrolls
+   normally and a student with many friends can reach the last card the
+   same way they'd scroll any other page, instead of hunting for a nested
+   340px-tall scroll box that could cut the list off mid-row. */
+.friend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* Column layout: a top row (avatar + username/streak + share status/CTA),
    an optional hint line, then a dedicated actions row (poke + message) —
    see the comment in FriendsScreen.jsx above this row's JSX for why this
@@ -4943,6 +4956,26 @@ div.zyndal-logo {
   font-size: 12px;
   font-weight: 700;
   color: var(--purple-text);
+}
+
+/* Purely informative — sits beside the poke/message icons in
+   .friend-picker-actions, shown only when a share streak with that friend
+   is active (see FriendsScreen.jsx). Not a button: no click handler, no
+   hover/active states, just a compact glanceable indicator that replaces
+   the old "Complete today's questions to share with @username" hint text,
+   which no longer has anywhere to go now that this row is icon-only. */
+.friend-share-streak-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  line-height: 1;
+  background: color-mix(in srgb, var(--amber-text) 18%, transparent);
+  cursor: default;
 }
 
 /* ---------- Notifications ---------- */
