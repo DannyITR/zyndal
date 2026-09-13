@@ -98,6 +98,32 @@ export async function getStreakRow(userId) {
   return created
 }
 
+// Awards 1 XP for a shared class-notes upload, capped at once per
+// (student, class, day) via upload_xp_awards' unique constraint — same
+// insert-and-catch-23505 idiom as claimStripeEvent/recordPerfectWeekAchievement.
+// Best-effort like syncUserTimezone/lockDailyQuestion: a rare XP-award
+// failure must never fail the upload save itself, since the upload has
+// already been persisted by the time this runs (see save-shared-upload.js).
+export async function awardUploadNotesXp(userId, classType, classId, awardDate) {
+  try {
+    const { error: claimError } = await supabase
+      .from('upload_xp_awards')
+      .insert({ user_id: userId, class_type: classType, class_id: classId, award_date: awardDate })
+    if (claimError) {
+      if (claimError.code === '23505') return // already awarded for this class today
+      throw claimError
+    }
+    const streak = await getStreakRow(userId)
+    const { error: xpError } = await supabase
+      .from('streaks')
+      .update({ total_xp: (streak.total_xp || 0) + 1 })
+      .eq('user_id', userId)
+    if (xpError) throw xpError
+  } catch (err) {
+    console.error('[db] failed to award upload notes XP:', err)
+  }
+}
+
 // A stored answer's question_text might match a generated_questions row
 // instead of the hardcoded bank (findQuestionByPrompt only ever searches
 // the latter) — this batch-fetches every generated question for the

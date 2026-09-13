@@ -782,9 +782,10 @@ export async function addPagesToUpload({ uploadId, questions, pagesAdded }) {
 // insert entirely (throwing INAPPROPRIATE_CONTENT) if it's flagged, so
 // nothing here needs its own moderation handling — a thrown error from the
 // first call means save-questions never runs and nothing was persisted.
-export async function saveSharedUpload({ groupId, sharedForDate, subject, topic, notes, aiResult, encodedFiles, pagesCount }) {
+export async function saveSharedUpload({ classType, classId, sharedForDate, subject, topic, notes, aiResult, encodedFiles, pagesCount }) {
   const upload = await callUploadsApi('POST', 'save-shared-upload', {
-    group_id: groupId,
+    class_type: classType,
+    class_id: classId,
     shared_for_date: sharedForDate,
     subject,
     topic,
@@ -802,11 +803,11 @@ export async function saveSharedUpload({ groupId, sharedForDate, subject, topic,
   return { ...upload, questions: aiResult.questions || [] }
 }
 
-// Powers GroupUploadsCalendar.jsx — one month's worth of a group's shared
-// uploads, bucketed by shared_for_date server-side (see
-// api/classes/get-group-uploads-calendar.js).
-export async function getGroupUploadsCalendar(groupId, month, year) {
-  const params = new URLSearchParams({ group_id: groupId, month: String(month), year: String(year) })
+// Powers GroupUploadsCalendar.jsx — one month's worth of a class's shared
+// uploads (an unclaimed group or a teacher-claimed class), bucketed by
+// shared_for_date server-side (see api/classes/get-group-uploads-calendar.js).
+export async function getGroupUploadsCalendar(classType, classId, month, year) {
+  const params = new URLSearchParams({ class_type: classType, class_id: classId, month: String(month), year: String(year) })
   return callClassesApi('GET', `get-group-uploads-calendar?${params.toString()}`)
 }
 

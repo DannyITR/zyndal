@@ -37,8 +37,8 @@ export default function ClassCard({
   entryName, // the claimed class's display name ('class' entries only)
   currentUnitNumber, // 'class' entries only — classes.current_unit_number
   currentUnitTitle, // 'class' entries only — classes.current_unit_title
-  classCreatedAt, // 'class' entries only — bounds the homework calendar's earliest month
-  groupCreatedAt, // 'group' entries only — bounds the Group Notes Calendar's earliest month
+  classCreatedAt, // 'class' entries only — bounds the homework calendar's, and (with groupCreatedAt) the Notes Calendar's, earliest month
+  groupCreatedAt, // 'group' entries only — bounds the Notes Calendar's earliest month
   joined, // 'group' entries only — a 'class' entry is always joined
   onJoin,
   onLeave,
@@ -219,8 +219,9 @@ export default function ClassCard({
           onLogoClick={onLogoClick}
         />
         <GroupUploadsCalendar
-          groupId={entryId}
-          groupCreatedAt={groupCreatedAt}
+          classType={entryKind}
+          classId={entryId}
+          createdAt={entryKind === 'class' ? classCreatedAt : groupCreatedAt}
           onSelectDay={(date, uploads) => setGroupUploadsDayDetail({ date, uploads })}
         />
       </div>
@@ -294,16 +295,14 @@ export default function ClassCard({
         <button type="button" className="btn btn-secondary btn-small" onClick={onOpenCurriculum}>
           {t('home.curriculum')}
         </button>
-        {/* Unclaimed groups only — a teacher-claimed 'class' entry already
-            has its own real homework calendar above; this is the
-            equivalent for a group, showing notes/homework shared by other
-            members instead. Ungated (no PremiumFeatureButton), matching the
-            rest of this feature's no-gating-during-growth-phase decision. */}
-        {entryKind === 'group' && (
-          <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowGroupCalendar(true)}>
-            {t('home.groupNotesCalendar')}
-          </button>
-        )}
+        {/* Shown for both entry kinds — a teacher-claimed 'class' entry
+            already has its own real homework calendar above; this is a
+            complementary, peer-shared catch-up notes calendar, same as for
+            an unclaimed group. Ungated (no PremiumFeatureButton), matching
+            the rest of this feature's no-gating-during-growth-phase decision. */}
+        <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowGroupCalendar(true)}>
+          {t('home.groupNotesCalendar')}
+        </button>
         {/* Grade 10 History & Geography only (the old standalone Geography
             subject was merged into this combined subject — see
             scripts/merge-history-geography.mjs) — a practice-only activity

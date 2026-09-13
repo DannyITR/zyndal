@@ -47,7 +47,9 @@ async function handleByUploadId(userId, uploadId) {
     // of Group Notes Calendar is gated during the current growth phase.
     await assertPremium(userId)
   } else {
-    const sharedMembership = upload.shared_group_id ? await getForumMembership(userId, 'group', upload.shared_group_id) : { member: false }
+    const sharedMembership = upload.shared_class_id
+      ? await getForumMembership(userId, upload.shared_class_type, upload.shared_class_id)
+      : { member: false }
     if (!sharedMembership.member) {
       const err = new Error('Upload not found.')
       err.status = 404

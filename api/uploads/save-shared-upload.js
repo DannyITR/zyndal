@@ -3,8 +3,10 @@ import { supabase } from '../_lib/auth.js'
 import { getForumMembership } from '../_lib/forumAuth.js'
 import { assertUploadPagesAllowed } from '../_lib/uploadLimits.js'
 import { screenUploadImages } from '../_lib/uploadSafety.js'
+import { awardUploadNotesXp } from '../_lib/db.js'
 import { sanitizeString, sanitizeUuid } from '../_lib/sanitize.js'
 import { SUBJECTS, LIGHT_ELECTIVE_SUBJECTS } from '../../src/lib/questions.js'
+import { isValidTimeZone, DEFAULT_TIMEZONE, todayStr } from '../../src/lib/streak.js'
 
 // Unlike sanitizeSubject (api/_lib/sanitize.js) — used broadly by grades/
 // study-plans/practice-sessions, none of which a lighter elective's UI
@@ -38,9 +40,13 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 const MAX_PAGES = 5
 
 function validate(body) {
-  const groupId = sanitizeUuid(body.group_id)
-  if (!groupId) return { field: 'group_id', message: 'group_id must be a valid id.' }
-  body.group_id = groupId
+  const classId = sanitizeUuid(body.class_id)
+  if (!classId) return { field: 'class_id', message: 'class_id must be a valid id.' }
+  body.class_id = classId
+
+  if (body.class_type !== 'group' && body.class_type !== 'class') {
+    return { field: 'class_type', message: "class_type must be 'group' or 'class'." }
+  }
 
   if (typeof body.shared_for_date !== 'string' || !DATE_PATTERN.test(body.shared_for_date)) {
     return { field: 'shared_for_date', message: 'shared_for_date is required and must be a YYYY-MM-DD date.' }
@@ -74,7 +80,8 @@ function validate(body) {
 
 async function handle({ userId, body }) {
   const {
-    group_id: groupId,
+    class_type: classType,
+    class_id: classId,
     shared_for_date: sharedForDate,
     subject,
     topic,
@@ -88,9 +95,9 @@ async function handle({ userId, body }) {
   } = body
   const newPages = pagesCount ?? 1
 
-  const membership = await getForumMembership(userId, 'group', groupId)
+  const membership = await getForumMembership(userId, classType, classId)
   if (!membership.member) {
-    const err = new Error('You are not a member of this group.')
+    const err = new Error('You are not a member of this class.')
     err.status = 403
     err.code = 'FORBIDDEN'
     throw err
@@ -105,7 +112,7 @@ async function handle({ userId, body }) {
   // create-thread.js's own comment on why its profanity check is
   // re-verified server-side rather than trusted from the client. Nothing
   // is inserted at all if this flags the content.
-  const { flagged } = await screenUploadImages(files)
+  const { flagged, has_substantive_content: hasSubstantiveContent } = await screenUploadImages(files)
   if (flagged) {
     const err = new Error('This upload was flagged as inappropriate and was not shared.')
     err.status = 400
@@ -124,12 +131,21 @@ async function handle({ userId, body }) {
       summary: summary ?? null,
       key_concepts: keyConcepts ?? null,
       pages_count: newPages,
-      shared_group_id: groupId,
+      shared_class_type: classType,
+      shared_class_id: classId,
       shared_for_date: sharedForDate,
     })
     .select()
     .single()
   if (error) throw error
+
+  // 1 XP per class per day, only for substantive content — never blocks the
+  // save/response above, even on failure (see awardUploadNotesXp's own
+  // best-effort comment).
+  if (hasSubstantiveContent) {
+    const tz = isValidTimeZone(timezone) ? timezone : DEFAULT_TIMEZONE
+    await awardUploadNotesXp(userId, classType, classId, todayStr(new Date(), tz))
+  }
 
   return data
 }

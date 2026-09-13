@@ -17,7 +17,9 @@ const UPLOAD_SAFETY_SYSTEM_PROMPT = `You are a content safety screener for a Que
 
 Do NOT flag legitimate school notes, homework, worksheets, or textbook pages just because the handwriting is messy, the photo is blurry or poorly lit, or the material covers a sensitive-but-legitimate academic topic (e.g. the history of war, human biology, historical atrocities discussed in a textbook). Only flag genuinely inappropriate content as described above — when in doubt about a clean academic document, do not flag it.
 
-Return only JSON: { flagged: boolean, reason: string (one short, student-friendly sentence explaining why if flagged, empty string otherwise) }`
+Separately (and unrelated to the safety check above), assess whether the content is substantive study material — legible academic content a classmate could actually learn from — as opposed to a blank/near-blank page, a random unrelated photo, or an image with no legible content. This is NOT a safety concern: never set flagged=true for this reason alone, only report it via has_substantive_content. When in doubt, prefer has_substantive_content=true.
+
+Return only JSON: { flagged: boolean, reason: string (one short, student-friendly sentence explaining why if flagged, empty string otherwise), has_substantive_content: boolean }`
 
 const UPLOAD_SAFETY_SCHEMA = {
   type: 'object',
@@ -25,8 +27,9 @@ const UPLOAD_SAFETY_SCHEMA = {
   properties: {
     flagged: { type: 'boolean' },
     reason: { type: 'string' },
+    has_substantive_content: { type: 'boolean' },
   },
-  required: ['flagged', 'reason'],
+  required: ['flagged', 'reason', 'has_substantive_content'],
 }
 
 // files: the same [{ base64, mediaType }] shape api/generate-from-document.js

@@ -211,16 +211,47 @@ create table if not exists uploads (
 );
 create index if not exists uploads_user_id_idx on uploads(user_id);
 
--- Group Notes Calendar: an upload can optionally be shared with the
--- unclaimed school_subject_group it was uploaded from (see
--- api/uploads/save-shared-upload.js) instead of staying private to the
--- uploader. Both null for every private upload (the vast majority) —
--- shared_for_date is the day the notes relate to, picked by the student at
--- upload time, not the upload's own created_at, so a student catching up
--- late still finds it filed under the right day.
-alter table uploads add column if not exists shared_group_id uuid references school_subject_groups(id) on delete cascade;
+-- Notes Calendar: an upload can optionally be shared with the class it was
+-- uploaded from — either an unclaimed school_subject_group or a
+-- teacher-claimed class (see api/uploads/save-shared-upload.js) — instead
+-- of staying private to the uploader. shared_class_type/shared_class_id
+-- mirror forum_threads' own class_type/class_id discriminator pair (no FK
+-- on shared_class_id since it points at two different tables depending on
+-- shared_class_type; every caller re-derives/re-checks membership itself
+-- via api/_lib/forumAuth.js). Both null for every private upload (the vast
+-- majority) — shared_for_date is the day the notes relate to, picked by the
+-- student at upload time, not the upload's own created_at, so a student
+-- catching up late still finds it filed under the right day.
+--
+-- Originally a group-only shared_group_id (FK'd to school_subject_groups)
+-- generalized here to also support classes — safe to rename in place since
+-- the column had zero rows set in production at the time of this change.
+alter table uploads rename column shared_group_id to shared_class_id;
+alter table uploads drop constraint if exists uploads_shared_group_id_fkey;
+alter table uploads add column if not exists shared_class_type text check (shared_class_type in ('group', 'class'));
 alter table uploads add column if not exists shared_for_date date;
-create index if not exists uploads_shared_group_idx on uploads(shared_group_id, shared_for_date);
+drop index if exists uploads_shared_group_idx;
+create index if not exists uploads_shared_class_idx on uploads(shared_class_type, shared_class_id, shared_for_date);
+
+-- Once-per-class-per-day XP award for sharing substantive notes to a
+-- class's Notes Calendar (see api/uploads/save-shared-upload.js and
+-- api/_lib/db.js's awardUploadNotesXp). award_date is the uploader's own
+-- local "today" at upload time (not shared_for_date), so backfilling
+-- several old days in one sitting can't be used to farm repeated XP for
+-- the same class. Insert-and-catch-23505 idiom (see stripe_webhook_events)
+-- rather than a read-then-write check, so two near-simultaneous uploads to
+-- the same class can't both slip through and double-award.
+create table if not exists upload_xp_awards (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  class_type text not null check (class_type in ('group', 'class')),
+  class_id uuid not null,
+  award_date text not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, class_type, class_id, award_date)
+);
+create index if not exists upload_xp_awards_user_date_idx on upload_xp_awards(user_id, award_date);
+alter table upload_xp_awards enable row level security;
 
 -- Soft per-subject weekly usage cap on uploads (see WEEKLY_UPLOAD_PAGE_LIMIT
 -- in src/lib/uploads.js, enforced by api/_lib/uploadLimits.js), independent

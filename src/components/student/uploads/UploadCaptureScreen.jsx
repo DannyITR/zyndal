@@ -30,12 +30,12 @@ function buildRecentDayOptions(today, count) {
 // / topic / grade fields (those already exist on the upload), just capture
 // more pages and merge their extracted questions into the same upload.
 //
-// groupContext: { groupId, groupName } when this screen was opened from an
-// unclaimed group's Class Card (see StudentFlow.jsx), else null. Only ever
-// offers the "share with group" checkbox for Study Material — never a
-// graded Test, which would leak one student's grade to the whole group —
-// see save-shared-upload.js's own comment on this same restriction,
-// enforced there again server-side.
+// classContext: { classType, classId, className } when this screen was
+// opened from a Class Card — either an unclaimed group or a teacher-claimed
+// class (see StudentFlow.jsx) — else null. Only ever offers the "share with
+// class" checkbox for Study Material — never a graded Test, which would
+// leak one student's grade to the whole class — see save-shared-upload.js's
+// own comment on this same restriction, enforced there again server-side.
 //
 // presetSharedForDate: set only when this screen was reached via the "Upload
 // notes" button on a specific day of the Group Notes Calendar (see
@@ -50,7 +50,7 @@ export default function UploadCaptureScreen({
   uploadType,
   lockedSubjectId,
   existingUpload,
-  groupContext,
+  classContext,
   presetSharedForDate,
   onSaved,
   onBack,
@@ -64,7 +64,7 @@ export default function UploadCaptureScreen({
   const [gradeReceived, setGradeReceived] = useState('')
   const [testDate, setTestDate] = useState('')
   const [notes, setNotes] = useState('')
-  const [shareWithGroup, setShareWithGroup] = useState(Boolean(presetSharedForDate))
+  const [shareWithClass, setShareWithClass] = useState(Boolean(presetSharedForDate))
   const [sharedForDate, setSharedForDate] = useState(presetSharedForDate || todayStr())
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
@@ -126,17 +126,17 @@ export default function UploadCaptureScreen({
   const isTest = uploadType === 'test'
   const isAddingPages = Boolean(existingUpload)
   // Only ever offered for a brand-new Study Material upload made from
-  // inside an unclaimed group's page — never while adding pages to an
-  // existing upload (which may already be shared or private from when it
-  // was first created, not something to flip here), and never for a Test.
-  const canShareWithGroup = Boolean(groupContext) && !isTest && !isAddingPages
-  const shareDayOptions = canShareWithGroup ? buildRecentDayOptions(todayStr(), SHARE_DAY_OPTIONS_COUNT) : []
+  // inside a Class Card's page (group or class) — never while adding pages
+  // to an existing upload (which may already be shared or private from when
+  // it was first created, not something to flip here), and never for a Test.
+  const canShareWithClass = Boolean(classContext) && !isTest && !isAddingPages
+  const shareDayOptions = canShareWithClass ? buildRecentDayOptions(todayStr(), SHARE_DAY_OPTIONS_COUNT) : []
   const canSubmit =
     pages.length > 0 &&
     !processing &&
     !limitReached &&
     (isAddingPages || (topic.trim() && (!isTest || (gradeReceived !== '' && Number(gradeReceived) >= 0 && Number(gradeReceived) <= 100 && testDate)))) &&
-    (!shareWithGroup || sharedForDate)
+    (!shareWithClass || sharedForDate)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -151,9 +151,10 @@ export default function UploadCaptureScreen({
         await addPagesToUpload({ uploadId: existingUpload.id, questions: aiResult.questions, pagesAdded: files.length })
         const refreshed = await getUploadDetail(existingUpload.id)
         onSaved(refreshed)
-      } else if (canShareWithGroup && shareWithGroup) {
+      } else if (canShareWithClass && shareWithClass) {
         const saved = await saveSharedUpload({
-          groupId: groupContext.groupId,
+          classType: classContext.classType,
+          classId: classContext.classId,
           sharedForDate,
           subject: subjectId,
           topic: topic.trim(),
@@ -344,21 +345,21 @@ export default function UploadCaptureScreen({
               />
             </div>
 
-            {canShareWithGroup && presetSharedForDate && (
+            {canShareWithClass && presetSharedForDate && (
               <div className="field">
-                <p className="field-hint">{t('groupUploads.sharingLockedHint', { group: groupContext.groupName, date: formatLongDate(presetSharedForDate) })}</p>
+                <p className="field-hint">{t('groupUploads.sharingLockedHint', { className: classContext.className, date: formatLongDate(presetSharedForDate) })}</p>
               </div>
             )}
 
-            {canShareWithGroup && !presetSharedForDate && (
+            {canShareWithClass && !presetSharedForDate && (
               <div className="field">
                 <label className="checkbox-field">
-                  <input type="checkbox" checked={shareWithGroup} onChange={(e) => setShareWithGroup(e.target.checked)} />
+                  <input type="checkbox" checked={shareWithClass} onChange={(e) => setShareWithClass(e.target.checked)} />
                   <span>{t('groupUploads.shareCheckboxLabel')}</span>
                 </label>
-                <p className="field-hint">{t('groupUploads.shareCheckboxHint', { group: groupContext.groupName })}</p>
+                <p className="field-hint">{t('groupUploads.shareCheckboxHint', { className: classContext.className })}</p>
 
-                {shareWithGroup && (
+                {shareWithClass && (
                   <div className="field">
                     <label htmlFor="upload-shared-for-date">{t('groupUploads.sharedForDateLabel')}</label>
                     <select id="upload-shared-for-date" value={sharedForDate} onChange={(e) => setSharedForDate(e.target.value)}>

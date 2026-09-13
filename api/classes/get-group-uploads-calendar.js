@@ -5,17 +5,23 @@ import { sanitizeUuid, sanitizeInteger } from '../_lib/sanitize.js'
 
 // Mirrors api/classes/get-class-homework-calendar.js's exact month/year
 // bounds logic — same pad/firstDay/lastDay pattern — backed by shared
-// uploads (uploads.shared_group_id/shared_for_date) instead of homework
-// assignments. Deliberately NOT premium-gated, matching
-// save-shared-upload.js's own comment on why.
+// uploads (uploads.shared_class_type/shared_class_id/shared_for_date)
+// instead of homework assignments. Works for both an unclaimed group and a
+// teacher-claimed class (see forum_threads' own class_type/class_id
+// pattern). Deliberately NOT premium-gated, matching save-shared-upload.js's
+// own comment on why.
 function pad(n) {
   return String(n).padStart(2, '0')
 }
 
 function validate(body) {
-  const groupId = sanitizeUuid(body.group_id)
-  if (!groupId) return { field: 'group_id', message: 'A valid group_id is required.' }
-  body.group_id = groupId
+  const classId = sanitizeUuid(body.class_id)
+  if (!classId) return { field: 'class_id', message: 'A valid class_id is required.' }
+  body.class_id = classId
+
+  if (body.class_type !== 'group' && body.class_type !== 'class') {
+    return { field: 'class_type', message: "class_type must be 'group' or 'class'." }
+  }
 
   const month = sanitizeInteger(body.month, 1, 12)
   if (!month) return { field: 'month', message: 'month must be a whole number between 1 and 12.' }
@@ -29,9 +35,9 @@ function validate(body) {
 }
 
 async function handle({ userId, body }) {
-  const membership = await getForumMembership(userId, 'group', body.group_id)
+  const membership = await getForumMembership(userId, body.class_type, body.class_id)
   if (!membership.member) {
-    const err = new Error('You are not a member of this group.')
+    const err = new Error('You are not a member of this class.')
     err.status = 403
     err.code = 'FORBIDDEN'
     throw err
@@ -44,7 +50,8 @@ async function handle({ userId, body }) {
   const { data: uploads, error: uploadsError } = await supabase
     .from('uploads')
     .select('id, user_id, subject, topic, document_type, pages_count, shared_for_date, created_at')
-    .eq('shared_group_id', body.group_id)
+    .eq('shared_class_type', body.class_type)
+    .eq('shared_class_id', body.class_id)
     .gte('shared_for_date', firstDay)
     .lte('shared_for_date', lastDay)
     .order('shared_for_date', { ascending: true })

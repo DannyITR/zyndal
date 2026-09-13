@@ -918,17 +918,17 @@
   },
   "groupUploads": {
     "calendarTitle": "📅 Calendario de Notas",
-    "calendarSubtitle": "Notas compartidas por tu grupo",
+    "calendarSubtitle": "Notas compartidas por tus compañeros de clase",
     "legendShared": "Notas compartidas",
     "dayDetailSubtitle": "Notas compartidas",
     "emptyDay": "No se compartieron notas para este día.",
     "uploadedBy": "Compartido por @{{username}}",
     "page": "página",
     "pages": "páginas",
-    "shareCheckboxLabel": "Comparte estas notas con tu grupo",
-    "shareCheckboxHint": "Cualquier miembro de tu grupo de {{group}} podrá ver estas notas.",
+    "shareCheckboxLabel": "Comparte estas notas con tus compañeros de clase",
+    "shareCheckboxHint": "Cualquier compañero de {{className}} podrá ver estas notas.",
     "sharedForDateLabel": "¿Para qué día son estas notas?",
     "uploadForDayButton": "+ Subir Notas para Este Día",
-    "sharingLockedHint": "Compartiendo con tu grupo de {{group}} para el {{date}}."
+    "sharingLockedHint": "Compartiendo con {{className}} para el {{date}}."
   }
 }

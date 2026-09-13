@@ -16,16 +16,16 @@ import UploadDetailScreen from './UploadDetailScreen'
 // it exits straight to student home (or, for the 'capture' entry point,
 // straight back to whichever day of the Notes Calendar they came from).
 //
-// groupContext: { groupId, groupName } | null — passed straight through
-// from StudentFlow.jsx to UploadCaptureScreen; only meaningful there (see
-// that component's own comment).
+// classContext: { classType, classId, className } | null — passed straight
+// through from StudentFlow.jsx to UploadCaptureScreen; only meaningful there
+// (see that component's own comment).
 //
 // presetSharedForDate: set only for the 'capture' initialView above — locks
 // uploadType to 'study_material' from the start (no select-type screen to
 // pick it on) and is threaded through to UploadCaptureScreen, which locks
 // sharing on for that exact day instead of showing the normal opt-in
 // checkbox + dropdown.
-export default function UploadsFlow({ user, initialView, lockedSubjectId, groupContext, presetSharedForDate, onExit, onLogout, onLogoClick }) {
+export default function UploadsFlow({ user, initialView, lockedSubjectId, classContext, presetSharedForDate, onExit, onLogout, onLogoClick }) {
   const [view, setView] = useState(initialView)
   const [uploadType, setUploadType] = useState(presetSharedForDate ? 'study_material' : null)
   const [selectedUpload, setSelectedUpload] = useState(null)
@@ -80,7 +80,7 @@ export default function UploadsFlow({ user, initialView, lockedSubjectId, groupC
         uploadType={uploadType}
         lockedSubjectId={lockedSubjectId}
         existingUpload={addPagesTarget}
-        groupContext={groupContext}
+        classContext={classContext}
         presetSharedForDate={presetSharedForDate}
         onSaved={handleUploadSaved}
         onBack={() => {

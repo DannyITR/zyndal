@@ -20,12 +20,14 @@ function pad(n) {
 }
 
 // Structural sibling of HomeworkCalendar.jsx (same nav/grid/legend markup
-// and CSS classes), backed by a group's shared uploads instead of a
-// class's homework assignments. One real difference from that component:
-// there's no "latest month + 30 days" future window here — a shared
-// upload's day can only be today or the past (see UploadCaptureScreen.jsx's
-// day dropdown), so the latest browsable month is simply the current one.
-export default function GroupUploadsCalendar({ groupId, groupCreatedAt, onSelectDay }) {
+// and CSS classes), backed by a class's shared uploads instead of a
+// class's homework assignments. Works for both an unclaimed group and a
+// teacher-claimed class (see classType/classId, mirroring forum_threads'
+// own discriminator pair). One real difference from HomeworkCalendar: there's
+// no "latest month + 30 days" future window here — a shared upload's day can
+// only be today or the past (see UploadCaptureScreen.jsx's day dropdown), so
+// the latest browsable month is simply the current one.
+export default function GroupUploadsCalendar({ classType, classId, createdAt, onSelectDay }) {
   const { t, i18n } = useTranslation()
   const today = todayStr(new Date(), getUserTimeZone())
   const [todayYear, todayMonth] = today.split('-').map(Number)
@@ -38,7 +40,7 @@ export default function GroupUploadsCalendar({ groupId, groupCreatedAt, onSelect
     let cancelled = false
     setUploads(null)
     setError('')
-    getGroupUploadsCalendar(groupId, viewMonth, viewYear)
+    getGroupUploadsCalendar(classType, classId, viewMonth, viewYear)
       .then((data) => {
         if (!cancelled) setUploads(data.uploads)
       })
@@ -49,9 +51,9 @@ export default function GroupUploadsCalendar({ groupId, groupCreatedAt, onSelect
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupId, viewMonth, viewYear])
+  }, [classType, classId, viewMonth, viewYear])
 
-  const earliestYearMonth = (groupCreatedAt || today).slice(0, 7)
+  const earliestYearMonth = (createdAt || today).slice(0, 7)
   const latestYearMonth = today.slice(0, 7)
   const viewYearMonth = `${viewYear}-${pad(viewMonth)}`
   const isEarliestMonth = viewYearMonth <= earliestYearMonth

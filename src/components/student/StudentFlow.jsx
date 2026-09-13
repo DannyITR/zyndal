@@ -660,15 +660,19 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     // open, and is always cleared by the same onBack call that clears
     // pickedClassSubjectId (see the ClassCard render below) — so by the
     // time this can ever be reached from the daily-question/StudentHome
-    // upload path instead, pickedEntry (and so groupContext) is guaranteed
+    // upload path instead, pickedEntry (and so classContext) is guaranteed
     // null already, with no extra state needed to keep the two apart.
-    const groupContext = pickedEntry?.kind === 'group' ? { groupId: pickedEntry.id, groupName: t(`subjects.${pickedEntry.subject}`) } : null
+    // Same { classType, classId, className } shape ClassCard's own
+    // handleOpenForum already builds, for either entry kind.
+    const classContext = pickedEntry
+      ? { classType: pickedEntry.kind, classId: pickedEntry.id, className: pickedEntry.kind === 'class' ? pickedEntry.name : t(`subjects.${pickedEntry.subject}`) }
+      : null
     return (
       <UploadsFlow
         user={user}
         initialView={uploadsView}
         lockedSubjectId={pickedClassSubjectId}
-        groupContext={groupContext}
+        classContext={classContext}
         presetSharedForDate={uploadPresetDate}
         onExit={() => {
           setUploadsView(null)
