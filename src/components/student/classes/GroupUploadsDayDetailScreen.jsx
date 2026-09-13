@@ -15,7 +15,12 @@ const DOCUMENT_TYPE_ICON = { test: '📝', worksheet: '📋', textbook: '📖', 
 // like it does in My Uploads, per spec), and swaps to the existing
 // UploadDetailScreen in place when one is tapped, self-contained the same
 // way HomeworkDetailScreen's AssignmentAnswers fetch-on-tap is.
-export default function GroupUploadsDayDetailScreen({ user, date, uploads, onBack, onLogout, onLogoClick }) {
+//
+// onUploadForDay: opens the upload flow pre-locked to this exact day (see
+// UploadCaptureScreen.jsx's presetSharedForDate) — shown regardless of
+// whether this day already has uploads, since a student catching up (or
+// adding a second set of notes) should be able to add more either way.
+export default function GroupUploadsDayDetailScreen({ user, date, uploads, onUploadForDay, onBack, onLogout, onLogoClick }) {
   const { t } = useTranslation()
   const [viewingUpload, setViewingUpload] = useState(null)
   const [loadingId, setLoadingId] = useState(null)
@@ -41,6 +46,10 @@ export default function GroupUploadsDayDetailScreen({ user, date, uploads, onBac
   return (
     <div className="screen student-screen">
       <TopBar title={formatLongDate(date)} subtitle={t('groupUploads.dayDetailSubtitle')} username={user.username} onBack={onBack} onLogout={onLogout} onLogoClick={onLogoClick} />
+
+      <button type="button" className="btn btn-primary btn-block" onClick={onUploadForDay}>
+        {t('groupUploads.uploadForDayButton')}
+      </button>
 
       {error && <p className="form-error">{error}</p>}
 

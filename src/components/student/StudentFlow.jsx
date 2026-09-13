@@ -118,7 +118,12 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   const [showTestPrepSetup, setShowTestPrepSetup] = useState(false)
   const [showStudyPlan, setShowStudyPlan] = useState(false)
   const [showStudyGuide, setShowStudyGuide] = useState(false)
-  const [uploadsView, setUploadsView] = useState(null) // null | 'select-type' | 'library'
+  const [uploadsView, setUploadsView] = useState(null) // null | 'select-type' | 'library' | 'capture'
+  // Set only when uploadsView is opened via the "Upload notes" button on a
+  // specific Group Notes Calendar day (see ClassCard.jsx's onOpenUpload
+  // call) — threaded through to UploadCaptureScreen so it can lock sharing
+  // on for that exact day instead of the normal opt-in checkbox + dropdown.
+  const [uploadPresetDate, setUploadPresetDate] = useState(null)
   const [showPractice, setShowPractice] = useState(false)
   const [showGrades, setShowGrades] = useState(false)
   const [showMapQuiz, setShowMapQuiz] = useState(false)
@@ -664,7 +669,11 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         initialView={uploadsView}
         lockedSubjectId={pickedClassSubjectId}
         groupContext={groupContext}
-        onExit={() => setUploadsView(null)}
+        presetSharedForDate={uploadPresetDate}
+        onExit={() => {
+          setUploadsView(null)
+          setUploadPresetDate(null)
+        }}
         onLogout={onLogout}
         onLogoClick={handleLogoClick}
       />
@@ -851,7 +860,15 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         onOpenStudyPlan={() => setShowStudyPlan(true)}
         onMarkDonePlan={handleMarkDone}
         onCancelPlan={handleCancelPlan}
-        onOpenUpload={() => setUploadsView('select-type')}
+        onOpenUpload={(presetDate) => {
+          // presetDate: passed only from the "Upload notes" button on a
+          // specific Group Notes Calendar day (see ClassCard.jsx's
+          // handleUploadForDay) — jumps straight to the capture screen
+          // instead of the usual type-select step, since sharing is only
+          // ever offered for Study Material anyway.
+          setUploadPresetDate(presetDate || null)
+          setUploadsView(presetDate ? 'capture' : 'select-type')
+        }}
         onOpenMyUploads={() => setUploadsView('library')}
         onOpenPractice={() => setShowPractice(true)}
         onOpenGrades={() => setShowGrades(true)}

@@ -36,7 +36,27 @@ function buildRecentDayOptions(today, count) {
 // graded Test, which would leak one student's grade to the whole group —
 // see save-shared-upload.js's own comment on this same restriction,
 // enforced there again server-side.
-export default function UploadCaptureScreen({ user, uploadType, lockedSubjectId, existingUpload, groupContext, onSaved, onBack, onLogout, onLogoClick }) {
+//
+// presetSharedForDate: set only when this screen was reached via the "Upload
+// notes" button on a specific day of the Group Notes Calendar (see
+// GroupUploadsDayDetailScreen.jsx / StudentFlow.jsx's uploadPresetDate) —
+// the student already chose that exact day by tapping it, so sharing is
+// locked on and the day is shown read-only instead of asking them to
+// re-confirm both via the checkbox+dropdown below. Reaching this screen any
+// other way (the plain "Upload" button) leaves presetSharedForDate null and
+// falls back to that opt-in checkbox + editable dropdown exactly as before.
+export default function UploadCaptureScreen({
+  user,
+  uploadType,
+  lockedSubjectId,
+  existingUpload,
+  groupContext,
+  presetSharedForDate,
+  onSaved,
+  onBack,
+  onLogout,
+  onLogoClick,
+}) {
   const { t } = useTranslation()
   const [pages, setPages] = useState([]) // [{ id, file, previewUrl }]
   const [subjectId, setSubjectId] = useState(lockedSubjectId || 'math')
@@ -44,8 +64,8 @@ export default function UploadCaptureScreen({ user, uploadType, lockedSubjectId,
   const [gradeReceived, setGradeReceived] = useState('')
   const [testDate, setTestDate] = useState('')
   const [notes, setNotes] = useState('')
-  const [shareWithGroup, setShareWithGroup] = useState(false)
-  const [sharedForDate, setSharedForDate] = useState(todayStr())
+  const [shareWithGroup, setShareWithGroup] = useState(Boolean(presetSharedForDate))
+  const [sharedForDate, setSharedForDate] = useState(presetSharedForDate || todayStr())
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
   // Soft weekly-per-subject cap (see api/_lib/uploadLimits.js) — set when
@@ -324,7 +344,13 @@ export default function UploadCaptureScreen({ user, uploadType, lockedSubjectId,
               />
             </div>
 
-            {canShareWithGroup && (
+            {canShareWithGroup && presetSharedForDate && (
+              <div className="field">
+                <p className="field-hint">{t('groupUploads.sharingLockedHint', { group: groupContext.groupName, date: formatLongDate(presetSharedForDate) })}</p>
+              </div>
+            )}
+
+            {canShareWithGroup && !presetSharedForDate && (
               <div className="field">
                 <label className="checkbox-field">
                   <input type="checkbox" checked={shareWithGroup} onChange={(e) => setShareWithGroup(e.target.checked)} />

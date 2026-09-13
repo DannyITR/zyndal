@@ -916,6 +916,8 @@
     "pages": "páginas",
     "shareCheckboxLabel": "Comparte estas notas con tu grupo",
     "shareCheckboxHint": "Cualquier miembro de tu grupo de {{group}} podrá ver estas notas.",
-    "sharedForDateLabel": "¿Para qué día son estas notas?"
+    "sharedForDateLabel": "¿Para qué día son estas notas?",
+    "uploadForDayButton": "+ Subir Notas para Este Día",
+    "sharingLockedHint": "Compartiendo con tu grupo de {{group}} para el {{date}}."
   }
 }

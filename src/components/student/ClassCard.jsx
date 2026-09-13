@@ -97,6 +97,16 @@ export default function ClassCard({
     if (isPremium) onOpenUpload()
     else setShowPremiumModal(true)
   }
+  // From the "Upload notes" button on a specific Group Notes Calendar day
+  // (GroupUploadsDayDetailScreen) — same premium gate as the plain Upload
+  // button above, kept as its own function (rather than giving
+  // handleOpenUpload an optional param) so that button's own
+  // onClick={handleOpenUpload} can never accidentally forward its
+  // click event through as a date.
+  function handleUploadForDay(date) {
+    if (isPremium) onOpenUpload(date)
+    else setShowPremiumModal(true)
+  }
   function handleOpenMyUploads() {
     if (isPremium) onOpenMyUploads()
     else setShowPremiumModal(true)
@@ -178,6 +188,7 @@ export default function ClassCard({
         user={user}
         date={groupUploadsDayDetail.date}
         uploads={groupUploadsDayDetail.uploads}
+        onUploadForDay={() => handleUploadForDay(groupUploadsDayDetail.date)}
         onBack={() => setGroupUploadsDayDetail(null)}
         onLogout={onLogout}
         onLogoClick={onLogoClick}
