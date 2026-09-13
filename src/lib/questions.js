@@ -17,6 +17,18 @@ export function getSubject(subjectId) {
   return SUBJECTS.find((s) => s.id === subjectId) || null
 }
 
+// The subjects every student is auto-joined to (school_subject_groups) for
+// their school+grade, with no manual "Join Group" step — see
+// api/_lib/coreGroups.js and ClassCardsGrid.jsx's own Join button, which is
+// only ever shown for a group whose subject is NOT in this list. Happens to
+// equal SUBJECTS' own ids exactly today, but kept as a separate, explicit
+// list rather than deriving it from SUBJECTS — the two represent distinct
+// concepts (SUBJECTS is "has daily-question/test-prep content", this is
+// "auto-joined by default") that could diverge later, e.g. a future
+// elective group with no daily-question content of its own, or a future
+// SUBJECTS entry that isn't meant to be an always-on membership.
+export const CORE_SUBJECT_IDS = ['math', 'science', 'history_geography', 'english', 'french']
+
 // The single subject shown on the home screen each day, same for every
 // student — cycles through all 5 on a 5-day rotation so each gets equal
 // coverage. Order is a product spec (not SUBJECTS' own array order) and the

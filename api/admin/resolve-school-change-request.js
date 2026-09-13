@@ -5,6 +5,7 @@ import { notificationText } from '../_lib/notificationText.js'
 import { insertNotification } from '../_lib/notifications.js'
 import { sendPushToUser } from '../_lib/push.js'
 import { sendSchoolChangeApprovedEmail, sendSchoolChangeRejectedEmail } from '../_lib/resend.js'
+import { autoJoinCoreGroups } from '../_lib/coreGroups.js'
 
 function validate(body) {
   const requestId = sanitizeUuid(body.request_id)
@@ -42,7 +43,7 @@ async function handle({ body }) {
 
   const { data: student, error: studentError } = await supabase
     .from('users')
-    .select('email, language_preference')
+    .select('email, language_preference, grade')
     .eq('id', request.student_id)
     .maybeSingle()
   if (studentError) throw studentError
@@ -85,6 +86,19 @@ async function handle({ body }) {
 
   const { error: userUpdateError } = await supabase.from('users').update(updates).eq('id', request.student_id)
   if (userUpdateError) throw userUpdateError
+
+  // Auto-join core-subject groups at the NEW school for the student's
+  // current grade — a no-op if updates.school_id is null (the "Other/not
+  // listed" branch above has no structured groups to join at all). Their
+  // old school's core-group memberships are left untouched — this feature
+  // only ever adds memberships automatically, never removes them; leaving
+  // is still the existing manual "Leave Class" action. Best-effort — must
+  // never fail the approval itself.
+  try {
+    await autoJoinCoreGroups(supabase, request.student_id, updates.school_id, student?.grade)
+  } catch (err) {
+    console.error('[resolve-school-change-request] auto-join core groups failed:', err)
+  }
 
   const { error: updateError } = await supabase
     .from('school_change_requests')

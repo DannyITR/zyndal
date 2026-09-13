@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getMySchoolSubjectGroups } from '../../lib/storage'
-import { getSubject } from '../../lib/questions'
+import { getSubject, CORE_SUBJECT_IDS } from '../../lib/questions'
 
 // One tile per class the student belongs to (or could join) on the home
 // screen, below the Today's Question card — reuses the exact
@@ -117,7 +117,13 @@ export default function ClassCardsGrid({ onSelectClass, onOpenSettings }) {
                 <span className="subject-card-detail">
                   {entry.kind === 'class' ? entry.name : t('classCard.unclaimedStatus', { grade, school: schoolName })}
                 </span>
-                {entry.kind === 'group' && !entry.joined && (
+                {/* Core-subject groups (Math/Science/History & Geography/
+                    English/French) are auto-joined the moment a student
+                    has both a school and grade set (see
+                    api/_lib/coreGroups.js) — no "Join" hint needed for
+                    them. This only ever shows for a future elective group,
+                    which still requires a manual join. */}
+                {entry.kind === 'group' && !entry.joined && !CORE_SUBJECT_IDS.includes(entry.subject) && (
                   <span className="subject-card-badge subject-card-badge--neutral">{t('home.joinBadge')}</span>
                 )}
               </button>

@@ -3,6 +3,7 @@ import { supabase } from '../_lib/auth.js'
 import { generateUniqueParentCode, SAFE_USER_COLUMNS } from '../_lib/db.js'
 import { sanitizeString, sanitizeEmail, sanitizeGrade, sanitizeAccountType } from '../_lib/sanitize.js'
 import { createAndSendVerificationEmail } from '../_lib/verification.js'
+import { autoJoinCoreGroups } from '../_lib/coreGroups.js'
 
 const LANGUAGE_PREFERENCES = new Set(['English', 'French', 'Spanish'])
 // Deliberately duplicated from THEMES in src/lib/theme.js rather than
@@ -195,6 +196,22 @@ async function handle({ userId, body }) {
 
   const { data, error } = await supabase.from('users').update(updates).eq('id', userId).select(SAFE_USER_COLUMNS).single()
   if (error) throw error
+
+  // Auto-join core-subject groups (Math/Science/History & Geography/
+  // English/French) whenever either half of the school+grade pair this
+  // depends on was just touched — covers a student setting their grade
+  // before their school, or their school before their grade; whichever
+  // update completes the pair triggers the join. Re-reads both values off
+  // the freshly-saved row rather than the raw request body, since only one
+  // of the two may have actually been part of THIS request. Best-effort —
+  // must never fail the settings save itself.
+  if (updates.school_id !== undefined || updates.grade !== undefined) {
+    try {
+      await autoJoinCoreGroups(supabase, userId, data.school_id, data.grade)
+    } catch (err) {
+      console.error('[update-settings] auto-join core groups failed:', err)
+    }
+  }
 
   if (emailChanged && updates.email) {
     // Awaited (matches insertNotification call sites elsewhere) — a

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { CORE_SUBJECT_IDS } from '../../lib/questions'
 import { getEffectiveStreak, todayStr } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
 import { countdownLabel, computeReadiness } from '../../lib/testprep'
@@ -235,8 +236,15 @@ export default function ClassCard({
       {/* Joining is additive, not a gate — Test Prep/Study Guide/Practice/etc.
           below are usable either way, exactly as before this feature. Only
           a 'group' entry can be unjoined at all — a 'class' entry means the
-          student is already enrolled/teaching it. */}
-      {entryKind === 'group' && !joined && (
+          student is already enrolled/teaching it. Core-subject groups
+          (Math/Science/History & Geography/English/French) are auto-joined
+          the moment a student has both a school and grade set (see
+          api/_lib/coreGroups.js), so this button no longer applies to them
+          — !joined on one of these should only ever be a transient state
+          (auto-join hasn't run yet, or a rare backfill gap), not something
+          a student needs to resolve by hand. Still shown for any future
+          elective group, which stays manually joined. */}
+      {entryKind === 'group' && !joined && !CORE_SUBJECT_IDS.includes(subject.id) && (
         <button type="button" className="btn btn-primary btn-block" onClick={handleJoin} disabled={joining}>
           {joining ? t('classCard.joining') : t('classCard.joinGroup')}
         </button>
