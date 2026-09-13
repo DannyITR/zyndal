@@ -211,6 +211,17 @@ create table if not exists uploads (
 );
 create index if not exists uploads_user_id_idx on uploads(user_id);
 
+-- Group Notes Calendar: an upload can optionally be shared with the
+-- unclaimed school_subject_group it was uploaded from (see
+-- api/uploads/save-shared-upload.js) instead of staying private to the
+-- uploader. Both null for every private upload (the vast majority) —
+-- shared_for_date is the day the notes relate to, picked by the student at
+-- upload time, not the upload's own created_at, so a student catching up
+-- late still finds it filed under the right day.
+alter table uploads add column if not exists shared_group_id uuid references school_subject_groups(id) on delete cascade;
+alter table uploads add column if not exists shared_for_date date;
+create index if not exists uploads_shared_group_idx on uploads(shared_group_id, shared_for_date);
+
 -- Soft per-subject weekly usage cap on uploads (see WEEKLY_UPLOAD_PAGE_LIMIT
 -- in src/lib/uploads.js, enforced by api/_lib/uploadLimits.js), independent
 -- of the premium paywall. A dedicated ledger rather than summing

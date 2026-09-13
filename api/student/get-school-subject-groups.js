@@ -33,7 +33,7 @@ async function handle({ userId }) {
 
   const { data: groups, error: groupsError } = await supabase
     .from('school_subject_groups')
-    .select('id, subject')
+    .select('id, subject, created_at')
     .eq('school_id', user.school_id)
     .eq('grade', user.grade)
   if (groupsError) throw groupsError
@@ -83,7 +83,7 @@ async function handle({ userId }) {
   for (const s of SUBJECTS) {
     for (const classEntry of classEntriesBySubject[s.id] || []) entries.push(classEntry)
     const group = groupBySubject[s.id]
-    if (group) entries.push({ kind: 'group', id: group.id, subject: s.id, joined: joinedGroupIds.has(group.id) })
+    if (group) entries.push({ kind: 'group', id: group.id, subject: s.id, joined: joinedGroupIds.has(group.id), groupCreatedAt: group.created_at })
   }
 
   return {

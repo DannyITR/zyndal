@@ -10,7 +10,11 @@ import UploadDetailScreen from './UploadDetailScreen'
 // the library in this visit (arrived there, or used its "+ New Upload"),
 // "back" from select-type/detail returns to the library instead of exiting
 // the whole feature — otherwise it exits straight to student home.
-export default function UploadsFlow({ user, initialView, lockedSubjectId, onExit, onLogout, onLogoClick }) {
+//
+// groupContext: { groupId, groupName } | null — passed straight through
+// from StudentFlow.jsx to UploadCaptureScreen; only meaningful there (see
+// that component's own comment).
+export default function UploadsFlow({ user, initialView, lockedSubjectId, groupContext, onExit, onLogout, onLogoClick }) {
   const [view, setView] = useState(initialView)
   const [uploadType, setUploadType] = useState(null)
   const [selectedUpload, setSelectedUpload] = useState(null)
@@ -65,6 +69,7 @@ export default function UploadsFlow({ user, initialView, lockedSubjectId, onExit
         uploadType={uploadType}
         lockedSubjectId={lockedSubjectId}
         existingUpload={addPagesTarget}
+        groupContext={groupContext}
         onSaved={handleUploadSaved}
         onBack={() => (addPagesTarget ? backFromTypeOrDetail() : setView('select-type'))}
         onLogout={onLogout}

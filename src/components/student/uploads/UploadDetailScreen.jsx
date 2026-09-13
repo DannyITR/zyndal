@@ -1,9 +1,16 @@
+import { useTranslation } from 'react-i18next'
 import { getSubject } from '../../../lib/questions'
 import { formatShortDate } from '../../../lib/uploads'
 import TopBar from '../../shared/TopBar'
 import GradeBadge from './GradeBadge'
 
+// upload.uploaderUsername is only ever present when this upload was
+// fetched via a group's Notes Calendar (see GroupUploadsDayDetailScreen.jsx
+// and api/uploads/get-upload-questions.js) — a student's own uploads via My
+// Uploads never carry it, so the byline below is fully additive and
+// changes nothing for the existing private-upload view.
 export default function UploadDetailScreen({ user, upload, onBack, onLogout, onLogoClick }) {
+  const { t } = useTranslation()
   const subject = getSubject(upload.subject)
   const pagesCount = upload.pages_count || 1
 
@@ -29,6 +36,7 @@ export default function UploadDetailScreen({ user, upload, onBack, onLogout, onL
           Created {formatShortDate(upload.created_at)} · {pagesCount} page{pagesCount === 1 ? '' : 's'}
           {upload.updated_at && ` · Last updated ${formatShortDate(upload.updated_at)}`}
         </p>
+        {upload.uploaderUsername && <p className="field-hint">{t('groupUploads.uploadedBy', { username: upload.uploaderUsername })}</p>}
         {upload.test_date && <p className="field-hint">Test date: {upload.test_date}</p>}
         {upload.summary && <p className="upload-detail-summary">{upload.summary}</p>}
         {upload.notes && <p className="field-hint">Your notes: {upload.notes}</p>}

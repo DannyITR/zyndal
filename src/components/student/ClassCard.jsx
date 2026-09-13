@@ -12,6 +12,8 @@ import CancelTestPlanModal from './testprep/CancelTestPlanModal'
 import LeaveClassModal from './LeaveClassModal'
 import HomeworkCalendar from './classes/HomeworkCalendar'
 import HomeworkDetailScreen from './classes/HomeworkDetailScreen'
+import GroupUploadsCalendar from './classes/GroupUploadsCalendar'
+import GroupUploadsDayDetailScreen from './classes/GroupUploadsDayDetailScreen'
 import ForumThreadPreview from '../shared/forum/ForumThreadPreview'
 
 // The full per-class page — Test Prep, Study Guide, Upload, My Uploads,
@@ -35,6 +37,7 @@ export default function ClassCard({
   currentUnitNumber, // 'class' entries only — classes.current_unit_number
   currentUnitTitle, // 'class' entries only — classes.current_unit_title
   classCreatedAt, // 'class' entries only — bounds the homework calendar's earliest month
+  groupCreatedAt, // 'group' entries only — bounds the Group Notes Calendar's earliest month
   joined, // 'group' entries only — a 'class' entry is always joined
   onJoin,
   onLeave,
@@ -67,6 +70,10 @@ export default function ClassCard({
   // of pushing yet another top-level view into StudentFlow.jsx.
   const [dayDetail, setDayDetail] = useState(null)
   const [startError, setStartError] = useState('')
+  // 'group' entries only — same internal-swap pattern as dayDetail above,
+  // for the Group Notes Calendar instead of the homework one.
+  const [showGroupCalendar, setShowGroupCalendar] = useState(false)
+  const [groupUploadsDayDetail, setGroupUploadsDayDetail] = useState(null)
 
   const displayStreak = getEffectiveStreak(progress, today)
   const planForThisSubject = activePlan && activePlan.subject === subject.id ? activePlan : null
@@ -165,6 +172,39 @@ export default function ClassCard({
     )
   }
 
+  if (groupUploadsDayDetail) {
+    return (
+      <GroupUploadsDayDetailScreen
+        user={user}
+        date={groupUploadsDayDetail.date}
+        uploads={groupUploadsDayDetail.uploads}
+        onBack={() => setGroupUploadsDayDetail(null)}
+        onLogout={onLogout}
+        onLogoClick={onLogoClick}
+      />
+    )
+  }
+
+  if (showGroupCalendar) {
+    return (
+      <div className="screen student-screen">
+        <TopBar
+          title={t('groupUploads.calendarTitle')}
+          subtitle={t('groupUploads.calendarSubtitle')}
+          username={user.username}
+          onBack={() => setShowGroupCalendar(false)}
+          onLogout={onLogout}
+          onLogoClick={onLogoClick}
+        />
+        <GroupUploadsCalendar
+          groupId={entryId}
+          groupCreatedAt={groupCreatedAt}
+          onSelectDay={(date, uploads) => setGroupUploadsDayDetail({ date, uploads })}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="screen student-screen">
       <TopBar
@@ -215,6 +255,16 @@ export default function ClassCard({
         <button type="button" className="btn btn-secondary btn-small" onClick={onOpenCurriculum}>
           {t('home.curriculum')}
         </button>
+        {/* Unclaimed groups only — a teacher-claimed 'class' entry already
+            has its own real homework calendar above; this is the
+            equivalent for a group, showing notes/homework shared by other
+            members instead. Ungated (no PremiumFeatureButton), matching the
+            rest of this feature's no-gating-during-growth-phase decision. */}
+        {entryKind === 'group' && (
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowGroupCalendar(true)}>
+            {t('home.groupNotesCalendar')}
+          </button>
+        )}
         {/* Grade 10 History & Geography only (the old standalone Geography
             subject was merged into this combined subject — see
             scripts/merge-history-geography.mjs) — a practice-only activity

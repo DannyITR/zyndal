@@ -100,5 +100,11 @@ export async function processUploadedDocument({ files, uploadType }) {
     })
   )
 
-  return callGenerateApi('generate-from-document', { uploadType, files: encodedFiles })
+  const result = await callGenerateApi('generate-from-document', { uploadType, files: encodedFiles })
+  // encodedFiles is included on the return value (additive — existing
+  // callers just ignore it) so a caller sharing this upload with a group
+  // (see UploadCaptureScreen.jsx's saveSharedUpload path) can reuse the
+  // exact same encoded images for the server-side safety scan instead of
+  // re-running the client-side resize pass a second time.
+  return { ...result, encodedFiles }
 }

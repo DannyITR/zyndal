@@ -1,21 +1,42 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { SUBJECTS, getSubject } from '../../../lib/questions'
-import { todayStr } from '../../../lib/streak'
+import { todayStr, addDaysStr, formatLongDate } from '../../../lib/streak'
 import { validateUploadFile } from '../../../lib/imageUtils'
 import { MAX_UPLOAD_PAGES, WEEKLY_UPLOAD_PAGE_LIMIT } from '../../../lib/uploads'
 import { processUploadedDocument } from '../../../lib/ai'
-import { saveUpload, addPagesToUpload, getUploadDetail } from '../../../lib/storage'
+import { saveUpload, saveSharedUpload, addPagesToUpload, getUploadDetail } from '../../../lib/storage'
 import { getErrorMessage } from '../../../lib/errors'
 import TopBar from '../../shared/TopBar'
 import UpgradeModal from '../../shared/UpgradeModal'
 
 const TYPE_LABEL = { test: 'Test', study_material: 'Study Material' }
 
+// How far back the "which day are these notes for?" dropdown reaches —
+// catching up on a missed day is the point of the feature, not browsing a
+// whole semester's history, so this is deliberately short.
+const SHARE_DAY_OPTIONS_COUNT = 14
+
+function buildRecentDayOptions(today, count) {
+  const options = []
+  for (let i = 0; i < count; i++) {
+    const date = addDaysStr(today, -i)
+    options.push({ value: date, label: formatLongDate(date) })
+  }
+  return options
+}
+
 // existingUpload: when set, this screen is in "Add Pages" mode — no subject
 // / topic / grade fields (those already exist on the upload), just capture
 // more pages and merge their extracted questions into the same upload.
-export default function UploadCaptureScreen({ user, uploadType, lockedSubjectId, existingUpload, onSaved, onBack, onLogout, onLogoClick }) {
+//
+// groupContext: { groupId, groupName } when this screen was opened from an
+// unclaimed group's Class Card (see StudentFlow.jsx), else null. Only ever
+// offers the "share with group" checkbox for Study Material — never a
+// graded Test, which would leak one student's grade to the whole group —
+// see save-shared-upload.js's own comment on this same restriction,
+// enforced there again server-side.
+export default function UploadCaptureScreen({ user, uploadType, lockedSubjectId, existingUpload, groupContext, onSaved, onBack, onLogout, onLogoClick }) {
   const { t } = useTranslation()
   const [pages, setPages] = useState([]) // [{ id, file, previewUrl }]
   const [subjectId, setSubjectId] = useState(lockedSubjectId || 'math')
@@ -23,6 +44,8 @@ export default function UploadCaptureScreen({ user, uploadType, lockedSubjectId,
   const [gradeReceived, setGradeReceived] = useState('')
   const [testDate, setTestDate] = useState('')
   const [notes, setNotes] = useState('')
+  const [shareWithGroup, setShareWithGroup] = useState(false)
+  const [sharedForDate, setSharedForDate] = useState(todayStr())
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
   // Soft weekly-per-subject cap (see api/_lib/uploadLimits.js) — set when
@@ -82,11 +105,18 @@ export default function UploadCaptureScreen({ user, uploadType, lockedSubjectId,
 
   const isTest = uploadType === 'test'
   const isAddingPages = Boolean(existingUpload)
+  // Only ever offered for a brand-new Study Material upload made from
+  // inside an unclaimed group's page — never while adding pages to an
+  // existing upload (which may already be shared or private from when it
+  // was first created, not something to flip here), and never for a Test.
+  const canShareWithGroup = Boolean(groupContext) && !isTest && !isAddingPages
+  const shareDayOptions = canShareWithGroup ? buildRecentDayOptions(todayStr(), SHARE_DAY_OPTIONS_COUNT) : []
   const canSubmit =
     pages.length > 0 &&
     !processing &&
     !limitReached &&
-    (isAddingPages || (topic.trim() && (!isTest || (gradeReceived !== '' && Number(gradeReceived) >= 0 && Number(gradeReceived) <= 100 && testDate))))
+    (isAddingPages || (topic.trim() && (!isTest || (gradeReceived !== '' && Number(gradeReceived) >= 0 && Number(gradeReceived) <= 100 && testDate)))) &&
+    (!shareWithGroup || sharedForDate)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -101,6 +131,18 @@ export default function UploadCaptureScreen({ user, uploadType, lockedSubjectId,
         await addPagesToUpload({ uploadId: existingUpload.id, questions: aiResult.questions, pagesAdded: files.length })
         const refreshed = await getUploadDetail(existingUpload.id)
         onSaved(refreshed)
+      } else if (canShareWithGroup && shareWithGroup) {
+        const saved = await saveSharedUpload({
+          groupId: groupContext.groupId,
+          sharedForDate,
+          subject: subjectId,
+          topic: topic.trim(),
+          notes: notes.trim() || null,
+          aiResult,
+          encodedFiles: aiResult.encodedFiles,
+          pagesCount: files.length,
+        })
+        onSaved(saved)
       } else {
         const saved = await saveUpload({
           userId: user.id,
@@ -281,6 +323,29 @@ export default function UploadCaptureScreen({ user, uploadType, lockedSubjectId,
                 placeholder="Anything you want to remember about this one"
               />
             </div>
+
+            {canShareWithGroup && (
+              <div className="field">
+                <label className="checkbox-field">
+                  <input type="checkbox" checked={shareWithGroup} onChange={(e) => setShareWithGroup(e.target.checked)} />
+                  <span>{t('groupUploads.shareCheckboxLabel')}</span>
+                </label>
+                <p className="field-hint">{t('groupUploads.shareCheckboxHint', { group: groupContext.groupName })}</p>
+
+                {shareWithGroup && (
+                  <div className="field">
+                    <label htmlFor="upload-shared-for-date">{t('groupUploads.sharedForDateLabel')}</label>
+                    <select id="upload-shared-for-date" value={sharedForDate} onChange={(e) => setSharedForDate(e.target.value)}>
+                      {shareDayOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
 

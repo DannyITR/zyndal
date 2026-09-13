@@ -137,6 +137,7 @@
     "myGrades": "📊 My Grades",
     "curriculum": "📖 Curriculum",
     "mapQuiz": "🗺️ Map Quiz",
+    "groupNotesCalendar": "📅 Notes Calendar",
     "chooseSubject": "Today's question",
     "todaysQuestion": "Today's Question",
     "myClasses": "My Subjects",
@@ -770,6 +771,7 @@
     "EXPIRED_TOKEN": "This link has expired.",
     "FORBIDDEN": "You don't have permission to do that.",
     "GRADING_FAILED": "Something went wrong while grading. Please try again.",
+    "INAPPROPRIATE_CONTENT": "Your upload was flagged as inappropriate and could not be shared with your group. Please try again with appropriate content.",
     "INCOMPLETE_DAY": "Complete today's question before sharing your score.",
     "INVALID_CREDENTIALS": "Incorrect username or password.",
     "INVALID_OAUTH_TOKEN": "That sign-in link is invalid or has expired.",
@@ -902,5 +904,18 @@
       "arctic": "Arctic Ocean",
       "atlantic": "Atlantic Ocean"
     }
+  },
+  "groupUploads": {
+    "calendarTitle": "📅 Notes Calendar",
+    "calendarSubtitle": "Notes shared by your group",
+    "legendShared": "Notes shared",
+    "dayDetailSubtitle": "Shared notes",
+    "emptyDay": "No notes were shared for this day.",
+    "uploadedBy": "Shared by @{{username}}",
+    "page": "page",
+    "pages": "pages",
+    "shareCheckboxLabel": "Share these notes with your group",
+    "shareCheckboxHint": "Any member of your {{group}} group will be able to view these notes.",
+    "sharedForDateLabel": "Which day are these notes for?"
   }
 }

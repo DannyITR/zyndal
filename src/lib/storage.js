@@ -775,6 +775,41 @@ export async function addPagesToUpload({ uploadId, questions, pagesAdded }) {
   await callUploadsApi('POST', 'save-questions', { upload_id: uploadId, questions, pages_added: pagesAdded, timezone: getUserTimeZone() })
 }
 
+// Group Notes Calendar — mirrors saveUpload's own two-call composition
+// (insert the uploads row, then attach its extracted questions), but goes
+// through save-shared-upload.js instead of save-upload.js: that endpoint
+// runs the server-side AI safety scan on encodedFiles and blocks the
+// insert entirely (throwing INAPPROPRIATE_CONTENT) if it's flagged, so
+// nothing here needs its own moderation handling — a thrown error from the
+// first call means save-questions never runs and nothing was persisted.
+export async function saveSharedUpload({ groupId, sharedForDate, subject, topic, notes, aiResult, encodedFiles, pagesCount }) {
+  const upload = await callUploadsApi('POST', 'save-shared-upload', {
+    group_id: groupId,
+    shared_for_date: sharedForDate,
+    subject,
+    topic,
+    notes,
+    summary: aiResult.summary,
+    key_concepts: aiResult.key_concepts,
+    document_type: aiResult.document_type,
+    pages_count: pagesCount,
+    files: encodedFiles,
+    timezone: getUserTimeZone(),
+  })
+  if (aiResult.questions && aiResult.questions.length > 0) {
+    await callUploadsApi('POST', 'save-questions', { upload_id: upload.id, questions: aiResult.questions })
+  }
+  return { ...upload, questions: aiResult.questions || [] }
+}
+
+// Powers GroupUploadsCalendar.jsx — one month's worth of a group's shared
+// uploads, bucketed by shared_for_date server-side (see
+// api/classes/get-group-uploads-calendar.js).
+export async function getGroupUploadsCalendar(groupId, month, year) {
+  const params = new URLSearchParams({ group_id: groupId, month: String(month), year: String(year) })
+  return callClassesApi('GET', `get-group-uploads-calendar?${params.toString()}`)
+}
+
 // userId isn't sent — the server scopes to the caller's own uploads from
 // the session token (see api/uploads/get-uploads.js) — but stays in the
 // signature since UploadsLibraryScreen.jsx calls this positionally.

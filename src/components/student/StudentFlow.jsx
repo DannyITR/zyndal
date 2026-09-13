@@ -651,11 +651,19 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   }
 
   if (uploadsView) {
+    // pickedEntry is only ever non-null while a Class Card is actually
+    // open, and is always cleared by the same onBack call that clears
+    // pickedClassSubjectId (see the ClassCard render below) — so by the
+    // time this can ever be reached from the daily-question/StudentHome
+    // upload path instead, pickedEntry (and so groupContext) is guaranteed
+    // null already, with no extra state needed to keep the two apart.
+    const groupContext = pickedEntry?.kind === 'group' ? { groupId: pickedEntry.id, groupName: t(`subjects.${pickedEntry.subject}`) } : null
     return (
       <UploadsFlow
         user={user}
         initialView={uploadsView}
         lockedSubjectId={pickedClassSubjectId}
+        groupContext={groupContext}
         onExit={() => setUploadsView(null)}
         onLogout={onLogout}
         onLogoClick={handleLogoClick}
@@ -824,6 +832,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         currentUnitNumber={pickedEntry?.currentUnitNumber}
         currentUnitTitle={pickedEntry?.currentUnitTitle}
         classCreatedAt={pickedEntry?.classCreatedAt}
+        groupCreatedAt={pickedEntry?.groupCreatedAt}
         joined={Boolean(pickedEntry?.joined)}
         onJoin={async () => {
           await joinSchoolSubjectGroup(pickedEntry.id)
