@@ -14,6 +14,7 @@ import { getDailyQuestion, formatQuestionSubtitle } from '../../lib/questions'
 import { getEffectiveStreak, todayStr, diffDays, LATE_ANSWER_WINDOW_DAYS, formatLongDate } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
 import { getErrorMessage } from '../../lib/errors'
+import { openAdminPanel } from '../../lib/adminApi'
 import TopBar from '../shared/TopBar'
 import StreakFlame from './StreakFlame'
 import StatPill from './StatPill'
@@ -373,6 +374,7 @@ export default function StudentHome({
         title={`${subject.icon} ${t(`subjects.${subject.id}`)} — ${formatLongDate(date)}`}
         subtitle={activeQuestion ? formatQuestionSubtitle(activeQuestion) : t('home.loading')}
         username={user.username}
+        onOpenAdmin={user.is_admin || user.account_type === 'admin' ? openAdminPanel : undefined}
         onLogout={onLogout}
         onBack={onBack}
         onLogoClick={onLogoClick}

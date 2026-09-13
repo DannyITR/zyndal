@@ -33,6 +33,13 @@ create table if not exists users (
   coin_to_dollar_rate integer not null default 10,
   milestone_settings jsonb not null default '{"7":10,"14":20,"30":50}'::jsonb,
   is_premium boolean not null default false,
+  -- Grants /admin panel access in addition to (never instead of) this
+  -- row's own account_type — see api/admin/exchange-session.js. Additive
+  -- rather than repurposing account_type='admin' itself, so a student test
+  -- account can be admin-flagged without losing normal student behavior
+  -- (leaderboard/friend-search/parent-linking all filter on
+  -- account_type='student' specifically).
+  is_admin boolean not null default false,
   language_preference text default 'English',
   -- Selectable in Settings (src/lib/theme.js) — 'default' is the app's
   -- original, only-ever theme; 'midnight' and 'daylight' are the two
@@ -77,6 +84,7 @@ alter table users add constraint users_account_type_check check (account_type in
 -- Run on an existing database — same reason as above, this only applies to
 -- a fresh install otherwise.
 alter table users add column if not exists timezone text default 'America/Toronto';
+alter table users add column if not exists is_admin boolean not null default false;
 
 create table if not exists streaks (
   id uuid primary key default gen_random_uuid(),

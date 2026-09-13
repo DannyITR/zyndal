@@ -195,6 +195,13 @@ export default function AdminDashboard({ onLogout, onEditUser, onOpenApprovals, 
       <header className="admin-header">
         <h1>Zyndal Admin</h1>
         <div className="admin-header-actions">
+          {/* Plain full-page navigation (not a JS handler) — matches how
+              leaving /admin always works (App.jsx's isAdminPage is computed
+              once at mount, see openAdminPanel's own comment), and there's
+              no admin-session cleanup needed just to go look at the app. */}
+          <a href="/" className="admin-btn admin-btn-secondary">
+            Back to App
+          </a>
           <button type="button" className="admin-btn admin-btn-secondary" onClick={onOpenApprovals}>
             Approvals
           </button>

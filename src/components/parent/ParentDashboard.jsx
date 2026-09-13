@@ -28,6 +28,7 @@ import StudentCard from './StudentCard'
 import GradeBadge from '../student/uploads/GradeBadge'
 import MessagesFlow from '../student/messages/MessagesFlow'
 import ParentNewConversationModal from './ParentNewConversationModal'
+import { openAdminPanel } from '../../lib/adminApi'
 
 export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
   const { t } = useTranslation()
@@ -241,6 +242,7 @@ export default function ParentDashboard({ user, onLogout, onUserUpdate }) {
         title={`${avatarPrefix}${t('common.greeting', { name: greetingName })}`}
         subtitle={t('parent.subtitle')}
         username={user.username}
+        onOpenAdmin={user.is_admin || user.account_type === 'admin' ? openAdminPanel : undefined}
         onLogout={onLogout}
         onNotifications={() => setShowNotifications(true)}
         unreadCount={unreadNotificationCount}

@@ -17,6 +17,7 @@ export default function TopBar({
   unreadCount,
   onMessages,
   unreadMessageCount,
+  onOpenAdmin, // only ever set for an admin-flagged user (see openAdminPanel in lib/adminApi.js) — undefined everywhere else, so the button simply doesn't render
   onLogoClick,
   subscriptionStatus,
   daysRemainingInTrial,
@@ -42,6 +43,11 @@ export default function TopBar({
         <div className="topbar-actions">
           {username && <p className="topbar-username">@{username}</p>}
           <div className="topbar-buttons">
+            {onOpenAdmin && (
+              <button type="button" className="btn btn-ghost btn-icon topbar-icon-btn" onClick={onOpenAdmin} aria-label={t('common.adminPanelLabel')}>
+                🛡️
+              </button>
+            )}
             {onMessages && (
               <button type="button" className="btn btn-ghost btn-icon topbar-icon-btn" onClick={onMessages} aria-label={t('common.messagesLabel')}>
                 💬

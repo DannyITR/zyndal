@@ -18,6 +18,7 @@ import ForumScreen from '../shared/forum/ForumScreen'
 import ClassRosterScreen from './ClassRosterScreen'
 import MessagesFlow from '../student/messages/MessagesFlow'
 import { getConversations } from '../../lib/storage'
+import { openAdminPanel } from '../../lib/adminApi'
 
 const SHARE_URL_BASE = 'https://zyndal.ca'
 
@@ -223,6 +224,7 @@ export default function TeacherFlow({ user, onLogout, onUserUpdate }) {
         title={`${avatarPrefix}${t('common.greeting', { name: greetingName })}`}
         subtitle={t('teacher.subtitle')}
         username={user.username}
+        onOpenAdmin={user.is_admin || user.account_type === 'admin' ? openAdminPanel : undefined}
         onLogout={onLogout}
         onSettings={() => setView('settings')}
         onMessages={() => setShowMessages(true)}

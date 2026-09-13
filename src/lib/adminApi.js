@@ -1,9 +1,13 @@
 // Client-side API for the /admin panel — deliberately its own module, not
 // part of storage.js. Uses a different localStorage key (ADMIN_SESSION_KEY)
 // and a different header (X-Admin-Token, not X-Session-Token) than the
-// regular student/parent session, and never imports anything from
+// regular student/parent session, and (with one narrow, deliberate
+// exception — openAdminPanel below, which has to read the regular session
+// token to bridge into an admin one) never imports anything from
 // storage.js, so an admin token and a regular user session can never be
 // confused with each other or leak into the wrong request.
+import { getSessionToken } from './storage.js'
+
 const ADMIN_SESSION_KEY = 'zyndal_admin_session'
 
 export function getAdminSession() {
@@ -27,6 +31,31 @@ export function clearAdminSession() {
 
 function storeAdminSession(token, expiresAt) {
   localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({ token, expiresAt }))
+}
+
+// Lets an admin-flagged user already logged into the main app (see
+// TopBar.jsx's admin header link) jump to /admin without a second login —
+// exchanges their existing regular session for a real admin token (see
+// api/admin/exchange-session.js) before navigating. A full page
+// navigation, not client-side routing: App.jsx's isAdminPage is computed
+// once at mount from window.location.pathname and won't flip reactively.
+// Best-effort — any failure here just falls through to a plain /admin
+// visit, landing on the normal login screen instead of a dead end.
+export async function openAdminPanel() {
+  try {
+    const token = getSessionToken()
+    const response = await fetch('/api/admin/exchange-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Session-Token': token } : {}) },
+    })
+    if (response.ok) {
+      const { token: adminToken, expiresAt } = await response.json()
+      storeAdminSession(adminToken, expiresAt)
+    }
+  } catch {
+    // best-effort — fall through to a plain /admin visit below
+  }
+  window.location.href = '/admin'
 }
 
 async function callAdminApi(method, endpoint, body) {
