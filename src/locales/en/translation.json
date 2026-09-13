@@ -90,7 +90,15 @@
     "science": "Science",
     "history_geography": "History & Geography",
     "english": "English",
-    "french": "French"
+    "french": "French",
+    "physics": "Physics",
+    "chemistry": "Chemistry",
+    "woodwork": "Woodwork",
+    "art": "Art",
+    "music": "Music",
+    "cooking": "Cooking",
+    "drama": "Drama",
+    "leadership": "Leadership"
   },
   "home": {
     "loading": "Loading…",
@@ -141,6 +149,7 @@
     "chooseSubject": "Today's question",
     "todaysQuestion": "Today's Question",
     "myClasses": "My Subjects",
+    "myElectives": "Electives",
     "noSchoolSetPrompt": "Set your school in Settings to see your classes →",
     "noGradeSetPrompt": "Set your grade in Settings to see your classes →",
     "noClassesForSchool": "No classes are set up for your school and grade yet.",

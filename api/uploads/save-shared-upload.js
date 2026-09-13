@@ -3,7 +3,22 @@ import { supabase } from '../_lib/auth.js'
 import { getForumMembership } from '../_lib/forumAuth.js'
 import { assertUploadPagesAllowed } from '../_lib/uploadLimits.js'
 import { screenUploadImages } from '../_lib/uploadSafety.js'
-import { sanitizeSubject, sanitizeString, sanitizeUuid } from '../_lib/sanitize.js'
+import { sanitizeString, sanitizeUuid } from '../_lib/sanitize.js'
+import { SUBJECTS, LIGHT_ELECTIVE_SUBJECTS } from '../../src/lib/questions.js'
+
+// Unlike sanitizeSubject (api/_lib/sanitize.js) — used broadly by grades/
+// study-plans/practice-sessions, none of which a lighter elective's UI
+// ever exposes a button for — this endpoint specifically needs to accept a
+// lighter elective's subject too, since Shared Notes Calendar uploads are
+// one of the few features that tier DOES get. Kept local rather than
+// widening the shared helper, so those other, unrelated endpoints don't
+// silently start accepting subjects their own UI never offers.
+const SHARABLE_SUBJECT_IDS = new Set([...SUBJECTS, ...LIGHT_ELECTIVE_SUBJECTS].map((s) => s.id))
+function sanitizeSharableSubject(value) {
+  if (typeof value !== 'string') return null
+  const cleaned = value.trim().toLowerCase()
+  return SHARABLE_SUBJECT_IDS.has(cleaned) ? cleaned : null
+}
 
 // Deliberately NOT premium-gated (see save-upload.js's sibling assertPremium
 // call, which this endpoint has no equivalent of) — per explicit product
@@ -31,7 +46,7 @@ function validate(body) {
     return { field: 'shared_for_date', message: 'shared_for_date is required and must be a YYYY-MM-DD date.' }
   }
 
-  const subject = sanitizeSubject(body.subject)
+  const subject = sanitizeSharableSubject(body.subject)
   if (!subject) return { field: 'subject', message: 'subject must be a valid subject.' }
   body.subject = subject
 

@@ -1,7 +1,7 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { generateCurriculumOutlineData } from '../generate-curriculum.js'
-import { SUBJECTS } from '../../src/lib/questions.js'
+import { SUBJECTS, LIGHT_ELECTIVE_SUBJECTS, getSubject } from '../../src/lib/questions.js'
 import { LANG_FOR_PREFERENCE } from '../_lib/notificationText.js'
 
 // Consolidates CurriculumOutlineScreen's three-step client orchestration
@@ -11,8 +11,15 @@ import { LANG_FOR_PREFERENCE } from '../_lib/notificationText.js'
 // per-user scoping beyond the session-auth check itself.
 const VALID_LANGUAGES = ['en', 'fr', 'es']
 
+// Curriculum is offered for a lighter elective too (see ClassCard.jsx's
+// "Forum, Shared Notes Calendar, Curriculum" set for that tier) — the
+// underlying generation call is subject-name-generic (Claude just gets
+// told the subject's display name), so nothing else here needs to change,
+// only which ids this validation accepts.
+const VALID_SUBJECT_IDS = new Set([...SUBJECTS, ...LIGHT_ELECTIVE_SUBJECTS].map((s) => s.id))
+
 function validate(body) {
-  if (!body.subject || !SUBJECTS.some((s) => s.id === body.subject)) return 'subject is invalid.'
+  if (!body.subject || !VALID_SUBJECT_IDS.has(body.subject)) return 'subject is invalid.'
   const grade = Number(body.grade)
   if (!Number.isFinite(grade)) return 'grade is required and must be a number.'
   if (body.language !== undefined && !VALID_LANGUAGES.includes(body.language)) return 'language is invalid.'
@@ -66,7 +73,7 @@ async function handle({ userId, body }) {
   // Neither the student's language nor English exists yet — bootstrap the
   // canonical English outline. Translating it to fr/es is the separate bulk
   // script/admin endpoint's job, not this on-demand path's.
-  const subjectName = SUBJECTS.find((s) => s.id === subject)?.name || subject
+  const subjectName = getSubject(subject)?.name || subject
   const outlineData = await generateCurriculumOutlineData(subjectName, grade)
 
   const { data: saved, error: saveError } = await supabase

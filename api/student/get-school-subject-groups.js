@@ -1,7 +1,13 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
-import { SUBJECTS } from '../../src/lib/questions.js'
+import { SUBJECTS, LIGHT_ELECTIVE_SUBJECTS } from '../../src/lib/questions.js'
 import { resolveClassSubject } from '../_lib/classSubject.js'
+
+// Every subject this endpoint knows how to surface a group/claimed-class
+// entry for — SUBJECTS alone would silently drop a lighter elective's
+// group entirely (see school_electives / LIGHT_ELECTIVE_SUBJECTS' own
+// comment), since a subject not in this list never gets checked below.
+const ALL_LISTABLE_SUBJECTS = [...SUBJECTS, ...LIGHT_ELECTIVE_SUBJECTS]
 
 // One entry per actual class the student can see on the home screen's "My
 // Subjects" grid: one 'group' entry per (school, subject, grade) — the
@@ -75,12 +81,15 @@ async function handle({ userId }) {
     }
   }
 
-  // Fixed SUBJECTS order, each subject's own claimed-class entries listed
-  // right before its group entry — matches the seed data (every school gets
-  // all 6 subjects x grades 7-11), so a subject's group entry only comes
-  // back missing if the seed script hasn't been run for a given school yet.
+  // Fixed subject order (core, then full electives, then light electives —
+  // ALL_LISTABLE_SUBJECTS' own order), each subject's own claimed-class
+  // entries listed right before its group entry — matches the seed data
+  // (every school gets the 5 core subjects x grades 7-11; a school's own
+  // electives, if any, come from school_electives/school_subject_groups
+  // instead), so a subject's group entry only comes back missing if it
+  // isn't actually offered at this school+grade at all.
   const entries = []
-  for (const s of SUBJECTS) {
+  for (const s of ALL_LISTABLE_SUBJECTS) {
     for (const classEntry of classEntriesBySubject[s.id] || []) entries.push(classEntry)
     const group = groupBySubject[s.id]
     if (group) entries.push({ kind: 'group', id: group.id, subject: s.id, joined: joinedGroupIds.has(group.id), groupCreatedAt: group.created_at })

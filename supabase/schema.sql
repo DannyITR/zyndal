@@ -532,6 +532,30 @@ cross join (values ('math'),('science'),('history_geography'),('english'),('fren
 cross join (values (7),(8),(9),(10),(11)) as g(grade)
 on conflict (school_id, subject, grade) do nothing;
 
+-- ---------- Elective subjects (per-school, extensible) ----------
+-- Unlike the universal 5-core-subjects seed above (every school, every
+-- grade, identical), an elective is specific to ONE school's own offering
+-- — this table is the durable declaration of which (school, subject,
+-- grade) elective combinations exist, kept separate from
+-- school_subject_groups (what the app actually reads everywhere) so a
+-- different school can have a completely different elective list later
+-- without touching any code. scripts/sync-school-electives.mjs reads every
+-- row here and materializes the matching school_subject_groups row —
+-- re-run it any time a new school's electives are added. Never
+-- auto-joined (see api/_lib/coreGroups.js, which only ever looks at
+-- CORE_SUBJECT_IDS) — an elective is always manually joined, same as
+-- every group was before that feature existed.
+create table if not exists school_electives (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
+  subject text not null,
+  grade integer not null,
+  created_at timestamptz not null default now(),
+  unique (school_id, subject, grade)
+);
+create index if not exists school_electives_school_id_idx on school_electives(school_id);
+alter table school_electives enable row level security;
+
 -- ---------- Daily question resolution lock ----------
 -- resolveDailyQuestion (api/_lib/dailyQuestion.js) is called independently
 -- at display time and at submit time, and is meant to always agree on

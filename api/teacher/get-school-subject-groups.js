@@ -1,7 +1,12 @@
 import { createTeacherHandler } from '../_lib/teacherHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeUuid, sanitizeGrade } from '../_lib/sanitize.js'
-import { SUBJECTS } from '../../src/lib/questions.js'
+import { SUBJECTS, LIGHT_ELECTIVE_SUBJECTS } from '../../src/lib/questions.js'
+
+// See api/student/get-school-subject-groups.js's identical constant — a
+// lighter elective's group would otherwise never appear in a teacher's own
+// claim list either.
+const ALL_LISTABLE_SUBJECTS = [...SUBJECTS, ...LIGHT_ELECTIVE_SUBJECTS]
 
 // Unlike the student version of this endpoint, a teacher isn't tied to one
 // school/grade — school_id/grade are teacher-chosen query params here, not
@@ -48,9 +53,9 @@ async function handle({ teacherId, body }) {
   const groupBySubject = Object.fromEntries((groups || []).map((g) => [g.subject, g]))
 
   return {
-    // Always all 6 SUBJECTS in fixed order, matching the seed data — see
+    // Fixed subject order (core, full electives, light electives) — see
     // api/student/get-school-subject-groups.js's identical comment.
-    groups: SUBJECTS.map((s) => {
+    groups: ALL_LISTABLE_SUBJECTS.map((s) => {
       const group = groupBySubject[s.id]
       if (!group) return null
       const claim = claimsByGroup[group.id]

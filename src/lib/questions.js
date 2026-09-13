@@ -5,28 +5,71 @@
 // (id history_geography) — see scripts/merge-history-geography.mjs for the
 // one-time data migration this required on the DB side.
 
+// Physics/Chemistry are "full electives" — a school (see school_electives /
+// CORE_SUBJECT_IDS below) can offer these with the exact same treatment as
+// a core subject (question bank, curriculum, test prep, practice, uploads),
+// which is why they belong in this same enumerable array — every existing
+// "pick any subject" picker (TestPrepSetupScreen, PracticeSetupScreen,
+// UploadCaptureScreen's unlocked selects, sanitizeSubject) already iterates
+// SUBJECTS, so adding them here is what grants that full feature set. The
+// ONE thing that stays off-limits for them is the daily rotating question —
+// enforced entirely by DAILY_ROTATION_ORDER staying exactly the 5 original
+// ids, never derived from this array.
 export const SUBJECTS = [
   { id: 'math', name: 'Math', icon: '📐', color: '#8a2be2' },
   { id: 'science', name: 'Science', icon: '🧪', color: '#47bfff' },
   { id: 'history_geography', name: 'History & Geography', icon: '🗺️', color: '#e0a234' },
   { id: 'english', name: 'English', icon: '📖', color: '#ff5c7a' },
   { id: 'french', name: 'French', icon: '🐓', color: '#b983ff' },
+  { id: 'physics', name: 'Physics', icon: '⚛️', color: '#26a69a' },
+  { id: 'chemistry', name: 'Chemistry', icon: '⚗️', color: '#66bb6a' },
 ]
 
+// "Lighter-featured" electives — deliberately NOT part of SUBJECTS. A
+// school can offer one of these (see school_electives) with only Forum +
+// Shared Notes Calendar + Curriculum (ClassCard.jsx's isLightElective
+// check) and no daily-question/question-bank/practice content at all.
+// Kept out of SUBJECTS specifically so they never appear in any "pick any
+// subject" dropdown (which would offer content that doesn't exist for
+// them) and never factor into daily rotation or TEST_PREP_QUESTION_BANK
+// lookups. getSubject() below still resolves their display info (icon/
+// name/color) — that's a separate, purely cosmetic concern from "is this
+// enumerable as a full-feature subject."
+export const LIGHT_ELECTIVE_SUBJECTS = [
+  { id: 'woodwork', name: 'Woodwork', icon: '🪚', color: '#8d6e63' },
+  { id: 'art', name: 'Art', icon: '🎨', color: '#d81b60' },
+  { id: 'music', name: 'Music', icon: '🎵', color: '#fb8c00' },
+  { id: 'cooking', name: 'Cooking', icon: '🍳', color: '#fdd835' },
+  { id: 'drama', name: 'Drama', icon: '🎭', color: '#e64a19' },
+  { id: 'leadership', name: 'Leadership', icon: '🏅', color: '#3f51b5' },
+]
+
+export const LIGHT_ELECTIVE_SUBJECT_IDS = LIGHT_ELECTIVE_SUBJECTS.map((s) => s.id)
+
+// Resolves a subject id to its display info regardless of tier — checked
+// against SUBJECTS first (the common case, checked first for a marginally
+// shorter lookup), then LIGHT_ELECTIVE_SUBJECTS. This is a pure display
+// lookup (icon/name/color for an already-known id attached to some
+// existing data — a group entry, an upload row, a ClassCard's own subject
+// prop) — never used to enumerate "which subjects can I pick from", so
+// including light electives here doesn't leak them into any picker.
 export function getSubject(subjectId) {
-  return SUBJECTS.find((s) => s.id === subjectId) || null
+  return SUBJECTS.find((s) => s.id === subjectId) || LIGHT_ELECTIVE_SUBJECTS.find((s) => s.id === subjectId) || null
 }
 
 // The subjects every student is auto-joined to (school_subject_groups) for
 // their school+grade, with no manual "Join Group" step — see
 // api/_lib/coreGroups.js and ClassCardsGrid.jsx's own Join button, which is
-// only ever shown for a group whose subject is NOT in this list. Happens to
-// equal SUBJECTS' own ids exactly today, but kept as a separate, explicit
-// list rather than deriving it from SUBJECTS — the two represent distinct
-// concepts (SUBJECTS is "has daily-question/test-prep content", this is
-// "auto-joined by default") that could diverge later, e.g. a future
-// elective group with no daily-question content of its own, or a future
-// SUBJECTS entry that isn't meant to be an always-on membership.
+// only ever shown for a group whose subject is NOT in this list. Kept
+// explicit and separate from SUBJECTS on purpose — proven out now that
+// Physics/Chemistry joined SUBJECTS (full question-bank/test-prep/practice
+// treatment) without becoming auto-joined electives: the two lists
+// represent genuinely distinct concepts ("has full daily-question-adjacent
+// content" vs. "every student gets this for free"), and this is exactly
+// the divergence this comment originally anticipated. ClassCardsGrid.jsx's
+// visual "core vs. elective" sectioning also keys off this same list — any
+// subject not in it (Physics/Chemistry included) renders in the smaller,
+// separate Electives section, regardless of school.
 export const CORE_SUBJECT_IDS = ['math', 'science', 'history_geography', 'english', 'french']
 
 // The single subject shown on the home screen each day, same for every

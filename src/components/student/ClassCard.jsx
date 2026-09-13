@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CORE_SUBJECT_IDS } from '../../lib/questions'
+import { CORE_SUBJECT_IDS, LIGHT_ELECTIVE_SUBJECT_IDS } from '../../lib/questions'
 import { getEffectiveStreak, todayStr } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
 import { countdownLabel, computeReadiness } from '../../lib/testprep'
@@ -78,6 +78,16 @@ export default function ClassCard({
 
   const displayStreak = getEffectiveStreak(progress, today)
   const planForThisSubject = activePlan && activePlan.subject === subject.id ? activePlan : null
+  // A "lighter-featured" elective (Woodwork/Art/Music/Cooking/Drama/
+  // Leadership — see school_electives) only ever gets Forum, the Group
+  // Notes Calendar, and Curriculum — no daily-question-adjacent content
+  // (Test Prep/Study Guide/Upload/My Uploads/Practice/My Grades) exists
+  // for it at all, so those buttons (and the active-test-plan card, which
+  // is itself part of Test Prep) are hidden entirely rather than shown
+  // locked/disabled. A "full" elective (Physics/Chemistry) is NOT in this
+  // list — it gets the exact same treatment as a core subject everywhere
+  // on this page.
+  const isLightElective = LIGHT_ELECTIVE_SUBJECT_IDS.includes(subject.id)
 
   // Test Prep, the Study Guide, Upload, My Uploads, and Practice are all
   // premium features; a trial_expired/free student sees the upgrade pitch
@@ -251,26 +261,36 @@ export default function ClassCard({
       )}
 
       <div className="home-actions">
-        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenTestPrep}>
-          {t('home.testPrep')}
-        </PremiumFeatureButton>
-        {!planForThisSubject && (
-          <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenStudyGuide}>
-            {t('home.studyGuide')}
-          </PremiumFeatureButton>
+        {/* Test Prep/Study Guide/Upload/My Uploads/Practice/My Grades are
+            all "daily-question-adjacent" content that simply doesn't exist
+            for a lighter elective — see isLightElective's own comment
+            above. Curriculum, just below, is the one exception: it's
+            generated generically from the subject's name regardless of
+            tier, so it stays available for every subject. */}
+        {!isLightElective && (
+          <>
+            <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenTestPrep}>
+              {t('home.testPrep')}
+            </PremiumFeatureButton>
+            {!planForThisSubject && (
+              <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenStudyGuide}>
+                {t('home.studyGuide')}
+              </PremiumFeatureButton>
+            )}
+            <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenUpload}>
+              {t('home.upload')}
+            </PremiumFeatureButton>
+            <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenMyUploads}>
+              {t('home.myUploads')}
+            </PremiumFeatureButton>
+            <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenPractice}>
+              {t('home.practice')}
+            </PremiumFeatureButton>
+            <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={onOpenGrades}>
+              {t('home.myGrades')}
+            </PremiumFeatureButton>
+          </>
         )}
-        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenUpload}>
-          {t('home.upload')}
-        </PremiumFeatureButton>
-        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenMyUploads}>
-          {t('home.myUploads')}
-        </PremiumFeatureButton>
-        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={handleOpenPractice}>
-          {t('home.practice')}
-        </PremiumFeatureButton>
-        <PremiumFeatureButton subscriptionStatus={user.subscription_status} onClick={onOpenGrades}>
-          {t('home.myGrades')}
-        </PremiumFeatureButton>
         <button type="button" className="btn btn-secondary btn-small" onClick={onOpenCurriculum}>
           {t('home.curriculum')}
         </button>
@@ -332,7 +352,11 @@ export default function ClassCard({
         </>
       )}
 
-      {planForThisSubject && (
+      {/* Part of Test Prep — see isLightElective's own comment above — so
+          hidden for the same reason those buttons are, even though in
+          practice a light elective can never actually have an active plan
+          (there's no Test Prep entry point to create one from). */}
+      {!isLightElective && planForThisSubject && (
         <div className="testprep-home-card">
           <button type="button" className="testprep-home-card-main" onClick={onOpenStudyPlan}>
             <div className="testprep-home-card-text">

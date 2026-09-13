@@ -95,41 +95,71 @@ export default function ClassCardsGrid({ onSelectClass, onOpenSettings }) {
     )
   }
 
+  // Core subjects (auto-joined, full class-grid tile) vs. electives
+  // (Physics/Chemistry down to Woodwork/Art/etc.) — bucketed purely by
+  // CORE_SUBJECT_IDS, so ANY subject a school offers beyond the universal
+  // 5 lands in the Electives section below, regardless of which specific
+  // electives that school has (see school_electives/CORE_SUBJECT_IDS'
+  // own comments on why this stays a clean, school-agnostic split).
+  const coreEntries = entries.filter((e) => CORE_SUBJECT_IDS.includes(e.subject))
+  const electiveEntries = entries.filter((e) => !CORE_SUBJECT_IDS.includes(e.subject))
+
+  function renderTile(entry, { compact } = {}) {
+    const subject = getSubject(entry.subject)
+    return (
+      <button
+        key={`${entry.kind}-${entry.id}`}
+        type="button"
+        className={compact ? 'subject-card subject-card--compact' : 'subject-card'}
+        style={{ '--subject-color': subject.color }}
+        onClick={() => onSelectClass({ ...entry, schoolName, grade })}
+      >
+        <span className="subject-card-icon">{subject.icon}</span>
+        <span className="subject-card-name">{t(`subjects.${subject.id}`)}</span>
+        <span className="subject-card-detail">
+          {entry.kind === 'class' ? entry.name : t('classCard.unclaimedStatus', { grade, school: schoolName })}
+        </span>
+        {/* Core-subject groups (Math/Science/History & Geography/
+            English/French) are auto-joined the moment a student
+            has both a school and grade set (see
+            api/_lib/coreGroups.js) — no "Join" hint needed for
+            them. This only ever shows for an elective group
+            (compact tiles below), which still requires a manual join. */}
+        {entry.kind === 'group' && !entry.joined && !CORE_SUBJECT_IDS.includes(entry.subject) && (
+          <span className="subject-card-badge subject-card-badge--neutral">{t('home.joinBadge')}</span>
+        )}
+      </button>
+    )
+  }
+
   return (
     <div className="class-cards-section">
       <h3 className="section-heading">{t('home.myClasses')}</h3>
       {entries.length === 0 ? (
         <p className="field-hint">{t('home.noClassesForSchool')}</p>
       ) : (
-        <div className="subject-grid">
-          {[...entries.filter(isJoined), ...entries.filter((e) => !isJoined(e))].map((entry) => {
-            const subject = getSubject(entry.subject)
-            return (
-              <button
-                key={`${entry.kind}-${entry.id}`}
-                type="button"
-                className="subject-card"
-                style={{ '--subject-color': subject.color }}
-                onClick={() => onSelectClass({ ...entry, schoolName, grade })}
-              >
-                <span className="subject-card-icon">{subject.icon}</span>
-                <span className="subject-card-name">{t(`subjects.${subject.id}`)}</span>
-                <span className="subject-card-detail">
-                  {entry.kind === 'class' ? entry.name : t('classCard.unclaimedStatus', { grade, school: schoolName })}
-                </span>
-                {/* Core-subject groups (Math/Science/History & Geography/
-                    English/French) are auto-joined the moment a student
-                    has both a school and grade set (see
-                    api/_lib/coreGroups.js) — no "Join" hint needed for
-                    them. This only ever shows for a future elective group,
-                    which still requires a manual join. */}
-                {entry.kind === 'group' && !entry.joined && !CORE_SUBJECT_IDS.includes(entry.subject) && (
-                  <span className="subject-card-badge subject-card-badge--neutral">{t('home.joinBadge')}</span>
+        <>
+          {coreEntries.length > 0 && (
+            <div className="subject-grid">
+              {[...coreEntries.filter(isJoined), ...coreEntries.filter((e) => !isJoined(e))].map((entry) => renderTile(entry))}
+            </div>
+          )}
+
+          {/* Always its own, visually distinct section below every core
+              subject — a smaller/compact card size, per spec — and never
+              mixed into the core grid above, even for a fully-joined
+              elective. */}
+          {electiveEntries.length > 0 && (
+            <>
+              <h3 className="section-heading section-heading--electives">{t('home.myElectives')}</h3>
+              <div className="subject-grid subject-grid--compact">
+                {[...electiveEntries.filter(isJoined), ...electiveEntries.filter((e) => !isJoined(e))].map((entry) =>
+                  renderTile(entry, { compact: true })
                 )}
-              </button>
-            )
-          })}
-        </div>
+              </div>
+            </>
+          )}
+        </>
       )}
     </div>
   )

@@ -1190,6 +1190,49 @@ div.zyndal-logo {
   line-height: 1.3;
 }
 
+/* Elective section (ClassCardsGrid.jsx) — visually smaller/more compact
+   tiles than the core-subject grid above, in their own 3-column grid so
+   more fit per row, reinforcing that these are a secondary, "extra"
+   subject list rather than the main 2-column class grid. Same
+   --subject-color accent mechanism as the full-size card, just scaled
+   down. */
+.subject-grid--compact {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.subject-card--compact {
+  gap: 4px;
+  padding: 10px 8px;
+  border-radius: 14px;
+}
+
+.subject-card--compact .subject-card-icon {
+  font-size: 20px;
+}
+
+.subject-card--compact .subject-card-name {
+  font-size: 12px;
+}
+
+.subject-card--compact .subject-card-detail {
+  font-size: 10px;
+}
+
+.subject-card--compact .subject-card-badge {
+  top: 6px;
+  right: 6px;
+  font-size: 8px;
+  padding: 2px 5px;
+}
+
+/* Sits right below the core subject grid, before the Electives heading —
+   a bit more breathing room than a heading immediately following another
+   section's own content normally gets. */
+.section-heading--electives {
+  margin-top: 16px;
+}
+
 .daily-score-box {
   display: flex;
   align-items: center;

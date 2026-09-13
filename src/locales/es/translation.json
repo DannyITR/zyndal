@@ -90,7 +90,15 @@
     "science": "Ciencias",
     "history_geography": "Historia y Geografía",
     "english": "Inglés",
-    "french": "Francés"
+    "french": "Francés",
+    "physics": "Física",
+    "chemistry": "Química",
+    "woodwork": "Carpintería",
+    "art": "Arte",
+    "music": "Música",
+    "cooking": "Cocina",
+    "drama": "Teatro",
+    "leadership": "Liderazgo"
   },
   "home": {
     "loading": "Cargando…",
@@ -141,6 +149,7 @@
     "chooseSubject": "La pregunta de hoy",
     "todaysQuestion": "Pregunta de Hoy",
     "myClasses": "Mis Materias",
+    "myElectives": "Materias Optativas",
     "noSchoolSetPrompt": "Configura tu escuela en Ajustes para ver tus materias →",
     "noGradeSetPrompt": "Configura tu grado en Ajustes para ver tus materias →",
     "noClassesForSchool": "Aún no hay materias configuradas para tu escuela y grado.",

@@ -1503,6 +1503,101 @@ const TEST_PREP_QUESTION_BANK = {
       },
     ],
   },
+
+  // Physics/Chemistry are "full electives" — grade 11 only (see
+  // school_electives), so this is the only grade either subject ever
+  // needs a bank for; getBankForGrade() simply returns [] for any other
+  // grade, matching how a subject with no group at that grade is never
+  // reachable from a Class Card in the first place.
+  physics: {
+    11: [
+      {
+        topic: 'Kinematics',
+        difficulty: 'easy',
+        question: 'A car accelerates uniformly from rest to 20 m/s in 5 seconds. What is its acceleration?',
+        options: ['2 m/s²', '4 m/s²', '5 m/s²', '100 m/s²'],
+        correct: 1,
+        explanation: 'Acceleration = change in velocity / time = (20 - 0) / 5 = 4 m/s².',
+      },
+      {
+        topic: "Newton's Laws",
+        difficulty: 'medium',
+        question: 'A 10 kg object experiences a net force of 25 N. What is its acceleration?',
+        options: ['0.4 m/s²', '2.5 m/s²', '10 m/s²', '250 m/s²'],
+        correct: 1,
+        explanation: "By Newton's second law, F = ma, so a = F/m = 25/10 = 2.5 m/s².",
+      },
+      {
+        topic: 'Energy',
+        difficulty: 'medium',
+        question: 'A 2 kg object is lifted 5 m against gravity (g = 10 m/s²). How much gravitational potential energy does it gain?',
+        options: ['10 J', '50 J', '100 J', '250 J'],
+        correct: 2,
+        explanation: 'Gravitational PE = mgh = 2 × 10 × 5 = 100 J.',
+      },
+      {
+        topic: 'Waves',
+        difficulty: 'medium',
+        question: 'A wave has a frequency of 50 Hz and a wavelength of 2 m. What is its speed?',
+        options: ['25 m/s', '48 m/s', '52 m/s', '100 m/s'],
+        correct: 3,
+        explanation: 'Wave speed = frequency × wavelength = 50 × 2 = 100 m/s.',
+      },
+      {
+        topic: 'Electricity',
+        difficulty: 'hard',
+        question: 'A circuit has a voltage of 12 V and a resistance of 4 Ω. What is the current?',
+        options: ['0.33 A', '3 A', '16 A', '48 A'],
+        correct: 1,
+        explanation: "By Ohm's law, I = V/R = 12/4 = 3 A.",
+      },
+    ],
+  },
+
+  chemistry: {
+    11: [
+      {
+        topic: 'Atomic Structure',
+        difficulty: 'easy',
+        question: 'What subatomic particle has a negative charge?',
+        options: ['Proton', 'Neutron', 'Electron', 'Nucleus'],
+        correct: 2,
+        explanation: 'Electrons carry a negative charge and orbit the nucleus, which contains positively-charged protons and neutral neutrons.',
+      },
+      {
+        topic: 'The Periodic Table',
+        difficulty: 'easy',
+        question: 'Elements in the same column (group) of the periodic table share similar what?',
+        options: ['Atomic mass', 'Number of protons', 'Chemical properties', 'Physical state at room temperature'],
+        correct: 2,
+        explanation: 'Elements in the same group have the same number of valence electrons, which gives them similar chemical properties.',
+      },
+      {
+        topic: 'Chemical Bonding',
+        difficulty: 'medium',
+        question: 'What type of bond forms when electrons are shared between two nonmetal atoms?',
+        options: ['Ionic bond', 'Covalent bond', 'Metallic bond', 'Hydrogen bond'],
+        correct: 1,
+        explanation: 'A covalent bond forms when two atoms (typically nonmetals) share one or more pairs of electrons.',
+      },
+      {
+        topic: 'Balancing Equations',
+        difficulty: 'medium',
+        question: 'What coefficient balances hydrogen in this equation? __H2 + O2 → 2H2O',
+        options: ['1', '2', '3', '4'],
+        correct: 1,
+        explanation: 'Balancing gives 2H2 + O2 → 2H2O — 4 hydrogen atoms and 2 oxygen atoms appear on each side.',
+      },
+      {
+        topic: 'Acids and Bases',
+        difficulty: 'hard',
+        question: 'A solution has a pH of 3. Is it acidic, basic, or neutral?',
+        options: ['Acidic', 'Basic', 'Neutral', 'Cannot be determined'],
+        correct: 0,
+        explanation: 'A pH below 7 indicates an acidic solution; a pH of 3 is strongly acidic.',
+      },
+    ],
+  },
 }
 
 const DIFFICULTY_ORDER = { easy: 0, medium: 1, hard: 2 }
