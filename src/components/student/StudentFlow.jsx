@@ -1055,7 +1055,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           </button>
         </div>
 
-        <div className="calendar-nav">
+        <div className="calendar-nav calendar-nav--compact">
           <button
             type="button"
             className="calendar-nav-arrow"
