@@ -39,10 +39,21 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, canSha
       ? receivedToday.filter((r) => computeShareStreak(shares, user.id, r.senderId, today) === 0)
       : []
 
-  // Scaled proportionally against TOTAL_SUBJECTS (the day's max possible
-  // score) rather than a fixed clamp, so a full day always lands on the
-  // gradient's green end regardless of what that max is.
+  // TOTAL_SUBJECTS is 1 (one shared rotating question per day), so this is
+  // really just a binary correct/incorrect pick off the same red-to-green
+  // gradient FriendScoreCardModal.jsx's own (still genuinely multi-value,
+  // for a friend's stored share) score color uses — todayScore=0 lands on
+  // the gradient's red end, todayScore=1 (the only other possible value)
+  // lands on its green end. Kept as this same proportional formula rather
+  // than a plain ternary so it stays correct if TOTAL_SUBJECTS ever changes
+  // again.
   const scoreColor = SCORE_COLORS[Math.round((Math.min(Math.max(todayScore, 0), TOTAL_SUBJECTS) / TOTAL_SUBJECTS) * (SCORE_COLORS.length - 1))]
+  // This screen is only ever reachable via TodaysQuestionCard's Share
+  // button, itself only shown once today's single question has actually
+  // been attempted (correct or incorrect) — see that component's own
+  // `attempted` gate — so todayScore is unambiguous here: 0 means
+  // incorrect, never "not attempted yet".
+  const answeredCorrectly = todayScore > 0
 
   // Only friends with an established (1+ day) mutual share streak are worth
   // surfacing as a card here — everyone else is reachable via the picker
@@ -222,7 +233,13 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, canSha
         />
       )}
 
-      <div className="share-card" ref={cardRef}>
+      {/* --themed: follows the active theme (default/midnight/daylight)
+          like every other card in the app, matching FriendScoreCardModal's
+          own read-only card — this one is captured via html2canvas for
+          external sharing, but there's no reason the IN-APP preview the
+          student sees while generating it should look wrong on their own
+          theme just because the eventual PNG is a fixed snapshot. */}
+      <div className="share-card share-card--themed" ref={cardRef}>
         <div className="share-card-glow share-card-glow--1" />
         <div className="share-card-glow share-card-glow--2" />
 
@@ -239,8 +256,12 @@ export default function ShareStreakScreen({ user, streak, xp, todayScore, canSha
 
         <div className="share-card-middle">
           <p className="share-card-date">{formattedDate}</p>
-          <p className="share-card-score" style={{ color: scoreColor }}>
-            {todayScore}/{TOTAL_SUBJECTS}
+          {/* Only one question is answerable per day now, so a fraction
+              (e.g. "1/1") reads as confusing leftover UI from when there
+              were several — a plain correct/incorrect label says the same
+              thing unambiguously. */}
+          <p className="share-card-result" style={{ color: scoreColor }}>
+            {answeredCorrectly ? t('share.answeredCorrectly') : t('share.answeredIncorrectly')}
           </p>
           <p className="share-card-username">@{user.username}</p>
           <p className="share-card-xp">⚡ {xp} XP</p>

@@ -298,6 +298,8 @@
     "generateImageFailed": "No se pudo generar la imagen para compartir. Inténtalo de nuevo.",
     "myScoreTitle": "Mi puntaje de Zyndal",
     "myScoreText": "¡Obtuve {{score}}/{{total}} correctas en Zyndal hoy! 🎯",
+    "answeredCorrectly": "Respuesta Correcta ✅",
+    "answeredIncorrectly": "Respuesta Incorrecta ❌",
     "pickerTitle": "Compartir con amigos",
     "addFriendsFirst": "Agrega algunos amigos primero para compartir con ellos.",
     "noMatch": "Ningún amigo coincide con tu búsqueda.",

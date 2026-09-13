@@ -2920,12 +2920,15 @@ div.zyndal-logo {
   align-self: center;
 }
 
-/* Theme-aware variant for the read-only "View Score" modal (FriendScoreCard
-   Modal.jsx) — see that file's header comment for why this card and
-   ShareStreakScreen's own (deliberately fixed-look, export-preview) copy
-   need different treatment. Reuses the same tokens the rest of the app's
-   cards/glows already key off, so this automatically stays correct across
-   default/midnight/daylight without hardcoding per-theme colors here. */
+/* Theme-aware variant, applied by both ShareStreakScreen.jsx (the
+   logged-in student's own downloadable card) and the read-only "View
+   Score" modal (FriendScoreCardModal.jsx) — reuses the same tokens the
+   rest of the app's cards/glows already key off, so this automatically
+   stays correct across default/midnight/daylight without hardcoding
+   per-theme colors here. Base .share-card (below) is the plain fixed-dark
+   look this overrides — kept as its own class rather than folded into the
+   base rule in case a genuinely theme-independent card is ever needed
+   again. */
 .share-card--themed {
   background: linear-gradient(160deg, var(--card-2), var(--card) 65%);
   border-color: var(--border-strong);
@@ -3012,6 +3015,19 @@ div.zyndal-logo {
   line-height: 1;
   margin: 0 0 6px;
   color: var(--gold-text);
+}
+
+/* ShareStreakScreen.jsx's correct/incorrect label — a short phrase, not a
+   big standalone number like .share-card-score above (still used as-is by
+   FriendScoreCardModal.jsx's own X/Y display), so this gets its own,
+   smaller size that comfortably wraps within the card's fixed width
+   instead of overflowing it. */
+.share-card-result {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1.25;
+  margin: 4px 0 6px;
 }
 
 .share-card-username {
