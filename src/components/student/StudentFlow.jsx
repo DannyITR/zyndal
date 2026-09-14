@@ -59,6 +59,7 @@ import HomeworkFlow from './homework/HomeworkFlow'
 import MyClassesScreen from './classes/MyClassesScreen'
 import ForumScreen from '../shared/forum/ForumScreen'
 import MessagesFlow from './messages/MessagesFlow'
+import { openAdminPanel } from '../../lib/adminApi'
 
 // Push-permission banner dismissal cooldown — see showPushBanner below.
 // localStorage (not the server) is the right place for this: permission
@@ -895,6 +896,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
           title={`${avatarPrefix}${t('common.greeting', { name: greetingName })}`}
           subtitle={t('home.chooseSubject')}
           username={user.username}
+          onOpenAdmin={user.is_admin || user.account_type === 'admin' ? openAdminPanel : undefined}
           onLogout={onLogout}
           onMessages={() => setShowMessages(true)}
           unreadMessageCount={unreadMessageCount}
