@@ -71,7 +71,9 @@ function buildSystemPrompt(documentTypePhrase, pageCount) {
   summary: string (2-3 sentences summarizing the material)
 }
 
-If a question in the source document is not already multiple-choice, leave "options" as an empty array and put the full answer in "correct_answer" — don't invent options that weren't in the document.`
+If a question in the source document is not already multiple-choice, leave "options" as an empty array and put the full answer in "correct_answer" — don't invent options that weren't in the document.
+
+Every question MUST have a non-empty "correct_answer" and "explanation". If the document already shows the correct answer (an answer key, a teacher's correction, worked notes), use it. If the question is unanswered on the page — a blank worksheet, a list of review questions — or the answer written on the page is wrong, work out the correct answer yourself, using the rest of the document first and your own subject knowledge where the document doesn't cover it. Never leave "correct_answer" blank.`
 }
 
 const MAX_PAGES = 10

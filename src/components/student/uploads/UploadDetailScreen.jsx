@@ -98,7 +98,7 @@ export default function UploadDetailScreen({ user, upload, onBack, onLogout, onL
                   ))}
                 </ul>
               )}
-              <p className="upload-question-answer">Answer: {q.correct_answer}</p>
+              {q.correct_answer && <p className="upload-question-answer">Answer: {q.correct_answer}</p>}
               {q.explanation && <p className="testprep-explanation-text">{q.explanation}</p>}
             </div>
           ))}
