@@ -1,6 +1,7 @@
 import { createAdminHandler } from '../_lib/adminHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeUuid } from '../_lib/sanitize.js'
+import { removeSharedNoteFiles } from '../_lib/sharedNotesStorage.js'
 
 function validate(body) {
   const uploadId = sanitizeUuid(body.upload_id)
@@ -13,10 +14,16 @@ function validate(body) {
 // their own FK (ON DELETE CASCADE — see supabase/schema.sql) once the
 // uploads row itself goes, so nothing else needs deleting explicitly here —
 // unlike the users-table hard delete, every table involved is one
-// schema.sql already keeps real FK constraints on.
+// schema.sql already keeps real FK constraints on. The one thing a cascade
+// can't reach is a shared upload's stored page images (Supabase Storage,
+// not a table), so those are removed explicitly.
 async function handle({ body }) {
+  const { data: upload, error: lookupError } = await supabase.from('uploads').select('shared_files').eq('id', body.upload_id).maybeSingle()
+  if (lookupError) throw lookupError
+
   const { error } = await supabase.from('uploads').delete().eq('id', body.upload_id)
   if (error) throw error
+  await removeSharedNoteFiles(upload?.shared_files)
   return { success: true }
 }
 

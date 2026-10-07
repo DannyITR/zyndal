@@ -241,6 +241,25 @@ alter table uploads add column if not exists shared_for_date date;
 drop index if exists uploads_shared_group_idx;
 create index if not exists uploads_shared_class_idx on uploads(shared_class_type, shared_class_id, shared_for_date);
 
+-- The original page images/PDFs of a shared upload, so classmates can view
+-- the actual notes alongside the AI summary: [{ path, media_type }], one
+-- entry per page in page order, pointing into the private 'shared-notes'
+-- Storage bucket (see api/_lib/sharedNotesStorage.js). Empty for private
+-- uploads and for anything shared before this column existed (those pages
+-- were never stored, so they stay summary-only).
+alter table uploads add column if not exists shared_files jsonb not null default '[]'::jsonb;
+
+-- Private bucket, deliberately with NO storage.objects policies: the anon
+-- key the browser holds can't read, list, or write it at all. Only the
+-- service-role client in /api can, and it only mints short-lived signed
+-- URLs after checking the caller is a member of the upload's class.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('shared-notes', 'shared-notes', false, 15728640, array['image/jpeg', 'image/png', 'image/webp', 'application/pdf'])
+on conflict (id) do update
+  set public = false,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
 -- Once-per-class-per-day XP award for sharing substantive notes to a
 -- class's Notes Calendar (see api/uploads/save-shared-upload.js and
 -- api/_lib/db.js's awardUploadNotesXp). award_date is the uploader's own

@@ -1,6 +1,7 @@
 import { createAdminHandler } from '../_lib/adminHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeUuid } from '../_lib/sanitize.js'
+import { removeSharedNoteFiles } from '../_lib/sharedNotesStorage.js'
 
 function validate(body) {
   const userId = sanitizeUuid(body.user_id)
@@ -23,7 +24,7 @@ function validate(body) {
 // schema.sql's tables. Deleting rows that don't exist is always a safe
 // no-op, so being explicit here can't do any harm either way.
 async function hardDeleteUser(userId) {
-  const { data: uploadRows, error: uploadsLookupError } = await supabase.from('uploads').select('id').eq('user_id', userId)
+  const { data: uploadRows, error: uploadsLookupError } = await supabase.from('uploads').select('id, shared_files').eq('user_id', userId)
   if (uploadsLookupError) throw uploadsLookupError
   const uploadIds = (uploadRows || []).map((u) => u.id)
   if (uploadIds.length > 0) {
@@ -59,6 +60,10 @@ async function hardDeleteUser(userId) {
 
   const { error } = await supabase.from('users').delete().eq('id', userId)
   if (error) throw error
+
+  // Page images this user shared to a Notes Calendar live in Supabase
+  // Storage, which no table delete above touches.
+  await removeSharedNoteFiles((uploadRows || []).flatMap((u) => u.shared_files || []))
 }
 
 // Soft delete mirrors api/auth/delete-account.js exactly (same deleted_at +

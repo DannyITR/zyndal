@@ -930,6 +930,20 @@
     "shareCheckboxHint": "Tout camarade de {{className}} pourra voir ces notes.",
     "sharedForDateLabel": "Pour quelle journée sont ces notes ?",
     "uploadForDayButton": "+ Téléverser des notes pour cette journée",
-    "sharingLockedHint": "Partagé avec {{className}} pour le {{date}}."
+    "sharingLockedHint": "Partagé avec {{className}} pour le {{date}}.",
+    "viewPhotos_one": "Voir la photo",
+    "viewPhotos_other": "Voir les {{count}} photos",
+    "pagesHeading": "Pages",
+    "pagesHint": "Touchez une page pour l'afficher en taille réelle.",
+    "viewPage": "Voir la page {{current}} sur {{total}}"
+  },
+  "lightbox": {
+    "label": "Visionneuse d'images",
+    "counter": "{{current}} / {{total}}",
+    "previous": "Page précédente",
+    "next": "Page suivante",
+    "pageAlt": "Page {{current}} sur {{total}}",
+    "openPdf": "Ouvrir le PDF",
+    "loadError": "Impossible de charger cette image. Revenez en arrière et rouvrez les notes pour réessayer."
   }
 }

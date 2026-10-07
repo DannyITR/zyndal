@@ -2,6 +2,7 @@ import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { assertPremium } from '../_lib/subscription.js'
 import { getForumMembership } from '../_lib/forumAuth.js'
+import { signSharedNoteFiles } from '../_lib/sharedNotesStorage.js'
 
 // Two modes:
 //  - upload_id: returns { upload, questions } — backs getUploadDetail in
@@ -67,7 +68,14 @@ async function handleByUploadId(userId, uploadId) {
     .eq('upload_id', uploadId)
     .order('created_at', { ascending: true })
   if (questionsError) throw questionsError
-  return { upload: { ...upload, uploaderUsername }, questions: questions || [] }
+
+  // Reaching here means the caller is either the uploader or a confirmed
+  // member of the class it was shared with (anyone else got the 404 above),
+  // so it's safe to mint read URLs for the stored pages. The raw storage
+  // paths themselves never leave the server.
+  const { shared_files: sharedFiles, ...uploadFields } = upload
+  const [images] = await signSharedNoteFiles([sharedFiles])
+  return { upload: { ...uploadFields, uploaderUsername, images }, questions: questions || [] }
 }
 
 async function handleBySubject(userId, subject) {

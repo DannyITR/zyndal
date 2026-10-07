@@ -5,7 +5,9 @@ import { getUploadDetail } from '../../../lib/storage'
 import { formatLongDate } from '../../../lib/streak'
 import { getErrorMessage } from '../../../lib/errors'
 import TopBar from '../../shared/TopBar'
+import ImageLightbox from '../../shared/ImageLightbox'
 import UploadDetailScreen from '../uploads/UploadDetailScreen'
+import NotePageThumb from '../uploads/NotePageThumb'
 
 const DOCUMENT_TYPE_ICON = { test: '📝', worksheet: '📋', textbook: '📖', notes: '🗒️' }
 
@@ -16,6 +18,14 @@ const DOCUMENT_TYPE_ICON = { test: '📝', worksheet: '📋', textbook: '📖', 
 // UploadDetailScreen in place when one is tapped, self-contained the same
 // way HomeworkDetailScreen's AssignmentAnswers fetch-on-tap is.
 //
+// Each row also carries the upload's actual page images (upload.images —
+// signed URLs the calendar endpoint only hands to confirmed members of the
+// class): the first page shows as a thumbnail that opens the full-size
+// viewer directly, next to a preview of the AI summary, so a student can
+// read the real notes without the summary ever being hidden. Uploads shared
+// before page images were stored have an empty images list and keep the
+// plain document-type icon.
+//
 // onUploadForDay: opens the upload flow pre-locked to this exact day (see
 // UploadCaptureScreen.jsx's presetSharedForDate) — shown regardless of
 // whether this day already has uploads, since a student catching up (or
@@ -25,6 +35,7 @@ export default function GroupUploadsDayDetailScreen({ user, date, uploads, onUpl
   const [viewingUpload, setViewingUpload] = useState(null)
   const [loadingId, setLoadingId] = useState(null)
   const [error, setError] = useState('')
+  const [lightbox, setLightbox] = useState(null)
 
   async function handleView(uploadId) {
     setError('')
@@ -59,14 +70,26 @@ export default function GroupUploadsDayDetailScreen({ user, date, uploads, onUpl
         <ul className="history-list">
           {uploads.map((upload) => {
             const subject = getSubject(upload.subject)
+            const images = upload.images || []
+            const heading = `${subject?.name || upload.subject} — ${upload.topic}`
             return (
-              <li key={upload.id} className="history-item">
+              <li key={upload.id} className="history-item shared-note-item">
+                {images.length > 0 && (
+                  <NotePageThumb
+                    image={images[0]}
+                    className="shared-note-thumb"
+                    label={t('groupUploads.viewPhotos', { count: images.length })}
+                    badge={images.length > 1 ? `1/${images.length}` : null}
+                    onClick={() => setLightbox({ images, title: heading })}
+                  />
+                )}
                 <button type="button" className="history-item-row" disabled={loadingId === upload.id} onClick={() => handleView(upload.id)}>
-                  <span className="history-icon">{DOCUMENT_TYPE_ICON[upload.documentType] || '📄'}</span>
+                  {images.length === 0 && <span className="history-icon">{DOCUMENT_TYPE_ICON[upload.documentType] || '📄'}</span>}
                   <div className="history-body">
                     <p className="history-prompt">
-                      {subject?.icon || ''} {subject?.name || upload.subject} — {upload.topic}
+                      {subject?.icon || ''} {heading}
                     </p>
+                    {upload.summary && <p className="shared-note-summary">{upload.summary}</p>}
                     <p className="history-meta">
                       {t('groupUploads.uploadedBy', { username: upload.uploaderUsername || '—' })}
                       {' · '}
@@ -80,6 +103,8 @@ export default function GroupUploadsDayDetailScreen({ user, date, uploads, onUpl
           })}
         </ul>
       )}
+
+      {lightbox && <ImageLightbox images={lightbox.images} title={lightbox.title} onClose={() => setLightbox(null)} />}
     </div>
   )
 }

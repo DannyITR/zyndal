@@ -1,18 +1,28 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getSubject } from '../../../lib/questions'
 import { formatShortDate } from '../../../lib/uploads'
 import TopBar from '../../shared/TopBar'
+import ImageLightbox from '../../shared/ImageLightbox'
 import GradeBadge from './GradeBadge'
+import NotePageThumb from './NotePageThumb'
 
 // upload.uploaderUsername is only ever present when this upload was
 // fetched via a group's Notes Calendar (see GroupUploadsDayDetailScreen.jsx
 // and api/uploads/get-upload-questions.js) — a student's own uploads via My
 // Uploads never carry it, so the byline below is fully additive and
 // changes nothing for the existing private-upload view.
+//
+// Same for upload.images: only a shared upload has stored page images
+// (signed URLs — see api/uploads/get-upload-questions.js), shown as a
+// "Pages" card directly under the summary; a private upload's list is
+// always empty, so that card simply never renders for it.
 export default function UploadDetailScreen({ user, upload, onBack, onLogout, onLogoClick }) {
   const { t } = useTranslation()
   const subject = getSubject(upload.subject)
   const pagesCount = upload.pages_count || 1
+  const images = upload.images || []
+  const [lightboxIndex, setLightboxIndex] = useState(null)
 
   return (
     <div className="screen student-screen">
@@ -41,6 +51,24 @@ export default function UploadDetailScreen({ user, upload, onBack, onLogout, onL
         {upload.summary && <p className="upload-detail-summary">{upload.summary}</p>}
         {upload.notes && <p className="field-hint">Your notes: {upload.notes}</p>}
       </div>
+
+      {images.length > 0 && (
+        <div className="testprep-header-card">
+          <p className="testprep-day-focus">{t('groupUploads.pagesHeading')}</p>
+          <div className="upload-pages-grid">
+            {images.map((image, i) => (
+              <NotePageThumb
+                key={image.url}
+                image={image}
+                className="upload-page-thumb"
+                label={t('groupUploads.viewPage', { current: i + 1, total: images.length })}
+                onClick={() => setLightboxIndex(i)}
+              />
+            ))}
+          </div>
+          <p className="field-hint">{t('groupUploads.pagesHint')}</p>
+        </div>
+      )}
 
       {upload.key_concepts && upload.key_concepts.length > 0 && (
         <div className="testprep-header-card">
@@ -75,6 +103,10 @@ export default function UploadDetailScreen({ user, upload, onBack, onLogout, onL
             </div>
           ))}
         </div>
+      )}
+
+      {lightboxIndex !== null && (
+        <ImageLightbox images={images} startIndex={lightboxIndex} title={upload.topic} onClose={() => setLightboxIndex(null)} />
       )}
     </div>
   )

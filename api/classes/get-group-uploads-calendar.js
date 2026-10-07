@@ -2,6 +2,7 @@ import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { getForumMembership } from '../_lib/forumAuth.js'
 import { sanitizeUuid, sanitizeInteger } from '../_lib/sanitize.js'
+import { signSharedNoteFiles } from '../_lib/sharedNotesStorage.js'
 
 // Mirrors api/classes/get-class-homework-calendar.js's exact month/year
 // bounds logic — same pad/firstDay/lastDay pattern — backed by shared
@@ -49,7 +50,7 @@ async function handle({ userId, body }) {
 
   const { data: uploads, error: uploadsError } = await supabase
     .from('uploads')
-    .select('id, user_id, subject, topic, document_type, pages_count, shared_for_date, created_at')
+    .select('id, user_id, subject, topic, document_type, pages_count, summary, shared_for_date, created_at, shared_files')
     .eq('shared_class_type', body.class_type)
     .eq('shared_class_id', body.class_id)
     .gte('shared_for_date', firstDay)
@@ -63,16 +64,23 @@ async function handle({ userId, body }) {
   if (uploadersError) throw uploadersError
   const usernameById = Object.fromEntries((uploaders || []).map((u) => [u.id, u.username]))
 
+  // Signed only here, after the membership check at the top of this handler
+  // — the bucket is private, so these short-lived URLs are the only way any
+  // browser can load a page image at all.
+  const imagesByIndex = await signSharedNoteFiles(uploads.map((u) => u.shared_files))
+
   return {
-    uploads: uploads.map((u) => ({
+    uploads: uploads.map((u, i) => ({
       id: u.id,
       uploaderUsername: usernameById[u.user_id] || null,
       subject: u.subject,
       topic: u.topic,
       documentType: u.document_type,
       pagesCount: u.pages_count || 1,
+      summary: u.summary,
       sharedForDate: u.shared_for_date,
       createdAt: u.created_at,
+      images: imagesByIndex[i],
     })),
   }
 }

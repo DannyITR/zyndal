@@ -930,6 +930,20 @@
     "shareCheckboxHint": "Any classmate in {{className}} will be able to view these notes.",
     "sharedForDateLabel": "Which day are these notes for?",
     "uploadForDayButton": "+ Upload Notes for This Day",
-    "sharingLockedHint": "Sharing with {{className}} for {{date}}."
+    "sharingLockedHint": "Sharing with {{className}} for {{date}}.",
+    "viewPhotos_one": "View photo",
+    "viewPhotos_other": "View {{count}} photos",
+    "pagesHeading": "Pages",
+    "pagesHint": "Tap a page to view it full size.",
+    "viewPage": "View page {{current}} of {{total}}"
+  },
+  "lightbox": {
+    "label": "Image viewer",
+    "counter": "{{current}} / {{total}}",
+    "previous": "Previous page",
+    "next": "Next page",
+    "pageAlt": "Page {{current}} of {{total}}",
+    "openPdf": "Open PDF",
+    "loadError": "This image couldn't be loaded. Go back and reopen the notes to try again."
   }
 }

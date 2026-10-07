@@ -4,6 +4,7 @@ import { getForumMembership } from '../_lib/forumAuth.js'
 import { assertUploadPagesAllowed } from '../_lib/uploadLimits.js'
 import { screenUploadImages } from '../_lib/uploadSafety.js'
 import { awardUploadNotesXp } from '../_lib/db.js'
+import { storeSharedNoteFiles, removeSharedNoteFiles, STORABLE_MEDIA_TYPES } from '../_lib/sharedNotesStorage.js'
 import { sanitizeString, sanitizeUuid } from '../_lib/sanitize.js'
 import { SUBJECTS, LIGHT_ELECTIVE_SUBJECTS } from '../../src/lib/questions.js'
 import { isValidTimeZone, DEFAULT_TIMEZONE, todayStr } from '../../src/lib/streak.js'
@@ -73,6 +74,11 @@ function validate(body) {
   for (const file of body.files) {
     if (!file || typeof file.base64 !== 'string' || !file.base64) return { field: 'files', message: 'each file must include base64 data.' }
     if (!file.mediaType || typeof file.mediaType !== 'string') return { field: 'files', message: 'each file must include a mediaType.' }
+    // These exact bytes get stored and served back to the whole class (see
+    // storeSharedNoteFiles below), so the type is pinned to what the client
+    // can actually produce (ACCEPTED_UPLOAD_TYPES in src/lib/imageUtils.js)
+    // rather than trusted as an arbitrary Content-Type.
+    if (!STORABLE_MEDIA_TYPES[file.mediaType]) return { field: 'files', message: 'each file must be a JPG, PNG, WEBP, or PDF.' }
   }
 
   return null
@@ -120,6 +126,11 @@ async function handle({ userId, body }) {
     throw err
   }
 
+  // The original pages themselves, so classmates can read the actual notes
+  // and not only the AI summary — stored only now that the safety screen
+  // above has passed, into a private bucket (see sharedNotesStorage.js).
+  const sharedFiles = await storeSharedNoteFiles({ classType, classId, files })
+
   const { data, error } = await supabase
     .from('uploads')
     .insert({
@@ -134,10 +145,14 @@ async function handle({ userId, body }) {
       shared_class_type: classType,
       shared_class_id: classId,
       shared_for_date: sharedForDate,
+      shared_files: sharedFiles,
     })
     .select()
     .single()
-  if (error) throw error
+  if (error) {
+    await removeSharedNoteFiles(sharedFiles)
+    throw error
+  }
 
   // 1 XP per class per day, only for substantive content — never blocks the
   // save/response above, even on failure (see awardUploadNotesXp's own
