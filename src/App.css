@@ -1,10 +1,15 @@
 /* ---------- Layout ---------- */
 
+/* index.html sets viewport-fit=cover plus a translucent iOS status bar, so
+   in the installed app the page draws underneath the clock/battery strip.
+   The safe-area inset pushes every screen's content (the TopBar logo
+   first of all) below it; it is 0 on desktop, Android, and in a normal
+   Safari tab, so nothing moves there. */
 .screen {
   max-width: 480px;
   margin: 0 auto;
   min-height: 100svh;
-  padding: 20px 18px 48px;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 18px 48px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -333,12 +338,12 @@ a.btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 18px;
+  padding: calc(24px + env(safe-area-inset-top, 0px)) 18px 24px;
 }
 
 .auth-screen-corner {
   position: absolute;
-  top: 20px;
+  top: calc(20px + env(safe-area-inset-top, 0px));
   left: 20px;
 }
 
@@ -418,7 +423,7 @@ div.zyndal-logo {
   align-items: center;
   justify-content: center;
   gap: 48px;
-  padding: 32px 24px;
+  padding: calc(32px + env(safe-area-inset-top, 0px)) 24px 32px;
   overflow: hidden;
   text-align: center;
 }
@@ -2328,7 +2333,7 @@ div.zyndal-logo {
   min-height: 100svh;
   display: flex;
   justify-content: center;
-  padding: 32px 18px 48px;
+  padding: calc(32px + env(safe-area-inset-top, 0px)) 18px 48px;
 }
 
 .legal-page-card {
