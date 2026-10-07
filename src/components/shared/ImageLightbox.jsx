@@ -24,6 +24,7 @@ export default function ImageLightbox({ images, startIndex = 0, title, onClose }
   const { t } = useTranslation()
   const [index, setIndex] = useState(clamp(startIndex, 0, images.length - 1))
   const [failed, setFailed] = useState({})
+  const [attempt, setAttempt] = useState(0)
   const stageRef = useRef(null)
   const imgRef = useRef(null)
   const closeRef = useRef(null)
@@ -202,7 +203,7 @@ export default function ImageLightbox({ images, startIndex = 0, title, onClose }
     zoomAt(view.current.scale * Math.exp(-e.deltaY * 0.002), e.clientX, e.clientY)
   }
 
-  const gestureHandlers = isPdf
+  const gestureHandlers = isPdf || failed[index]
     ? {}
     : {
         onPointerDown: handlePointerDown,
@@ -233,10 +234,22 @@ export default function ImageLightbox({ images, startIndex = 0, title, onClose }
             </a>
           </div>
         ) : failed[index] ? (
-          <p className="lightbox-message">{t('lightbox.loadError')}</p>
+          <div className="lightbox-message">
+            <p>{t('lightbox.loadError')}</p>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => {
+                setFailed((prev) => ({ ...prev, [index]: false }))
+                setAttempt((n) => n + 1)
+              }}
+            >
+              {t('lightbox.retry')}
+            </button>
+          </div>
         ) : (
           <img
-            key={current.url}
+            key={`${current.url}#${attempt}`}
             ref={imgRef}
             className="lightbox-image"
             src={current.url}

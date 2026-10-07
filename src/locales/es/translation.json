@@ -920,6 +920,8 @@
     }
   },
   "groupUploads": {
+    "retryImage": "No se pudo cargar la imagen. Toca para reintentar.",
+    "retryImageShort": "Reintentar",
     "deleteNotes": "Eliminar estas notas",
     "deleteNotesTitle": "¿Eliminar estas notas?",
     "deleteNotesWarning": "Se quitarán del Calendario de Notas para toda la clase. Esto no se puede deshacer desde aquí.",
@@ -943,12 +945,13 @@
     "viewPage": "Ver página {{current}} de {{total}}"
   },
   "lightbox": {
+    "retry": "Reintentar",
     "label": "Visor de imágenes",
     "counter": "{{current}} / {{total}}",
     "previous": "Página anterior",
     "next": "Página siguiente",
     "pageAlt": "Página {{current}} de {{total}}",
     "openPdf": "Abrir PDF",
-    "loadError": "No se pudo cargar esta imagen. Vuelve atrás y abre las notas de nuevo para intentarlo otra vez."
+    "loadError": "No se pudo cargar esta imagen."
   }
 }

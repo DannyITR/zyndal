@@ -4325,6 +4325,8 @@ div.zyndal-logo {
 }
 
 .upload-page-thumb img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -6301,7 +6303,13 @@ div.zyndal-logo {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Absolutely positioned against the button rather than sized with
+   height: 100% — WebKit doesn't treat a <button> as a definite-height
+   containing block for a percentage-height child, so on iOS Safari the
+   image's box could collapse instead of filling the tile. */
 .note-page-thumb img {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -6309,12 +6317,24 @@ div.zyndal-logo {
 }
 
 .note-page-thumb-icon {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
   font-size: 26px;
+}
+
+.note-page-thumb-icon--retry {
+  font-size: 20px;
+}
+
+.note-page-thumb-retry {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
 }
 
 .note-page-thumb-badge {

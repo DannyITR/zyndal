@@ -920,6 +920,8 @@
     }
   },
   "groupUploads": {
+    "retryImage": "Image failed to load. Tap to retry.",
+    "retryImageShort": "Retry",
     "deleteNotes": "Delete these notes",
     "deleteNotesTitle": "Delete these notes?",
     "deleteNotesWarning": "They'll be removed from the Notes Calendar for everyone in the class. This can't be undone from here.",
@@ -943,12 +945,13 @@
     "viewPage": "View page {{current}} of {{total}}"
   },
   "lightbox": {
+    "retry": "Try again",
     "label": "Image viewer",
     "counter": "{{current}} / {{total}}",
     "previous": "Previous page",
     "next": "Next page",
     "pageAlt": "Page {{current}} of {{total}}",
     "openPdf": "Open PDF",
-    "loadError": "This image couldn't be loaded. Go back and reopen the notes to try again."
+    "loadError": "This image couldn't be loaded."
   }
 }

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v3'
+const CACHE_VERSION = 'v4'
 const SHELL_CACHE = `zyndal-shell-${CACHE_VERSION}`
 const RUNTIME_CACHE = `zyndal-runtime-${CACHE_VERSION}`
 
@@ -69,6 +69,19 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return
 
   const url = new URL(request.url)
+
+  // Supabase Storage objects (the shared-notes page images — see
+  // api/_lib/sharedNotesStorage.js) are left entirely to the browser: no
+  // respondWith, no caching. They used to match isApiRequest below purely
+  // by hostname, which (a) re-issued every cross-origin <img> load through
+  // the worker's own fetch, one more hop for it to fail on in iOS
+  // Safari / an installed PWA, and (b) wrote a copy of each private page
+  // image into Cache Storage under its one-hour signed URL — never reusable
+  // (the next URL is different), counted against iOS's small cache quota,
+  // and readable on the device long after the URL itself had expired.
+  // CACHE_VERSION was bumped alongside this so copies already stored that
+  // way are dropped on activate.
+  if (url.hostname.includes('supabase.co') && url.pathname.startsWith('/storage/')) return
 
   // Network first: API calls should always prefer fresh data. Only fall back
   // to a cached response (if one exists from a previous successful call)
