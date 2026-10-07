@@ -22,11 +22,11 @@ async function handle({ userId, body }) {
 
   const { data: upload, error: uploadError } = await supabase
     .from('uploads')
-    .select('id, user_id, pages_count')
+    .select('id, user_id, pages_count, deleted_at')
     .eq('id', uploadId)
     .maybeSingle()
   if (uploadError) throw uploadError
-  if (!upload || upload.user_id !== userId) {
+  if (!upload || upload.user_id !== userId || upload.deleted_at) {
     const err = new Error('Upload not found.')
     err.status = 404
     err.code = 'NOT_FOUND'

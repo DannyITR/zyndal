@@ -6472,3 +6472,23 @@ div.zyndal-logo {
 .lightbox-nav--next {
   right: 10px;
 }
+
+.shared-note-delete {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 16px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.shared-note-delete:hover {
+  background: var(--card-2);
+}

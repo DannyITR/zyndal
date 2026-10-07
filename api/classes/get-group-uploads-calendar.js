@@ -53,6 +53,9 @@ async function handle({ userId, body }) {
     .select('id, user_id, subject, topic, document_type, pages_count, summary, shared_for_date, created_at, shared_files')
     .eq('shared_class_type', body.class_type)
     .eq('shared_class_id', body.class_id)
+    // Soft-deleted by its uploader (see api/uploads/delete-shared-upload.js)
+    // — gone from every student-facing view, still visible to admins.
+    .is('deleted_at', null)
     .gte('shared_for_date', firstDay)
     .lte('shared_for_date', lastDay)
     .order('shared_for_date', { ascending: true })
@@ -80,6 +83,9 @@ async function handle({ userId, body }) {
       summary: u.summary,
       sharedForDate: u.shared_for_date,
       createdAt: u.created_at,
+      // Drives the delete button — only the uploader gets one (and
+      // delete-shared-upload.js re-checks ownership itself regardless).
+      isOwn: u.user_id === userId,
       images: imagesByIndex[i],
     })),
   }

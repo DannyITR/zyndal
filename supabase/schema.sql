@@ -249,6 +249,13 @@ create index if not exists uploads_shared_class_idx on uploads(shared_class_type
 -- were never stored, so they stay summary-only).
 alter table uploads add column if not exists shared_files jsonb not null default '[]'::jsonb;
 
+-- Soft delete for a shared upload, set by its own uploader (see
+-- api/uploads/delete-shared-upload.js). Hidden from every student-facing
+-- read once set; the row, its questions and its stored page images are all
+-- kept so the admin panel can still review it. Only an admin's own delete
+-- (api/admin/delete-upload.js) removes anything for real.
+alter table uploads add column if not exists deleted_at timestamptz;
+
 -- Private bucket, deliberately with NO storage.objects policies: the anon
 -- key the browser holds can't read, list, or write it at all. Only the
 -- service-role client in /api can, and it only mints short-lived signed

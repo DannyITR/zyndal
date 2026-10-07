@@ -917,6 +917,9 @@
     }
   },
   "groupUploads": {
+    "deleteNotes": "Supprimer ces notes",
+    "deleteNotesTitle": "Supprimer ces notes ?",
+    "deleteNotesWarning": "Elles seront retirées du calendrier des notes pour toute la classe. Cette action ne peut pas être annulée ici.",
     "calendarTitle": "📅 Calendrier des notes",
     "calendarSubtitle": "Notes partagées par vos camarades de classe",
     "legendShared": "Notes partagées",

@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getSubject } from '../../../lib/questions'
-import { getUploadDetail } from '../../../lib/storage'
+import { getUploadDetail, deleteSharedUpload } from '../../../lib/storage'
 import { formatLongDate } from '../../../lib/streak'
 import { getErrorMessage } from '../../../lib/errors'
 import TopBar from '../../shared/TopBar'
 import ImageLightbox from '../../shared/ImageLightbox'
+import ConfirmDeleteContentModal from '../../shared/forum/ConfirmDeleteContentModal'
 import UploadDetailScreen from '../uploads/UploadDetailScreen'
 import NotePageThumb from '../uploads/NotePageThumb'
 
@@ -26,6 +27,12 @@ const DOCUMENT_TYPE_ICON = { test: '📝', worksheet: '📋', textbook: '📖', 
 // before page images were stored have an empty images list and keep the
 // plain document-type icon.
 //
+// A student's own uploads (upload.isOwn) also get a delete button. It's a
+// soft delete (see api/uploads/delete-shared-upload.js): the notes vanish
+// for the whole class, tracked locally in deletedIds since `uploads` is a
+// snapshot handed down from the calendar, which refetches on its own the
+// next time it's shown.
+//
 // onUploadForDay: opens the upload flow pre-locked to this exact day (see
 // UploadCaptureScreen.jsx's presetSharedForDate) — shown regardless of
 // whether this day already has uploads, since a student catching up (or
@@ -36,6 +43,15 @@ export default function GroupUploadsDayDetailScreen({ user, date, uploads, onUpl
   const [loadingId, setLoadingId] = useState(null)
   const [error, setError] = useState('')
   const [lightbox, setLightbox] = useState(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [deletedIds, setDeletedIds] = useState([])
+  const visibleUploads = uploads.filter((u) => !deletedIds.includes(u.id))
+
+  async function handleDelete() {
+    await deleteSharedUpload(confirmDeleteId)
+    setDeletedIds((prev) => [...prev, confirmDeleteId])
+    setConfirmDeleteId(null)
+  }
 
   async function handleView(uploadId) {
     setError('')
@@ -64,11 +80,11 @@ export default function GroupUploadsDayDetailScreen({ user, date, uploads, onUpl
 
       {error && <p className="form-error">{error}</p>}
 
-      {uploads.length === 0 ? (
+      {visibleUploads.length === 0 ? (
         <p className="field-hint">{t('groupUploads.emptyDay')}</p>
       ) : (
         <ul className="history-list">
-          {uploads.map((upload) => {
+          {visibleUploads.map((upload) => {
             const subject = getSubject(upload.subject)
             const images = upload.images || []
             const heading = `${subject?.name || upload.subject} — ${upload.topic}`
@@ -98,10 +114,24 @@ export default function GroupUploadsDayDetailScreen({ user, date, uploads, onUpl
                   </div>
                   <span className="history-chevron">{loadingId === upload.id ? '…' : '›'}</span>
                 </button>
+                {upload.isOwn && (
+                  <button type="button" className="shared-note-delete" onClick={() => setConfirmDeleteId(upload.id)} aria-label={t('groupUploads.deleteNotes')}>
+                    🗑️
+                  </button>
+                )}
               </li>
             )
           })}
         </ul>
+      )}
+
+      {confirmDeleteId && (
+        <ConfirmDeleteContentModal
+          titleKey="groupUploads.deleteNotesTitle"
+          warningKey="groupUploads.deleteNotesWarning"
+          onConfirm={handleDelete}
+          onClose={() => setConfirmDeleteId(null)}
+        />
       )}
 
       {lightbox && <ImageLightbox images={lightbox.images} title={lightbox.title} onClose={() => setLightbox(null)} />}

@@ -12,7 +12,7 @@ function validate(body) {
 
 async function handle({ userId, body }) {
   await assertPremium(userId)
-  let query = supabase.from('uploads').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+  let query = supabase.from('uploads').select('*').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false })
   if (body.subject) query = query.eq('subject', body.subject)
   const { data: uploads, error } = await query
   if (error) throw error

@@ -188,10 +188,10 @@ export default function AdminEditUserScreen({ userId, onBack, onLogout }) {
     if (uploadQuestionsById[uploadId]) return
     setUploadQuestionsLoadingId(uploadId)
     try {
-      const { questions } = await getAdminUploadQuestions(uploadId)
-      setUploadQuestionsById((prev) => ({ ...prev, [uploadId]: questions }))
+      const details = await getAdminUploadQuestions(uploadId)
+      setUploadQuestionsById((prev) => ({ ...prev, [uploadId]: details }))
     } catch (err) {
-      showToast('error', err.message || "Couldn't load this upload's questions.")
+      showToast('error', err.message || "Couldn't load this upload's details.")
     } finally {
       setUploadQuestionsLoadingId(null)
     }
@@ -482,11 +482,13 @@ export default function AdminEditUserScreen({ userId, onBack, onLogout }) {
                       <p className="admin-record-detail">
                         {formatDate(u.created_at)} · {u.pages_count} page{u.pages_count === 1 ? '' : 's'}
                         {u.grade_received != null ? ` · ${u.grade_received}%` : ''}
+                        {u.shared_class_id ? ` · shared to a ${u.shared_class_type}${u.shared_for_date ? ` for ${u.shared_for_date}` : ''}` : ''}
                       </p>
+                      {u.deleted_at && <p className="admin-record-detail admin-text-bad">Deleted by the student on {formatDate(u.deleted_at)} — hidden from students</p>}
                     </div>
                     <div className="admin-record-row-actions">
                       <button type="button" className="admin-btn admin-btn-small" onClick={() => handleToggleUploadQuestions(u.id)}>
-                        {expandedUploadId === u.id ? 'Hide Questions' : 'View Questions'}
+                        {expandedUploadId === u.id ? 'Hide Details' : 'View Details'}
                       </button>
                       <button
                         type="button"
@@ -494,22 +496,36 @@ export default function AdminEditUserScreen({ userId, onBack, onLogout }) {
                         disabled={deletingUploadId === u.id}
                         onClick={() => handleDeleteUpload(u.id)}
                       >
-                        {deletingUploadId === u.id ? 'Deleting…' : 'Delete'}
+                        {deletingUploadId === u.id ? 'Deleting…' : 'Delete Permanently'}
                       </button>
                     </div>
                     {expandedUploadId === u.id && (
                       <div className="admin-scroll-list admin-record-expanded">
                         {uploadQuestionsLoadingId === u.id ? (
                           <p className="admin-empty-hint">Loading…</p>
-                        ) : (uploadQuestionsById[u.id] || []).length === 0 ? (
-                          <p className="admin-empty-hint">No extracted questions.</p>
                         ) : (
-                          uploadQuestionsById[u.id].map((q) => (
-                            <div className="admin-list-row admin-list-row--wrap" key={q.id}>
-                              <span>{q.question}</span>
-                              <span className="admin-text-good">Answer: {q.correct_answer || '—'}</span>
-                            </div>
-                          ))
+                          <>
+                            {uploadQuestionsById[u.id]?.summary && <p className="admin-record-detail">{uploadQuestionsById[u.id].summary}</p>}
+                            {(uploadQuestionsById[u.id]?.images || []).length > 0 && (
+                              <div className="admin-list-row admin-list-row--wrap">
+                                {uploadQuestionsById[u.id].images.map((image, i) => (
+                                  <a key={image.url} href={image.url} target="_blank" rel="noopener noreferrer">
+                                    Page {i + 1}
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                            {(uploadQuestionsById[u.id]?.questions || []).length === 0 ? (
+                              <p className="admin-empty-hint">No extracted questions.</p>
+                            ) : (
+                              uploadQuestionsById[u.id].questions.map((q) => (
+                                <div className="admin-list-row admin-list-row--wrap" key={q.id}>
+                                  <span>{q.question}</span>
+                                  <span className="admin-text-good">Answer: {q.correct_answer || '—'}</span>
+                                </div>
+                              ))
+                            )}
+                          </>
                         )}
                       </div>
                     )}
