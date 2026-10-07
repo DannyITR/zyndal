@@ -37,7 +37,7 @@ function sanitizeSharableSubject(value) {
 // first place (see UploadCaptureScreen.jsx).
 const SHAREABLE_DOCUMENT_TYPES = ['worksheet', 'textbook', 'notes']
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
-const MAX_PAGES = 5
+const MAX_PAGES = 10
 
 function validate(body) {
   const classId = sanitizeUuid(body.class_id)

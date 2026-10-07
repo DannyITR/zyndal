@@ -1,6 +1,6 @@
 import { SUBJECTS } from './questions'
 import { buildDemoStudyPlanDays, buildDemoStudyGuide } from './testPrepQuestionBank'
-import { fileToBase64, resizeImageToBase64 } from './imageUtils'
+import { encodeFilesWithinBudget } from './imageUtils'
 import { getSessionToken, notifyPremiumRequired } from './storage'
 
 // ⚠️ TEMPORARY TESTING SWITCH — while true, generateStudyPlan and
@@ -88,17 +88,11 @@ export async function generateQuestionsFromUploadContent({ summary, keyConcepts,
 // uploadType: 'test' | 'study_material' — only used to phrase the prompt
 // ("a test" vs "a study material"); the model's own document_type
 // classification (test/worksheet/textbook/notes) is what gets returned.
-// files: 1-5 File objects (images and/or PDFs), all pages of one document,
+// files: 1-10 File objects (images and/or PDFs), all pages of one document,
 // sent together so the model can extract questions spanning multiple pages
 // without duplication.
 export async function processUploadedDocument({ files, uploadType }) {
-  const encodedFiles = await Promise.all(
-    files.map(async (file) => {
-      const isPdf = file.type === 'application/pdf'
-      const { base64, mediaType } = isPdf ? await fileToBase64(file) : await resizeImageToBase64(file)
-      return { base64, mediaType }
-    })
-  )
+  const encodedFiles = await encodeFilesWithinBudget(files)
 
   const result = await callGenerateApi('generate-from-document', { uploadType, files: encodedFiles })
   // encodedFiles is included on the return value (additive — existing

@@ -767,6 +767,7 @@
     "join": "Rejoindre"
   },
   "errors": {
+    "UPLOAD_TOO_LARGE": "Ces pages sont trop volumineuses pour être téléversées ensemble. Veuillez les répartir en plusieurs téléversements.",
     "generic": "Une erreur est survenue. Veuillez réessayer.",
     "ACCOUNT_DELETED": "Ce compte a été supprimé.",
     "ALREADY_ANSWERED": "Vous avez déjà répondu à cette question.",

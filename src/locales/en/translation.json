@@ -767,6 +767,7 @@
     "join": "Join"
   },
   "errors": {
+    "UPLOAD_TOO_LARGE": "These pages are too large to upload together. Please split them into smaller uploads.",
     "generic": "Something went wrong. Please try again.",
     "ACCOUNT_DELETED": "This account has been deleted.",
     "ALREADY_ANSWERED": "You've already answered this question.",

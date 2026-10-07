@@ -6,7 +6,7 @@
 // why that exact pattern took down every API route that reached it.
 import { getActiveLanguage } from './streak.js'
 
-export const MAX_UPLOAD_PAGES = 5
+export const MAX_UPLOAD_PAGES = 10
 
 const LOCALE_FOR_LANGUAGE = { en: 'en-US', fr: 'fr-CA', es: 'es-ES' }
 

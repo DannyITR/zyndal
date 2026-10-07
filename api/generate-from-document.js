@@ -12,10 +12,12 @@ import { generateJson } from './_lib/anthropic.js'
 //
 // Caveat: Vercel's standard Node.js functions cap request bodies around
 // 4.5MB. A photo is downscaled+JPEG-compressed client-side before it gets
-// here, but a multi-page (up to 5) upload, or an uncompressed PDF up to the
-// client's 15MB cap, can still exceed that — if so, Vercel rejects the
-// request before this handler even runs. That's a real limit of this
-// architecture, not something addressable inside the function itself.
+// here, and for a multi-page (up to 10) upload the client steps the photos'
+// quality down further until the whole request fits (see
+// encodeFilesWithinBudget in src/lib/imageUtils.js). An uncompressed PDF up
+// to the client's 15MB cap can't be shrunk that way, so the client refuses
+// to send a set that would still exceed the cap rather than letting Vercel
+// reject it before this handler even runs.
 
 const UPLOAD_QUESTION_SCHEMA = {
   type: 'object',
@@ -72,7 +74,7 @@ function buildSystemPrompt(documentTypePhrase, pageCount) {
 If a question in the source document is not already multiple-choice, leave "options" as an empty array and put the full answer in "correct_answer" — don't invent options that weren't in the document.`
 }
 
-const MAX_PAGES = 5
+const MAX_PAGES = 10
 
 function validate(body) {
   if (!body.uploadType || !['test', 'study_material'].includes(body.uploadType)) return 'uploadType must be "test" or "study_material".'

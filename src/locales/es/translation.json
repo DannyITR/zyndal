@@ -767,6 +767,7 @@
     "join": "Unirse"
   },
   "errors": {
+    "UPLOAD_TOO_LARGE": "Estas páginas son demasiado grandes para subirlas juntas. Divídelas en subidas más pequeñas.",
     "generic": "Algo salió mal. Inténtalo de nuevo.",
     "ACCOUNT_DELETED": "Esta cuenta ha sido eliminada.",
     "ALREADY_ANSWERED": "Ya respondiste esta pregunta.",
