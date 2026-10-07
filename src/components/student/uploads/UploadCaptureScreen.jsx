@@ -3,12 +3,11 @@ import { useTranslation } from 'react-i18next'
 import { SUBJECTS, getSubject } from '../../../lib/questions'
 import { todayStr, addDaysStr, formatLongDate } from '../../../lib/streak'
 import { validateUploadFile } from '../../../lib/imageUtils'
-import { MAX_UPLOAD_PAGES, WEEKLY_UPLOAD_PAGE_LIMIT } from '../../../lib/uploads'
+import { MAX_UPLOAD_PAGES } from '../../../lib/uploads'
 import { processUploadedDocument } from '../../../lib/ai'
 import { saveUpload, saveSharedUpload, addPagesToUpload, getUploadDetail } from '../../../lib/storage'
 import { getErrorMessage } from '../../../lib/errors'
 import TopBar from '../../shared/TopBar'
-import UpgradeModal from '../../shared/UpgradeModal'
 
 const TYPE_LABEL = { test: 'Test', study_material: 'Study Material' }
 
@@ -68,13 +67,6 @@ export default function UploadCaptureScreen({
   const [sharedForDate, setSharedForDate] = useState(presetSharedForDate || todayStr())
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
-  // Soft weekly-per-subject cap (see api/_lib/uploadLimits.js) — set when
-  // the server rejects a save with UPLOAD_LIMIT_REACHED for the subject
-  // currently in play. Cleared on a subject change (new-upload mode only;
-  // an existing upload's subject can't change) since a different subject
-  // may well still have room this week.
-  const [limitReached, setLimitReached] = useState(false)
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   const cameraInputRef = useRef(null)
   const libraryInputRef = useRef(null)
@@ -134,7 +126,6 @@ export default function UploadCaptureScreen({
   const canSubmit =
     pages.length > 0 &&
     !processing &&
-    !limitReached &&
     (isAddingPages || (topic.trim() && (!isTest || (gradeReceived !== '' && Number(gradeReceived) >= 0 && Number(gradeReceived) <= 100 && testDate)))) &&
     (!shareWithClass || sharedForDate)
 
@@ -180,11 +171,7 @@ export default function UploadCaptureScreen({
       }
     } catch (err) {
       console.error('[Uploads] processing failed:', err)
-      if (err.code === 'UPLOAD_LIMIT_REACHED') {
-        setLimitReached(true)
-      } else {
-        setError(getErrorMessage(err, t))
-      }
+      setError(getErrorMessage(err, t))
       setProcessing(false)
     }
   }
@@ -283,10 +270,7 @@ export default function UploadCaptureScreen({
                 <select
                   id="upload-subject"
                   value={subjectId}
-                  onChange={(e) => {
-                    setSubjectId(e.target.value)
-                    setLimitReached(false)
-                  }}
+                  onChange={(e) => setSubjectId(e.target.value)}
                 >
                   {SUBJECTS.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -378,26 +362,10 @@ export default function UploadCaptureScreen({
 
         {error && <p className="form-error">{error}</p>}
 
-        {limitReached && (
-          <>
-            <p className="form-error">
-              {t('uploads.weeklyLimitReached', {
-                subject: t(`subjects.${isAddingPages ? existingUpload.subject : subjectId}`),
-                limit: WEEKLY_UPLOAD_PAGE_LIMIT,
-              })}
-            </p>
-            <button type="button" className="btn btn-secondary btn-block" onClick={() => setShowUpgradeModal(true)}>
-              {t('settings.subscriptionUpgradeNow')}
-            </button>
-          </>
-        )}
-
         <button type="submit" className="btn btn-primary btn-block" disabled={!canSubmit}>
           {processing ? 'Reading your document… (this can take a minute)' : isAddingPages ? 'Add Pages' : 'Save Upload'}
         </button>
       </form>
-
-      {showUpgradeModal && <UpgradeModal user={user} context="default" onClose={() => setShowUpgradeModal(false)} />}
     </div>
   )
 }

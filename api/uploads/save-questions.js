@@ -1,7 +1,6 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { assertPremium } from '../_lib/subscription.js'
-import { assertUploadPagesAllowed } from '../_lib/uploadLimits.js'
 
 // Mirrors createUploadQuestions in storage.js. Also doubles as the endpoint
 // behind cacheGeneratedUploadQuestions (questions generated on the fly from
@@ -19,11 +18,11 @@ function validate(body) {
 
 async function handle({ userId, body }) {
   await assertPremium(userId)
-  const { upload_id: uploadId, questions, pages_added: pagesAdded, timezone } = body
+  const { upload_id: uploadId, questions, pages_added: pagesAdded } = body
 
   const { data: upload, error: uploadError } = await supabase
     .from('uploads')
-    .select('id, user_id, subject, pages_count')
+    .select('id, user_id, pages_count')
     .eq('id', uploadId)
     .maybeSingle()
   if (uploadError) throw uploadError
@@ -32,13 +31,6 @@ async function handle({ userId, body }) {
     err.status = 404
     err.code = 'NOT_FOUND'
     throw err
-  }
-
-  // Same soft weekly cap as save-upload.js — an existing upload's
-  // created_at never moves when pages are added to it later, so this has to
-  // be checked here too, not just at the upload's original creation.
-  if (pagesAdded) {
-    await assertUploadPagesAllowed({ userId, subject: upload.subject, timezone, newPages: pagesAdded })
   }
 
   if (questions.length > 0) {

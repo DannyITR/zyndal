@@ -624,7 +624,6 @@
     "premium": "✨ Zyndal Premium"
   },
   "uploads": {
-    "weeklyLimitReached": "You've reached this week's upload limit for {{subject}} ({{limit}} pages). Try again next week, or upgrade to Premium for higher limits."
   },
   "teacher": {
     "loadStatsFailed": "Failed to load stats.",
@@ -804,7 +803,6 @@
     "REVIEW_FAILED": "Something went wrong while reviewing your work. Please try again.",
     "SERVER_ERROR": "Something went wrong. Please try again.",
     "UNAUTHENTICATED": "Your session has expired. Please log in again.",
-    "UPLOAD_LIMIT_REACHED": "You've reached this week's upload limit for this subject.",
     "USERNAME_TAKEN": "That username is already taken.",
     "VALIDATION_ERROR": "Please check your input and try again."
   },

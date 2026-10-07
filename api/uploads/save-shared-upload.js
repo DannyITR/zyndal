@@ -1,7 +1,6 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { getForumMembership } from '../_lib/forumAuth.js'
-import { assertUploadPagesAllowed } from '../_lib/uploadLimits.js'
 import { screenUploadImages } from '../_lib/uploadSafety.js'
 import { awardUploadNotesXp } from '../_lib/db.js'
 import { storeSharedNoteFiles, removeSharedNoteFiles, STORABLE_MEDIA_TYPES } from '../_lib/sharedNotesStorage.js'
@@ -108,10 +107,6 @@ async function handle({ userId, body }) {
     err.code = 'FORBIDDEN'
     throw err
   }
-
-  // Same soft weekly cap as a private upload (api/uploads/save-upload.js) —
-  // sharing must not be a way to dodge it.
-  await assertUploadPagesAllowed({ userId, subject, timezone, newPages })
 
   // Authoritative, blocking check — never trust a client-reported "this
   // passed" flag for something images-based like this, matching

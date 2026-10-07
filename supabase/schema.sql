@@ -288,6 +288,10 @@ alter table upload_xp_awards enable row level security;
 -- created_at ever moving, so summing by created_at would let an old upload
 -- dodge the cap indefinitely. week_start is the Monday (inclusive) of the
 -- ISO week, matching mondayOfWeek in src/lib/streak.js.
+--
+-- NO LONGER USED: the weekly cap was removed entirely (no upload limits for
+-- any user), so nothing reads or writes this table anymore. Left in place
+-- only so existing databases don't need a migration.
 create table if not exists upload_weekly_usage (
   user_id uuid not null references users(id) on delete cascade,
   subject text not null,
