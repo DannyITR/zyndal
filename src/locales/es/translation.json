@@ -624,6 +624,9 @@
     "premium": "✨ Zyndal Premium"
   },
   "uploads": {
+    "deleteUploadTitle": "¿Eliminar esta subida?",
+    "deleteUploadWarning": "Se quitará de Mis Subidas. Esto no se puede deshacer desde aquí.",
+    "deleteSharedUploadWarning": "Se quitará de Mis Subidas y del Calendario de Notas para toda la clase. Esto no se puede deshacer desde aquí."
   },
   "teacher": {
     "loadStatsFailed": "Error al cargar las estadísticas.",

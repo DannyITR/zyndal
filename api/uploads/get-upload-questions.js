@@ -31,7 +31,7 @@ function validate(body) {
 async function handleByUploadId(userId, uploadId) {
   const { data: upload, error } = await supabase.from('uploads').select('*').eq('id', uploadId).maybeSingle()
   if (error) throw error
-  // A soft-deleted shared upload (see delete-shared-upload.js) reads as
+  // A soft-deleted shared upload (see delete-upload.js) reads as
   // gone to everyone here, its own uploader included — only the admin
   // panel's separate endpoints still serve it.
   if (!upload || upload.deleted_at) {

@@ -624,6 +624,9 @@
     "premium": "✨ Zyndal Premium"
   },
   "uploads": {
+    "deleteUploadTitle": "Delete this upload?",
+    "deleteUploadWarning": "It will be removed from My Uploads. This can't be undone from here.",
+    "deleteSharedUploadWarning": "It will be removed from My Uploads and from the Notes Calendar for everyone in the class. This can't be undone from here."
   },
   "teacher": {
     "loadStatsFailed": "Failed to load stats.",

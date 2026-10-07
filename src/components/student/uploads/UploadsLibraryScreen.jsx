@@ -1,14 +1,27 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getSubject } from '../../../lib/questions'
-import { getUploadsForUser } from '../../../lib/storage'
+import { getUploadsForUser, deleteUpload } from '../../../lib/storage'
 import { formatShortDate } from '../../../lib/uploads'
 import TopBar from '../../shared/TopBar'
+import ConfirmDeleteContentModal from '../../shared/forum/ConfirmDeleteContentModal'
 import GradeBadge from './GradeBadge'
 
 const DOCUMENT_TYPE_ICON = { test: '📝', worksheet: '📋', textbook: '📖', notes: '🗒️' }
 
 export default function UploadsLibraryScreen({ user, lockedSubjectId, onSelectUpload, onAddPages, onNewUpload, onBack, onLogout, onLogoClick }) {
+  const { t } = useTranslation()
   const [uploads, setUploads] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(null)
+
+  // Soft delete (see api/uploads/delete-upload.js) — for an upload that was
+  // also shared to a Notes Calendar, this removes it there for the whole
+  // class too, hence the different warning text.
+  async function handleDelete() {
+    await deleteUpload(confirmDelete.id)
+    setUploads((prev) => prev.filter((u) => u.id !== confirmDelete.id))
+    setConfirmDelete(null)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -76,11 +89,23 @@ export default function UploadsLibraryScreen({ user, lockedSubjectId, onSelectUp
                   <button type="button" className="btn btn-ghost btn-small" onClick={() => onAddPages(upload)}>
                     + Add Pages
                   </button>
+                  <button type="button" className="btn btn-danger-outline btn-small" onClick={() => setConfirmDelete(upload)}>
+                    {t('forum.delete')}
+                  </button>
                 </div>
               </li>
             )
           })}
         </ul>
+      )}
+
+      {confirmDelete && (
+        <ConfirmDeleteContentModal
+          titleKey="uploads.deleteUploadTitle"
+          warningKey={confirmDelete.shared_class_id ? 'uploads.deleteSharedUploadWarning' : 'uploads.deleteUploadWarning'}
+          onConfirm={handleDelete}
+          onClose={() => setConfirmDelete(null)}
+        />
       )}
     </div>
   )

@@ -20,7 +20,7 @@ async function handle({ body }) {
 
   // Deliberately no deleted_at filter anywhere in this handler — an admin
   // can always review an upload a student soft-deleted (see
-  // api/uploads/delete-shared-upload.js), including the stored page images
+  // api/uploads/delete-upload.js), including the stored page images
   // of a shared one, which that soft delete leaves in place for exactly
   // this purpose.
   const { data: upload, error: uploadError } = await supabase.from('uploads').select('summary, shared_files').eq('id', body.upload_id).maybeSingle()

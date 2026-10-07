@@ -624,6 +624,9 @@
     "premium": "✨ Zyndal Premium"
   },
   "uploads": {
+    "deleteUploadTitle": "Supprimer ce téléversement ?",
+    "deleteUploadWarning": "Il sera retiré de Mes téléversements. Cette action ne peut pas être annulée ici.",
+    "deleteSharedUploadWarning": "Il sera retiré de Mes téléversements et du calendrier des notes pour toute la classe. Cette action ne peut pas être annulée ici."
   },
   "teacher": {
     "loadStatsFailed": "Échec du chargement des statistiques.",

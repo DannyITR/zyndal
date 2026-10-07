@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getSubject } from '../../../lib/questions'
-import { getUploadDetail, deleteSharedUpload } from '../../../lib/storage'
+import { getUploadDetail, deleteUpload } from '../../../lib/storage'
 import { formatLongDate } from '../../../lib/streak'
 import { getErrorMessage } from '../../../lib/errors'
 import TopBar from '../../shared/TopBar'
@@ -28,7 +28,7 @@ const DOCUMENT_TYPE_ICON = { test: '📝', worksheet: '📋', textbook: '📖', 
 // plain document-type icon.
 //
 // A student's own uploads (upload.isOwn) also get a delete button. It's a
-// soft delete (see api/uploads/delete-shared-upload.js): the notes vanish
+// soft delete (see api/uploads/delete-upload.js): the notes vanish
 // for the whole class, tracked locally in deletedIds since `uploads` is a
 // snapshot handed down from the calendar, which refetches on its own the
 // next time it's shown.
@@ -48,7 +48,7 @@ export default function GroupUploadsDayDetailScreen({ user, date, uploads, onUpl
   const visibleUploads = uploads.filter((u) => !deletedIds.includes(u.id))
 
   async function handleDelete() {
-    await deleteSharedUpload(confirmDeleteId)
+    await deleteUpload(confirmDeleteId)
     setDeletedIds((prev) => [...prev, confirmDeleteId])
     setConfirmDeleteId(null)
   }

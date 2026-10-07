@@ -4397,6 +4397,7 @@ div.zyndal-logo {
 .upload-item-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
   padding: 0 12px 10px;
   border-top: 1px solid var(--border);
   margin-top: -1px;

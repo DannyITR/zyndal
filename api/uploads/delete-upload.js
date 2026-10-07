@@ -20,26 +20,30 @@ function validate(body) {
 // make them unreviewable. Permanent removal stays admin-only
 // (api/admin/delete-upload.js).
 //
-// Only the uploader can delete, and only an upload that was shared to a
-// Notes Calendar — a private upload has no delete option anywhere in the
-// app, and this endpoint doesn't quietly add one.
+// Only the uploader can delete. Covers both of the uploader's delete
+// buttons: a shared upload's row on a Notes Calendar day, and any upload
+// (shared or private, a graded test included) in My Uploads. A deleted
+// test's grade and any grade bonus it triggered are deliberately left as
+// they are for linked parents (api/parent/get-dashboard.js doesn't filter
+// on deleted_at) — deleting an upload tidies the student's own library, it
+// isn't a way to withdraw a grade a parent has already been shown.
 async function handle({ userId, body }) {
   const { upload_id: uploadId } = body
 
   const { data: upload, error: lookupError } = await supabase
     .from('uploads')
-    .select('id, user_id, shared_class_id, deleted_at')
+    .select('id, user_id, deleted_at')
     .eq('id', uploadId)
     .maybeSingle()
   if (lookupError) throw lookupError
-  if (!upload || !upload.shared_class_id || upload.deleted_at) {
-    const err = new Error('Those notes were not found.')
+  if (!upload || upload.deleted_at) {
+    const err = new Error('Upload not found.')
     err.status = 404
     err.code = 'NOT_FOUND'
     throw err
   }
   if (upload.user_id !== userId) {
-    const err = new Error('You can only delete notes you shared.')
+    const err = new Error('You can only delete your own uploads.')
     err.status = 403
     err.code = 'FORBIDDEN'
     throw err

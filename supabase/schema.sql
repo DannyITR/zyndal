@@ -250,7 +250,7 @@ create index if not exists uploads_shared_class_idx on uploads(shared_class_type
 alter table uploads add column if not exists shared_files jsonb not null default '[]'::jsonb;
 
 -- Soft delete for a shared upload, set by its own uploader (see
--- api/uploads/delete-shared-upload.js). Hidden from every student-facing
+-- api/uploads/delete-upload.js). Hidden from every student-facing
 -- read once set; the row, its questions and its stored page images are all
 -- kept so the admin panel can still review it. Only an admin's own delete
 -- (api/admin/delete-upload.js) removes anything for real.

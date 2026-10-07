@@ -811,10 +811,10 @@ export async function getGroupUploadsCalendar(classType, classId, month, year) {
   return callClassesApi('GET', `get-group-uploads-calendar?${params.toString()}`)
 }
 
-// Soft delete of the caller's own shared notes — see
-// api/uploads/delete-shared-upload.js.
-export async function deleteSharedUpload(uploadId) {
-  return callUploadsApi('POST', 'delete-shared-upload', { upload_id: uploadId })
+// Soft delete of one of the caller's own uploads (shared or private) — see
+// api/uploads/delete-upload.js.
+export async function deleteUpload(uploadId) {
+  return callUploadsApi('POST', 'delete-upload', { upload_id: uploadId })
 }
 
 // userId isn't sent — the server scopes to the caller's own uploads from
