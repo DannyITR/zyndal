@@ -1,6 +1,7 @@
 import { SUBJECTS } from './questions'
 import { buildDemoStudyPlanDays, buildDemoStudyGuide } from './testPrepQuestionBank'
 import { encodeFilesWithinBudget } from './imageUtils'
+import { detectLanguageFromContent } from './languageDetection'
 import { getSessionToken, notifyPremiumRequired } from './storage'
 
 // ⚠️ TEMPORARY TESTING SWITCH — while true, generateStudyPlan and
@@ -101,4 +102,39 @@ export async function processUploadedDocument({ files, uploadType }) {
   // exact same encoded images for the server-side safety scan instead of
   // re-running the client-side resize pass a second time.
   return { ...result, encodedFiles }
+}
+
+// processUploadedDocument above only EXTRACTS questions already printed in
+// the document, so plain notes (or a worksheet the model reads as prose)
+// come back with none. A private upload gets its practice questions later,
+// lazily, the first time its owner starts a practice session (see
+// resolveUploadQuestionPool in questionSource.js) — but that path is scoped
+// to the owner's own uploads, so a classmate opening shared notes would
+// never trigger it and would only ever see the summary. This runs the same
+// generation up front for an upload about to be shared, returning the
+// questions in the extraction shape save-questions.js stores. Best-effort:
+// any failure just leaves the upload question-less rather than blocking the
+// share.
+export async function ensurePracticeQuestions(aiResult, { subjectName, grade }) {
+  if ((aiResult.questions || []).length > 0 || !aiResult.summary || !Number.isFinite(Number(grade))) return aiResult
+  try {
+    const generated = await generateQuestionsFromUploadContent({
+      summary: aiResult.summary,
+      keyConcepts: aiResult.key_concepts || [],
+      subject: subjectName,
+      grade: Number(grade),
+      language: detectLanguageFromContent(aiResult.summary, aiResult.key_concepts || []),
+    })
+    const questions = (generated.questions || []).map((q) => ({
+      question: q.question,
+      correct_answer: q.options[q.correct],
+      options: q.options,
+      explanation: q.explanation,
+      difficulty: 'medium',
+    }))
+    return { ...aiResult, questions }
+  } catch (err) {
+    console.error('[Uploads] practice question generation failed:', err)
+    return aiResult
+  }
 }

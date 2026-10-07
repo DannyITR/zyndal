@@ -4,7 +4,7 @@ import { SUBJECTS, getSubject } from '../../../lib/questions'
 import { todayStr, addDaysStr, formatLongDate } from '../../../lib/streak'
 import { validateUploadFile } from '../../../lib/imageUtils'
 import { MAX_UPLOAD_PAGES } from '../../../lib/uploads'
-import { processUploadedDocument } from '../../../lib/ai'
+import { processUploadedDocument, ensurePracticeQuestions } from '../../../lib/ai'
 import { saveUpload, saveSharedUpload, addPagesToUpload, getUploadDetail } from '../../../lib/storage'
 import { getErrorMessage } from '../../../lib/errors'
 import TopBar from '../../shared/TopBar'
@@ -143,6 +143,7 @@ export default function UploadCaptureScreen({
         const refreshed = await getUploadDetail(existingUpload.id)
         onSaved(refreshed)
       } else if (canShareWithClass && shareWithClass) {
+        const sharedAiResult = await ensurePracticeQuestions(aiResult, { subjectName: getSubject(subjectId)?.name || subjectId, grade: user.grade })
         const saved = await saveSharedUpload({
           classType: classContext.classType,
           classId: classContext.classId,
@@ -150,7 +151,7 @@ export default function UploadCaptureScreen({
           subject: subjectId,
           topic: topic.trim(),
           notes: notes.trim() || null,
-          aiResult,
+          aiResult: sharedAiResult,
           encodedFiles: aiResult.encodedFiles,
           pagesCount: files.length,
         })
