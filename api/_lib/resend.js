@@ -702,3 +702,30 @@ export async function sendWeeklySummaryEmail({ email, languagePreference, childr
   const { error } = await resend.emails.send({ from: 'Zyndal <hello@zyndal.ca>', replyTo: 'hello@zyndal.ca', to: email, subject, html })
   if (error) throw new Error(error.message || 'Failed to send weekly summary email.')
 }
+
+// The Study Guide's printable quiz (see api/email-study-quiz.js). The body
+// is the worksheet document itself (src/lib/studyQuizWorksheet.js), rebuilt
+// server-side, not wrapped in renderEmailHtml: it's meant to be printed, so
+// it stays plain black-on-white rather than the app's dark theme.
+const STUDY_QUIZ_STRINGS = {
+  en: {
+    selfSubject: (topic) => `Your printable quiz: ${topic}`,
+    sharedSubject: (topic, username) => `${username} sent you a printable quiz: ${topic}`,
+  },
+  fr: {
+    selfSubject: (topic) => `Ton quiz à imprimer : ${topic}`,
+    sharedSubject: (topic, username) => `${username} t'a envoyé un quiz à imprimer : ${topic}`,
+  },
+  es: {
+    selfSubject: (topic) => `Tu cuestionario para imprimir: ${topic}`,
+    sharedSubject: (topic, username) => `${username} te envió un cuestionario para imprimir: ${topic}`,
+  },
+}
+
+export async function sendStudyQuizEmail({ email, html, topic, senderUsername, toSelf, languagePreference }) {
+  const resend = getResendClient()
+  const s = STUDY_QUIZ_STRINGS[langFor(languagePreference)]
+  const subject = toSelf ? s.selfSubject(topic) : s.sharedSubject(topic, senderUsername || 'A Zyndal student')
+  const { error } = await resend.emails.send({ from: 'Zyndal <hello@zyndal.ca>', replyTo: 'hello@zyndal.ca', to: email, subject, html })
+  if (error) throw new Error(error.message || 'Failed to send study quiz email.')
+}

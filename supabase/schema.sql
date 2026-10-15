@@ -322,6 +322,19 @@ create table if not exists upload_questions (
 );
 create index if not exists upload_questions_upload_id_idx on upload_questions(upload_id);
 
+-- One row per Study Guide printable-quiz email actually sent (see
+-- api/email-study-quiz.js) — the ledger behind its 5-per-user-per-hour
+-- send limit, kept in the database because the in-memory rate limiter
+-- resets per serverless instance.
+create table if not exists study_quiz_email_sends (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  upload_id uuid references uploads(id) on delete set null,
+  recipient text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists study_quiz_email_sends_user_created_idx on study_quiz_email_sends(user_id, created_at);
+
 -- A grade the student logged manually — independent of Test Prep and
 -- uploads. Still feeds the same grade-bonus payout flow as an uploaded test.
 create table if not exists grades (
@@ -468,6 +481,7 @@ alter table friends enable row level security;
 alter table streak_shares enable row level security;
 alter table uploads enable row level security;
 alter table upload_questions enable row level security;
+alter table study_quiz_email_sends enable row level security;
 alter table upload_weekly_usage enable row level security;
 alter table grades enable row level security;
 alter table grade_bonuses enable row level security;

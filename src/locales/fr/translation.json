@@ -769,6 +769,22 @@
     "joining": "Adhésion en cours…",
     "join": "Rejoindre"
   },
+  "studyQuiz": {
+    "printableQuiz": "Quiz à imprimer",
+    "sectionTitle": "Quiz à imprimer",
+    "sectionHint": "Transforme tes notes en quiz papier avec un corrigé.",
+    "previewTitle": "Quiz à imprimer",
+    "generating": "Création de ton quiz… (cela peut prendre une minute)",
+    "emailMe": "M'envoyer par courriel",
+    "emailMeHint": "Envoyé à {{email}}",
+    "noAccountEmail": "Ajoute un courriel dans les Paramètres pour te l’envoyer.",
+    "sendToOther": "Envoyer à une autre adresse",
+    "emailPlaceholder": "nom@exemple.com",
+    "send": "Envoyer",
+    "sending": "Envoi…",
+    "invalidEmail": "Veuillez entrer une adresse courriel valide.",
+    "sentToast": "Quiz envoyé à {{email}}"
+  },
   "errors": {
     "UPLOAD_TOO_LARGE": "Ces pages sont trop volumineuses pour être téléversées ensemble. Veuillez les répartir en plusieurs téléversements.",
     "generic": "Une erreur est survenue. Veuillez réessayer.",
@@ -785,6 +801,9 @@
     "EMAIL_EXISTS": "Un compte avec ce courriel existe déjà.",
     "EXPIRED_TOKEN": "Ce lien a expiré.",
     "FORBIDDEN": "Vous n'avez pas la permission de faire cela.",
+    "NO_QUIZ_CONTENT": "Ce téléversement n'a pas assez de contenu pour créer un quiz.",
+    "STUDY_QUIZ_EMAIL_LIMIT": "Tu peux envoyer jusqu'à 5 quiz par heure. Réessaie plus tard.",
+    "EMAIL_SEND_FAILED": "Nous n'avons pas pu envoyer ce courriel. Veuillez réessayer.",
     "NOT_GROUP_MEMBER": "Vous n'êtes pas membre de ce groupe, vous ne pouvez donc pas y partager de notes ni voir ses notes.",
     "CORE_GROUP_LEAVE": "Il est impossible de quitter les groupes des matières principales.",
     "GRADING_FAILED": "Une erreur est survenue lors de la correction. Veuillez réessayer.",

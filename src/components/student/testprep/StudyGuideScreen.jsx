@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { todayStr } from '../../../lib/streak'
 import { getErrorMessage } from '../../../lib/errors'
@@ -15,6 +15,7 @@ import {
 import TopBar from '../../shared/TopBar'
 import TestPrepQuestion from './TestPrepQuestion'
 import QuestionSourceStep from './QuestionSourceStep'
+import StudyQuizModal from './StudyQuizModal'
 
 // The guide (questions + the student's answers) is cached per user per day in
 // localStorage — it regenerates fresh each day, and a page reload doesn't
@@ -56,6 +57,18 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
   const [generating, setGenerating] = useState(false)
   const [generatingLabel, setGeneratingLabel] = useState('')
   const [error, setError] = useState('')
+  const [quizUpload, setQuizUpload] = useState(null) // the upload whose printable quiz is being previewed
+  const [toast, setToast] = useState('')
+  const toastTimerRef = useRef(null)
+
+  useEffect(() => () => clearTimeout(toastTimerRef.current), [])
+
+  function handleQuizSent(sentTo) {
+    setQuizUpload(null)
+    setToast(t('studyQuiz.sentToast', { email: sentTo }))
+    clearTimeout(toastTimerRef.current)
+    toastTimerRef.current = setTimeout(() => setToast(''), 4000)
+  }
 
   useEffect(() => {
     if (step !== 'source') return
@@ -154,6 +167,10 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
         </div>
       )
     }
+    // Every notes/study-material upload for this subject gets a "Printable
+    // quiz" button — never a graded test, which is a record of a past
+    // result rather than material to study from. Available to every user.
+    const quizUploads = uploadContent.filter((upload) => upload.documentType !== 'test')
     return (
       <QuestionSourceStep
         user={user}
@@ -168,7 +185,28 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
         onBack={onBack}
         onLogout={onLogout}
         onLogoClick={onLogoClick}
-      />
+      >
+        {quizUploads.length > 0 && (
+          <section className="study-quiz-list">
+            <h3 className="study-quiz-list-title">{t('studyQuiz.sectionTitle')}</h3>
+            <p className="field-hint">{t('studyQuiz.sectionHint')}</p>
+            {quizUploads.map((upload) => (
+              <div key={upload.uploadId} className="study-quiz-row">
+                <span className="study-quiz-row-topic">{upload.topic}</span>
+                <button type="button" className="btn btn-secondary btn-small" disabled={generating} onClick={() => setQuizUpload(upload)}>
+                  🖨️ {t('studyQuiz.printableQuiz')}
+                </button>
+              </div>
+            ))}
+          </section>
+        )}
+        {quizUpload && <StudyQuizModal upload={quizUpload} accountEmail={user.email} onSent={handleQuizSent} onClose={() => setQuizUpload(null)} />}
+        {toast && (
+          <div className="app-toast app-toast--success" role="status">
+            {toast}
+          </div>
+        )}
+      </QuestionSourceStep>
     )
   }
 

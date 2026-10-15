@@ -769,6 +769,22 @@
     "joining": "Uniéndose…",
     "join": "Unirse"
   },
+  "studyQuiz": {
+    "printableQuiz": "Cuestionario para imprimir",
+    "sectionTitle": "Cuestionarios para imprimir",
+    "sectionHint": "Convierte tus apuntes en un cuestionario en papel con respuestas.",
+    "previewTitle": "Cuestionario para imprimir",
+    "generating": "Creando tu cuestionario… (puede tardar un minuto)",
+    "emailMe": "Enviármelo por correo",
+    "emailMeHint": "Se enviará a {{email}}",
+    "noAccountEmail": "Agrega un correo en Configuración para enviártelo.",
+    "sendToOther": "Enviar a otro correo",
+    "emailPlaceholder": "nombre@ejemplo.com",
+    "send": "Enviar",
+    "sending": "Enviando…",
+    "invalidEmail": "Introduce una dirección de correo válida.",
+    "sentToast": "Cuestionario enviado a {{email}}"
+  },
   "errors": {
     "UPLOAD_TOO_LARGE": "Estas páginas son demasiado grandes para subirlas juntas. Divídelas en subidas más pequeñas.",
     "generic": "Algo salió mal. Inténtalo de nuevo.",
@@ -785,6 +801,9 @@
     "EMAIL_EXISTS": "Ya existe una cuenta con este correo.",
     "EXPIRED_TOKEN": "Este enlace ha expirado.",
     "FORBIDDEN": "No tienes permiso para hacer eso.",
+    "NO_QUIZ_CONTENT": "Esta subida no tiene suficiente contenido para crear un cuestionario.",
+    "STUDY_QUIZ_EMAIL_LIMIT": "Puedes enviar hasta 5 cuestionarios por hora. Inténtalo más tarde.",
+    "EMAIL_SEND_FAILED": "No pudimos enviar ese correo. Inténtalo de nuevo.",
     "NOT_GROUP_MEMBER": "No eres miembro de este grupo, así que no puedes compartir apuntes con él ni ver sus apuntes.",
     "CORE_GROUP_LEAVE": "No se puede salir de los grupos de materias principales.",
     "GRADING_FAILED": "Algo salió mal al calificar. Inténtalo de nuevo.",

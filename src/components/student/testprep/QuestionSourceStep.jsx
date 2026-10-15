@@ -6,6 +6,8 @@ import TopBar from '../../shared/TopBar'
 // subject is known) — lets the student pick where their practice questions
 // come from before anything is generated. See questionSource.js for the
 // option list and the localStorage preference this pre-selects from.
+// children: optional extra content shown below Continue (the Study Guide
+// uses it for its per-upload "Printable quiz" list).
 export default function QuestionSourceStep({
   user,
   subjectId,
@@ -19,6 +21,7 @@ export default function QuestionSourceStep({
   onBack,
   onLogout,
   onLogoClick,
+  children,
 }) {
   const options = getSourceOptions(uploadCount, subjectName)
   const savedPreference = getSourcePreference(subjectId)
@@ -63,6 +66,8 @@ export default function QuestionSourceStep({
       <button type="button" className="btn btn-primary btn-block" disabled={!selected || generating} onClick={() => onContinue(selected)}>
         {generating ? generatingLabel || 'Generating your questions… (this can take a minute)' : 'Continue'}
       </button>
+
+      {children}
     </div>
   )
 }

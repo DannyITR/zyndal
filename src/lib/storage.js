@@ -893,12 +893,30 @@ export async function getUploadedContentForSubject(userId, subject) {
   const data = await callUploadsApi('GET', `get-upload-questions?subject=${encodeURIComponent(subject)}`)
   return data.uploads.map((upload) => ({
     uploadId: upload.uploadId,
+    topic: upload.topic,
+    documentType: upload.documentType,
+    createdAt: upload.createdAt,
     summary: upload.summary,
     keyConcepts: upload.keyConcepts || [],
     usableQuestions: upload.questions
       .filter((q) => q.options && q.options.length > 0 && q.options.includes(q.correct_answer))
       .map((q) => ({ question: q.question, options: q.options, correct: q.options.indexOf(q.correct_answer), explanation: q.explanation })),
   }))
+}
+
+// Study Guide "Printable quiz" — every question linked to one of the
+// student's uploads, generated and saved server-side first if it has none
+// (see api/generate-study-quiz.js). Returns { uploadId, title, subject,
+// lang, questions } for buildStudyQuizHtml.
+export async function generateStudyQuiz(uploadId) {
+  return callApi('/api', 'POST', 'generate-study-quiz', { upload_id: uploadId })
+}
+
+// sendTo: 'me' (the account's own email) or 'other' (with email). The
+// server rebuilds the worksheet from the upload id itself — see
+// api/email-study-quiz.js. Resolves to { sentTo }.
+export async function emailStudyQuiz(uploadId, { sendTo, email }) {
+  return callApi('/api', 'POST', 'email-study-quiz', { upload_id: uploadId, send_to: sendTo, email })
 }
 
 // Persists questions generated on the fly from an upload's summary (see

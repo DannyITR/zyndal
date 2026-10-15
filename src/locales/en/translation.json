@@ -769,6 +769,22 @@
     "joining": "Joining…",
     "join": "Join"
   },
+  "studyQuiz": {
+    "printableQuiz": "Printable quiz",
+    "sectionTitle": "Printable quizzes",
+    "sectionHint": "Turn any of your notes into a paper quiz with an answer key.",
+    "previewTitle": "Printable quiz",
+    "generating": "Building your quiz… (this can take a minute)",
+    "emailMe": "Email to me",
+    "emailMeHint": "Sends to {{email}}",
+    "noAccountEmail": "Add an email in Settings to send this to yourself.",
+    "sendToOther": "Send to another email",
+    "emailPlaceholder": "name@example.com",
+    "send": "Send",
+    "sending": "Sending…",
+    "invalidEmail": "Please enter a valid email address.",
+    "sentToast": "Quiz sent to {{email}}"
+  },
   "errors": {
     "UPLOAD_TOO_LARGE": "These pages are too large to upload together. Please split them into smaller uploads.",
     "generic": "Something went wrong. Please try again.",
@@ -785,6 +801,9 @@
     "EMAIL_EXISTS": "An account with this email already exists.",
     "EXPIRED_TOKEN": "This link has expired.",
     "FORBIDDEN": "You don't have permission to do that.",
+    "NO_QUIZ_CONTENT": "This upload doesn't have enough content to build a quiz from.",
+    "STUDY_QUIZ_EMAIL_LIMIT": "You can email up to 5 quizzes per hour. Please try again later.",
+    "EMAIL_SEND_FAILED": "We couldn't send that email. Please try again.",
     "NOT_GROUP_MEMBER": "You're not a member of this group, so you can't share notes with it or see its notes.",
     "CORE_GROUP_LEAVE": "Core subject groups can't be left.",
     "GRADING_FAILED": "Something went wrong while grading. Please try again.",
