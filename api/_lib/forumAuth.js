@@ -1,4 +1,33 @@
 import { supabase } from './auth.js'
+import { CORE_SUBJECT_IDS } from '../../src/lib/questions.js'
+
+// Core-subject groups are always-on memberships (see coreGroups.js), but
+// the row itself can still go missing — a student who tapped Leave on one
+// before that was blocked (EthanITR's History & Geography group, which
+// then 403'd his shared-notes upload), or a gap autoJoinCoreGroups never
+// covered (it only runs on a school/grade change, not at signup). Rather
+// than deny a student their own school+grade's core group, recreate the
+// row on the spot. Never applies to electives, which stay opt-in, or to
+// another school's/grade's group.
+async function restoreCoreGroupMembership(userId, groupId) {
+  const { data: group, error: groupError } = await supabase
+    .from('school_subject_groups')
+    .select('school_id, grade, subject')
+    .eq('id', groupId)
+    .maybeSingle()
+  if (groupError) throw groupError
+  if (!group || !CORE_SUBJECT_IDS.includes(group.subject)) return false
+
+  const { data: user, error: userError } = await supabase.from('users').select('account_type, school_id, grade').eq('id', userId).maybeSingle()
+  if (userError) throw userError
+  if (!user || user.account_type !== 'student' || user.school_id !== group.school_id || Number(user.grade) !== Number(group.grade)) return false
+
+  const { error: joinError } = await supabase
+    .from('school_subject_group_students')
+    .upsert({ group_id: groupId, student_id: userId }, { onConflict: 'group_id,student_id', ignoreDuplicates: true })
+  if (joinError) throw joinError
+  return true
+}
 
 // Resolves whether userId belongs to the class a forum is scoped to — the
 // single source of truth for both read and write access, since forum
@@ -15,7 +44,9 @@ export async function getForumMembership(userId, classType, classId) {
       .eq('student_id', userId)
       .maybeSingle()
     if (error) throw error
-    return { member: Boolean(data), role: data ? 'student' : null }
+    if (data) return { member: true, role: 'student' }
+    if (await restoreCoreGroupMembership(userId, classId)) return { member: true, role: 'student' }
+    return { member: false, role: null }
   }
 
   if (classType === 'class') {

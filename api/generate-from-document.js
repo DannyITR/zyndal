@@ -1,5 +1,7 @@
 import { createStudentHandler } from './_lib/studentHandler.js'
-import { assertPremium } from './_lib/subscription.js'
+// Upload paths are no longer premium-gated (all features unlocked) —
+// commented out, not deleted, so it can be re-enabled.
+// import { assertPremium } from './_lib/subscription.js'
 import { generateJson } from './_lib/anthropic.js'
 
 // Mirrors processUploadedDocument in src/lib/ai.js — NOT one of the four
@@ -76,12 +78,14 @@ If a question in the source document is not already multiple-choice, leave "opti
 Every question MUST have a non-empty "correct_answer" and "explanation". If the document already shows the correct answer (an answer key, a teacher's correction, worked notes), use it. If the question is unanswered on the page — a blank worksheet, a list of review questions — or the answer written on the page is wrong, work out the correct answer yourself, using the rest of the document first and your own subject knowledge where the document doesn't cover it. Never leave "correct_answer" blank.`
 }
 
-const MAX_PAGES = 10
+// Upload limits removed (no page cap for any user) — commented out, not
+// deleted, so it can be re-enabled. See save-shared-upload.js.
+// const MAX_PAGES = 10
 
 function validate(body) {
   if (!body.uploadType || !['test', 'study_material'].includes(body.uploadType)) return 'uploadType must be "test" or "study_material".'
   if (!Array.isArray(body.files) || body.files.length === 0) return 'files must be a non-empty array.'
-  if (body.files.length > MAX_PAGES) return `files cannot exceed ${MAX_PAGES} pages.`
+  // if (body.files.length > MAX_PAGES) return `files cannot exceed ${MAX_PAGES} pages.`
   for (const file of body.files) {
     if (!file || typeof file.base64 !== 'string' || !file.base64) return 'each file must include base64 data.'
     if (!file.mediaType || typeof file.mediaType !== 'string') return 'each file must include a mediaType.'
@@ -94,7 +98,7 @@ function validate(body) {
 // — this one in particular used to mean anyone, logged in or not, could
 // upload arbitrary images/PDFs and have them scanned on Zyndal's dime.
 async function handle({ userId, body }) {
-  await assertPremium(userId)
+  // await assertPremium(userId)
   const { uploadType, files } = body
   const documentBlocks = files.map((file) =>
     file.mediaType === 'application/pdf'

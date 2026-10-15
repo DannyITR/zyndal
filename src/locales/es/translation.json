@@ -785,6 +785,8 @@
     "EMAIL_EXISTS": "Ya existe una cuenta con este correo.",
     "EXPIRED_TOKEN": "Este enlace ha expirado.",
     "FORBIDDEN": "No tienes permiso para hacer eso.",
+    "NOT_GROUP_MEMBER": "No eres miembro de este grupo, así que no puedes compartir apuntes con él ni ver sus apuntes.",
+    "CORE_GROUP_LEAVE": "No se puede salir de los grupos de materias principales.",
     "GRADING_FAILED": "Algo salió mal al calificar. Inténtalo de nuevo.",
     "INAPPROPRIATE_CONTENT": "Tu archivo fue marcado como inapropiado y no se pudo compartir con tu grupo. Por favor, inténtalo de nuevo con contenido apropiado.",
     "INCOMPLETE_DAY": "Completa la pregunta de hoy antes de compartir tu puntaje.",

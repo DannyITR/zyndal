@@ -104,23 +104,27 @@ export default function ClassCard({
     if (isPremium) onOpenStudyGuide()
     else setShowPremiumModal(true)
   }
+  // Upload/My Uploads are no longer premium-gated (all features unlocked)
+  // — the gate is commented out, not deleted, so it can be re-enabled.
   function handleOpenUpload() {
-    if (isPremium) onOpenUpload()
-    else setShowPremiumModal(true)
+    onOpenUpload()
+    // if (isPremium) onOpenUpload()
+    // else setShowPremiumModal(true)
   }
   // From the "Upload notes" button on a specific Group Notes Calendar day
-  // (GroupUploadsDayDetailScreen) — same premium gate as the plain Upload
-  // button above, kept as its own function (rather than giving
-  // handleOpenUpload an optional param) so that button's own
+  // (GroupUploadsDayDetailScreen) — kept as its own function (rather than
+  // giving handleOpenUpload an optional param) so that button's own
   // onClick={handleOpenUpload} can never accidentally forward its
   // click event through as a date.
   function handleUploadForDay(date) {
-    if (isPremium) onOpenUpload(date)
-    else setShowPremiumModal(true)
+    onOpenUpload(date)
+    // if (isPremium) onOpenUpload(date)
+    // else setShowPremiumModal(true)
   }
   function handleOpenMyUploads() {
-    if (isPremium) onOpenMyUploads()
-    else setShowPremiumModal(true)
+    onOpenMyUploads()
+    // if (isPremium) onOpenMyUploads()
+    // else setShowPremiumModal(true)
   }
   function handleOpenPractice() {
     if (isPremium) onOpenPractice()
@@ -405,11 +409,15 @@ export default function ClassCard({
         <ForumThreadPreview classType={entryKind} classId={entryId} onSelectThread={(threadId) => handleOpenForum(threadId)} />
       )}
 
-      <div className="settings-danger-zone">
-        <button type="button" className="btn btn-danger-outline btn-block" onClick={() => setShowLeaveModal(true)}>
-          {t('classCard.leaveTitle')}
-        </button>
-      </div>
+      {/* Hidden for core-subject groups, same as the Join button above —
+          they're always-on memberships, and leave-class.js refuses them. */}
+      {!(entryKind === 'group' && CORE_SUBJECT_IDS.includes(subject.id)) && (
+        <div className="settings-danger-zone">
+          <button type="button" className="btn btn-danger-outline btn-block" onClick={() => setShowLeaveModal(true)}>
+            {t('classCard.leaveTitle')}
+          </button>
+        </div>
+      )}
 
       {showPremiumModal && <UpgradeModal user={user} onClose={() => setShowPremiumModal(false)} />}
       {showCancelModal && planForThisSubject && (

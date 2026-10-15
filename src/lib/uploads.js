@@ -6,7 +6,11 @@
 // why that exact pattern took down every API route that reached it.
 import { getActiveLanguage } from './streak.js'
 
-export const MAX_UPLOAD_PAGES = 10
+// Upload limits removed (no page cap for any user) — commented out, not
+// deleted, so it can be re-enabled along with its uses in
+// UploadCaptureScreen.jsx. The only remaining ceiling is Vercel's request
+// body size, enforced with a specific error by encodeFilesWithinBudget.
+// export const MAX_UPLOAD_PAGES = 10
 
 const LOCALE_FOR_LANGUAGE = { en: 'en-US', fr: 'fr-CA', es: 'es-ES' }
 

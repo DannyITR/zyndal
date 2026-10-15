@@ -46,6 +46,7 @@ async function callGenerateApi(endpoint, body) {
     if (data?.code === 'PREMIUM_REQUIRED') notifyPremiumRequired()
     const err = new Error(data?.error || `Request to ${endpoint} failed (${response.status}).`)
     if (data?.code) err.code = data.code
+    else if (response.status === 413) err.code = 'UPLOAD_TOO_LARGE' // see callApi in storage.js
     throw err
   }
   return data

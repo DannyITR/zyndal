@@ -1,5 +1,7 @@
 import { createStudentHandler } from './_lib/studentHandler.js'
-import { assertPremium } from './_lib/subscription.js'
+// Upload paths are no longer premium-gated (all features unlocked) —
+// commented out, not deleted, so it can be re-enabled.
+// import { assertPremium } from './_lib/subscription.js'
 import { generateJson, QUESTION_SCHEMA, languageInstruction, gradeToSecondary } from './_lib/anthropic.js'
 
 // Mirrors generateQuestionsFromUploadContent in src/lib/ai.js — used by
@@ -51,7 +53,7 @@ function validate(body) {
 // See generate-study-guide.js's identical comment for why this moved from
 // createGenerateHandler (no auth) to createStudentHandler + assertPremium.
 async function handle({ userId, body }) {
-  await assertPremium(userId)
+  // await assertPremium(userId)
   const { subject, grade, summary, key_concepts, language = 'English' } = body
   return generateJson({
     system: buildSystemPrompt(summary, key_concepts, subject, grade, language),

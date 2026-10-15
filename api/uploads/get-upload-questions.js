@@ -1,6 +1,8 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
-import { assertPremium } from '../_lib/subscription.js'
+// Upload paths are no longer premium-gated (all features unlocked) —
+// commented out, not deleted, so it can be re-enabled.
+// import { assertPremium } from '../_lib/subscription.js'
 import { getForumMembership } from '../_lib/forumAuth.js'
 import { signSharedNoteFiles } from '../_lib/sharedNotesStorage.js'
 
@@ -49,7 +51,7 @@ async function handleByUploadId(userId, uploadId) {
     // exactly as before this feature — a groupmate viewing a shared
     // upload below never hits this, per the product decision that no part
     // of Group Notes Calendar is gated during the current growth phase.
-    await assertPremium(userId)
+    // await assertPremium(userId)
   } else {
     const sharedMembership = upload.shared_class_id
       ? await getForumMembership(userId, upload.shared_class_type, upload.shared_class_id)
@@ -111,7 +113,7 @@ async function handleBySubject(userId, subject) {
 
 async function handle({ userId, body }) {
   if (body.upload_id) return handleByUploadId(userId, body.upload_id)
-  await assertPremium(userId)
+  // await assertPremium(userId)
   return handleBySubject(userId, body.subject)
 }
 

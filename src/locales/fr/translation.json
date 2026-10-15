@@ -785,6 +785,8 @@
     "EMAIL_EXISTS": "Un compte avec ce courriel existe déjà.",
     "EXPIRED_TOKEN": "Ce lien a expiré.",
     "FORBIDDEN": "Vous n'avez pas la permission de faire cela.",
+    "NOT_GROUP_MEMBER": "Vous n'êtes pas membre de ce groupe, vous ne pouvez donc pas y partager de notes ni voir ses notes.",
+    "CORE_GROUP_LEAVE": "Il est impossible de quitter les groupes des matières principales.",
     "GRADING_FAILED": "Une erreur est survenue lors de la correction. Veuillez réessayer.",
     "INAPPROPRIATE_CONTENT": "Votre téléversement a été signalé comme inapproprié et n'a pas pu être partagé avec votre groupe. Veuillez réessayer avec un contenu approprié.",
     "INCOMPLETE_DAY": "Répondez à la question du jour avant de partager votre score.",

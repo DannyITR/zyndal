@@ -76,6 +76,10 @@ async function callApi(basePath, method, endpoint, body) {
     // tell an expired token apart from an invalid one without string-
     // matching err.message.
     if (data?.code) err.code = data.code
+    // Vercel rejects an oversized body (~4.5MB) itself, before the function
+    // runs, so there's no JSON code to read — name it so the UI says "too
+    // large" instead of a generic failure.
+    else if (response.status === 413) err.code = 'UPLOAD_TOO_LARGE'
     if (data?.code === 'PREMIUM_REQUIRED') premiumRequiredHandler?.()
     throw err
   }

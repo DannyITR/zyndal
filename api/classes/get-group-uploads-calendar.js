@@ -38,9 +38,9 @@ function validate(body) {
 async function handle({ userId, body }) {
   const membership = await getForumMembership(userId, body.class_type, body.class_id)
   if (!membership.member) {
-    const err = new Error('You are not a member of this class.')
+    const err = new Error("You're not a member of this group.")
     err.status = 403
-    err.code = 'FORBIDDEN'
+    err.code = 'NOT_GROUP_MEMBER'
     throw err
   }
 

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { SUBJECTS, getSubject } from '../../../lib/questions'
 import { todayStr, addDaysStr, formatLongDate } from '../../../lib/streak'
 import { validateUploadFile } from '../../../lib/imageUtils'
-import { MAX_UPLOAD_PAGES } from '../../../lib/uploads'
+// import { MAX_UPLOAD_PAGES } from '../../../lib/uploads' — page cap removed, see src/lib/uploads.js
 import { processUploadedDocument, ensurePracticeQuestions } from '../../../lib/ai'
 import { saveUpload, saveSharedUpload, addPagesToUpload, getUploadDetail } from '../../../lib/storage'
 import { getErrorMessage } from '../../../lib/errors'
@@ -82,15 +82,16 @@ export default function UploadCaptureScreen({
   function addFiles(fileList) {
     setError('')
     const incoming = Array.from(fileList)
-    const remainingSlots = MAX_UPLOAD_PAGES - pages.length
+    // Page cap removed — commented out, not deleted, so it can be re-enabled.
+    // const remainingSlots = MAX_UPLOAD_PAGES - pages.length
     const accepted = []
-    let skipped = 0
+    // let skipped = 0
 
     for (const file of incoming) {
-      if (accepted.length >= remainingSlots) {
-        skipped++
-        continue
-      }
+      // if (accepted.length >= remainingSlots) {
+      //   skipped++
+      //   continue
+      // }
       const validationError = validateUploadFile(file)
       if (validationError) {
         setError(validationError)
@@ -104,7 +105,7 @@ export default function UploadCaptureScreen({
     }
 
     if (accepted.length > 0) setPages((prev) => [...prev, ...accepted])
-    if (skipped > 0) setError(`Only ${MAX_UPLOAD_PAGES} pages allowed per upload — ${skipped} file${skipped === 1 ? '' : 's'} not added.`)
+    // if (skipped > 0) setError(`Only ${MAX_UPLOAD_PAGES} pages allowed per upload — ${skipped} file${skipped === 1 ? '' : 's'} not added.`)
   }
 
   function removePage(id) {
@@ -177,7 +178,8 @@ export default function UploadCaptureScreen({
     }
   }
 
-  const canAddMore = pages.length < MAX_UPLOAD_PAGES
+  const canAddMore = true
+  // const canAddMore = pages.length < MAX_UPLOAD_PAGES
 
   return (
     <div className="screen student-screen">
@@ -217,7 +219,8 @@ export default function UploadCaptureScreen({
 
       <form className="auth-form" onSubmit={handleSubmit}>
         <p className="upload-pages-counter">
-          {pages.length}/{MAX_UPLOAD_PAGES} pages selected
+          {pages.length} page{pages.length === 1 ? '' : 's'} selected
+          {/* {pages.length}/{MAX_UPLOAD_PAGES} pages selected */}
         </p>
 
         {pages.length > 0 && (
@@ -255,7 +258,8 @@ export default function UploadCaptureScreen({
             <button type="button" className="btn btn-secondary btn-block" disabled={processing} onClick={() => libraryInputRef.current.click()}>
               🖼️ Choose File{pages.length === 0 ? 's' : ' / Add More'}
             </button>
-            <p className="field-hint">JPG, PNG, WEBP, or PDF — up to {MAX_UPLOAD_PAGES} pages</p>
+            <p className="field-hint">JPG, PNG, WEBP, or PDF</p>
+            {/* <p className="field-hint">JPG, PNG, WEBP, or PDF — up to {MAX_UPLOAD_PAGES} pages</p> */}
           </div>
         )}
 

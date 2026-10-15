@@ -785,6 +785,8 @@
     "EMAIL_EXISTS": "An account with this email already exists.",
     "EXPIRED_TOKEN": "This link has expired.",
     "FORBIDDEN": "You don't have permission to do that.",
+    "NOT_GROUP_MEMBER": "You're not a member of this group, so you can't share notes with it or see its notes.",
+    "CORE_GROUP_LEAVE": "Core subject groups can't be left.",
     "GRADING_FAILED": "Something went wrong while grading. Please try again.",
     "INAPPROPRIATE_CONTENT": "Your upload was flagged as inappropriate and could not be shared with your group. Please try again with appropriate content.",
     "INCOMPLETE_DAY": "Complete today's question before sharing your score.",

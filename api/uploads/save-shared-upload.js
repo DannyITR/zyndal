@@ -37,7 +37,11 @@ function sanitizeSharableSubject(value) {
 // first place (see UploadCaptureScreen.jsx).
 const SHAREABLE_DOCUMENT_TYPES = ['worksheet', 'textbook', 'notes']
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
-const MAX_PAGES = 10
+// Upload limits removed (no page cap for any user) — commented out, not
+// deleted, so it can be re-enabled. The only remaining ceiling is Vercel's
+// ~4.5MB request body, which encodeFilesWithinBudget (src/lib/imageUtils.js)
+// handles client-side with its own specific UPLOAD_TOO_LARGE error.
+// const MAX_PAGES = 10
 
 function validate(body) {
   const classId = sanitizeUuid(body.class_id)
@@ -69,7 +73,7 @@ function validate(body) {
   }
 
   if (!Array.isArray(body.files) || body.files.length === 0) return { field: 'files', message: 'files must be a non-empty array.' }
-  if (body.files.length > MAX_PAGES) return { field: 'files', message: `files cannot exceed ${MAX_PAGES} pages.` }
+  // if (body.files.length > MAX_PAGES) return { field: 'files', message: `files cannot exceed ${MAX_PAGES} pages.` }
   for (const file of body.files) {
     if (!file || typeof file.base64 !== 'string' || !file.base64) return { field: 'files', message: 'each file must include base64 data.' }
     if (!file.mediaType || typeof file.mediaType !== 'string') return { field: 'files', message: 'each file must include a mediaType.' }
@@ -102,9 +106,9 @@ async function handle({ userId, body }) {
 
   const membership = await getForumMembership(userId, classType, classId)
   if (!membership.member) {
-    const err = new Error('You are not a member of this class.')
+    const err = new Error("You're not a member of this group, so you can't share notes with it.")
     err.status = 403
-    err.code = 'FORBIDDEN'
+    err.code = 'NOT_GROUP_MEMBER'
     throw err
   }
 

@@ -4,7 +4,9 @@ import { sanitizeUuid, sanitizeImageBase64, sanitizeSubject } from '../_lib/sani
 import { generateJson } from '../_lib/anthropic.js'
 import { resolveDailyQuestion } from '../_lib/dailyQuestion.js'
 import { getProgressForUser } from '../_lib/db.js'
-import { assertPremium } from '../_lib/subscription.js'
+// Upload paths are no longer premium-gated (all features unlocked) —
+// commented out, not deleted, so it can be re-enabled.
+// import { assertPremium } from '../_lib/subscription.js'
 import { todayStr, isValidTimeZone, DEFAULT_TIMEZONE } from '../../src/lib/streak.js'
 
 // Scratchpad is Math-only — other subjects may be added in future.
@@ -333,7 +335,7 @@ async function handleRetryCorrectLog({ userId, body }) {
 }
 
 async function handle({ userId, body }) {
-  await assertPremium(userId)
+  // await assertPremium(userId)
   if (body.mode === 'wrong_answer_review') return handleWrongAnswerReview({ userId, body })
   if (body.mode === 'retry_correct_log') return handleRetryCorrectLog({ userId, body })
   return handleCorrectWorkSubmission({ userId, body })

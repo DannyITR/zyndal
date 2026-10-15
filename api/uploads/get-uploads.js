@@ -1,6 +1,8 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
-import { assertPremium } from '../_lib/subscription.js'
+// Upload paths are no longer premium-gated (all features unlocked) —
+// commented out, not deleted, so it can be re-enabled.
+// import { assertPremium } from '../_lib/subscription.js'
 
 // Mirrors getUploadsForUser in storage.js, plus a questionCount per upload
 // as spec'd (supabase-js has no GROUP BY, so counts are computed in JS from
@@ -11,7 +13,7 @@ function validate(body) {
 }
 
 async function handle({ userId, body }) {
-  await assertPremium(userId)
+  // await assertPremium(userId)
   let query = supabase.from('uploads').select('*').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false })
   if (body.subject) query = query.eq('subject', body.subject)
   const { data: uploads, error } = await query

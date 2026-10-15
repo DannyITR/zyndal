@@ -1,6 +1,7 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { sanitizeUuid } from '../_lib/sanitize.js'
+import { CORE_SUBJECT_IDS } from '../../src/lib/questions.js'
 
 // Leaving is just deleting the one membership row — every consumer that
 // gates on membership (get-school-subject-groups.js's My Subjects grid,
@@ -21,6 +22,19 @@ async function handle({ userId, body }) {
   const { class_type: classType, class_id: classId } = body
 
   if (classType === 'group') {
+    // Core-subject groups are always-on (see api/_lib/coreGroups.js) with
+    // no Join button to come back through, so leaving one used to strand
+    // the student outside their own group — every shared-notes upload,
+    // forum post, and calendar view then failed the membership check.
+    const { data: group, error: groupError } = await supabase.from('school_subject_groups').select('subject').eq('id', classId).maybeSingle()
+    if (groupError) throw groupError
+    if (group && CORE_SUBJECT_IDS.includes(group.subject)) {
+      const err = new Error("Core subject groups can't be left.")
+      err.status = 400
+      err.code = 'CORE_GROUP_LEAVE'
+      throw err
+    }
+
     const { error } = await supabase.from('school_subject_group_students').delete().eq('group_id', classId).eq('student_id', userId)
     if (error) throw error
   } else {
