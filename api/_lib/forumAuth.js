@@ -1,5 +1,6 @@
 import { supabase } from './auth.js'
 import { CORE_SUBJECT_IDS } from '../../src/lib/questions.js'
+import { hasLeftClass } from './classLeaves.js'
 
 // Core-subject groups are always-on memberships (see coreGroups.js), but
 // the row itself can still go missing — a student who tapped Leave on one
@@ -18,6 +19,8 @@ async function restoreCoreGroupMembership(userId, groupId) {
     .maybeSingle()
   if (groupError) throw groupError
   if (!group || !CORE_SUBJECT_IDS.includes(group.subject)) return false
+  // Never re-add a group the student chose to leave (see classLeaves.js).
+  if (await hasLeftClass(userId, 'group', groupId)) return false
 
   const { data: user, error: userError } = await supabase.from('users').select('account_type, school_id, grade').eq('id', userId).maybeSingle()
   if (userError) throw userError

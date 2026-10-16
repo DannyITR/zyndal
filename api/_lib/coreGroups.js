@@ -36,7 +36,13 @@ export async function autoJoinCoreGroups(supabase, userId, schoolId, grade) {
   if (groupsError) throw groupsError
   if (!groups || groups.length === 0) return
 
-  const rows = groups.map((g) => ({ group_id: g.id, student_id: userId }))
+  // A core group the student chose to leave (class_leaves — see
+  // api/_lib/classLeaves.js) stays left until they rejoin it themselves.
+  const { data: leaves, error: leavesError } = await supabase.from('class_leaves').select('class_id').eq('user_id', userId).eq('class_type', 'group')
+  if (leavesError) throw leavesError
+  const leftGroupIds = new Set((leaves || []).map((l) => l.class_id))
+  const rows = groups.filter((g) => !leftGroupIds.has(g.id)).map((g) => ({ group_id: g.id, student_id: userId }))
+  if (rows.length === 0) return
   const { error: joinError } = await supabase
     .from('school_subject_group_students')
     .upsert(rows, { onConflict: 'group_id,student_id', ignoreDuplicates: true })

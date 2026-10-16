@@ -889,6 +889,9 @@
     "legendOverdue": "Overdue"
   },
   "classCard": {
+    "leaveCoreWarning": "{{class}} will move to your Electives and you'll leave its forum, notes calendar and class roster. Its subject comes out of Today's Question until you rejoin. Your uploads, answers, grades and progress are all kept — rejoin anytime to pick up where you left off.",
+    "rejoin": "Rejoin",
+    "leftNotice": "You left this class. Rejoin anytime — your uploads, answers and grades are all still here.",
     "joinGroup": "Join Group",
     "joining": "Joining…",
     "unclaimedStatus": "Gr {{grade}} {{school}}",

@@ -89,6 +89,25 @@ export function getTodaysSubjectId(dateStr) {
   return DAILY_ROTATION_ORDER[daysSinceEpoch % DAILY_ROTATION_ORDER.length]
 }
 
+// The rotation for one student who has left some core subjects (see
+// api/_lib/classLeaves.js): on a left subject's day they get the next
+// subject in the rotation they're still in, so there's still one question a
+// day and their streak carries on. leftSubjects: [{ subject, leftOn }] —
+// leftOn ('YYYY-MM-DD') limits it to days from the leave on, so earlier
+// days keep their original subject.
+export function getDailySubjectIdFor(dateStr, leftSubjects = []) {
+  const day = dateStr || new Date().toISOString().slice(0, 10)
+  const excluded = new Set(leftSubjects.filter((l) => !l.leftOn || l.leftOn <= day).map((l) => l.subject))
+  const date = new Date(`${day}T12:00:00Z`)
+  const start = Math.floor(date.getTime() / 86400000) % DAILY_ROTATION_ORDER.length
+  for (let k = 0; k < DAILY_ROTATION_ORDER.length; k++) {
+    const subject = DAILY_ROTATION_ORDER[(start + k) % DAILY_ROTATION_ORDER.length]
+    if (!excluded.has(subject)) return subject
+  }
+  // Left every core subject — fall back to the shared rotation.
+  return DAILY_ROTATION_ORDER[start]
+}
+
 export function getTodaysSubject(dateStr) {
   return getSubject(getTodaysSubjectId(dateStr))
 }

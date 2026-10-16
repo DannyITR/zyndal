@@ -889,6 +889,9 @@
     "legendOverdue": "En retard"
   },
   "classCard": {
+    "leaveCoreWarning": "{{class}} passera dans tes cours à option et tu quitteras son forum, son calendrier de notes et sa liste de classe. Cette matière sortira de la question du jour jusqu'à ce que tu reviennes. Tes téléversements, réponses, notes et progrès sont tous conservés — reviens quand tu veux pour reprendre où tu en étais.",
+    "rejoin": "Revenir",
+    "leftNotice": "Tu as quitté cette classe. Reviens quand tu veux — tes téléversements, réponses et notes sont toujours là.",
     "joinGroup": "Rejoindre le groupe",
     "joining": "Adhésion en cours…",
     "unclaimedStatus": "{{grade}}e année {{school}}",

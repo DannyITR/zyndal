@@ -3,7 +3,8 @@ import { supabase } from '../_lib/auth.js'
 import { getProgressForUser, getLinkedParents, normalizeMilestoneBonuses, recordPerfectWeekAchievement, syncUserTimezone } from '../_lib/db.js'
 import { resolveDailyQuestion } from '../_lib/dailyQuestion.js'
 import { applyDailyAnswer, getWeeklyCorrectCount, PERFECT_WEEK_TARGET, todayStr, isValidTimeZone, DEFAULT_TIMEZONE } from '../../src/lib/streak.js'
-import { SUBJECTS, getTodaysSubjectId } from '../../src/lib/questions.js'
+import { SUBJECTS, getDailySubjectIdFor } from '../../src/lib/questions.js'
+import { getLeftSubjects } from '../_lib/classLeaves.js'
 import { insertNotification } from '../_lib/notifications.js'
 import { notificationText } from '../_lib/notificationText.js'
 import { sendPushToUser } from '../_lib/push.js'
@@ -41,10 +42,11 @@ async function handle({ userId, body }) {
   const today = todayStr(new Date(), timezone)
   await syncUserTimezone(userId, timezone)
 
-  // Only one subject rotates in per day, same for every student (see
-  // getTodaysSubjectId) — reject anything else server-side too, not just by
-  // never offering it in the UI.
-  if (subject !== getTodaysSubjectId(today)) {
+  // Only one subject rotates in per day (see getTodaysSubjectId) — the same
+  // for every student, except one who has left that day's core subject gets
+  // the next one they're still in (getDailySubjectIdFor). Reject anything
+  // else server-side too, not just by never offering it in the UI.
+  if (subject !== getDailySubjectIdFor(today, await getLeftSubjects(userId))) {
     const err = new Error("That subject isn't today's rotated subject.")
     err.status = 400
     err.code = 'VALIDATION_ERROR'
@@ -55,10 +57,12 @@ async function handle({ userId, body }) {
 
   const progress = await getProgressForUser(userId, timezone)
 
-  // Same one-answer-per-subject-per-day rule the client already enforces by
-  // never calling this a second time — enforced here too since the server
-  // is now the actual source of truth.
-  const alreadyAnsweredToday = progress.history.some((h) => h.date === today && h.subjectId === subject)
+  // One answer per day, whatever the subject — the client already enforces
+  // this by never calling a second time; enforced here too since the server
+  // is the source of truth. Any subject, not just this one: a student who
+  // left a subject (and so got a substitute) and then rejoined it the same
+  // day mustn't be able to answer a second question for that day.
+  const alreadyAnsweredToday = progress.history.some((h) => h.date === today)
   if (alreadyAnsweredToday) {
     const err = new Error("Today's question for this subject has already been answered.")
     err.status = 409

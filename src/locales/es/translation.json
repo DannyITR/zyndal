@@ -889,6 +889,9 @@
     "legendOverdue": "Atrasado"
   },
   "classCard": {
+    "leaveCoreWarning": "{{class}} pasará a tus optativas y saldrás de su foro, su calendario de apuntes y la lista de la clase. Esa materia saldrá de la pregunta del día hasta que vuelvas. Se conservan tus subidas, respuestas, notas y progreso: vuelve cuando quieras para seguir donde lo dejaste.",
+    "rejoin": "Volver a unirse",
+    "leftNotice": "Saliste de esta clase. Vuelve cuando quieras: tus subidas, respuestas y notas siguen aquí.",
     "joinGroup": "Unirse al grupo",
     "joining": "Uniéndose…",
     "unclaimedStatus": "{{grade}}.° {{school}}",

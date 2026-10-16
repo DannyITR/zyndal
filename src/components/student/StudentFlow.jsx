@@ -15,11 +15,13 @@ import {
   getMyHomework,
   joinSchoolSubjectGroup,
   leaveClass,
+  rejoinClass,
+  getCurrentUser,
   removeCourse,
   getStudentClasses,
   getConversations,
 } from '../../lib/storage'
-import { getSubject, getTodaysSubjectId } from '../../lib/questions'
+import { getSubject, getDailySubjectIdFor } from '../../lib/questions'
 import { getEffectiveStreak, todayStr, addDaysStr, formatLongDate, computeDayState, LAUNCH_DATE, TOTAL_SUBJECTS } from '../../lib/streak'
 import { getUserTimeZone } from '../../lib/timezone'
 import { isPushSupported, subscribeToPush } from '../../lib/push'
@@ -496,10 +498,36 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     return { ...user, grade: entryGrade, courseGrade: entryGrade }
   }, [user, pickedEntry])
   // The one subject shown on the home screen for the currently browsed date
-  // — same for every student, rotating on a fixed 6-day cycle (see
-  // getTodaysSubjectId). Recomputed per selectedDate so browsing past days
-  // via the date-nav arrows/calendar shows that day's own rotated subject.
-  const todaysSubjectId = useMemo(() => getTodaysSubjectId(selectedDate), [selectedDate])
+  // — the shared rotation (see getTodaysSubjectId), except that a core
+  // subject this student has left (user.left_subjects, from get-profile) is
+  // swapped for the next one they're still in, the same way submit-answer.js
+  // checks it. A day they already answered always shows the subject they
+  // actually answered, so leaving or rejoining never rewrites past days.
+  // Recomputed per selectedDate so browsing past days shows that day's own
+  // subject.
+  const todaysSubjectId = useMemo(() => {
+    const answered = progress?.history?.find((h) => h.date === selectedDate)
+    if (answered) return answered.subjectId
+    return getDailySubjectIdFor(selectedDate, user.left_subjects || [])
+  }, [selectedDate, progress, user.left_subjects])
+
+  // left_subjects only comes from get-profile, not the login/signup
+  // responses — fetch the profile once if this session's user object
+  // predates it, so Today's Question is right from the first screen.
+  useEffect(() => {
+    if (user.left_subjects !== undefined) return
+    getCurrentUser().then((fresh) => {
+      if (fresh) onUserUpdate(fresh)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.left_subjects])
+
+  // After leaving or rejoining a core class: the profile's left_subjects
+  // (and so Today's Question) changes.
+  async function refreshProfile() {
+    const fresh = await getCurrentUser()
+    if (fresh) onUserUpdate(fresh)
+  }
   const todaysSubject = useMemo(() => getSubject(todaysSubjectId), [todaysSubjectId])
   const greetingName = user.display_name || user.username
   const avatarPrefix = user.avatar ? `${user.avatar} ` : ''
@@ -861,13 +889,23 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         currentUnitTitle={pickedEntry?.currentUnitTitle}
         classCreatedAt={pickedEntry?.classCreatedAt}
         groupCreatedAt={pickedEntry?.groupCreatedAt}
-        joined={Boolean(pickedEntry?.joined)}
+        // A class entry is joined unless it's one the student left (a class
+        // reached from My Classes has no joined flag at all, and is joined).
+        joined={pickedEntry?.kind === 'class' ? !pickedEntry?.left : Boolean(pickedEntry?.joined)}
+        left={Boolean(pickedEntry?.left)}
         addedCourse={Boolean(pickedEntry?.addedCourse)}
         onJoin={async () => {
-          await joinSchoolSubjectGroup(pickedEntry.id)
-          setPickedEntry((e) => (e ? { ...e, joined: true } : e))
+          // A core class the student left comes back through rejoin-class,
+          // which also clears the leave; an elective group joins normally.
+          if (pickedEntry.left) await rejoinClass(pickedEntry.kind, pickedEntry.id)
+          else await joinSchoolSubjectGroup(pickedEntry.id)
+          setPickedEntry((e) => (e ? { ...e, joined: true, left: false } : e))
+          if (pickedEntry.left) await refreshProfile()
         }}
-        onLeave={() => leaveClass(pickedEntry.kind, pickedEntry.id)}
+        onLeave={async () => {
+          await leaveClass(pickedEntry.kind, pickedEntry.id)
+          await refreshProfile()
+        }}
         onRemoveCourse={() => removeCourse(pickedEntry.subject, pickedEntry.grade)}
         onStartHomework={(assignmentId) => {
           const found = homework.find((h) => h.id === assignmentId)

@@ -888,3 +888,22 @@ alter table message_reports enable row level security;
 -- ALTER TABLE uploads ADD COLUMN IF NOT EXISTS course_grade integer;
 -- ALTER TABLE practice_sessions ADD COLUMN IF NOT EXISTS course_grade integer;
 -- ALTER TABLE grades ADD COLUMN IF NOT EXISTS course_grade integer;
+--
+-- Core classes a student chose to leave (see api/_lib/classLeaves.js): the
+-- membership row is deleted as before, and this records the leave so the
+-- card moves to Electives with Rejoin, nothing re-adds them automatically,
+-- and Today's Question swaps that subject's day from left_on onward.
+-- class_type/class_id: a school_subject_groups or classes row. Deleted on
+-- rejoin (by any route: Rejoin, a group's Join, or a teacher's class code).
+--
+-- CREATE TABLE IF NOT EXISTS class_leaves (
+--   id uuid primary key default gen_random_uuid(),
+--   user_id uuid not null references users(id) on delete cascade,
+--   class_type text not null check (class_type in ('group', 'class')),
+--   class_id uuid not null,
+--   subject text not null,
+--   left_on date not null,
+--   created_at timestamptz not null default now(),
+--   unique (user_id, class_type, class_id)
+-- );
+-- ALTER TABLE class_leaves ENABLE ROW LEVEL SECURITY;

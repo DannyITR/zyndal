@@ -39,7 +39,8 @@ export default function ClassCard({
   currentUnitTitle, // 'class' entries only — classes.current_unit_title
   classCreatedAt, // 'class' entries only — bounds the homework calendar's, and (with groupCreatedAt) the Notes Calendar's, earliest month
   groupCreatedAt, // 'group' entries only — bounds the Notes Calendar's earliest month
-  joined, // 'group' entries only — a 'class' entry is always joined
+  joined, // whether the student is currently in this class — false for an unjoined elective group, or a core class they left
+  left, // a core class the student left (see api/_lib/classLeaves.js) — offers Rejoin; their data is all still there
   addedCourse, // a course added from another grade (see src/lib/additionalCourses.js) — offers Remove instead of Leave
   onJoin,
   onLeave,
@@ -257,17 +258,20 @@ export default function ClassCard({
       </div>
 
       {/* Joining is additive, not a gate — Test Prep/Study Guide/Practice/etc.
-          below are usable either way, exactly as before this feature. Only
-          a 'group' entry can be unjoined at all — a 'class' entry means the
-          student is already enrolled/teaching it. Core-subject groups
-          (Math/Science/History & Geography/English/French) are auto-joined
-          the moment a student has both a school and grade set (see
-          api/_lib/coreGroups.js), so this button no longer applies to them
-          — !joined on one of these should only ever be a transient state
-          (auto-join hasn't run yet, or a rare backfill gap), not something
-          a student needs to resolve by hand. Still shown for any future
-          elective group, which stays manually joined. */}
-      {entryKind === 'group' && !joined && !CORE_SUBJECT_IDS.includes(subject.id) && (
+          below are usable either way. Core-subject groups are auto-joined
+          (see api/_lib/coreGroups.js), so the plain Join button below is
+          only for elective groups. A core class the student chose to leave
+          gets Rejoin instead: they come straight back, with everything
+          they'd done still there (api/student/rejoin-class.js). */}
+      {left && (
+        <>
+          <p className="field-hint">{t('classCard.leftNotice')}</p>
+          <button type="button" className="btn btn-primary btn-block" onClick={handleJoin} disabled={joining}>
+            {joining ? t('classCard.joining') : t('classCard.rejoin')}
+          </button>
+        </>
+      )}
+      {!left && entryKind === 'group' && !joined && !CORE_SUBJECT_IDS.includes(subject.id) && (
         <button type="button" className="btn btn-primary btn-block" onClick={handleJoin} disabled={joining}>
           {joining ? t('classCard.joining') : t('classCard.joinGroup')}
         </button>
@@ -331,7 +335,7 @@ export default function ClassCard({
             subject-wide/open forum layered on top. A 'group' entry only
             gets a forum once actually joined; a 'class' entry is always
             joined. */}
-        {(entryKind === 'class' || joined) && (
+        {joined && (
           <button type="button" className="btn btn-secondary btn-small" onClick={() => handleOpenForum()}>
             {t('forum.title')}
           </button>
@@ -344,7 +348,7 @@ export default function ClassCard({
           as they were under the old, now-removed ClassesFlow/
           ClassHomeScreen — this is that same functionality, just reached
           from this one canonical class page instead of a separate one. */}
-      {entryKind === 'class' && (
+      {entryKind === 'class' && joined && (
         <>
           <div className="parent-code-card">
             <p className="parent-code-label">{t('classCard.currentlyStudying')}</p>
@@ -411,17 +415,17 @@ export default function ClassCard({
       </p>
 
       {/* Compact forum preview — same access rule as the Forum button above
-          (a 'group' entry needs joined:true; a 'class' entry is always
-          joined), since there's nothing to preview otherwise. */}
-      {(entryKind === 'class' || joined) && (
+          (only while the student is in the class), since there's nothing to
+          preview otherwise. */}
+      {joined && (
         <ForumThreadPreview classType={entryKind} classId={entryId} onSelectThread={(threadId) => handleOpenForum(threadId)} />
       )}
 
-      {/* Hidden for core-subject groups, same as the Join button above —
-          they're always-on memberships, and leave-class.js refuses them. A
-          course added from another grade is the exception: it's removed
-          (api/student/remove-course.js) rather than left. */}
-      {(addedCourse || !(entryKind === 'group' && CORE_SUBJECT_IDS.includes(subject.id))) && (
+      {/* Any class the student is in can be left. A core class moves to
+          Electives with Rejoin, keeping all their data (leave-class.js); a
+          course added from another grade is removed instead
+          (api/student/remove-course.js). */}
+      {joined && (
         <div className="settings-danger-zone">
           <button type="button" className="btn btn-danger-outline btn-block" onClick={() => setShowLeaveModal(true)}>
             {addedCourse ? t('courses.removeTitle') : t('classCard.leaveTitle')}
@@ -445,7 +449,9 @@ export default function ClassCard({
                   busy: t('courses.removing'),
                   failKey: 'courses.removeFailed',
                 }
-              : undefined
+              : CORE_SUBJECT_IDS.includes(subject.id)
+                ? { warning: t('classCard.leaveCoreWarning', { class: entryKind === 'class' ? entryName : t(`subjects.${subject.id}`) }) }
+                : undefined
           }
           onConfirm={handleLeave}
           onClose={() => setShowLeaveModal(false)}

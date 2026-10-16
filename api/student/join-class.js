@@ -1,5 +1,6 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
+import { clearClassLeave } from '../_lib/classLeaves.js'
 
 function validate(body) {
   if (!body.teacher_code || typeof body.teacher_code !== 'string' || !body.teacher_code.trim()) {
@@ -36,6 +37,7 @@ async function handle({ userId, body }) {
     }
     throw insertError
   }
+  await clearClassLeave(userId, 'class', classRow.id)
 
   return {
     class: {

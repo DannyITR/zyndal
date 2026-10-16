@@ -24,7 +24,7 @@ import AddCourseModal from './AddCourseModal'
 // student is already enrolled/teaching it); a 'group' entry may or may not
 // be.
 function isJoined(entry) {
-  return entry.kind === 'class' || entry.joined
+  return entry.kind === 'class' ? !entry.left : entry.joined
 }
 
 export default function ClassCardsGrid({ onSelectClass, onOpenSettings }) {
@@ -112,8 +112,11 @@ export default function ClassCardsGrid({ onSelectClass, onOpenSettings }) {
   // 5 lands in the Electives section below, regardless of which specific
   // electives that school has (see school_electives/CORE_SUBJECT_IDS'
   // own comments on why this stays a clean, school-agnostic split).
-  const coreEntries = entries.filter((e) => CORE_SUBJECT_IDS.includes(e.subject))
-  const electiveEntries = entries.filter((e) => !CORE_SUBJECT_IDS.includes(e.subject))
+  // A core class the student chose to leave (entry.left — see
+  // api/_lib/classLeaves.js) moves down to Electives with a Join badge until
+  // they rejoin it.
+  const coreEntries = entries.filter((e) => CORE_SUBJECT_IDS.includes(e.subject) && !e.left)
+  const electiveEntries = entries.filter((e) => !CORE_SUBJECT_IDS.includes(e.subject) || e.left)
 
   // Each entry carries its own grade (a course added from another grade, or
   // a Gr 10 class joined for one, isn't the student's grade); a tile whose
@@ -144,9 +147,10 @@ export default function ClassCardsGrid({ onSelectClass, onOpenSettings }) {
             English/French) are auto-joined the moment a student
             has both a school and grade set (see
             api/_lib/coreGroups.js) — no "Join" hint needed for
-            them. This only ever shows for an elective group
-            (compact tiles below), which still requires a manual join. */}
-        {entry.kind === 'group' && !entry.joined && !CORE_SUBJECT_IDS.includes(entry.subject) && (
+            them. This shows for an elective group, which still
+            requires a manual join, or a core class the student left
+            (both in the compact Electives tiles below). */}
+        {(entry.left || (entry.kind === 'group' && !entry.joined && !CORE_SUBJECT_IDS.includes(entry.subject))) && (
           <span className="subject-card-badge subject-card-badge--neutral">{t('home.joinBadge')}</span>
         )}
       </button>

@@ -11,7 +11,8 @@ import {
   COINS_PER_CORRECT,
   LATE_ANSWER_WINDOW_DAYS,
 } from '../../src/lib/streak.js'
-import { getDailyQuestion, SUBJECTS, getTodaysSubjectId } from '../../src/lib/questions.js'
+import { getDailyQuestion, SUBJECTS, getDailySubjectIdFor } from '../../src/lib/questions.js'
+import { getLeftSubjects } from '../_lib/classLeaves.js'
 
 // Backs the home screen's date-nav bar → past date → "Answer now" flow
 // (StudentHome.jsx) — catching up on a subject that was never answered on a
@@ -46,9 +47,10 @@ async function handle({ userId, body }) {
     throw err
   }
 
-  // Only one subject rotates in per day, same for every student (see
-  // getTodaysSubjectId) — reject catch-up answers for any other subject too.
-  if (subject !== getTodaysSubjectId(date)) {
+  // Only one subject rotates in per day (see getTodaysSubjectId), or the
+  // substitute for a core subject the student had left by then
+  // (getDailySubjectIdFor) — reject catch-up answers for any other subject.
+  if (subject !== getDailySubjectIdFor(date, await getLeftSubjects(userId))) {
     const err = new Error("That subject isn't that day's rotated subject.")
     err.status = 400
     err.code = 'VALIDATION_ERROR'
@@ -68,7 +70,9 @@ async function handle({ userId, body }) {
   }
 
   const progress = await getProgressForUser(userId, timezone)
-  const alreadyAnswered = progress.history.some((h) => h.date === date && h.subjectId === subject)
+  // Any answer that day counts — one question per day, whichever subject
+  // it was (see submit-answer.js for why).
+  const alreadyAnswered = progress.history.some((h) => h.date === date)
   if (alreadyAnswered) {
     const err = new Error('This subject has already been answered for that day.')
     err.status = 409

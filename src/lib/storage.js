@@ -1199,7 +1199,12 @@ export async function joinSchoolSubjectGroup(groupId) {
 }
 
 export async function leaveClass(classType, classId) {
-  return callStudentApi('POST', 'leave-class', { class_type: classType, class_id: classId })
+  return callStudentApi('POST', 'leave-class', { class_type: classType, class_id: classId, timezone: getUserTimeZone() })
+}
+
+// Rejoins a core class the student left (see api/student/rejoin-class.js).
+export async function rejoinClass(classType, classId) {
+  return callStudentApi('POST', 'rejoin-class', { class_type: classType, class_id: classId })
 }
 
 // A course from another grade (e.g. Gr 10 Math for a Gr 11 student) — see

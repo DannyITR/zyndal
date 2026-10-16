@@ -2,6 +2,7 @@ import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { SAFE_USER_COLUMNS, getLinkedParentStatus } from '../_lib/db.js'
 import { getSubscriptionStatus, syncTrialExpiry } from '../_lib/subscription.js'
+import { getLeftSubjects } from '../_lib/classLeaves.js'
 
 // Backs getCurrentUser() in src/lib/storage.js for BOTH student and parent
 // accounts — despite the /student/ path (matching the endpoint list this
@@ -33,6 +34,10 @@ async function handle({ userId }) {
     const { linked, parentDeleted } = await getLinkedParentStatus(userId)
     data.has_linked_parent = linked
     data.linked_parent_deleted = parentDeleted
+    // Core subjects the student has left ([{ subject, leftOn }]) — the
+    // client's Today's Question swaps those days for another subject the
+    // same way submit-answer.js checks it (getDailySubjectIdFor).
+    data.left_subjects = await getLeftSubjects(userId)
   }
   // Called on every app mount/session restore (see getCurrentUser in
   // storage.js), so this is the main place — alongside login — that

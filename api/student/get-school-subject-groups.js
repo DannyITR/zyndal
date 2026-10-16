@@ -3,6 +3,7 @@ import { supabase } from '../_lib/auth.js'
 import { SUBJECTS, LIGHT_ELECTIVE_SUBJECTS } from '../../src/lib/questions.js'
 import { resolveClassSubject } from '../_lib/classSubject.js'
 import { getStudentCourses } from '../_lib/studentCourses.js'
+import { getClassLeaves } from '../_lib/classLeaves.js'
 
 // Every subject this endpoint knows how to surface a group/claimed-class
 // entry for — SUBJECTS alone would silently drop a lighter elective's
@@ -77,11 +78,20 @@ async function handle({ userId }) {
   if (myClassesError) throw myClassesError
   const myClassIds = (myClassRows || []).map((c) => c.class_id)
 
-  if (myClassIds.length > 0) {
+  // Core classes the student left (class_leaves — see api/_lib/classLeaves.js)
+  // still get an entry, flagged left and not joined, so the grid can show
+  // them under Electives with a Join button. A left teacher's class has no
+  // class_students row any more, so it's loaded from the leave instead.
+  const leaves = await getClassLeaves(userId)
+  const leftGroupIds = new Set(leaves.filter((l) => l.class_type === 'group').map((l) => l.class_id))
+  const leftClassIds = leaves.filter((l) => l.class_type === 'class' && !myClassIds.includes(l.class_id)).map((l) => l.class_id)
+  const classIdsToShow = [...myClassIds, ...leftClassIds]
+
+  if (classIdsToShow.length > 0) {
     const { data: myClasses, error: classesError } = await supabase
       .from('classes')
       .select('id, name, grade, course_number, subject, current_unit_number, current_unit_title, created_at')
-      .in('id', myClassIds)
+      .in('id', classIdsToShow)
     if (classesError) throw classesError
     for (const c of myClasses || []) {
       const subjectId = resolveClassSubject(c)
@@ -99,6 +109,8 @@ async function handle({ userId }) {
         currentUnitNumber: c.current_unit_number ?? 1,
         currentUnitTitle: c.current_unit_title || null,
         classCreatedAt: c.created_at,
+        joined: !leftClassIds.includes(c.id),
+        left: leftClassIds.includes(c.id),
       })
     }
   }
@@ -114,7 +126,17 @@ async function handle({ userId }) {
   for (const s of ALL_LISTABLE_SUBJECTS) {
     for (const classEntry of classEntriesBySubject[s.id] || []) entries.push(classEntry)
     const group = groupBySubject[s.id]
-    if (group) entries.push({ kind: 'group', id: group.id, subject: s.id, grade: user.grade, joined: joinedGroupIds.has(group.id), groupCreatedAt: group.created_at })
+    if (group) {
+      entries.push({
+        kind: 'group',
+        id: group.id,
+        subject: s.id,
+        grade: user.grade,
+        joined: joinedGroupIds.has(group.id),
+        left: leftGroupIds.has(group.id),
+        groupCreatedAt: group.created_at,
+      })
+    }
     for (const courseGroup of courseGroupsBySubject[s.id] || []) {
       entries.push({
         kind: 'group',
