@@ -1,7 +1,7 @@
 import { createStudentHandler } from './_lib/studentHandler.js'
 import { supabase } from './_lib/auth.js'
 import { sanitizeEmail } from './_lib/sanitize.js'
-import { validateUploadIds, loadOwnedUploads, getOrCreatePackageQuiz } from './_lib/studyQuiz.js'
+import { validateUploadIds, loadOwnedUploads, getPackageQuiz } from './_lib/studyQuiz.js'
 import { sendStudyQuizEmail } from './_lib/resend.js'
 import { buildStudyQuizHtml, worksheetLangFor } from '../src/lib/studyQuizWorksheet.js'
 
@@ -11,7 +11,7 @@ import { buildStudyQuizHtml, worksheetLangFor } from '../src/lib/studyQuizWorksh
 // Not premium-gated: available to every user.
 //
 // The client sends only the upload ids — the worksheet is rebuilt here from
-// the package's saved quiz (the same one the preview loaded via
+// the uploads' saved questions (the same ones the preview loaded via
 // api/generate-study-quiz.js), never from client-supplied HTML, so this
 // can't be used to mail arbitrary content from hello@zyndal.ca.
 //
@@ -87,7 +87,7 @@ async function handle({ userId, body }) {
   let html
   let quiz
   try {
-    quiz = await getOrCreatePackageQuiz({ userId, uploads, user })
+    quiz = await getPackageQuiz({ uploads, user })
     html = buildStudyQuizHtml({
       title: quiz.title,
       subjectId: quiz.subject,

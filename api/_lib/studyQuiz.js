@@ -2,19 +2,21 @@
 // uploads), shared by api/generate-study-quiz.js (the preview) and
 // api/email-study-quiz.js (the send).
 //
-// Two steps, both cached so the preview, the email and re-opening match:
+// The quiz reuses the questions already saved on each selected upload
+// (upload_questions — the same pool the Study Guide practice draws from),
+// combined in upload order with duplicates removed, so it opens with no
+// Claude call. Both the preview and the email read that same table, so they
+// match. See getPackageQuiz.
 //
-// 1. Study guide summary, per upload (uploads.study_guide_summary): every
-//    concept on the upload with its facts, read by Claude from the original
-//    page images when they're stored (shared uploads), else built from the
-//    upload's summary, key concepts, notes and saved Q&A. Rebuilt only when
-//    the upload changes (pages added bump uploads.updated_at).
+// Only an upload with no saved questions at all gets a set generated, from
+// its study guide summary (uploads.study_guide_summary: every concept on
+// the upload with its facts, read from the original page images when
+// they're stored, else built from its summary/key concepts/notes). That
+// set is saved into upload_questions, so it's reused from then on.
 //
-// 2. The quiz itself (study_quizzes), keyed by the student + the selected
-//    upload ids + language: questions written from those summaries to
-//    cover every concept, with no fixed count. It deliberately does NOT
-//    reuse the questions saved on the uploads (upload_questions), which can
-//    be sparse when an extraction went wrong.
+// study_quizzes (one saved set per selection) is no longer written or
+// read: the previous version generated a fresh set per selection and
+// cached it there. The table is left in place.
 import { supabase } from './auth.js'
 import { generateJson, gradeToSecondary } from './anthropic.js'
 import { sanitizeUuid } from './sanitize.js'
@@ -172,7 +174,7 @@ export async function getOrBuildStudyGuideSummary(upload) {
   return summary
 }
 
-// ---------- Step 2: the quiz, per upload package ----------
+// ---------- Step 2: the package's questions ----------
 
 const QUIZ_SCHEMA = {
   type: 'object',
@@ -296,13 +298,11 @@ function toWorksheetQuestions(rows) {
     }))
 }
 
-// Topics in upload order (oldest first), so "Notes 5-8 + Notes 11-13" reads
-// the way the student took them, whatever order they were ticked in.
+// uploads already in upload order (see getPackageQuiz), so "Notes 5-8 +
+// Notes 11-13" reads the way the student took them, whatever order they
+// were ticked in.
 function packageTitle(uploads) {
-  return [...uploads]
-    .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
-    .map((u) => u.topic)
-    .join(' + ')
+  return uploads.map((u) => u.topic).join(' + ')
 }
 
 // The package's subject when every upload shares one, else null (the
@@ -312,66 +312,66 @@ function packageSubject(uploads) {
   return subjects.size === 1 ? uploads[0].subject : null
 }
 
-// Newest change across the package — a saved quiz older than this is
-// rebuilt, so adding pages to one of the uploads is reflected.
-function packageSourceVersion(uploads) {
-  return uploads.map((u) => u.updated_at).sort().at(-1)
-}
-
-async function loadSavedQuiz(userId, uploadIds, language) {
+async function loadSavedQuestions(uploadId) {
   const { data, error } = await supabase
-    .from('study_quizzes')
-    .select('id, title, subject, questions, source_updated_at')
-    .eq('user_id', userId)
-    .eq('upload_key', uploadIds.join(','))
-    .eq('language', language)
-    .maybeSingle()
+    .from('upload_questions')
+    .select('question, correct_answer, options, explanation')
+    .eq('upload_id', uploadId)
+    .order('created_at', { ascending: true })
   if (error) throw error
-  return data
+  return data || []
 }
 
-// Returns { title, subject, questions } for the package, generating and
-// saving it first if it doesn't exist yet or its uploads changed since.
-// uploads: from loadOwnedUploads, ids already normalized.
-export async function getOrCreatePackageQuiz({ userId, uploads, user }) {
-  const uploadIds = uploads.map((u) => u.id)
+// Fallback for an upload with no saved questions at all: writes a full set
+// from its study guide summary (batched by facts, see generateQuizBatch)
+// and saves it into upload_questions, so the next printable quiz — and the
+// Study Guide practice, which reads the same table — reuse it.
+async function generateAndSaveQuestions(upload, user) {
   const language = user?.language_preference || 'English'
-  const sourceVersion = packageSourceVersion(uploads)
-
-  const saved = await loadSavedQuiz(userId, uploadIds, language)
-  if (saved && saved.source_updated_at === sourceVersion) return saved
-
-  const summaries = await Promise.all(uploads.map(getOrBuildStudyGuideSummary))
-  const concepts = summaries.flatMap((s) => s.concepts || [])
-  if (concepts.length === 0) throw noContentError()
+  const { concepts } = await getOrBuildStudyGuideSummary(upload)
+  if (!concepts?.length) return []
 
   const chunks = chunkConceptsByFacts(concepts)
   const batches = await Promise.all(
     chunks.map((chunk, i) => generateQuizBatchWithRetry(chunk, { grade: user?.grade, language, part: chunks.length > 1 ? { index: i + 1, total: chunks.length } : null }))
   )
-  const questions = toWorksheetQuestions(dedupeQuestions(batches.flat()))
+  const rows = toWorksheetQuestions(dedupeQuestions(batches.flat())).map((q) => ({
+    upload_id: upload.id,
+    question: q.question,
+    correct_answer: q.answer,
+    options: q.options,
+    explanation: q.explanation,
+    difficulty: 'medium',
+  }))
+  if (rows.length === 0) return []
+
+  // Two previews opened at once can both get here — whichever saved first
+  // wins, and the other uses those rows instead of adding a second set.
+  const raced = await loadSavedQuestions(upload.id)
+  if (raced.length > 0) return raced
+
+  const { error } = await supabase.from('upload_questions').insert(rows)
+  if (error) throw error
+  return loadSavedQuestions(upload.id)
+}
+
+// Returns { title, subject, questions } for the package. Reuses the
+// questions already saved on each upload (upload_questions — the same
+// pool the Study Guide practice draws from), so for any upload that has
+// some, the preview needs no Claude call at all. Only an upload with none
+// goes through generateAndSaveQuestions. Uploads are combined oldest first,
+// in the order they were taken, with duplicates across them removed.
+// uploads: from loadOwnedUploads.
+export async function getPackageQuiz({ uploads, user }) {
+  const ordered = [...uploads].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
+  const perUpload = await Promise.all(
+    ordered.map(async (upload) => {
+      const saved = await loadSavedQuestions(upload.id)
+      return saved.length > 0 ? saved : generateAndSaveQuestions(upload, user)
+    })
+  )
+  const questions = toWorksheetQuestions(dedupeQuestions(perUpload.flat()))
   if (questions.length === 0) throw noContentError()
 
-  // Two previews of the same package opened at once can both get here —
-  // whichever saved first wins, so both show (and email) the same set.
-  const raced = await loadSavedQuiz(userId, uploadIds, language)
-  if (raced && raced.source_updated_at === sourceVersion) return raced
-
-  const row = {
-    user_id: userId,
-    upload_ids: uploadIds,
-    upload_key: uploadIds.join(','),
-    language,
-    title: packageTitle(uploads),
-    subject: packageSubject(uploads),
-    questions,
-    source_updated_at: sourceVersion,
-  }
-  const { data, error } = await supabase
-    .from('study_quizzes')
-    .upsert(row, { onConflict: 'user_id,upload_key,language' })
-    .select('id, title, subject, questions, source_updated_at')
-    .single()
-  if (error) throw error
-  return data
+  return { title: packageTitle(ordered), subject: packageSubject(ordered), questions }
 }

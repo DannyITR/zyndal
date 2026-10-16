@@ -341,6 +341,11 @@ create index if not exists study_quiz_email_sends_user_created_idx on study_quiz
 -- re-opening all show the same questions. upload_key is the sorted upload
 -- ids joined with commas. source_updated_at is the newest uploads.updated_at
 -- in the package when it was generated, so adding pages rebuilds it.
+--
+-- NO LONGER USED: the printable quiz now reuses each upload's saved
+-- upload_questions (see api/_lib/studyQuiz.js), so nothing reads or writes
+-- this table anymore. Left in place so existing databases don't need a
+-- migration.
 create table if not exists study_quizzes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references users(id) on delete cascade,
