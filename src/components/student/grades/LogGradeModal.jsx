@@ -36,6 +36,7 @@ export default function LogGradeModal({ user, lockedSubjectId, onSaved, onClose 
         gradePercentage: Math.round(Number(gradePercentage)),
         testDate,
         notes: notes.trim() || null,
+        courseGrade: user.courseGrade,
       })
       await onSaved()
     } catch (err) {

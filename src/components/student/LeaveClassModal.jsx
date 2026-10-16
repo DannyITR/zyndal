@@ -5,7 +5,11 @@ import { getErrorMessage } from '../../lib/errors'
 // Lower-friction than DeleteAccountModal's typed "DELETE" confirmation —
 // leaving a class is reversible (rejoin the group anytime, or rejoin a
 // claimed class with its code again), not permanent data loss.
-export default function LeaveClassModal({ classLabel, onConfirm, onClose }) {
+//
+// copy: optional wording overrides ({ title, warning, confirm, busy,
+// failKey }) for the same confirm-and-leave flow with different words —
+// removing a course added from another grade (ClassCard.jsx) uses it.
+export default function LeaveClassModal({ classLabel, copy, onConfirm, onClose }) {
   const { t } = useTranslation()
   const [leaving, setLeaving] = useState(false)
   const [error, setError] = useState('')
@@ -17,7 +21,7 @@ export default function LeaveClassModal({ classLabel, onConfirm, onClose }) {
     try {
       await onConfirm()
     } catch (err) {
-      setError(getErrorMessage(err, t, 'classCard.leaveFailed'))
+      setError(getErrorMessage(err, t, copy?.failKey || 'classCard.leaveFailed'))
       setLeaving(false)
     }
   }
@@ -25,8 +29,8 @@ export default function LeaveClassModal({ classLabel, onConfirm, onClose }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-        <h2 className="modal-title">{t('classCard.leaveTitle')}</h2>
-        <p className="modal-subtitle">{t('classCard.leaveWarning', { class: classLabel })}</p>
+        <h2 className="modal-title">{copy?.title || t('classCard.leaveTitle')}</h2>
+        <p className="modal-subtitle">{copy?.warning || t('classCard.leaveWarning', { class: classLabel })}</p>
 
         {error && <p className="form-error">{error}</p>}
 
@@ -35,7 +39,7 @@ export default function LeaveClassModal({ classLabel, onConfirm, onClose }) {
             {t('common.cancel')}
           </button>
           <button type="button" className="btn btn-danger btn-block" disabled={leaving} onClick={handleConfirm}>
-            {leaving ? t('classCard.leaving') : t('classCard.leaveConfirm')}
+            {leaving ? copy?.busy || t('classCard.leaving') : copy?.confirm || t('classCard.leaveConfirm')}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
+import { validateCourseGrade } from '../_lib/studentCourses.js'
 import { supabase } from '../_lib/auth.js'
 import { getForumMembership } from '../_lib/forumAuth.js'
 import { screenUploadImages } from '../_lib/uploadSafety.js'
@@ -44,6 +45,9 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 // const MAX_PAGES = 10
 
 function validate(body) {
+  const courseGradeError = validateCourseGrade(body)
+  if (courseGradeError) return courseGradeError
+
   const classId = sanitizeUuid(body.class_id)
   if (!classId) return { field: 'class_id', message: 'class_id must be a valid id.' }
   body.class_id = classId
@@ -134,6 +138,7 @@ async function handle({ userId, body }) {
     .from('uploads')
     .insert({
       user_id: userId,
+      course_grade: body.course_grade,
       document_type: documentType,
       subject,
       topic,

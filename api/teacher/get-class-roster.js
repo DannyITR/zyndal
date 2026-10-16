@@ -35,7 +35,7 @@ async function handle({ teacherId, body }) {
   const today = todayStr()
 
   const [usersResult, streaksResult, todayAnswersResult, assignmentsResult, gradesResult] = await Promise.all([
-    supabase.from('users').select('id, username, display_name').in('id', studentIds),
+    supabase.from('users').select('id, username, display_name, grade').in('id', studentIds),
     supabase.from('streaks').select('*').in('user_id', studentIds),
     // "Daily question done today" is independent of this class's own
     // subject — only one subject rotates in as the answerable daily
@@ -51,7 +51,7 @@ async function handle({ teacherId, body }) {
     // tying a grade to "this class" rather than the student's other
     // classes. Skipped entirely if the class's subject can't be resolved
     // (a legacy class with no subject match — see classSubject.js).
-    subject ? supabase.from('grades').select('user_id, grade_percentage').eq('subject', subject).in('user_id', studentIds) : { data: [] },
+    subject ? supabase.from('grades').select('user_id, grade_percentage, course_grade').eq('subject', subject).in('user_id', studentIds) : { data: [] },
   ])
   if (usersResult.error) throw usersResult.error
   if (streaksResult.error) throw streaksResult.error
@@ -77,8 +77,17 @@ async function handle({ teacherId, body }) {
   }
   const homeworkTotal = assignmentIds.length
 
+  // Only grades from this class's grade level: a Gr 11 student in a Gr 10
+  // class (an added course, see src/lib/additionalCourses.js) logs their Gr
+  // 10 results with course_grade 10 and their own Gr 11 results with none,
+  // so a grade counts here when its course_grade — or, if empty, the
+  // student's own grade — matches the class. A class with no grade set, or
+  // a student with no grade at all, keeps every grade for the subject, as
+  // before.
   const gradesByStudent = {}
   for (const g of gradesResult.data || []) {
+    const gradeLevel = g.course_grade ?? userById[g.user_id]?.grade
+    if (classRow.grade && gradeLevel != null && Number(gradeLevel) !== Number(classRow.grade)) continue
     ;(gradesByStudent[g.user_id] ||= []).push(g.grade_percentage)
   }
 

@@ -769,6 +769,21 @@
     "joining": "Adhésion en cours…",
     "join": "Rejoindre"
   },
+  "courses": {
+    "addButton": "+ Ajouter un cours d'un autre niveau",
+    "pickerTitle": "Ajouter un cours d'un autre niveau",
+    "pickerSubtitle": "Tu suis un cours d'un autre niveau cette année — en reprise, ou placé par ton école? Ajoute-le pour avoir sa propre carte de classe avec le contenu de ce niveau.",
+    "subjectWithGrade": "{{subject}} — {{grade}}e année",
+    "add": "Ajouter",
+    "adding": "Ajout…",
+    "added": "Ajouté",
+    "addFailed": "Impossible d'ajouter ce cours. Veuillez réessayer.",
+    "removeTitle": "Retirer ce cours",
+    "removeWarning": "Retirer {{course}} de tes classes? Tes téléversements, pratiques et notes de ce cours sont conservés.",
+    "removeConfirm": "Retirer",
+    "removing": "Retrait…",
+    "removeFailed": "Impossible de retirer ce cours. Veuillez réessayer."
+  },
   "studyQuiz": {
     "printableQuizSelected_one": "Quiz à imprimer ({{count}} téléversement)",
     "printableQuizSelected_other": "Quiz à imprimer ({{count}} téléversements)",
@@ -806,6 +821,9 @@
     "EMAIL_EXISTS": "Un compte avec ce courriel existe déjà.",
     "EXPIRED_TOKEN": "Ce lien a expiré.",
     "FORBIDDEN": "Vous n'avez pas la permission de faire cela.",
+    "COURSE_NOT_OFFERED": "Ce cours ne peut pas être ajouté pour ton niveau.",
+    "COURSE_NOT_AT_SCHOOL": "Ton école n'offre pas ce cours.",
+    "NO_SCHOOL": "Choisis d'abord ton école dans les Paramètres.",
     "AI_RESPONSE_CUT_OFF": "La réponse de l'IA a été coupée avant la fin. Veuillez réessayer.",
     "NO_QUIZ_CONTENT": "Ce téléversement n'a pas assez de contenu pour créer un quiz.",
     "STUDY_QUIZ_EMAIL_LIMIT": "Tu peux envoyer jusqu'à 5 quiz par heure. Réessaie plus tard.",

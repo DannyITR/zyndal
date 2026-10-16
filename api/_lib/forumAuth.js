@@ -7,8 +7,9 @@ import { CORE_SUBJECT_IDS } from '../../src/lib/questions.js'
 // then 403'd his shared-notes upload), or a gap autoJoinCoreGroups never
 // covered (it only runs on a school/grade change, not at signup). Rather
 // than deny a student their own school+grade's core group, recreate the
-// row on the spot. Never applies to electives, which stay opt-in, or to
-// another school's/grade's group.
+// row on the spot. Also covers another grade's core group the student has
+// added as a course (student_courses), which works the same way. Never
+// applies to electives, which stay opt-in, or to another school's group.
 async function restoreCoreGroupMembership(userId, groupId) {
   const { data: group, error: groupError } = await supabase
     .from('school_subject_groups')
@@ -20,7 +21,20 @@ async function restoreCoreGroupMembership(userId, groupId) {
 
   const { data: user, error: userError } = await supabase.from('users').select('account_type, school_id, grade').eq('id', userId).maybeSingle()
   if (userError) throw userError
-  if (!user || user.account_type !== 'student' || user.school_id !== group.school_id || Number(user.grade) !== Number(group.grade)) return false
+  if (!user || user.account_type !== 'student' || user.school_id !== group.school_id) return false
+  // Their own grade's group, or one they've added as a course from another
+  // grade (student_courses — see api/student/add-course.js).
+  if (Number(user.grade) !== Number(group.grade)) {
+    const { data: course, error: courseError } = await supabase
+      .from('student_courses')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('subject', group.subject)
+      .eq('grade', group.grade)
+      .maybeSingle()
+    if (courseError) throw courseError
+    if (!course) return false
+  }
 
   const { error: joinError } = await supabase
     .from('school_subject_group_students')

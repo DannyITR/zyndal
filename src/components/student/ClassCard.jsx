@@ -40,8 +40,10 @@ export default function ClassCard({
   classCreatedAt, // 'class' entries only — bounds the homework calendar's, and (with groupCreatedAt) the Notes Calendar's, earliest month
   groupCreatedAt, // 'group' entries only — bounds the Notes Calendar's earliest month
   joined, // 'group' entries only — a 'class' entry is always joined
+  addedCourse, // a course added from another grade (see src/lib/additionalCourses.js) — offers Remove instead of Leave
   onJoin,
   onLeave,
+  onRemoveCourse, // addedCourse only
   onStartHomework, // 'class' entries only — (assignmentId) => boolean, see StudentFlow.jsx
   onOpenForum,
   onOpenTestPrep,
@@ -77,7 +79,13 @@ export default function ClassCard({
   const [groupUploadsDayDetail, setGroupUploadsDayDetail] = useState(null)
 
   const displayStreak = getEffectiveStreak(progress, today)
-  const planForThisSubject = activePlan && activePlan.subject === subject.id ? activePlan : null
+  // This card's grade when it isn't the student's own (an added course, or
+  // a Gr 10 class joined for one) — labels the card and keeps the other
+  // grade's Test Prep plan for the same subject off it.
+  const otherGrade = grade && Number(grade) !== Number(user.grade) ? Number(grade) : null
+  const planGrade = activePlan?.grade_level ?? user.grade
+  const planForThisSubject =
+    activePlan && activePlan.subject === subject.id && (!grade || Number(planGrade) === Number(grade)) ? activePlan : null
   // A "lighter-featured" elective (Woodwork/Art/Music/Cooking/Drama/
   // Leadership — see school_electives) only ever gets Forum, the Group
   // Notes Calendar, and Curriculum — no daily-question-adjacent content
@@ -152,7 +160,7 @@ export default function ClassCard({
   // catches a thrown error and stays open, so onBack only ever runs on
   // success.
   async function handleLeave() {
-    await onLeave()
+    await (addedCourse ? onRemoveCourse() : onLeave())
     onBack()
   }
 
@@ -235,7 +243,7 @@ export default function ClassCard({
   return (
     <div className="screen student-screen">
       <TopBar
-        title={`${subject.icon} ${t(`subjects.${subject.id}`)}`}
+        title={`${subject.icon} ${otherGrade ? t('courses.subjectWithGrade', { subject: t(`subjects.${subject.id}`), grade: otherGrade }) : t(`subjects.${subject.id}`)}`}
         username={user.username}
         onLogout={onLogout}
         onBack={onBack}
@@ -410,11 +418,13 @@ export default function ClassCard({
       )}
 
       {/* Hidden for core-subject groups, same as the Join button above —
-          they're always-on memberships, and leave-class.js refuses them. */}
-      {!(entryKind === 'group' && CORE_SUBJECT_IDS.includes(subject.id)) && (
+          they're always-on memberships, and leave-class.js refuses them. A
+          course added from another grade is the exception: it's removed
+          (api/student/remove-course.js) rather than left. */}
+      {(addedCourse || !(entryKind === 'group' && CORE_SUBJECT_IDS.includes(subject.id))) && (
         <div className="settings-danger-zone">
           <button type="button" className="btn btn-danger-outline btn-block" onClick={() => setShowLeaveModal(true)}>
-            {t('classCard.leaveTitle')}
+            {addedCourse ? t('courses.removeTitle') : t('classCard.leaveTitle')}
           </button>
         </div>
       )}
@@ -426,6 +436,17 @@ export default function ClassCard({
       {showLeaveModal && (
         <LeaveClassModal
           classLabel={entryKind === 'class' ? entryName : t(`subjects.${subject.id}`)}
+          copy={
+            addedCourse
+              ? {
+                  title: t('courses.removeTitle'),
+                  warning: t('courses.removeWarning', { course: t('courses.subjectWithGrade', { subject: t(`subjects.${subject.id}`), grade }) }),
+                  confirm: t('courses.removeConfirm'),
+                  busy: t('courses.removing'),
+                  failKey: 'courses.removeFailed',
+                }
+              : undefined
+          }
           onConfirm={handleLeave}
           onClose={() => setShowLeaveModal(false)}
         />

@@ -769,6 +769,21 @@
     "joining": "Uniéndose…",
     "join": "Unirse"
   },
+  "courses": {
+    "addButton": "+ Agregar un curso de otro grado",
+    "pickerTitle": "Agregar un curso de otro grado",
+    "pickerSubtitle": "¿Tomas un curso de otro grado este año, porque lo repites o tu escuela te ubicó en él? Agrégalo para tener su propia tarjeta de clase con el contenido de ese grado.",
+    "subjectWithGrade": "{{subject}} — {{grade}}.°",
+    "add": "Agregar",
+    "adding": "Agregando…",
+    "added": "Agregado",
+    "addFailed": "No se pudo agregar ese curso. Inténtalo de nuevo.",
+    "removeTitle": "Quitar este curso",
+    "removeWarning": "¿Quitar {{course}} de tus clases? Se conservan tus subidas, prácticas y notas de ese curso.",
+    "removeConfirm": "Quitar",
+    "removing": "Quitando…",
+    "removeFailed": "No se pudo quitar ese curso. Inténtalo de nuevo."
+  },
   "studyQuiz": {
     "printableQuizSelected_one": "Cuestionario para imprimir ({{count}} subida)",
     "printableQuizSelected_other": "Cuestionario para imprimir ({{count}} subidas)",
@@ -806,6 +821,9 @@
     "EMAIL_EXISTS": "Ya existe una cuenta con este correo.",
     "EXPIRED_TOKEN": "Este enlace ha expirado.",
     "FORBIDDEN": "No tienes permiso para hacer eso.",
+    "COURSE_NOT_OFFERED": "Ese curso no se puede agregar para tu grado.",
+    "COURSE_NOT_AT_SCHOOL": "Tu escuela no ofrece ese curso.",
+    "NO_SCHOOL": "Primero elige tu escuela en Configuración.",
     "AI_RESPONSE_CUT_OFF": "La respuesta de la IA se cortó antes de terminar. Inténtalo de nuevo.",
     "NO_QUIZ_CONTENT": "Esta subida no tiene suficiente contenido para crear un cuestionario.",
     "STUDY_QUIZ_EMAIL_LIMIT": "Puedes enviar hasta 5 cuestionarios por hora. Inténtalo más tarde.",

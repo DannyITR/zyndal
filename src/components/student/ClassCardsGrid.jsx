@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getMySchoolSubjectGroups } from '../../lib/storage'
 import { getSubject, CORE_SUBJECT_IDS } from '../../lib/questions'
+import { getAdditionalCourseOptions } from '../../lib/additionalCourses'
+import AddCourseModal from './AddCourseModal'
 
 // One tile per class the student belongs to (or could join) on the home
 // screen, below the Today's Question card — reuses the exact
@@ -33,17 +35,26 @@ export default function ClassCardsGrid({ onSelectClass, onOpenSettings }) {
   const [schoolName, setSchoolName] = useState(null)
   const [grade, setGrade] = useState(null)
   const [loadError, setLoadError] = useState('')
+  const [showAddCourse, setShowAddCourse] = useState(false)
+
+  function applyData(data) {
+    setHasSchool(Boolean(data.schoolId))
+    setHasGrade(Boolean(data.grade))
+    setSchoolName(data.schoolName)
+    setGrade(data.grade)
+    setEntries(data.entries)
+  }
+
+  // Refetch after adding a course, so its new Class Card appears right away.
+  async function reload() {
+    applyData(await getMySchoolSubjectGroups())
+  }
 
   useEffect(() => {
     let cancelled = false
     getMySchoolSubjectGroups()
       .then((data) => {
-        if (cancelled) return
-        setHasSchool(Boolean(data.schoolId))
-        setHasGrade(Boolean(data.grade))
-        setSchoolName(data.schoolName)
-        setGrade(data.grade)
-        setEntries(data.entries)
+        if (!cancelled) applyData(data)
       })
       .catch(() => {
         // Previously left `entries` at null forever on any failure, which
@@ -104,20 +115,30 @@ export default function ClassCardsGrid({ onSelectClass, onOpenSettings }) {
   const coreEntries = entries.filter((e) => CORE_SUBJECT_IDS.includes(e.subject))
   const electiveEntries = entries.filter((e) => !CORE_SUBJECT_IDS.includes(e.subject))
 
+  // Each entry carries its own grade (a course added from another grade, or
+  // a Gr 10 class joined for one, isn't the student's grade); a tile whose
+  // grade differs is labelled with it, e.g. "History & Geography — Gr 10".
+  const courseOptions = getAdditionalCourseOptions(grade)
+  const addedCourseKeys = entries.filter((e) => e.addedCourse).map((e) => `${e.subject}:${e.grade}`)
+
   function renderTile(entry, { compact } = {}) {
     const subject = getSubject(entry.subject)
+    const entryGrade = entry.grade ?? grade
+    const subjectName = t(`subjects.${subject.id}`)
     return (
       <button
         key={`${entry.kind}-${entry.id}`}
         type="button"
         className={compact ? 'subject-card subject-card--compact' : 'subject-card'}
         style={{ '--subject-color': subject.color }}
-        onClick={() => onSelectClass({ ...entry, schoolName, grade })}
+        onClick={() => onSelectClass({ ...entry, schoolName, grade: entryGrade })}
       >
         <span className="subject-card-icon">{subject.icon}</span>
-        <span className="subject-card-name">{t(`subjects.${subject.id}`)}</span>
+        <span className="subject-card-name">
+          {Number(entryGrade) !== Number(grade) ? t('courses.subjectWithGrade', { subject: subjectName, grade: entryGrade }) : subjectName}
+        </span>
         <span className="subject-card-detail">
-          {entry.kind === 'class' ? entry.name : t('classCard.unclaimedStatus', { grade, school: schoolName })}
+          {entry.kind === 'class' ? entry.name : t('classCard.unclaimedStatus', { grade: entryGrade, school: schoolName })}
         </span>
         {/* Core-subject groups (Math/Science/History & Geography/
             English/French) are auto-joined the moment a student
@@ -159,8 +180,18 @@ export default function ClassCardsGrid({ onSelectClass, onOpenSettings }) {
               </div>
             </>
           )}
+
+          {/* Courses from another grade (e.g. Gr 10 Math for a Gr 11
+              student) — only shown when the student's grade has some on
+              offer (src/lib/additionalCourses.js). */}
+          {courseOptions.length > 0 && (
+            <button type="button" className="btn btn-secondary btn-small add-course-button" onClick={() => setShowAddCourse(true)}>
+              {t('courses.addButton')}
+            </button>
+          )}
         </>
       )}
+      {showAddCourse && <AddCourseModal studentGrade={grade} addedKeys={addedCourseKeys} onAdded={reload} onClose={() => setShowAddCourse(false)} />}
     </div>
   )
 }

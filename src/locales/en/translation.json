@@ -769,6 +769,21 @@
     "joining": "Joining…",
     "join": "Join"
   },
+  "courses": {
+    "addButton": "+ Add a course from another grade",
+    "pickerTitle": "Add a course from another grade",
+    "pickerSubtitle": "Taking a course from another grade this year — repeating one, or placed in it by your school? Add it to get its own class card with that grade's content.",
+    "subjectWithGrade": "{{subject}} — Gr {{grade}}",
+    "add": "Add",
+    "adding": "Adding…",
+    "added": "Added",
+    "addFailed": "Couldn't add that course. Please try again.",
+    "removeTitle": "Remove this course",
+    "removeWarning": "Remove {{course}} from your classes? Your uploads, practice and grades from it are kept.",
+    "removeConfirm": "Remove",
+    "removing": "Removing…",
+    "removeFailed": "Couldn't remove that course. Please try again."
+  },
   "studyQuiz": {
     "printableQuizSelected_one": "Printable quiz ({{count}} upload)",
     "printableQuizSelected_other": "Printable quiz ({{count}} uploads)",
@@ -806,6 +821,9 @@
     "EMAIL_EXISTS": "An account with this email already exists.",
     "EXPIRED_TOKEN": "This link has expired.",
     "FORBIDDEN": "You don't have permission to do that.",
+    "COURSE_NOT_OFFERED": "That course can't be added for your grade.",
+    "COURSE_NOT_AT_SCHOOL": "Your school doesn't offer that course.",
+    "NO_SCHOOL": "Set your school in Settings first.",
     "AI_RESPONSE_CUT_OFF": "The AI response was cut off before it finished. Please try again.",
     "NO_QUIZ_CONTENT": "This upload doesn't have enough content to build a quiz from.",
     "STUDY_QUIZ_EMAIL_LIMIT": "You can email up to 5 quizzes per hour. Please try again later.",

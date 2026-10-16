@@ -2,6 +2,7 @@ import { createStudentHandler } from '../_lib/studentHandler.js'
 import { supabase } from '../_lib/auth.js'
 import { SUBJECTS, LIGHT_ELECTIVE_SUBJECTS } from '../../src/lib/questions.js'
 import { resolveClassSubject } from '../_lib/classSubject.js'
+import { getStudentCourses } from '../_lib/studentCourses.js'
 
 // Every subject this endpoint knows how to surface a group/claimed-class
 // entry for — SUBJECTS alone would silently drop a lighter elective's
@@ -44,6 +45,24 @@ async function handle({ userId }) {
     .eq('grade', user.grade)
   if (groupsError) throw groupsError
 
+  // Courses added from another grade (student_courses — see
+  // api/student/add-course.js): each gets its own group entry, at that
+  // grade, right after the student's own entries for the same subject.
+  const courses = await getStudentCourses(userId, user.grade)
+  const courseGroupsBySubject = {}
+  if (courses.length > 0) {
+    const { data: courseGroups, error: courseGroupsError } = await supabase
+      .from('school_subject_groups')
+      .select('id, subject, grade, created_at')
+      .eq('school_id', user.school_id)
+      .in('grade', [...new Set(courses.map((c) => c.grade))])
+    if (courseGroupsError) throw courseGroupsError
+    for (const c of courses) {
+      const group = (courseGroups || []).find((g) => g.subject === c.subject && Number(g.grade) === Number(c.grade))
+      if (group) (courseGroupsBySubject[c.subject] ||= []).push(group)
+    }
+  }
+
   const { data: memberships, error: membershipsError } = await supabase
     .from('school_subject_group_students')
     .select('group_id')
@@ -61,7 +80,7 @@ async function handle({ userId }) {
   if (myClassIds.length > 0) {
     const { data: myClasses, error: classesError } = await supabase
       .from('classes')
-      .select('id, name, course_number, subject, current_unit_number, current_unit_title, created_at')
+      .select('id, name, grade, course_number, subject, current_unit_number, current_unit_title, created_at')
       .in('id', myClassIds)
     if (classesError) throw classesError
     for (const c of myClasses || []) {
@@ -72,6 +91,9 @@ async function handle({ userId }) {
         kind: 'class',
         id: c.id,
         subject: subjectId,
+        // The class's own grade, not the student's — a Gr 10 class joined
+        // for an added course shows and behaves as Gr 10.
+        grade: c.grade ?? user.grade,
         name: c.name,
         courseNumber: c.course_number,
         currentUnitNumber: c.current_unit_number ?? 1,
@@ -92,7 +114,20 @@ async function handle({ userId }) {
   for (const s of ALL_LISTABLE_SUBJECTS) {
     for (const classEntry of classEntriesBySubject[s.id] || []) entries.push(classEntry)
     const group = groupBySubject[s.id]
-    if (group) entries.push({ kind: 'group', id: group.id, subject: s.id, joined: joinedGroupIds.has(group.id), groupCreatedAt: group.created_at })
+    if (group) entries.push({ kind: 'group', id: group.id, subject: s.id, grade: user.grade, joined: joinedGroupIds.has(group.id), groupCreatedAt: group.created_at })
+    for (const courseGroup of courseGroupsBySubject[s.id] || []) {
+      entries.push({
+        kind: 'group',
+        id: courseGroup.id,
+        subject: s.id,
+        grade: courseGroup.grade,
+        // Added from another grade — the card offers Remove instead of
+        // Leave (see ClassCard.jsx / api/student/remove-course.js).
+        addedCourse: true,
+        joined: joinedGroupIds.has(courseGroup.id),
+        groupCreatedAt: courseGroup.created_at,
+      })
+    }
   }
 
   return {

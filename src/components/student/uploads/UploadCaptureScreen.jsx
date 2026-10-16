@@ -155,6 +155,7 @@ export default function UploadCaptureScreen({
           aiResult: sharedAiResult,
           encodedFiles: aiResult.encodedFiles,
           pagesCount: files.length,
+          courseGrade: user.courseGrade,
         })
         onSaved(saved)
       } else {
@@ -168,6 +169,7 @@ export default function UploadCaptureScreen({
           notes: notes.trim() || null,
           aiResult,
           pagesCount: files.length,
+          courseGrade: user.courseGrade,
         })
         onSaved(saved)
       }

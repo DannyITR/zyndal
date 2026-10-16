@@ -6,6 +6,7 @@ import { formatShortDate } from '../../../lib/uploads'
 import TopBar from '../../shared/TopBar'
 import ConfirmDeleteContentModal from '../../shared/forum/ConfirmDeleteContentModal'
 import GradeBadge from './GradeBadge'
+import { matchesCourseGrade } from '../../../lib/additionalCourses'
 
 const DOCUMENT_TYPE_ICON = { test: '📝', worksheet: '📋', textbook: '📖', notes: '🗒️' }
 
@@ -35,7 +36,7 @@ export default function UploadsLibraryScreen({ user, lockedSubjectId, onSelectUp
 
   const filteredUploads = uploads
     ? lockedSubjectId
-      ? uploads.filter((u) => u.subject === lockedSubjectId)
+      ? uploads.filter((u) => u.subject === lockedSubjectId && matchesCourseGrade(u, user.courseGrade))
       : uploads
     : null
 

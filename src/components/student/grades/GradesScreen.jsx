@@ -4,6 +4,7 @@ import { getGradesForUser } from '../../../lib/storage'
 import { averageGrade, computeSubjectAverages, gradeBand } from '../../../lib/grades'
 import TopBar from '../../shared/TopBar'
 import LogGradeModal from './LogGradeModal'
+import { matchesCourseGrade } from '../../../lib/additionalCourses'
 
 export default function GradesScreen({ user, lockedSubjectId, onBack, onLogout, onLogoClick }) {
   const [grades, setGrades] = useState(null)
@@ -26,7 +27,7 @@ export default function GradesScreen({ user, lockedSubjectId, onBack, onLogout, 
 
   const filteredGrades = grades
     ? lockedSubjectId
-      ? grades.filter((g) => g.subject === lockedSubjectId)
+      ? grades.filter((g) => g.subject === lockedSubjectId && matchesCourseGrade(g, user.courseGrade))
       : grades
     : null
 

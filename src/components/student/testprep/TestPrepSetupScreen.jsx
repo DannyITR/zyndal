@@ -53,7 +53,7 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
     if (!canSubmit) return
     setError('')
     try {
-      const content = await getUploadedContentForSubject(user.id, subjectId)
+      const content = await getUploadedContentForSubject(user.id, subjectId, user.courseGrade)
       setUploadContent(content)
       setStep('source')
     } catch (err) {
@@ -82,7 +82,8 @@ export default function TestPrepSetupScreen({ user, lockedSubjectId, onPlanCreat
           subjectId,
           subject.name,
           Number(grade),
-          setGeneratingLabel
+          setGeneratingLabel,
+          user.courseGrade
         )
         if (source === 'uploads') {
           if (uploadedQuestions.length === 0) throw new Error("Couldn't build questions from your uploads. Please try Curriculum Guide instead.")

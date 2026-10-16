@@ -1,4 +1,5 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
+import { validateCourseGrade } from '../_lib/studentCourses.js'
 import { supabase } from '../_lib/auth.js'
 import { getLinkedParents } from '../_lib/db.js'
 // Upload paths are no longer premium-gated (all features unlocked) —
@@ -20,6 +21,9 @@ import { centsToDisplay } from '../../src/lib/money.js'
 // graded test would silently stop ever suggesting a payout bonus to the
 // parent.
 function validate(body) {
+  const courseGradeError = validateCourseGrade(body)
+  if (courseGradeError) return courseGradeError
+
   const subject = sanitizeSubject(body.subject)
   if (!subject) return { field: 'subject', message: 'subject must be one of Math, Science, History, Geography, English, French.' }
   body.subject = subject
@@ -96,6 +100,7 @@ async function handle({ userId, body }) {
     .from('uploads')
     .insert({
       user_id: userId,
+      course_grade: body.course_grade,
       document_type: documentType,
       subject,
       topic,

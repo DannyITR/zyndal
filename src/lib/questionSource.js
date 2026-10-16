@@ -86,8 +86,8 @@ export function resolveGenerationLanguage(user) {
 // subject's uploaded content combined, so a "mix" session's AI-supplemented
 // questions come out in the same language as the student's own material
 // instead of the AI's default.
-export async function resolveUploadQuestionPool(userId, subject, subjectName, grade, onStatusChange) {
-  const content = await getUploadedContentForSubject(userId, subject)
+export async function resolveUploadQuestionPool(userId, subject, subjectName, grade, onStatusChange, courseGrade = null) {
+  const content = await getUploadedContentForSubject(userId, subject, courseGrade)
   const language = detectLanguageFromContent(
     content
       .map((upload) => upload.summary)

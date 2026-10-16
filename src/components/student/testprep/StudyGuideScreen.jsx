@@ -45,7 +45,11 @@ function writeCache(userId, subjectId, guide) {
 export default function StudyGuideScreen({ user, subject: lockedSubject, onBack, onLogout, onLogoClick }) {
   const { t } = useTranslation()
   const subject = lockedSubject || getTodaysGuideSubject()
-  const [guide, setGuide] = useState(() => readCache(user.id, subject.id))
+  // A course added from another grade (user.courseGrade — see
+  // src/lib/additionalCourses.js) keeps its own day's guide, so Gr 10 and
+  // Gr 11 Math don't overwrite each other's cached guide.
+  const cacheSubjectKey = user.courseGrade ? `${subject.id}_g${user.courseGrade}` : subject.id
+  const [guide, setGuide] = useState(() => readCache(user.id, cacheSubjectKey))
   // Always shown first, even if today's guide is already cached — picking a
   // source is how the student starts a guide, not just a one-time-per-day
   // fork. If they re-pick the same source Continue reuses the cached guide
@@ -61,7 +65,7 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
   useEffect(() => {
     if (step !== 'source') return
     let cancelled = false
-    getUploadedContentForSubject(user.id, subject.id)
+    getUploadedContentForSubject(user.id, subject.id, user.courseGrade)
       .then((content) => {
         if (cancelled) return
         setUploadContent(content)
@@ -76,7 +80,7 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
     return () => {
       cancelled = true
     }
-  }, [step, user.id, subject.id])
+  }, [step, user.id, subject.id, user.courseGrade])
 
   async function handleGenerate(source) {
     setError('')
@@ -85,7 +89,7 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
     // Reuse today's guide if it was already generated from this same
     // source — keeps recorded progress and avoids a pointless regenerate
     // when the student is just re-opening what they already started today.
-    const cached = readCache(user.id, subject.id)
+    const cached = readCache(user.id, cacheSubjectKey)
     if (cached && cached.source === source) {
       setGuide(cached)
       setStep('guide')
@@ -105,7 +109,8 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
           subject.id,
           subject.name,
           user.grade || 9,
-          setGeneratingLabel
+          setGeneratingLabel,
+          user.courseGrade
         )
         if (source === 'uploads') {
           if (uploadedQuestions.length === 0) throw new Error("Couldn't build questions from your uploads. Please try Curriculum Guide instead.")
@@ -117,7 +122,7 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
         }
       }
       const fresh = { ...result, subjectId: subject.id, progress: {}, source }
-      writeCache(user.id, subject.id, fresh)
+      writeCache(user.id, cacheSubjectKey, fresh)
       setGuide(fresh)
       setStep('guide')
     } catch (err) {
@@ -133,7 +138,7 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
       ...guide,
       progress: { ...(guide.progress || {}), [questionIndex]: { selectedIndex, correct } },
     }
-    writeCache(user.id, subject.id, updated)
+    writeCache(user.id, cacheSubjectKey, updated)
     setGuide(updated)
   }
 

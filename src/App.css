@@ -6641,3 +6641,44 @@ div.zyndal-logo {
   color: var(--text-dim);
   font-weight: 600;
 }
+
+/* ---------- Courses from another grade ---------- */
+.add-course-button {
+  align-self: flex-start;
+  margin-top: 12px;
+}
+
+.add-course-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.add-course-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--card-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.add-course-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.add-course-row .btn {
+  flex-shrink: 0;
+}
+
+.add-course-added {
+  flex-shrink: 0;
+  color: var(--green-text);
+  font-weight: 600;
+  font-size: 14px;
+}

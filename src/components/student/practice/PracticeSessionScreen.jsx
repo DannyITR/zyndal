@@ -43,6 +43,7 @@ export default function PracticeSessionScreen({
         topic,
         questionsCorrect,
         questionsTotal,
+        courseGrade: user.courseGrade,
       })
       onFinished({
         questionsCorrect: session.questions_correct,

@@ -15,6 +15,7 @@ import {
   getMyHomework,
   joinSchoolSubjectGroup,
   leaveClass,
+  removeCourse,
   getStudentClasses,
   getConversations,
 } from '../../lib/storage'
@@ -481,6 +482,19 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
     () => (pickedClassSubjectId ? getSubject(pickedClassSubjectId) : null),
     [pickedClassSubjectId]
   )
+  // Inside a Class Card for another grade — a course added from another
+  // grade (e.g. Gr 10 Math for a Gr 11 student, see
+  // src/lib/additionalCourses.js) or a Gr 10 class joined for one — every
+  // screen the card opens works at that grade. They all read user.grade, so
+  // they get a copy with that grade swapped in, plus courseGrade so what
+  // they save (uploads, practice, grades) is tagged to that course and the
+  // lists they show are filtered to it. Any other card, or none, keeps the
+  // real user.
+  const courseUser = useMemo(() => {
+    const entryGrade = Number(pickedEntry?.grade)
+    if (!entryGrade || entryGrade === Number(user.grade)) return user
+    return { ...user, grade: entryGrade, courseGrade: entryGrade }
+  }, [user, pickedEntry])
   // The one subject shown on the home screen for the currently browsed date
   // — same for every student, rotating on a fixed 6-day cycle (see
   // getTodaysSubjectId). Recomputed per selectedDate so browsing past days
@@ -617,7 +631,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   if (showTestPrepSetup) {
     return (
       <TestPrepSetupScreen
-        user={user}
+        user={courseUser}
         lockedSubjectId={pickedClassSubjectId}
         onPlanCreated={(plan) => {
           setActivePlan(plan)
@@ -634,7 +648,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   if (showStudyPlan && activePlan) {
     return (
       <StudyPlanScreen
-        user={user}
+        user={courseUser}
         plan={activePlan}
         onPlanUpdate={setActivePlan}
         onBack={() => setShowStudyPlan(false)}
@@ -647,7 +661,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   if (showStudyGuide) {
     return (
       <StudyGuideScreen
-        user={user}
+        user={courseUser}
         subject={activeClassSubject}
         onBack={() => setShowStudyGuide(false)}
         onLogout={onLogout}
@@ -670,7 +684,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
       : null
     return (
       <UploadsFlow
-        user={user}
+        user={courseUser}
         initialView={uploadsView}
         lockedSubjectId={pickedClassSubjectId}
         classContext={classContext}
@@ -688,7 +702,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   if (showPractice) {
     return (
       <PracticeFlow
-        user={user}
+        user={courseUser}
         lockedSubjectId={pickedClassSubjectId}
         onExit={() => setShowPractice(false)}
         onLogout={onLogout}
@@ -700,7 +714,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   if (showGrades) {
     return (
       <GradesScreen
-        user={user}
+        user={courseUser}
         lockedSubjectId={pickedClassSubjectId}
         onBack={() => setShowGrades(false)}
         onLogout={onLogout}
@@ -741,7 +755,7 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
   if (showCurriculum && curriculumSubject) {
     return (
       <CurriculumOutlineScreen
-        user={user}
+        user={courseUser}
         subject={curriculumSubject}
         initialUnitNumber={curriculumFocus?.unitNumber}
         initialTopicTitle={curriculumFocus?.topicTitle}
@@ -848,11 +862,13 @@ export default function StudentFlow({ user, onLogout, onUserUpdate }) {
         classCreatedAt={pickedEntry?.classCreatedAt}
         groupCreatedAt={pickedEntry?.groupCreatedAt}
         joined={Boolean(pickedEntry?.joined)}
+        addedCourse={Boolean(pickedEntry?.addedCourse)}
         onJoin={async () => {
           await joinSchoolSubjectGroup(pickedEntry.id)
           setPickedEntry((e) => (e ? { ...e, joined: true } : e))
         }}
         onLeave={() => leaveClass(pickedEntry.kind, pickedEntry.id)}
+        onRemoveCourse={() => removeCourse(pickedEntry.subject, pickedEntry.grade)}
         onStartHomework={(assignmentId) => {
           const found = homework.find((h) => h.id === assignmentId)
           if (!found || !found.questions) return false

@@ -8,6 +8,7 @@
 // callApi below. See src/lib/codes.js and src/lib/supabaseClient.js, both
 // deleted this session as a result (nothing imports them anymore).
 import { getUserTimeZone } from './timezone'
+import { matchesCourseGrade } from './additionalCourses'
 
 const SESSION_KEY = 'zyndal_session'
 
@@ -752,8 +753,9 @@ export async function requestPayout(coinAmount, note) {
 // One call to persist everything from a processed upload: the uploads row
 // and its extracted questions (and, server-side, the grade-bonus check for
 // a graded test).
-export async function saveUpload({ userId: _userId, documentType, subject, topic, gradeReceived, testDate, notes, aiResult, pagesCount }) {
+export async function saveUpload({ userId: _userId, documentType, subject, topic, gradeReceived, testDate, notes, aiResult, pagesCount, courseGrade }) {
   const upload = await callUploadsApi('POST', 'save-upload', {
+    course_grade: courseGrade ?? null,
     subject,
     topic,
     grade_received: gradeReceived,
@@ -786,8 +788,9 @@ export async function addPagesToUpload({ uploadId, questions, pagesAdded }) {
 // insert entirely (throwing INAPPROPRIATE_CONTENT) if it's flagged, so
 // nothing here needs its own moderation handling — a thrown error from the
 // first call means save-questions never runs and nothing was persisted.
-export async function saveSharedUpload({ classType, classId, sharedForDate, subject, topic, notes, aiResult, encodedFiles, pagesCount }) {
+export async function saveSharedUpload({ classType, classId, sharedForDate, subject, topic, notes, aiResult, encodedFiles, pagesCount, courseGrade }) {
   const upload = await callUploadsApi('POST', 'save-shared-upload', {
+    course_grade: courseGrade ?? null,
     class_type: classType,
     class_id: classId,
     shared_for_date: sharedForDate,
@@ -849,8 +852,8 @@ export async function getTestGradesForParent(parentId) {
 // api/student/get-grades.js). For a parent viewing a linked student's
 // grades, see getStudentGrades above instead.
 
-export async function createGrade({ userId: _userId, subject, testName, gradePercentage, testDate, notes }) {
-  return callStudentApi('POST', 'create-grade', { subject, test_name: testName, grade_percentage: gradePercentage, test_date: testDate, notes })
+export async function createGrade({ userId: _userId, subject, testName, gradePercentage, testDate, notes, courseGrade }) {
+  return callStudentApi('POST', 'create-grade', { course_grade: courseGrade ?? null, subject, test_name: testName, grade_percentage: gradePercentage, test_date: testDate, notes })
 }
 
 export async function getGradesForUser(_userId) {
@@ -863,10 +866,11 @@ export async function getGradesForUser(_userId) {
 // Pulls from the student's own uploaded documents (see Document uploads
 // below) as the primary source for a study plan, when they've uploaded
 // something matching this subject/topic.
-export async function getUploadedQuestions(userId, subject, topic) {
+export async function getUploadedQuestions(userId, subject, topic, courseGrade = null) {
   const data = await callUploadsApi('GET', `get-upload-questions?subject=${encodeURIComponent(subject)}`)
   const trimmed = topic.trim().toLowerCase()
   return data.uploads
+    .filter((upload) => matchesCourseGrade(upload, courseGrade))
     .filter((upload) => (upload.topic || '').toLowerCase().includes(trimmed))
     .flatMap((upload) =>
       upload.questions.map((q) => ({
@@ -889,9 +893,9 @@ export async function getUploadedQuestions(userId, subject, topic) {
 // on the fly (see resolveUploadQuestionPool in questionSource.js) for an
 // upload whose extracted content wasn't multiple-choice, or wasn't
 // extracted as discrete questions at all.
-export async function getUploadedContentForSubject(userId, subject) {
+export async function getUploadedContentForSubject(userId, subject, courseGrade = null) {
   const data = await callUploadsApi('GET', `get-upload-questions?subject=${encodeURIComponent(subject)}`)
-  return data.uploads.map((upload) => ({
+  return data.uploads.filter((upload) => matchesCourseGrade(upload, courseGrade)).map((upload) => ({
     uploadId: upload.uploadId,
     topic: upload.topic,
     documentType: upload.documentType,
@@ -988,8 +992,9 @@ export async function getActiveStudyPlansForParent(parentId) {
 // under RLS, and PracticeSessionScreen.jsx for the corresponding UI change
 // (coins now land all at once when the session is saved, not per-question).
 
-export async function savePracticeSession({ userId: _userId, subject, topic, questionsCorrect, questionsTotal }) {
+export async function savePracticeSession({ userId: _userId, subject, topic, questionsCorrect, questionsTotal, courseGrade }) {
   return callStudentApi('POST', 'save-practice-session', {
+    course_grade: courseGrade ?? null,
     subject,
     topic,
     questions_correct: questionsCorrect,
@@ -1195,6 +1200,16 @@ export async function joinSchoolSubjectGroup(groupId) {
 
 export async function leaveClass(classType, classId) {
   return callStudentApi('POST', 'leave-class', { class_type: classType, class_id: classId })
+}
+
+// A course from another grade (e.g. Gr 10 Math for a Gr 11 student) — see
+// src/lib/additionalCourses.js and api/student/add-course.js.
+export async function addCourse(subject, grade) {
+  return callStudentApi('POST', 'add-course', { subject, grade })
+}
+
+export async function removeCourse(subject, grade) {
+  return callStudentApi('POST', 'remove-course', { subject, grade })
 }
 
 // Proof-gated — only usable once school_id is already set (see

@@ -34,8 +34,8 @@ function toDemoPracticeQuestion(bankQuestion) {
 // this subject/topic first, padded with the hardcoded demo bank (topic-matched
 // where possible) up to 5. If 5+ usable uploaded questions exist, uploads
 // alone fill the session.
-export async function buildPracticeQuestions({ userId, subjectId, topic, grade }) {
-  const uploaded = await getUploadedQuestions(userId, subjectId, topic)
+export async function buildPracticeQuestions({ userId, subjectId, topic, grade, courseGrade = null }) {
+  const uploaded = await getUploadedQuestions(userId, subjectId, topic, courseGrade)
   const usableUploaded = uploaded.map(toUsablePracticeQuestion).filter(Boolean).slice(0, SESSION_SIZE)
 
   const needed = SESSION_SIZE - usableUploaded.length

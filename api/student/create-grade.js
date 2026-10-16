@@ -1,4 +1,5 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
+import { validateCourseGrade } from '../_lib/studentCourses.js'
 import { supabase } from '../_lib/auth.js'
 import { getLinkedParents } from '../_lib/db.js'
 import { assertPremium } from '../_lib/subscription.js'
@@ -15,6 +16,9 @@ import { centsToDisplay } from '../../src/lib/money.js'
 // see supabase/schema.sql's grade_bonuses_source_check) — a manually-logged
 // grade feeds the same parent payout-suggestion flow as an uploaded test.
 function validate(body) {
+  const courseGradeError = validateCourseGrade(body)
+  if (courseGradeError) return courseGradeError
+
   const subject = sanitizeSubject(body.subject)
   if (!subject) return { field: 'subject', message: 'subject must be one of Math, Science, History, Geography, English, French.' }
   body.subject = subject
@@ -80,7 +84,7 @@ async function handle({ userId, body }) {
 
   const { data, error } = await supabase
     .from('grades')
-    .insert({ user_id: userId, subject, test_name: testName, grade_percentage: gradePercentage, test_date: testDate, notes: notes ?? null })
+    .insert({ user_id: userId, course_grade: body.course_grade, subject, test_name: testName, grade_percentage: gradePercentage, test_date: testDate, notes: notes ?? null })
     .select()
     .single()
   if (error) throw error

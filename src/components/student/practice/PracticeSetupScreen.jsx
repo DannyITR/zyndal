@@ -5,6 +5,7 @@ import { getRecentPracticeSessions } from '../../../lib/storage'
 import { buildPracticeQuestions } from '../../../lib/practice'
 import { getErrorMessage } from '../../../lib/errors'
 import TopBar from '../../shared/TopBar'
+import { matchesCourseGrade } from '../../../lib/additionalCourses'
 
 export default function PracticeSetupScreen({ user, lockedSubjectId, onStart, onBack, onLogout, onLogoClick }) {
   const { t } = useTranslation()
@@ -26,7 +27,7 @@ export default function PracticeSetupScreen({ user, lockedSubjectId, onStart, on
 
   const filteredRecentSessions = recentSessions
     ? lockedSubjectId
-      ? recentSessions.filter((s) => s.subject === lockedSubjectId).slice(0, 5)
+      ? recentSessions.filter((s) => s.subject === lockedSubjectId && matchesCourseGrade(s, user.courseGrade)).slice(0, 5)
       : recentSessions
     : null
 
@@ -41,6 +42,7 @@ export default function PracticeSetupScreen({ user, lockedSubjectId, onStart, on
         subjectId,
         topic: topic.trim(),
         grade: user.grade || 9,
+        courseGrade: user.courseGrade,
       })
       onStart({ subjectId, topic: topic.trim(), questions })
     } catch (err) {

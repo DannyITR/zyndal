@@ -5,6 +5,8 @@ import { todayStr } from '../../src/lib/streak.js'
 import { getDailyQuestionForGrade, findQuestionByPrompt } from '../../src/lib/questions.js'
 import { generateQuestionPoolIfMissing } from '../questions/generate-question-pool.js'
 import { LANG_FOR_PREFERENCE } from './notificationText.js'
+import { getStudentCourses } from './studentCourses.js'
+import { dailyQuestionGrade } from '../../src/lib/additionalCourses.js'
 
 // TODO: As students upload school materials, learn actual curriculum pacing
 // per school board and replace these monthly unit estimates with real data
@@ -250,12 +252,17 @@ export async function resolveDailyQuestion({ userId, subject, timezone }) {
     getUserGradeAndLanguage(userId),
     getAnswersThisMonth(userId, subject, timezone),
   ])
-  // Matches the existing client-side `user.grade || 9` fallback convention
-  // used elsewhere (TestPrepSetupScreen, PracticeSetupScreen, etc.) for a
-  // student whose grade was never set.
-  const effectiveGrade = grade ?? 9
   const language = LANG_FOR_PREFERENCE[languagePreference] || 'en'
   const today = todayStr(new Date(), timezone)
+  // A student who also takes this subject at another grade (an added
+  // course, see src/lib/additionalCourses.js) alternates between their
+  // grades each time the subject comes round — decided from the date alone,
+  // so display, submit and grade-work all land on the same grade.
+  // `grade ?? 9` matches the client-side `user.grade || 9` fallback used
+  // elsewhere (TestPrepSetupScreen, PracticeSetupScreen, etc.) for a student
+  // whose grade was never set.
+  const courses = grade ? await getStudentCourses(userId, grade) : []
+  const effectiveGrade = dailyQuestionGrade({ mainGrade: grade ?? 9, courses, subject, dateStr: today })
 
   // Bug fix: once a subject's been answered today, THAT question — not a
   // fresh pool pick — has to stay "today's question" for the rest of the

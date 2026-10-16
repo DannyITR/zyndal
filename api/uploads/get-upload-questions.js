@@ -86,7 +86,7 @@ async function handleByUploadId(userId, uploadId) {
 async function handleBySubject(userId, subject) {
   const { data: uploads, error: uploadsError } = await supabase
     .from('uploads')
-    .select('id, topic, summary, key_concepts, document_type, created_at')
+    .select('id, topic, summary, key_concepts, document_type, course_grade, created_at')
     .eq('user_id', userId)
     .eq('subject', subject)
     .is('deleted_at', null)
@@ -105,6 +105,7 @@ async function handleBySubject(userId, subject) {
       uploadId: u.id,
       topic: u.topic,
       documentType: u.document_type,
+      courseGrade: u.course_grade ?? null,
       createdAt: u.created_at,
       summary: u.summary,
       keyConcepts: u.key_concepts || [],

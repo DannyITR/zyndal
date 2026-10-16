@@ -1,4 +1,5 @@
 import { createStudentHandler } from '../_lib/studentHandler.js'
+import { validateCourseGrade } from '../_lib/studentCourses.js'
 import { supabase } from '../_lib/auth.js'
 import { getStreakRow } from '../_lib/db.js'
 import { assertPremium } from '../_lib/subscription.js'
@@ -22,6 +23,9 @@ import { COINS_PER_CORRECT } from '../../src/lib/streak.js'
 // specific answer correct" still ultimately traces back to client-reported
 // state, same as it always has for AI-sourced content.
 function validate(body) {
+  const courseGradeError = validateCourseGrade(body)
+  if (courseGradeError) return courseGradeError
+
   if (!body.subject || typeof body.subject !== 'string') return 'subject is required.'
   if (!body.topic || typeof body.topic !== 'string') return 'topic is required.'
   if (!Number.isInteger(body.questions_total) || body.questions_total <= 0) return 'questions_total must be a positive integer.'
@@ -41,6 +45,7 @@ async function handle({ userId, body }) {
     .from('practice_sessions')
     .insert({
       user_id: userId,
+      course_grade: body.course_grade,
       subject,
       topic,
       score_percentage: scorePercentage,
