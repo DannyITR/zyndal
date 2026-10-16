@@ -869,3 +869,22 @@ alter table message_reports enable row level security;
 --
 -- ALTER TABLE uploads ADD COLUMN IF NOT EXISTS study_guide_summary jsonb;
 -- ALTER TABLE uploads ADD COLUMN IF NOT EXISTS study_guide_summary_source timestamptz;
+--
+-- Courses a student takes from another grade on top of their own (e.g. a
+-- Gr 11 student repeating Gr 10 Math) — see src/lib/additionalCourses.js
+-- and api/student/add-course.js. users.grade never changes; course_grade on
+-- uploads/practice_sessions/grades tags a record to such a course (null =
+-- the student's own grade).
+--
+-- CREATE TABLE IF NOT EXISTS student_courses (
+--   id uuid primary key default gen_random_uuid(),
+--   user_id uuid not null references users(id) on delete cascade,
+--   subject text not null,
+--   grade integer not null,
+--   created_at timestamptz not null default now(),
+--   unique (user_id, subject, grade)
+-- );
+-- ALTER TABLE student_courses ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE uploads ADD COLUMN IF NOT EXISTS course_grade integer;
+-- ALTER TABLE practice_sessions ADD COLUMN IF NOT EXISTS course_grade integer;
+-- ALTER TABLE grades ADD COLUMN IF NOT EXISTS course_grade integer;

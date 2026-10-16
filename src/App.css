@@ -6682,3 +6682,61 @@ div.zyndal-logo {
   font-weight: 600;
   font-size: 14px;
 }
+
+/* ---------- Study Guide practice from uploads ---------- */
+.study-guide-count {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.study-guide-count-label {
+  margin: 0;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.study-guide-count .segmented-toggle-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.study-guide-progress {
+  margin: 0 0 6px;
+  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.study-guide-score {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+  text-align: center;
+  padding: 24px 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+}
+
+.study-guide-score-title {
+  margin: 0;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.study-guide-score-value {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.study-guide-write-result {
+  margin: 0;
+  color: var(--green-text);
+  font-weight: 600;
+  font-size: 14px;
+}

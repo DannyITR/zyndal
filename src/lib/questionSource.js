@@ -123,13 +123,6 @@ export async function resolveUploadQuestionPool(userId, subject, subjectName, gr
 
 // ---------- Uploads-only (no API call once the pool above is resolved) ----------
 
-export function buildGuideFromUploads(uploadedQuestions, subjectName, count = 5) {
-  return {
-    topic: `Your ${subjectName} uploads`,
-    questions: uploadedQuestions.slice(0, count),
-  }
-}
-
 function splitSequential(arr, parts) {
   const chunkSize = Math.ceil(arr.length / parts)
   const chunks = []

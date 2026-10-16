@@ -253,18 +253,23 @@ function countFacts(concepts) {
 // essay questions and repeats until it hit max_tokens. Runs at the default
 // temperature for the same reason (temperature 0 makes that kind of loop
 // more likely); consistency comes from saving the result instead.
-async function generateQuizBatch(concepts, { grade, language, part }) {
+// multipleChoiceOnly: every question gets 4 options — used when writing new
+// Study Guide practice questions, which are always answered by tapping.
+async function generateQuizBatch(concepts, { grade, language, part, multipleChoiceOnly = false }) {
   const gradeLine = Number(grade) ? ` The student is in Secondary ${gradeToSecondary(Number(grade))}.` : ''
   const partNote = part ? ` This is part ${part.index} of ${part.total} of the study guide; other parts are handled separately, so cover only the concepts below.` : ''
   const facts = countFacts(concepts)
+  const typeRules = multipleChoiceOnly
+    ? `Every question is multiple choice: exactly 4 options in "options", "correct_answer" copied exactly from one of them, and 3 plausible wrong options of the same kind and length as the correct one.`
+    : `Mix question types:
+- Multiple choice: exactly 4 options in "options", and "correct_answer" copied exactly from one of them.
+- Short answer: "options" is an empty array, and "correct_answer" is a brief model answer a teacher would accept.`
   const { questions } = await generateJson({
-    system: `You are a Quebec high school teacher writing a printable paper quiz from a student's study guide summary.${gradeLine}${partNote}
+    system: `You are a Quebec high school teacher writing a ${multipleChoiceOnly ? 'practice quiz' : 'printable paper quiz'} from a student's study guide summary.${gradeLine}${partNote}
 
 Write questions that cover EVERY concept below and every fact listed under it — each fact must be tested by at least one question. Write one question per fact, or two when a fact has more than one thing worth testing — about ${facts} to ${facts * 2} questions for the ${facts} facts below. Only test facts that are listed; don't write open-ended essay or opinion questions, and don't test the same fact twice.
 
-Mix question types:
-- Multiple choice: exactly 4 options in "options", and "correct_answer" copied exactly from one of them.
-- Short answer: "options" is an empty array, and "correct_answer" is a brief model answer a teacher would accept.
+${typeRules}
 
 Every question needs a one-sentence "explanation" of why the answer is correct.
 
@@ -331,7 +336,7 @@ function packageSubject(uploads) {
 async function loadSavedQuestions(uploadId) {
   const { data, error } = await supabase
     .from('upload_questions')
-    .select('question, correct_answer, options, explanation')
+    .select('id, question, correct_answer, options, explanation')
     .eq('upload_id', uploadId)
     .order('created_at', { ascending: true })
   if (error) throw error
@@ -347,16 +352,22 @@ async function loadSavedQuestions(uploadId) {
 // everyone in the group, and saving it keeps the preview and the email in
 // step. Shared uploads normally already have questions from when they were
 // shared (see ensurePracticeQuestions in src/lib/ai.js).
-async function generateAndSaveQuestions(upload, user) {
+// A full set of new upload_questions rows (not yet saved) for one upload,
+// written from its study guide summary in batches of ~30 facts. Shared by
+// the no-questions fallback below and the Study Guide's "write new practice
+// questions" (generateMorePracticeQuestions).
+async function writeQuestionsFromSummary(upload, user, { multipleChoiceOnly = false } = {}) {
   const language = user?.language_preference || 'English'
   const { concepts } = await getOrBuildStudyGuideSummary(upload)
   if (!concepts?.length) return []
 
   const chunks = chunkConceptsByFacts(concepts)
   const batches = await Promise.all(
-    chunks.map((chunk, i) => generateQuizBatchWithRetry(chunk, { grade: user?.grade, language, part: chunks.length > 1 ? { index: i + 1, total: chunks.length } : null }))
+    chunks.map((chunk, i) =>
+      generateQuizBatchWithRetry(chunk, { grade: user?.grade, language, multipleChoiceOnly, part: chunks.length > 1 ? { index: i + 1, total: chunks.length } : null })
+    )
   )
-  const rows = toWorksheetQuestions(dedupeQuestions(batches.flat())).map((q) => ({
+  return toWorksheetQuestions(dedupeQuestions(batches.flat())).map((q) => ({
     upload_id: upload.id,
     question: q.question,
     correct_answer: q.answer,
@@ -364,6 +375,10 @@ async function generateAndSaveQuestions(upload, user) {
     explanation: q.explanation,
     difficulty: 'medium',
   }))
+}
+
+async function generateAndSaveQuestions(upload, user) {
+  const rows = await writeQuestionsFromSummary(upload, user)
   if (rows.length === 0) return []
 
   // Two previews opened at once can both get here — whichever saved first
@@ -384,15 +399,170 @@ async function generateAndSaveQuestions(upload, user) {
 // in the order they were taken, with duplicates across them removed.
 // uploads: from loadAccessibleUploads.
 export async function getPackageQuiz({ uploads, user }) {
+  const { ordered, rows } = await loadPackagePool(uploads, user, { generateMissing: true })
+  const questions = toWorksheetQuestions(rows)
+  if (questions.length === 0) throw noContentError()
+
+  return { title: packageTitle(ordered), subject: packageSubject(ordered), questions }
+}
+
+// The saved upload_questions rows (with ids) for a set of uploads, oldest
+// upload first, duplicates across them removed — shared by the printable
+// quiz above and the Study Guide practice below so both draw the same
+// pool. generateMissing: write a set for an upload with none saved (see
+// generateAndSaveQuestions); off for a cheap count that must not call Claude.
+async function loadPackagePool(uploads, user, { generateMissing }) {
   const ordered = [...uploads].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
   const perUpload = await Promise.all(
     ordered.map(async (upload) => {
       const saved = await loadSavedQuestions(upload.id)
-      return saved.length > 0 ? saved : generateAndSaveQuestions(upload, user)
+      return saved.length > 0 || !generateMissing ? saved : generateAndSaveQuestions(upload, user)
     })
   )
-  const questions = toWorksheetQuestions(dedupeQuestions(perUpload.flat()))
-  if (questions.length === 0) throw noContentError()
+  const rows = dedupeQuestions(perUpload.flat()).filter((q) => q.question && q.correct_answer)
+  return { ordered, rows }
+}
 
-  return { title: packageTitle(ordered), subject: packageSubject(ordered), questions }
+// ---------- Study Guide practice from saved questions ----------
+//
+// The Study Guide's "From your uploaded materials" source draws its
+// questions from the same saved pool as the printable quiz instead of
+// writing a new set, and always shows them as 4-option multiple choice.
+// Saved short-answer questions get 3 wrong answers written once (batched)
+// and saved back onto the row, so they're instant from then on.
+
+const DISTRACTORS_PER_CALL = 20
+
+function isFourOptionChoice(row) {
+  const options = Array.isArray(row.options) ? row.options : []
+  return options.length === 4 && new Set(options).size === 4 && options.includes(row.correct_answer)
+}
+
+function shuffle(items) {
+  const out = [...items]
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
+
+const DISTRACTOR_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          number: { type: 'integer' },
+          wrong_answers: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['number', 'wrong_answers'],
+      },
+    },
+  },
+  required: ['items'],
+}
+
+// rows: upload_questions rows lacking 4 valid options. Returns Map(row id
+// -> [3 wrong answers]); a row the model doesn't answer properly is simply
+// missing from it.
+async function generateDistractors(rows) {
+  const list = rows.map((r, i) => `${i + 1}. Question: ${r.question}\n   Correct answer: ${r.correct_answer}`).join('\n\n')
+  const { items } = await generateJson({
+    system: `You write multiple-choice options for a high school student's study quiz. For each numbered question below, write exactly 3 plausible but clearly wrong answers. Make each wrong answer the same kind of thing as the correct answer (a year for a year, a person for a person) and about the same length and style, so the correct one doesn't stand out. Never repeat or paraphrase the correct answer. Write in the same language as the question. Return JSON: { items: [ { number, wrong_answers: [3 strings] } ] }, one item per question.`,
+    schema: DISTRACTOR_SCHEMA,
+    maxTokens: 8000,
+    content: list,
+  })
+  const byRow = new Map()
+  for (const item of items || []) {
+    const row = rows[item.number - 1]
+    const wrong = [...new Set((item.wrong_answers || []).map((w) => String(w).trim()).filter((w) => w && w !== row?.correct_answer))]
+    if (row && wrong.length >= 3) byRow.set(row.id, wrong.slice(0, 3))
+  }
+  return byRow
+}
+
+// Gives every row 4 options (keeping existing valid ones), saving newly
+// written options onto upload_questions. Returns the rows that ended up
+// with 4 options, in their original order.
+async function ensureMultipleChoice(rows) {
+  const needing = rows.filter((r) => !isFourOptionChoice(r))
+  if (needing.length === 0) return rows
+
+  const batches = []
+  for (let i = 0; i < needing.length; i += DISTRACTORS_PER_CALL) batches.push(needing.slice(i, i + DISTRACTORS_PER_CALL))
+  const results = await Promise.all(batches.map(generateDistractors))
+  const distractors = new Map(results.flatMap((m) => [...m]))
+
+  const updated = new Map()
+  await Promise.all(
+    needing.map(async (row) => {
+      const wrong = distractors.get(row.id)
+      if (!wrong) return
+      const options = shuffle([row.correct_answer, ...wrong])
+      const { error } = await supabase.from('upload_questions').update({ options }).eq('id', row.id)
+      if (error) throw error
+      updated.set(row.id, options)
+    })
+  )
+  if (updated.size < needing.length) console.warn(`[studyQuiz] no wrong answers written for ${needing.length - updated.size} question(s); left out of this session`)
+
+  return rows
+    .map((r) => (updated.has(r.id) ? { ...r, options: updated.get(r.id) } : r))
+    .filter(isFourOptionChoice)
+}
+
+// How many saved questions the Study Guide could use for these uploads —
+// the "52 available" on the question-count picker. Never calls Claude.
+export async function countStudyGuideQuestions({ uploads }) {
+  const { rows } = await loadPackagePool(uploads, null, { generateMissing: false })
+  return rows.length
+}
+
+// A Study Guide session: `count` questions (or every one, for 'all') from
+// the uploads' saved pool, picked at random but kept in upload order, each
+// as 4-option multiple choice: [{ question, options, correct, explanation }].
+export async function getStudyGuideQuestions({ uploads, user, count }) {
+  const { rows } = await loadPackagePool(uploads, user, { generateMissing: true })
+  if (rows.length === 0) throw noContentError()
+
+  let picked = rows
+  if (count !== 'all' && count < rows.length) {
+    const chosen = new Set(shuffle(rows.map((_, i) => i)).slice(0, count))
+    picked = rows.filter((_, i) => chosen.has(i))
+  }
+
+  const ready = await ensureMultipleChoice(picked)
+  return ready.map((r) => ({
+    question: r.question,
+    options: r.options,
+    correct: r.options.indexOf(r.correct_answer),
+    explanation: r.explanation || '',
+  }))
+}
+
+// The Study Guide's "Write new practice questions": a fresh set of 4-option
+// questions for each upload, written from its study guide summary and added
+// to its saved questions — skipping any that duplicate one it already has —
+// so the practice pool (and the printable quiz) grows. Returns the number
+// of questions added.
+export async function generateMorePracticeQuestions({ uploads, user }) {
+  const added = await Promise.all(
+    uploads.map(async (upload) => {
+      const [existing, written] = await Promise.all([loadSavedQuestions(upload.id), writeQuestionsFromSummary(upload, user, { multipleChoiceOnly: true })])
+      // dedupeQuestions keeps the first of any duplicate pair, so listing the
+      // existing rows first means only genuinely new questions survive.
+      const fresh = dedupeQuestions([...existing, ...written]).filter((q) => !q.id)
+      if (fresh.length === 0) return 0
+      const { error } = await supabase.from('upload_questions').insert(fresh)
+      if (error) throw error
+      return fresh.length
+    })
+  )
+  return added.reduce((sum, n) => sum + n, 0)
 }

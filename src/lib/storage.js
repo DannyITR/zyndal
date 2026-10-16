@@ -1437,3 +1437,24 @@ export async function getMessageableContacts() {
   return callParentApi('GET', 'get-messageable-contacts')
 }
 
+
+// Study Guide "From your uploaded materials" — practice drawn from the
+// questions already saved on these uploads (see api/study-guide-questions.js).
+export async function countStudyGuideQuestions(uploadIds) {
+  const data = await callApi('/api', 'POST', 'study-guide-questions', { action: 'count', upload_ids: uploadIds })
+  return data.available
+}
+
+// count: 10, 20, 30, or 'all'. Resolves to [{ question, options, correct,
+// explanation }], every question 4-option multiple choice.
+export async function getStudyGuideQuestions(uploadIds, count) {
+  const data = await callApi('/api', 'POST', 'study-guide-questions', { action: 'start', upload_ids: uploadIds, count })
+  return data.questions
+}
+
+// Writes a fresh set of 4-option practice questions from these uploads'
+// study guide summaries and adds them to their saved questions. Resolves to
+// { added, available }.
+export async function generatePracticeQuestions(uploadIds) {
+  return callApi('/api', 'POST', 'study-guide-questions', { action: 'generate', upload_ids: uploadIds })
+}

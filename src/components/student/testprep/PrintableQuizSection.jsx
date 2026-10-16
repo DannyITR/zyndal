@@ -13,9 +13,18 @@ import StudyQuizModal from './StudyQuizModal'
 // under the topic (the calendar shows who shared it). Nothing starts ticked.
 // hint: the line under the heading, since "your uploads" only fits the
 // Study Guide.
-export default function PrintableQuizSection({ uploads, accountEmail, hint, disabled = false }) {
+// selection / onSelectionChange: optional — pass both to track the ticked
+// upload ids yourself. The Study Guide does, so the same ticks also choose
+// which uploads its practice draws from.
+export default function PrintableQuizSection({ uploads, accountEmail, hint, disabled = false, selection: controlledSelection, onSelectionChange }) {
   const { t } = useTranslation()
-  const [selection, setSelection] = useState([]) // ticked upload ids
+  const [ownSelection, setOwnSelection] = useState([]) // ticked upload ids, when the parent doesn't track them
+  const selection = controlledSelection ?? ownSelection
+  const setSelection = (update) => {
+    const next = typeof update === 'function' ? update(selection) : update
+    if (onSelectionChange) onSelectionChange(next)
+    else setOwnSelection(next)
+  }
   const [quizPackage, setQuizPackage] = useState(null) // the uploads whose quiz is being previewed
   const [toast, setToast] = useState('')
   const toastTimerRef = useRef(null)

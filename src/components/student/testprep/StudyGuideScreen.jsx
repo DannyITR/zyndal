@@ -3,19 +3,17 @@ import { useTranslation } from 'react-i18next'
 import { todayStr } from '../../../lib/streak'
 import { getErrorMessage } from '../../../lib/errors'
 import { generateStudyGuide, getTodaysGuideSubject } from '../../../lib/ai'
-import { getUploadedContentForSubject } from '../../../lib/storage'
-import {
-  saveSourcePreference,
-  countUsableUploads,
-  resolveUploadQuestionPool,
-  resolveGenerationLanguage,
-  buildGuideFromUploads,
-  mixGuideQuestions,
-} from '../../../lib/questionSource'
+import { getUploadedContentForSubject, countStudyGuideQuestions, getStudyGuideQuestions, generatePracticeQuestions } from '../../../lib/storage'
+import { saveSourcePreference, countUsableUploads, resolveUploadQuestionPool, resolveGenerationLanguage, mixGuideQuestions } from '../../../lib/questionSource'
 import TopBar from '../../shared/TopBar'
 import TestPrepQuestion from './TestPrepQuestion'
 import QuestionSourceStep from './QuestionSourceStep'
 import PrintableQuizSection from './PrintableQuizSection'
+import StudyGuidePractice from './StudyGuidePractice'
+
+// The "From your uploaded materials" source's question-count choices.
+// 'all' is always on offer; a number above what's available is disabled.
+const COUNT_CHOICES = [10, 20, 30, 'all']
 
 // The guide (questions + the student's answers) is cached per user per day in
 // localStorage — it regenerates fresh each day, and a page reload doesn't
@@ -61,6 +59,18 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
   const [generating, setGenerating] = useState(false)
   const [generatingLabel, setGeneratingLabel] = useState('')
   const [error, setError] = useState('')
+  // "From your uploaded materials": the uploads ticked in the list below
+  // (shared with the printable quiz), how many saved questions they have
+  // (null until known), and how many the student wants. Nothing ticked
+  // means every upload for the subject.
+  const [selectedUploadIds, setSelectedUploadIds] = useState([])
+  const [availableCount, setAvailableCount] = useState(null)
+  const [countChoice, setCountChoice] = useState(10)
+  const [writingQuestions, setWritingQuestions] = useState(false)
+  const [writeResult, setWriteResult] = useState('')
+  const tickedUploadIds = uploadContent.map((u) => u.uploadId).filter((id) => selectedUploadIds.includes(id))
+  const practiceUploadIds = tickedUploadIds.length > 0 ? tickedUploadIds : uploadContent.map((u) => u.uploadId)
+  const practiceKey = practiceUploadIds.join(',')
 
   useEffect(() => {
     if (step !== 'source') return
@@ -82,9 +92,89 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
     }
   }, [step, user.id, subject.id, user.courseGrade])
 
+  // Recounted whenever the ticked uploads change.
+  useEffect(() => {
+    if (step !== 'source' || !practiceKey) return
+    let cancelled = false
+    setAvailableCount(null)
+    countStudyGuideQuestions(practiceKey.split(','))
+      .then((available) => {
+        if (cancelled) return
+        setAvailableCount(available)
+        // Default to 10, or everything when there aren't more than 10.
+        setCountChoice((prev) => (prev !== 'all' && prev > available ? 'all' : prev))
+      })
+      .catch((err) => console.error('[StudyGuide] could not count upload questions:', err))
+    return () => {
+      cancelled = true
+    }
+  }, [step, practiceKey])
+
+  // "Write new practice questions": a fresh set of 4-option questions from
+  // the ticked uploads (or all of them), added to their saved questions so
+  // the practice — and the printable quiz — have more to draw from.
+  async function handleWriteQuestions() {
+    if (writingQuestions || generating) return
+    setWritingQuestions(true)
+    setWriteResult('')
+    setError('')
+    try {
+      const { added, available } = await generatePracticeQuestions(practiceUploadIds)
+      setAvailableCount(available)
+      setWriteResult(added > 0 ? t('studyGuide.wroteQuestions', { count: added }) : t('studyGuide.wroteNone'))
+    } catch (err) {
+      console.error('[StudyGuide] could not write practice questions:', err)
+      setError(getErrorMessage(err, t))
+    } finally {
+      setWritingQuestions(false)
+    }
+  }
+
+  // "From your uploaded materials" reuses the questions already saved on the
+  // ticked uploads (see api/study-guide-questions.js) — the same pool as the
+  // printable quiz — rather than writing a new set. Continue resumes an
+  // unfinished run from today with the same uploads and size; otherwise it
+  // picks a fresh random set.
+  async function startUploadsPractice() {
+    const cached = readCache(user.id, cacheSubjectKey)
+    if (
+      cached?.source === 'uploads' &&
+      cached.count === countChoice &&
+      cached.uploadKey === practiceKey &&
+      cached.session &&
+      cached.session.index < cached.session.questions.length
+    ) {
+      setGuide(cached)
+      setStep('guide')
+      return
+    }
+
+    setGenerating(true)
+    setGeneratingLabel(t('studyGuide.loadingQuestions'))
+    try {
+      const questions = await getStudyGuideQuestions(practiceUploadIds, countChoice)
+      const fresh = { source: 'uploads', subjectId: subject.id, count: countChoice, uploadKey: practiceKey, session: { questions, index: 0, answers: [] } }
+      writeCache(user.id, cacheSubjectKey, fresh)
+      setGuide(fresh)
+      setStep('guide')
+    } catch (err) {
+      console.error('[StudyGuide] could not load upload questions:', err)
+      setError(getErrorMessage(err, t))
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  function handleSessionChange(session) {
+    const updated = { ...guide, session }
+    writeCache(user.id, cacheSubjectKey, updated)
+    setGuide(updated)
+  }
+
   async function handleGenerate(source) {
     setError('')
     saveSourcePreference(subject.id, source)
+    if (source === 'uploads') return startUploadsPractice()
 
     // Reuse today's guide if it was already generated from this same
     // source — keeps recorded progress and avoids a pointless regenerate
@@ -104,6 +194,7 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
         const language = resolveGenerationLanguage(user)
         result = await generateStudyGuide({ grade: user.grade || 9, subjectName: subject.name, language })
       } else {
+        // 'mix' — 'uploads' returned early above (startUploadsPractice).
         const { pool: uploadedQuestions, language } = await resolveUploadQuestionPool(
           user.id,
           subject.id,
@@ -112,14 +203,9 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
           setGeneratingLabel,
           user.courseGrade
         )
-        if (source === 'uploads') {
-          if (uploadedQuestions.length === 0) throw new Error("Couldn't build questions from your uploads. Please try Curriculum Guide instead.")
-          result = buildGuideFromUploads(uploadedQuestions, subject.name)
-        } else {
-          setGeneratingLabel('')
-          const aiGuide = await generateStudyGuide({ grade: user.grade || 9, subjectName: subject.name, language })
-          result = mixGuideQuestions(uploadedQuestions, aiGuide)
-        }
+        setGeneratingLabel('')
+        const aiGuide = await generateStudyGuide({ grade: user.grade || 9, subjectName: subject.name, language })
+        result = mixGuideQuestions(uploadedQuestions, aiGuide)
       }
       const fresh = { ...result, subjectId: subject.id, progress: {}, source }
       writeCache(user.id, cacheSubjectKey, fresh)
@@ -178,8 +264,47 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
         onBack={onBack}
         onLogout={onLogout}
         onLogoClick={onLogoClick}
+        renderSourceExtras={(selected) =>
+          selected === 'uploads' && (
+            <div className="study-guide-count">
+              <p className="field-hint">
+                {tickedUploadIds.length > 0 ? t('studyGuide.practiceFromTicked', { count: tickedUploadIds.length }) : t('studyGuide.practiceFromAll')}{' '}
+                {t('studyGuide.tickHint')}
+              </p>
+              <p className="study-guide-count-label">
+                {t('studyGuide.countLabel')}{' '}
+                <span className="field-hint">{availableCount === null ? t('studyGuide.counting') : t('studyGuide.available', { count: availableCount })}</span>
+              </p>
+              <div className="segmented-toggle" role="group" aria-label={t('studyGuide.countLabel')}>
+                {COUNT_CHOICES.map((choice) => (
+                  <button
+                    key={choice}
+                    type="button"
+                    className={`segmented-toggle-btn ${countChoice === choice ? 'segmented-toggle-btn--active' : ''}`}
+                    aria-pressed={countChoice === choice}
+                    disabled={generating || writingQuestions || availableCount === null || (choice !== 'all' && choice > availableCount)}
+                    onClick={() => setCountChoice(choice)}
+                  >
+                    {choice === 'all' ? t('studyGuide.all') : choice}
+                  </button>
+                ))}
+              </div>
+              <button type="button" className="btn btn-secondary btn-block" disabled={generating || writingQuestions} onClick={handleWriteQuestions}>
+                {writingQuestions ? t('studyGuide.writingQuestions') : t('studyGuide.writeQuestions')}
+              </button>
+              {writeResult && <p className="study-guide-write-result">{writeResult}</p>}
+            </div>
+          )
+        }
       >
-        <PrintableQuizSection uploads={quizUploads} accountEmail={user.email} hint={t('studyQuiz.sectionHint')} disabled={generating} />
+        <PrintableQuizSection
+          uploads={quizUploads}
+          accountEmail={user.email}
+          hint={t('studyQuiz.sectionHint')}
+          disabled={generating || writingQuestions}
+          selection={selectedUploadIds}
+          onSelectionChange={setSelectedUploadIds}
+        />
       </QuestionSourceStep>
     )
   }
@@ -197,7 +322,18 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
         daysRemainingInTrial={user.days_remaining_in_trial}
       />
 
-      {guide && (
+      {guide?.source === 'uploads' && guide.session && (
+        <>
+          <div className="testprep-header-card">
+            <p className="testprep-countdown">
+              {subject.icon} {subject.name} — {t('studyGuide.fromYourUploads')}
+            </p>
+          </div>
+          <StudyGuidePractice session={guide.session} onChange={handleSessionChange} />
+        </>
+      )}
+
+      {guide && guide.source !== 'uploads' && (
         <>
           <div className="testprep-header-card">
             <p className="testprep-countdown">

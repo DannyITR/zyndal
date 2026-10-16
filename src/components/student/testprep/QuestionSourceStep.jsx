@@ -8,6 +8,9 @@ import TopBar from '../../shared/TopBar'
 // option list and the localStorage preference this pre-selects from.
 // children: optional extra content shown below Continue (the Study Guide
 // uses it for its per-upload "Printable quiz" list).
+// renderSourceExtras: optional (selectedSourceId) => node shown just under
+// the source options — the Study Guide's question-count picker for its
+// uploads source.
 export default function QuestionSourceStep({
   user,
   subjectId,
@@ -21,6 +24,7 @@ export default function QuestionSourceStep({
   onBack,
   onLogout,
   onLogoClick,
+  renderSourceExtras,
   children,
 }) {
   const options = getSourceOptions(uploadCount, subjectName)
@@ -58,6 +62,8 @@ export default function QuestionSourceStep({
           </button>
         ))}
       </div>
+
+      {renderSourceExtras?.(selected)}
 
       {uploadCount <= 0 && <p className="field-hint">{getNoOptionsHint(hasAnyUploads)}</p>}
 
