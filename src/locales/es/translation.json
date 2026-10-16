@@ -801,6 +801,7 @@
     "EMAIL_EXISTS": "Ya existe una cuenta con este correo.",
     "EXPIRED_TOKEN": "Este enlace ha expirado.",
     "FORBIDDEN": "No tienes permiso para hacer eso.",
+    "AI_RESPONSE_CUT_OFF": "La respuesta de la IA se cortó antes de terminar. Inténtalo de nuevo con menos páginas.",
     "NO_QUIZ_CONTENT": "Esta subida no tiene suficiente contenido para crear un cuestionario.",
     "STUDY_QUIZ_EMAIL_LIMIT": "Puedes enviar hasta 5 cuestionarios por hora. Inténtalo más tarde.",
     "EMAIL_SEND_FAILED": "No pudimos enviar ese correo. Inténtalo de nuevo.",

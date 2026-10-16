@@ -90,9 +90,9 @@ export async function generateQuestionsFromUploadContent({ summary, keyConcepts,
 // uploadType: 'test' | 'study_material' — only used to phrase the prompt
 // ("a test" vs "a study material"); the model's own document_type
 // classification (test/worksheet/textbook/notes) is what gets returned.
-// files: 1-10 File objects (images and/or PDFs), all pages of one document,
-// sent together so the model can extract questions spanning multiple pages
-// without duplication.
+// files: File objects (images and/or PDFs), all pages of one document,
+// sent in one request (the server reads them in batches of 8 pages and
+// merges the results — see api/_lib/documentExtraction.js).
 export async function processUploadedDocument({ files, uploadType }) {
   const encodedFiles = await encodeFilesWithinBudget(files)
 

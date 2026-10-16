@@ -79,7 +79,7 @@ export function resolveGenerationLanguage(user) {
 // ---------- Resolving an upload's questions ----------
 // For each of the student's uploads for this subject, in order: use its
 // pre-extracted multiple-choice questions if it has any; otherwise generate
-// 5 from its summary/key_concepts via Claude and cache them into
+// a full set from its summary/key_concepts via Claude and cache them into
 // upload_questions so this upload never needs generating again; otherwise
 // (no summary either) skip it — there's nothing to build questions from.
 // The language for every generated batch is detected once, from all of the

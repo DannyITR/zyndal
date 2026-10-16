@@ -43,11 +43,13 @@ export function languageInstruction(language) {
 // Runs a Claude call constrained to a JSON schema and returns the parsed
 // result — shared by every generate-* endpoint so each one only supplies
 // its own system prompt, schema, token budget, and message content.
-export async function generateJson({ system, schema, maxTokens, content }) {
+// temperature is optional; omitted, the API default applies.
+export async function generateJson({ system, schema, maxTokens, content, temperature }) {
   const anthropic = getAnthropicClient()
   const stream = anthropic.messages.stream({
     model: MODEL,
     max_tokens: maxTokens,
+    ...(temperature !== undefined ? { temperature } : {}),
     system,
     output_config: { format: { type: 'json_schema', schema } },
     messages: [{ role: 'user', content }],
@@ -57,6 +59,15 @@ export async function generateJson({ system, schema, maxTokens, content }) {
   if (message.stop_reason === 'refusal') {
     const err = new Error('The request was declined by the model. Please try again.')
     err.refusal = true
+    throw err
+  }
+  // A response that hit max_tokens is truncated JSON — say so plainly
+  // instead of letting JSON.parse fail with a confusing syntax error.
+  if (message.stop_reason === 'max_tokens') {
+    console.error(`[anthropic] response cut off at max_tokens=${maxTokens} (output_tokens=${message.usage?.output_tokens})`)
+    const err = new Error('The AI response was cut off before it finished. Please try again with fewer pages.')
+    err.status = 502
+    err.code = 'AI_RESPONSE_CUT_OFF'
     throw err
   }
   const text = message.content.find((b) => b.type === 'text')?.text

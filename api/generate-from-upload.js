@@ -20,7 +20,7 @@ const UPLOAD_CONTENT_QUESTIONS_SCHEMA = {
 function buildSystemPrompt(summary, keyConcepts, subject, grade, language) {
   const secondary = gradeToSecondary(grade)
   const conceptsText = keyConcepts && keyConcepts.length > 0 ? keyConcepts.join(', ') : 'Not specified'
-  return `You are a Quebec high school teacher. Based on the following uploaded study material, generate 5 multiple choice questions a student might face on a test. Each question should test understanding of the key concepts in the material.
+  return `You are a Quebec high school teacher. Based on the following uploaded study material, write multiple choice questions a student might face on a test. Cover every key concept and every important fact in the summary with at least one question. There is no fixed number of questions: write as many as the material supports, without repeating the same fact.
 
 Material summary: ${summary}
 Key concepts: ${conceptsText}
