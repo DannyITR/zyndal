@@ -777,6 +777,7 @@
     "printableQuiz": "Cuestionario para imprimir",
     "sectionTitle": "Cuestionarios para imprimir",
     "sectionHint": "Elige una o más de tus subidas para convertirlas en un cuestionario en papel con respuestas.",
+    "calendarSectionHint": "Elige uno o más apuntes de este día para convertirlos en un cuestionario en papel con respuestas.",
     "previewTitle": "Cuestionario para imprimir",
     "generating": "Creando tu cuestionario… (puede tardar un minuto)",
     "emailMe": "Enviármelo por correo",

@@ -777,6 +777,7 @@
     "printableQuiz": "Printable quiz",
     "sectionTitle": "Printable quizzes",
     "sectionHint": "Pick one or more of your uploads to turn into a paper quiz with an answer key.",
+    "calendarSectionHint": "Pick one or more of this day's notes to turn into a paper quiz with an answer key.",
     "previewTitle": "Printable quiz",
     "generating": "Building your quiz… (this can take a minute)",
     "emailMe": "Email to me",

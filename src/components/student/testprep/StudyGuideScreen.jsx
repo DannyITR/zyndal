@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { todayStr } from '../../../lib/streak'
 import { getErrorMessage } from '../../../lib/errors'
@@ -15,7 +15,7 @@ import {
 import TopBar from '../../shared/TopBar'
 import TestPrepQuestion from './TestPrepQuestion'
 import QuestionSourceStep from './QuestionSourceStep'
-import StudyQuizModal from './StudyQuizModal'
+import PrintableQuizSection from './PrintableQuizSection'
 
 // The guide (questions + the student's answers) is cached per user per day in
 // localStorage — it regenerates fresh each day, and a page reload doesn't
@@ -57,23 +57,6 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
   const [generating, setGenerating] = useState(false)
   const [generatingLabel, setGeneratingLabel] = useState('')
   const [error, setError] = useState('')
-  const [quizSelection, setQuizSelection] = useState([]) // upload ids ticked for the printable quiz package
-  const [quizPackage, setQuizPackage] = useState(null) // the uploads whose printable quiz is being previewed
-  const [toast, setToast] = useState('')
-  const toastTimerRef = useRef(null)
-
-  useEffect(() => () => clearTimeout(toastTimerRef.current), [])
-
-  function toggleQuizUpload(uploadId) {
-    setQuizSelection((prev) => (prev.includes(uploadId) ? prev.filter((id) => id !== uploadId) : [...prev, uploadId]))
-  }
-
-  function handleQuizSent(sentTo) {
-    setQuizPackage(null)
-    setToast(t('studyQuiz.sentToast', { email: sentTo }))
-    clearTimeout(toastTimerRef.current)
-    toastTimerRef.current = setTimeout(() => setToast(''), 4000)
-  }
 
   useEffect(() => {
     if (step !== 'source') return
@@ -176,7 +159,6 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
     // printable quiz package — never a graded test, which is a record of a
     // past result rather than material to study from. Available to every user.
     const quizUploads = uploadContent.filter((upload) => upload.documentType !== 'test')
-    const selectedQuizUploads = quizUploads.filter((upload) => quizSelection.includes(upload.uploadId))
     return (
       <QuestionSourceStep
         user={user}
@@ -192,37 +174,7 @@ export default function StudyGuideScreen({ user, subject: lockedSubject, onBack,
         onLogout={onLogout}
         onLogoClick={onLogoClick}
       >
-        {quizUploads.length > 0 && (
-          <section className="study-quiz-list">
-            <h3 className="study-quiz-list-title">{t('studyQuiz.sectionTitle')}</h3>
-            <p className="field-hint">{t('studyQuiz.sectionHint')}</p>
-            {quizUploads.map((upload) => (
-              <label key={upload.uploadId} className="study-quiz-row">
-                <input
-                  type="checkbox"
-                  checked={quizSelection.includes(upload.uploadId)}
-                  disabled={generating}
-                  onChange={() => toggleQuizUpload(upload.uploadId)}
-                />
-                <span className="study-quiz-row-topic">{upload.topic}</span>
-              </label>
-            ))}
-            <button
-              type="button"
-              className="btn btn-secondary btn-block"
-              disabled={generating || selectedQuizUploads.length === 0}
-              onClick={() => setQuizPackage(selectedQuizUploads)}
-            >
-              🖨️ {selectedQuizUploads.length > 0 ? t('studyQuiz.printableQuizSelected', { count: selectedQuizUploads.length }) : t('studyQuiz.printableQuiz')}
-            </button>
-          </section>
-        )}
-        {quizPackage && <StudyQuizModal uploads={quizPackage} accountEmail={user.email} onSent={handleQuizSent} onClose={() => setQuizPackage(null)} />}
-        {toast && (
-          <div className="app-toast app-toast--success" role="status">
-            {toast}
-          </div>
-        )}
+        <PrintableQuizSection uploads={quizUploads} accountEmail={user.email} hint={t('studyQuiz.sectionHint')} disabled={generating} />
       </QuestionSourceStep>
     )
   }

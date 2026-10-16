@@ -1,7 +1,7 @@
 import { createStudentHandler } from './_lib/studentHandler.js'
 import { supabase } from './_lib/auth.js'
 import { sanitizeEmail } from './_lib/sanitize.js'
-import { validateUploadIds, loadOwnedUploads, getPackageQuiz } from './_lib/studyQuiz.js'
+import { validateUploadIds, loadAccessibleUploads, getPackageQuiz } from './_lib/studyQuiz.js'
 import { sendStudyQuizEmail } from './_lib/resend.js'
 import { buildStudyQuizHtml, worksheetLangFor } from '../src/lib/studyQuizWorksheet.js'
 
@@ -36,7 +36,7 @@ function validate(body) {
 }
 
 async function handle({ userId, body }) {
-  const uploads = await loadOwnedUploads(userId, body.upload_ids)
+  const uploads = await loadAccessibleUploads(userId, body.upload_ids)
 
   const { data: user, error: userError } = await supabase
     .from('users')

@@ -6548,11 +6548,24 @@ div.zyndal-logo {
   border-radius: 14px;
 }
 
+.study-quiz-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
 .study-quiz-row-topic {
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--text);
   font-weight: 600;
+}
+
+.study-quiz-row-meta {
+  color: var(--text-faint);
+  font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .modal-card.study-quiz-modal {

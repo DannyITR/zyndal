@@ -9,6 +9,7 @@ import ImageLightbox from '../../shared/ImageLightbox'
 import ConfirmDeleteContentModal from '../../shared/forum/ConfirmDeleteContentModal'
 import UploadDetailScreen from '../uploads/UploadDetailScreen'
 import NotePageThumb from '../uploads/NotePageThumb'
+import PrintableQuizSection from '../testprep/PrintableQuizSection'
 
 const DOCUMENT_TYPE_ICON = { test: '📝', worksheet: '📋', textbook: '📖', notes: '🗒️' }
 
@@ -46,6 +47,12 @@ export default function GroupUploadsDayDetailScreen({ user, date, uploads, onUpl
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [deletedIds, setDeletedIds] = useState([])
   const visibleUploads = uploads.filter((u) => !deletedIds.includes(u.id))
+  // The day's study-material uploads (classmates' as well as the student's
+  // own) for the same "Printable quizzes" section the Study Guide shows —
+  // never a graded test, and hidden entirely when there are none.
+  const quizUploads = visibleUploads
+    .filter((u) => u.documentType !== 'test')
+    .map((u) => ({ uploadId: u.id, topic: u.topic, meta: t('groupUploads.uploadedBy', { username: u.uploaderUsername || '—' }) }))
 
   async function handleDelete() {
     await deleteUpload(confirmDeleteId)
@@ -124,6 +131,8 @@ export default function GroupUploadsDayDetailScreen({ user, date, uploads, onUpl
           })}
         </ul>
       )}
+
+      <PrintableQuizSection uploads={quizUploads} accountEmail={user.email} hint={t('studyQuiz.calendarSectionHint')} />
 
       {confirmDeleteId && (
         <ConfirmDeleteContentModal

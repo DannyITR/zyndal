@@ -777,6 +777,7 @@
     "printableQuiz": "Quiz à imprimer",
     "sectionTitle": "Quiz à imprimer",
     "sectionHint": "Choisis un ou plusieurs téléversements à transformer en quiz papier avec un corrigé.",
+    "calendarSectionHint": "Choisis une ou plusieurs notes de cette journée à transformer en quiz papier avec un corrigé.",
     "previewTitle": "Quiz à imprimer",
     "generating": "Création de ton quiz… (cela peut prendre une minute)",
     "emailMe": "M'envoyer par courriel",

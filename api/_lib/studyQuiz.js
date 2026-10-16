@@ -22,6 +22,7 @@ import { generateJson, gradeToSecondary } from './anthropic.js'
 import { sanitizeUuid } from './sanitize.js'
 import { dedupeQuestions, PAGES_PER_BATCH } from './documentExtraction.js'
 import { downloadSharedNoteFiles } from './sharedNotesStorage.js'
+import { getForumMembership } from './forumAuth.js'
 
 // Facts per quiz-generation call. Batching by fact count rather than by
 // concept count, since one concept can carry 2 facts or 20: each fact
@@ -62,21 +63,36 @@ export function validateUploadIds(body) {
   return null
 }
 
-// The caller's own, non-deleted uploads, in the given order — a 404 if any
-// id isn't theirs, same "not found rather than forbidden" convention as
-// save-questions.js.
-export async function loadOwnedUploads(userId, uploadIds) {
+// The requested non-deleted uploads, in the given order, that the caller
+// may read: their own, or one shared to a class/group they belong to — the
+// same rule get-upload-questions.js applies to viewing a shared upload, so
+// a Notes Calendar day's quiz can include classmates' notes. A 404 if any
+// id fails that, same "not found rather than forbidden" convention as
+// save-questions.js. Membership is checked once per distinct class.
+export async function loadAccessibleUploads(userId, uploadIds) {
   const { data, error } = await supabase
     .from('uploads')
-    .select('id, user_id, subject, topic, notes, summary, key_concepts, document_type, created_at, updated_at, deleted_at, shared_files, study_guide_summary, study_guide_summary_source')
+    .select('id, user_id, subject, topic, notes, summary, key_concepts, document_type, created_at, updated_at, deleted_at, shared_class_type, shared_class_id, shared_files, study_guide_summary, study_guide_summary_source')
     .in('id', uploadIds)
   if (error) throw error
   const byId = new Map((data || []).map((u) => [u.id, u]))
-  return uploadIds.map((id) => {
-    const upload = byId.get(id)
-    if (!upload || upload.user_id !== userId || upload.deleted_at) throw notFound()
-    return upload
-  })
+
+  const membershipByClass = new Map()
+  async function isMember(classType, classId) {
+    const key = `${classType}:${classId}`
+    if (!membershipByClass.has(key)) membershipByClass.set(key, getForumMembership(userId, classType, classId).then((m) => m.member))
+    return membershipByClass.get(key)
+  }
+
+  return Promise.all(
+    uploadIds.map(async (id) => {
+      const upload = byId.get(id)
+      if (!upload || upload.deleted_at) throw notFound()
+      if (upload.user_id === userId) return upload
+      if (upload.shared_class_id && (await isMember(upload.shared_class_type, upload.shared_class_id))) return upload
+      throw notFound()
+    })
+  )
 }
 
 // ---------- Step 1: study guide summary, per upload ----------
@@ -326,6 +342,11 @@ async function loadSavedQuestions(uploadId) {
 // from its study guide summary (batched by facts, see generateQuizBatch)
 // and saves it into upload_questions, so the next printable quiz — and the
 // Study Guide practice, which reads the same table — reuse it.
+// For a classmate's shared upload (reachable from a Notes Calendar day)
+// the set is saved onto that upload too: it's derived content, the same for
+// everyone in the group, and saving it keeps the preview and the email in
+// step. Shared uploads normally already have questions from when they were
+// shared (see ensurePracticeQuestions in src/lib/ai.js).
 async function generateAndSaveQuestions(upload, user) {
   const language = user?.language_preference || 'English'
   const { concepts } = await getOrBuildStudyGuideSummary(upload)
@@ -361,7 +382,7 @@ async function generateAndSaveQuestions(upload, user) {
 // some, the preview needs no Claude call at all. Only an upload with none
 // goes through generateAndSaveQuestions. Uploads are combined oldest first,
 // in the order they were taken, with duplicates across them removed.
-// uploads: from loadOwnedUploads.
+// uploads: from loadAccessibleUploads.
 export async function getPackageQuiz({ uploads, user }) {
   const ordered = [...uploads].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
   const perUpload = await Promise.all(
