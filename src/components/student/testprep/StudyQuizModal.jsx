@@ -6,12 +6,13 @@ import { getErrorMessage } from '../../../lib/errors'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-// Preview + email for one upload's printable quiz (Study Guide screen).
+// Preview + email for the printable quiz of an upload package (Study Guide screen).
 // The preview is the exact worksheet document api/email-study-quiz.js
 // sends — both come from buildStudyQuizHtml over the same saved questions —
 // rendered in a sandboxed iframe so its print styles can't leak into the
 // app (or the app's dark theme into it).
-export default function StudyQuizModal({ upload, accountEmail, onSent, onClose }) {
+// uploads: the selected upload package ([{ uploadId, topic }], one or more).
+export default function StudyQuizModal({ uploads, accountEmail, onSent, onClose }) {
   const { t } = useTranslation()
   const [quiz, setQuiz] = useState(null)
   const [loadError, setLoadError] = useState('')
@@ -19,10 +20,12 @@ export default function StudyQuizModal({ upload, accountEmail, onSent, onClose }
   const [otherEmail, setOtherEmail] = useState('')
   const [sending, setSending] = useState(null) // null | 'me' | 'other'
   const [sendError, setSendError] = useState('')
+  const uploadIds = uploads.map((u) => u.uploadId)
+  const uploadKey = uploadIds.join(',')
 
   useEffect(() => {
     let cancelled = false
-    generateStudyQuiz(upload.uploadId)
+    generateStudyQuiz(uploadKey.split(','))
       .then((result) => {
         if (!cancelled) setQuiz(result)
       })
@@ -33,7 +36,7 @@ export default function StudyQuizModal({ upload, accountEmail, onSent, onClose }
     return () => {
       cancelled = true
     }
-  }, [upload.uploadId, t])
+  }, [uploadKey, t])
 
   async function send(sendTo) {
     if (sending) return
@@ -45,7 +48,7 @@ export default function StudyQuizModal({ upload, accountEmail, onSent, onClose }
     }
     setSending(sendTo)
     try {
-      const { sentTo } = await emailStudyQuiz(upload.uploadId, { sendTo, email: sendTo === 'other' ? email : undefined })
+      const { sentTo } = await emailStudyQuiz(uploadIds, { sendTo, email: sendTo === 'other' ? email : undefined })
       onSent(sentTo)
     } catch (err) {
       console.error('[StudyQuiz] email failed:', err)
@@ -60,7 +63,8 @@ export default function StudyQuizModal({ upload, accountEmail, onSent, onClose }
     <div className="modal-overlay" onClick={sending ? undefined : onClose}>
       <div className="modal-card study-quiz-modal" onClick={(e) => e.stopPropagation()}>
         <h2 className="modal-title">{t('studyQuiz.previewTitle')}</h2>
-        <p className="modal-subtitle">{upload.topic}</p>
+        <p className="modal-subtitle">{uploads.map((u) => u.topic).join(' + ')}</p>
+        {quiz && <p className="study-quiz-count">{t('studyQuiz.questionCount', { count: quiz.questions.length })}</p>}
 
         {!quiz && !loadError && <p className="loading-text">{t('studyQuiz.generating')}</p>}
         {loadError && <p className="form-error">{loadError}</p>}

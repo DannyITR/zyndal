@@ -1,7 +1,7 @@
 import { createStudentHandler } from './_lib/studentHandler.js'
 import { supabase } from './_lib/auth.js'
-import { sanitizeUuid, sanitizeEmail } from './_lib/sanitize.js'
-import { loadOwnedUpload, getOrCreateQuizQuestions, toWorksheetQuestions } from './_lib/studyQuiz.js'
+import { sanitizeEmail } from './_lib/sanitize.js'
+import { validateUploadIds, loadOwnedUploads, getOrCreatePackageQuiz } from './_lib/studyQuiz.js'
 import { sendStudyQuizEmail } from './_lib/resend.js'
 import { buildStudyQuizHtml, worksheetLangFor } from '../src/lib/studyQuizWorksheet.js'
 
@@ -10,8 +10,8 @@ import { buildStudyQuizHtml, worksheetLangFor } from '../src/lib/studyQuizWorksh
 // 'other' + email). createStudentHandler runs requireAuth before handle().
 // Not premium-gated: available to every user.
 //
-// The client sends only the upload id — the worksheet is rebuilt here from
-// the saved upload_questions rows (the same ones the preview loaded via
+// The client sends only the upload ids — the worksheet is rebuilt here from
+// the package's saved quiz (the same one the preview loaded via
 // api/generate-study-quiz.js), never from client-supplied HTML, so this
 // can't be used to mail arbitrary content from hello@zyndal.ca.
 //
@@ -23,9 +23,8 @@ const SEND_LIMIT = 5
 const SEND_WINDOW_MS = 60 * 60 * 1000
 
 function validate(body) {
-  const uploadId = sanitizeUuid(body.upload_id)
-  if (!uploadId) return { field: 'upload_id', message: 'upload_id must be a valid id.' }
-  body.upload_id = uploadId
+  const idsError = validateUploadIds(body)
+  if (idsError) return idsError
 
   if (body.send_to !== 'me' && body.send_to !== 'other') return { field: 'send_to', message: "send_to must be 'me' or 'other'." }
   if (body.send_to === 'other') {
@@ -37,7 +36,7 @@ function validate(body) {
 }
 
 async function handle({ userId, body }) {
-  const upload = await loadOwnedUpload(userId, body.upload_id)
+  const uploads = await loadOwnedUploads(userId, body.upload_ids)
 
   const { data: user, error: userError } = await supabase
     .from('users')
@@ -61,7 +60,7 @@ async function handle({ userId, body }) {
   // of the student's five.
   const { data: logRow, error: logError } = await supabase
     .from('study_quiz_email_sends')
-    .insert({ user_id: userId, upload_id: upload.id, recipient })
+    .insert({ user_id: userId, upload_id: uploads[0].id, recipient })
     .select('id')
     .single()
   if (logError) throw logError
@@ -86,12 +85,13 @@ async function handle({ userId, body }) {
   }
 
   let html
+  let quiz
   try {
-    const rows = await getOrCreateQuizQuestions(upload, user || {})
+    quiz = await getOrCreatePackageQuiz({ userId, uploads, user })
     html = buildStudyQuizHtml({
-      title: upload.topic,
-      subjectId: upload.subject,
-      questions: toWorksheetQuestions(rows),
+      title: quiz.title,
+      subjectId: quiz.subject,
+      questions: quiz.questions,
       lang: worksheetLangFor(user?.language_preference),
     })
   } catch (err) {
@@ -103,7 +103,7 @@ async function handle({ userId, body }) {
     await sendStudyQuizEmail({
       email: recipient,
       html,
-      topic: upload.topic,
+      topic: quiz.title,
       senderUsername: user?.username,
       toSelf,
       languagePreference: user?.language_preference,

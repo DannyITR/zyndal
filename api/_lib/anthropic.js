@@ -65,7 +65,7 @@ export async function generateJson({ system, schema, maxTokens, content, tempera
   // instead of letting JSON.parse fail with a confusing syntax error.
   if (message.stop_reason === 'max_tokens') {
     console.error(`[anthropic] response cut off at max_tokens=${maxTokens} (output_tokens=${message.usage?.output_tokens})`)
-    const err = new Error('The AI response was cut off before it finished. Please try again with fewer pages.')
+    const err = new Error('The AI response was cut off before it finished. Please try again.')
     err.status = 502
     err.code = 'AI_RESPONSE_CUT_OFF'
     throw err

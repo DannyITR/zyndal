@@ -904,19 +904,19 @@ export async function getUploadedContentForSubject(userId, subject) {
   }))
 }
 
-// Study Guide "Printable quiz" — every question linked to one of the
-// student's uploads, generated and saved server-side first if it has none
-// (see api/generate-study-quiz.js). Returns { uploadId, title, subject,
-// lang, questions } for buildStudyQuizHtml.
-export async function generateStudyQuiz(uploadId) {
-  return callApi('/api', 'POST', 'generate-study-quiz', { upload_id: uploadId })
+// Study Guide "Printable quiz" for an upload package (one or more of the
+// student's uploads) — generated from their study guide summaries and saved
+// server-side per package (see api/generate-study-quiz.js). Returns
+// { uploadIds, title, subject, lang, questions } for buildStudyQuizHtml.
+export async function generateStudyQuiz(uploadIds) {
+  return callApi('/api', 'POST', 'generate-study-quiz', { upload_ids: uploadIds })
 }
 
 // sendTo: 'me' (the account's own email) or 'other' (with email). The
-// server rebuilds the worksheet from the upload id itself — see
+// server rebuilds the worksheet from the upload ids itself — see
 // api/email-study-quiz.js. Resolves to { sentTo }.
-export async function emailStudyQuiz(uploadId, { sendTo, email }) {
-  return callApi('/api', 'POST', 'email-study-quiz', { upload_id: uploadId, send_to: sendTo, email })
+export async function emailStudyQuiz(uploadIds, { sendTo, email }) {
+  return callApi('/api', 'POST', 'email-study-quiz', { upload_ids: uploadIds, send_to: sendTo, email })
 }
 
 // Persists questions generated on the fly from an upload's summary (see

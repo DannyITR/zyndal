@@ -335,6 +335,26 @@ create table if not exists study_quiz_email_sends (
 );
 create index if not exists study_quiz_email_sends_user_created_idx on study_quiz_email_sends(user_id, created_at);
 
+-- A printable quiz for an "upload package" (one or more of a student's
+-- uploads), generated from their study guide summaries (see
+-- api/_lib/studyQuiz.js) and saved so the preview, the email and
+-- re-opening all show the same questions. upload_key is the sorted upload
+-- ids joined with commas. source_updated_at is the newest uploads.updated_at
+-- in the package when it was generated, so adding pages rebuilds it.
+create table if not exists study_quizzes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  upload_ids uuid[] not null,
+  upload_key text not null,
+  language text not null,
+  title text not null,
+  subject text,
+  questions jsonb not null,
+  source_updated_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, upload_key, language)
+);
+
 -- A grade the student logged manually — independent of Test Prep and
 -- uploads. Still feeds the same grade-bonus payout flow as an uploaded test.
 create table if not exists grades (
@@ -482,6 +502,7 @@ alter table streak_shares enable row level security;
 alter table uploads enable row level security;
 alter table upload_questions enable row level security;
 alter table study_quiz_email_sends enable row level security;
+alter table study_quizzes enable row level security;
 alter table upload_weekly_usage enable row level security;
 alter table grades enable row level security;
 alter table grade_bonuses enable row level security;
@@ -834,3 +855,12 @@ alter table message_reports enable row level security;
 --
 -- ALTER TABLE conversations ADD COLUMN IF NOT EXISTS user_a_last_viewed_at timestamptz;
 -- ALTER TABLE conversations ADD COLUMN IF NOT EXISTS user_b_last_viewed_at timestamptz;
+--
+-- Run against a database that already has `uploads` from before the
+-- printable quiz's per-upload study guide summary existed (see
+-- api/_lib/studyQuiz.js — study_guide_summary is { concepts: [{ name,
+-- facts }] }, study_guide_summary_source the uploads.updated_at it was
+-- built from):
+--
+-- ALTER TABLE uploads ADD COLUMN IF NOT EXISTS study_guide_summary jsonb;
+-- ALTER TABLE uploads ADD COLUMN IF NOT EXISTS study_guide_summary_source timestamptz;

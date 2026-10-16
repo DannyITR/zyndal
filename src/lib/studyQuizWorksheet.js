@@ -147,11 +147,12 @@ function renderAnswer(q) {
 }
 
 // questions: [{ question, options: string[] (empty for short answer),
-// answer: string, explanation?: string }] — see toWorksheetQuestions in
-// api/_lib/studyQuiz.js for how upload_questions rows map onto this.
+// answer: string, explanation?: string }] — the shape study_quizzes stores
+// (see api/_lib/studyQuiz.js). subjectId may be null for a package mixing
+// subjects; the subject label is then left out.
 export function buildStudyQuizHtml({ title, subjectId, questions, lang = 'en' }) {
   const labels = LABELS[lang] || LABELS.en
-  const subjectLabel = (SUBJECT_LABELS[lang] || SUBJECT_LABELS.en)[subjectId] || SUBJECT_LABELS.en[subjectId] || ''
+  const subjectLabel = subjectId ? (SUBJECT_LABELS[lang] || SUBJECT_LABELS.en)[subjectId] || SUBJECT_LABELS.en[subjectId] || '' : ''
   const safeTitle = escapeHtml(title)
 
   return `<!doctype html>
@@ -172,7 +173,7 @@ export function buildStudyQuizHtml({ title, subjectId, questions, lang = 'en' })
 <body style="margin:0;padding:32px 28px;background:#ffffff;color:#111111;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.5;">
   <div style="max-width:720px;margin:0 auto;">
     <h1 style="margin:0;font-size:24px;line-height:1.25;">${safeTitle}</h1>
-    <p style="margin:4px 0 0;color:#444;">${escapeHtml(subjectLabel)} · ${escapeHtml(labels.questionCount(questions.length))}</p>
+    <p style="margin:4px 0 0;color:#444;">${[subjectLabel, labels.questionCount(questions.length)].filter(Boolean).map(escapeHtml).join(' · ')}</p>
 
     <table role="presentation" style="width:100%;margin:24px 0 32px;border-collapse:collapse;">
       <tr>

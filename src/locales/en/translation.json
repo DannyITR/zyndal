@@ -770,9 +770,13 @@
     "join": "Join"
   },
   "studyQuiz": {
+    "printableQuizSelected_one": "Printable quiz ({{count}} upload)",
+    "printableQuizSelected_other": "Printable quiz ({{count}} uploads)",
+    "questionCount_one": "{{count}} question",
+    "questionCount_other": "{{count}} questions",
     "printableQuiz": "Printable quiz",
     "sectionTitle": "Printable quizzes",
-    "sectionHint": "Turn any of your notes into a paper quiz with an answer key.",
+    "sectionHint": "Pick one or more of your uploads to turn into a paper quiz with an answer key.",
     "previewTitle": "Printable quiz",
     "generating": "Building your quiz… (this can take a minute)",
     "emailMe": "Email to me",
@@ -801,7 +805,7 @@
     "EMAIL_EXISTS": "An account with this email already exists.",
     "EXPIRED_TOKEN": "This link has expired.",
     "FORBIDDEN": "You don't have permission to do that.",
-    "AI_RESPONSE_CUT_OFF": "The AI response was cut off before it finished. Please try again with fewer pages.",
+    "AI_RESPONSE_CUT_OFF": "The AI response was cut off before it finished. Please try again.",
     "NO_QUIZ_CONTENT": "This upload doesn't have enough content to build a quiz from.",
     "STUDY_QUIZ_EMAIL_LIMIT": "You can email up to 5 quizzes per hour. Please try again later.",
     "EMAIL_SEND_FAILED": "We couldn't send that email. Please try again.",

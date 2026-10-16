@@ -6539,7 +6539,8 @@ div.zyndal-logo {
 .study-quiz-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  cursor: pointer;
   gap: 12px;
   padding: 12px 14px;
   background: var(--card);
@@ -6552,10 +6553,6 @@ div.zyndal-logo {
   overflow-wrap: anywhere;
   color: var(--text);
   font-weight: 600;
-}
-
-.study-quiz-row .btn {
-  flex-shrink: 0;
 }
 
 .modal-card.study-quiz-modal {
@@ -6613,4 +6610,18 @@ div.zyndal-logo {
   background: var(--card-2);
   color: var(--green-text);
   border: 1px solid var(--green);
+}
+
+
+.study-quiz-row input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--purple);
+}
+
+.study-quiz-count {
+  margin: -8px 0 0;
+  color: var(--text-dim);
+  font-weight: 600;
 }

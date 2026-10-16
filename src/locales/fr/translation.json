@@ -770,9 +770,13 @@
     "join": "Rejoindre"
   },
   "studyQuiz": {
+    "printableQuizSelected_one": "Quiz à imprimer ({{count}} téléversement)",
+    "printableQuizSelected_other": "Quiz à imprimer ({{count}} téléversements)",
+    "questionCount_one": "{{count}} question",
+    "questionCount_other": "{{count}} questions",
     "printableQuiz": "Quiz à imprimer",
     "sectionTitle": "Quiz à imprimer",
-    "sectionHint": "Transforme tes notes en quiz papier avec un corrigé.",
+    "sectionHint": "Choisis un ou plusieurs téléversements à transformer en quiz papier avec un corrigé.",
     "previewTitle": "Quiz à imprimer",
     "generating": "Création de ton quiz… (cela peut prendre une minute)",
     "emailMe": "M'envoyer par courriel",
@@ -801,7 +805,7 @@
     "EMAIL_EXISTS": "Un compte avec ce courriel existe déjà.",
     "EXPIRED_TOKEN": "Ce lien a expiré.",
     "FORBIDDEN": "Vous n'avez pas la permission de faire cela.",
-    "AI_RESPONSE_CUT_OFF": "La réponse de l'IA a été coupée avant la fin. Veuillez réessayer avec moins de pages.",
+    "AI_RESPONSE_CUT_OFF": "La réponse de l'IA a été coupée avant la fin. Veuillez réessayer.",
     "NO_QUIZ_CONTENT": "Ce téléversement n'a pas assez de contenu pour créer un quiz.",
     "STUDY_QUIZ_EMAIL_LIMIT": "Tu peux envoyer jusqu'à 5 quiz par heure. Réessaie plus tard.",
     "EMAIL_SEND_FAILED": "Nous n'avons pas pu envoyer ce courriel. Veuillez réessayer.",

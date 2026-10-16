@@ -81,3 +81,17 @@ export async function signSharedNoteFiles(sharedFilesLists) {
 
   return lists.map((list) => list.filter((f) => urlByPath[f.path]).map((f) => ({ url: urlByPath[f.path], mediaType: f.media_type })))
 }
+
+// The stored pages of one upload back as [{ base64, mediaType }] — the shape
+// api/_lib/documentExtraction.js and the study-guide summary builder (see
+// api/_lib/studyQuiz.js) send to Claude. Server-side only; callers have
+// already verified the caller owns the upload.
+export async function downloadSharedNoteFiles(sharedFiles) {
+  const files = []
+  for (const f of sharedFiles || []) {
+    const { data, error } = await supabase.storage.from(SHARED_NOTES_BUCKET).download(f.path)
+    if (error) throw error
+    files.push({ base64: Buffer.from(await data.arrayBuffer()).toString('base64'), mediaType: f.media_type })
+  }
+  return files
+}
