@@ -13,6 +13,28 @@ import PrintableQuizSection from '../testprep/PrintableQuizSection'
 
 const DOCUMENT_TYPE_ICON = { test: '📝', worksheet: '📋', textbook: '📖', notes: '🗒️' }
 
+// "Show only my notes" is remembered per browser, for every class and day,
+// so a student who prefers their own notes doesn't re-pick it each visit.
+// Storage can be unavailable (private mode, blocked site data), so every
+// access is wrapped and falls back to showing all notes.
+const MINE_ONLY_STORAGE_KEY = 'zyndal_notes_calendar_mine_only'
+
+function readMineOnly() {
+  try {
+    return localStorage.getItem(MINE_ONLY_STORAGE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeMineOnly(value) {
+  try {
+    localStorage.setItem(MINE_ONLY_STORAGE_KEY, value ? '1' : '0')
+  } catch {
+    // Best-effort — the choice just won't be remembered next visit.
+  }
+}
+
 // Structural sibling of HomeworkDetailScreen.jsx — lists a day's shared
 // uploads using the same .history-list/.history-item classes
 // UploadsLibraryScreen.jsx already uses (so a shared upload looks exactly
@@ -46,10 +68,23 @@ export default function GroupUploadsDayDetailScreen({ user, date, uploads, onUpl
   const [lightbox, setLightbox] = useState(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [deletedIds, setDeletedIds] = useState([])
-  const visibleUploads = uploads.filter((u) => !deletedIds.includes(u.id))
+  const [mineOnly, setMineOnly] = useState(readMineOnly)
+  const dayUploads = uploads.filter((u) => !deletedIds.includes(u.id))
+  const myCount = dayUploads.filter((u) => u.isOwn).length
+  // "Show only my notes" filters both the list and the printable-quiz
+  // checkboxes below it, so a ticked classmate's upload can't end up in a
+  // quiz while hidden.
+  const visibleUploads = mineOnly ? dayUploads.filter((u) => u.isOwn) : dayUploads
+
+  function chooseMineOnly(value) {
+    setMineOnly(value)
+    writeMineOnly(value)
+  }
+
   // The day's study-material uploads (classmates' as well as the student's
-  // own) for the same "Printable quizzes" section the Study Guide shows —
-  // never a graded test, and hidden entirely when there are none.
+  // own, unless filtered) for the same "Printable quizzes" section the Study
+  // Guide shows — never a graded test, and hidden entirely when there are
+  // none.
   const quizUploads = visibleUploads
     .filter((u) => u.documentType !== 'test')
     .map((u) => ({ uploadId: u.id, topic: u.topic, meta: t('groupUploads.uploadedBy', { username: u.uploaderUsername || '—' }) }))
@@ -87,8 +122,31 @@ export default function GroupUploadsDayDetailScreen({ user, date, uploads, onUpl
 
       {error && <p className="form-error">{error}</p>}
 
-      {visibleUploads.length === 0 ? (
+      {dayUploads.length > 0 && (
+        <div className="segmented-toggle" role="group" aria-label={t('groupUploads.notesFilterLabel')}>
+          <button
+            type="button"
+            className={`segmented-toggle-btn ${mineOnly ? 'segmented-toggle-btn--active' : ''}`}
+            aria-pressed={mineOnly}
+            onClick={() => chooseMineOnly(true)}
+          >
+            {t('groupUploads.filterMine', { count: myCount })}
+          </button>
+          <button
+            type="button"
+            className={`segmented-toggle-btn ${!mineOnly ? 'segmented-toggle-btn--active' : ''}`}
+            aria-pressed={!mineOnly}
+            onClick={() => chooseMineOnly(false)}
+          >
+            {t('groupUploads.filterAll', { count: dayUploads.length })}
+          </button>
+        </div>
+      )}
+
+      {dayUploads.length === 0 ? (
         <p className="field-hint">{t('groupUploads.emptyDay')}</p>
+      ) : visibleUploads.length === 0 ? (
+        <p className="field-hint">{t('groupUploads.noMyNotesDay')}</p>
       ) : (
         <ul className="history-list">
           {visibleUploads.map((upload) => {

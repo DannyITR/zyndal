@@ -947,6 +947,10 @@
     }
   },
   "groupUploads": {
+    "notesFilterLabel": "Mostrar solo mis apuntes",
+    "filterMine": "Mis apuntes ({{count}})",
+    "filterAll": "Todos ({{count}})",
+    "noMyNotesDay": "No compartiste apuntes este día. Cambia a Todos para ver los apuntes de tu clase.",
     "retryImage": "No se pudo cargar la imagen. Toca para reintentar.",
     "retryImageShort": "Reintentar",
     "deleteNotes": "Eliminar estas notas",

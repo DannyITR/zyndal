@@ -947,6 +947,10 @@
     }
   },
   "groupUploads": {
+    "notesFilterLabel": "Show only my notes",
+    "filterMine": "My notes ({{count}})",
+    "filterAll": "All ({{count}})",
+    "noMyNotesDay": "You haven't shared any notes on this day. Switch to All to see your class's notes.",
     "retryImage": "Image failed to load. Tap to retry.",
     "retryImageShort": "Retry",
     "deleteNotes": "Delete these notes",
