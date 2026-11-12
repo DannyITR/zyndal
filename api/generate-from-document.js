@@ -3,6 +3,11 @@ import { createStudentHandler } from './_lib/studentHandler.js'
 // commented out, not deleted, so it can be re-enabled.
 // import { assertPremium } from './_lib/subscription.js'
 import { extractDocument } from './_lib/documentExtraction.js'
+import { withGenerationCache, hashKey } from './_lib/generationCache.js'
+
+// Bump when the extraction prompt/caps change, so cached results from the
+// old prompt aren't served for re-sent pages.
+const EXTRACTION_CACHE_VERSION = 'extract-v2'
 
 // Mirrors processUploadedDocument in src/lib/ai.js — NOT one of the four
 // endpoints originally requested, but added to close the same gap: this is
@@ -43,7 +48,14 @@ function validate(body) {
 async function handle({ userId, body }) {
   // await assertPremium(userId)
   // Batched, merged and de-duplicated in api/_lib/documentExtraction.js.
-  return extractDocument({ uploadType: body.uploadType, files: body.files })
+  // The same pages from the same student (double tap, second tab, retry
+  // after a dropped response) reuse the first result — see generationCache.js.
+  const key = hashKey(EXTRACTION_CACHE_VERSION, body.uploadType, ...body.files.map((f) => hashKey(f.mediaType, f.base64)))
+  return withGenerationCache({
+    userId,
+    key,
+    compute: () => extractDocument({ uploadType: body.uploadType, files: body.files }),
+  })
 }
 
 export default createStudentHandler({ method: 'POST', validate, handle })

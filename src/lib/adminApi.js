@@ -100,6 +100,11 @@ export function getAdminStats() {
   return callAdminApi('GET', 'get-stats')
 }
 
+// days: 7 | 30 | 90 — see api/admin/get-ai-usage.js.
+export function getAdminAiUsage(days = 30) {
+  return callAdminApi('GET', `get-ai-usage?days=${encodeURIComponent(days)}`)
+}
+
 export function getAdminUsers({ page = 1, limit = 50, search = '', accountType = '', isPremium = '', sortBy = '', sortDir = '' } = {}) {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) })
   if (search) params.set('search', search)

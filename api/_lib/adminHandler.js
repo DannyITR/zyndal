@@ -1,4 +1,5 @@
 import { applyCors } from './cors.js'
+import { runWithUsageContext } from './usageLog.js'
 import { verifyAdminToken } from './adminAuth.js'
 
 // Same shape as createStudentHandler/createParentHandler, but for
@@ -47,7 +48,7 @@ export function createAdminHandler({ method = 'GET', validate, handle }) {
         }
       }
 
-      const result = await handle({ body, adminId })
+      const result = await runWithUsageContext(req, adminId, () => handle({ body, adminId }))
       res.status(200).json(result)
     } catch (err) {
       console.error('[admin api] request failed:', err)

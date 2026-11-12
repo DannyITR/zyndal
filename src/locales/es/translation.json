@@ -853,6 +853,8 @@
     "COURSE_NOT_AT_SCHOOL": "Tu escuela no ofrece ese curso.",
     "NO_SCHOOL": "Primero elige tu escuela en Configuración.",
     "AI_RESPONSE_CUT_OFF": "La respuesta de la IA se cortó antes de terminar. Inténtalo de nuevo.",
+    "AI_UNAVAILABLE": "Las funciones de IA no están disponibles temporalmente, inténtalo de nuevo más tarde.",
+    "GENERATION_IN_PROGRESS": "Esta subida ya se está procesando. Espera un momento.",
     "NO_QUIZ_CONTENT": "Esta subida no tiene suficiente contenido para crear un cuestionario.",
     "STUDY_QUIZ_EMAIL_LIMIT": "Puedes enviar hasta 5 cuestionarios por hora. Inténtalo más tarde.",
     "EMAIL_SEND_FAILED": "No pudimos enviar ese correo. Inténtalo de nuevo.",

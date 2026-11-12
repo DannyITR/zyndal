@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getAdminStats, getAdminUsers, updateAdminUser, deleteAdminUser } from '../../lib/adminApi'
 import AdminConfirmDeleteModal from './AdminConfirmDeleteModal'
+import AdminAiUsagePanel from './AdminAiUsagePanel'
 
 function formatDate(value) {
   if (!value) return '—'
@@ -372,6 +373,8 @@ export default function AdminDashboard({ onLogout, onEditUser, onOpenApprovals, 
           </button>
         </div>
       </section>
+
+      <AdminAiUsagePanel />
 
       {deleteTarget && (
         <AdminConfirmDeleteModal

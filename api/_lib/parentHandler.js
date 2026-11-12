@@ -1,4 +1,5 @@
 import { applyCors } from './cors.js'
+import { runWithUsageContext } from './usageLog.js'
 import { requireAuth, supabase } from './auth.js'
 
 // Same shape as createStudentHandler (studentHandler.js), plus one extra
@@ -59,7 +60,7 @@ export function createParentHandler({ method = 'GET', validate, handle }) {
         }
       }
 
-      const result = await handle({ parentId: userId, body })
+      const result = await runWithUsageContext(req, userId, () => handle({ parentId: userId, body }))
       res.status(200).json(result)
     } catch (err) {
       console.error('[api] request failed:', err)

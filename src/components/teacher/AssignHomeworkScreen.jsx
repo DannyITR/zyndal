@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createHomework, getBankQuestions } from '../../lib/storage'
 import { processUploadedDocument } from '../../lib/ai'
@@ -34,6 +34,9 @@ export default function AssignHomeworkScreen({ user, classId, className, onBack,
   const [extractError, setExtractError] = useState('')
   const [skippedCount, setSkippedCount] = useState(0)
   const [questions, setQuestions] = useState([])
+  // Set synchronously, unlike `extracting`, so a double click can't start a
+  // second (billed) extraction before React re-renders the disabled button.
+  const extractingRef = useRef(false)
 
   // Tab 2: from the question bank (generated_questions)
   const [bankGrade, setBankGrade] = useState('9')
@@ -62,6 +65,8 @@ export default function AssignHomeworkScreen({ user, classId, className, onBack,
       setExtractError(t('teacher.chooseFileFirst'))
       return
     }
+    if (extractingRef.current) return
+    extractingRef.current = true
     setExtracting(true)
     setExtractError('')
     try {
@@ -90,6 +95,7 @@ export default function AssignHomeworkScreen({ user, classId, className, onBack,
     } catch (err) {
       setExtractError(getErrorMessage(err, t, 'teacher.readDocumentFailed'))
     } finally {
+      extractingRef.current = false
       setExtracting(false)
     }
   }

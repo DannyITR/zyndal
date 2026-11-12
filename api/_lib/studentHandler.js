@@ -1,4 +1,5 @@
 import { applyCors } from './cors.js'
+import { runWithUsageContext } from './usageLog.js'
 import { requireAuth } from './auth.js'
 
 // Shared wrapper for every /api/student and /api/questions endpoint: CORS,
@@ -42,7 +43,7 @@ export function createStudentHandler({ method = 'GET', validate, handle, downloa
         }
       }
 
-      const result = await handle({ userId, body })
+      const result = await runWithUsageContext(req, userId, () => handle({ userId, body }))
       if (downloadFilename) res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`)
       res.status(200).json(result)
     } catch (err) {

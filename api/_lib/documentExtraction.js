@@ -11,7 +11,25 @@
 import { generateJson } from './anthropic.js'
 
 export const PAGES_PER_BATCH = 8
-const MAX_TOKENS_PER_BATCH = 16000
+
+// Output caps. Uncapped ("write as many as the material supports"), one
+// dense page could produce 50+ questions with long explanations, so a batch
+// regularly ran into its 16k max_tokens. A cut-off batch is billed in full
+// and then thrown away, and the student's retry pays for it all again.
+// A batch's question budget is its share of MAX_QUESTIONS_PER_UPLOAD, never
+// more than MAX_QUESTIONS_PER_PAGE per page; max_tokens follows from it at
+// ~TOKENS_PER_QUESTION each (question, 4 options, answer, one-sentence
+// explanation, JSON) plus room for summary/key concepts.
+const MAX_QUESTIONS_PER_PAGE = 10
+const MAX_QUESTIONS_PER_UPLOAD = 40
+const MAX_KEY_CONCEPTS = 10
+const TOKENS_PER_QUESTION = 200
+const BASE_TOKENS = 1000
+
+function batchQuestionCap(batchPages, totalPages) {
+  const share = Math.ceil((MAX_QUESTIONS_PER_UPLOAD * batchPages) / totalPages)
+  return Math.max(1, Math.min(MAX_QUESTIONS_PER_PAGE * batchPages, share))
+}
 
 const UPLOAD_QUESTION_SCHEMA = {
   type: 'object',
@@ -43,7 +61,7 @@ const UPLOAD_DOCUMENT_SCHEMA = {
 
 // batch: { first, last, totalPages } (1-based page numbers) when the upload
 // is split across several calls, else null.
-function buildSystemPrompt(documentTypePhrase, pageCount, batch) {
+function buildSystemPrompt(documentTypePhrase, pageCount, batch, questionCap) {
   let pagesNote = ''
   if (batch) {
     pagesNote = ` These images are pages ${batch.first}-${batch.last} of a ${batch.totalPages}-page document; the other pages are being read separately. Treat the pages you have as one continuous section, in reading order, and cover only what is on them.`
@@ -62,21 +80,23 @@ function buildSystemPrompt(documentTypePhrase, pageCount, batch) {
       question: string,
       correct_answer: string,
       options: [string, string, string, string],
-      explanation: string,
+      explanation: string (one short sentence),
       difficulty: 'easy' | 'medium' | 'hard'
     }
   ],
-  key_concepts: [string],
+  key_concepts: [string] (at most ${MAX_KEY_CONCEPTS}),
   summary: string (2-3 sentences summarizing the material)
 }
 
-"questions" must cover the material on these pages. There are two kinds of content, and a page can have both:
+"questions" must cover the material on these pages, with AT MOST ${questionCap} questions in total. There are two kinds of content, and a page can have both:
 
-1. Questions printed on the page (a test, a worksheet, review questions): include every one of them. Don't repeat a question that appears on more than one page.
+1. Questions printed on the page (a test, a worksheet, review questions): include them, up to the limit. Don't repeat a question that appears on more than one page.
 
-2. Material that teaches rather than asks (class notes, textbook pages, fill-in-the-blank handouts, including blanks the student has already filled in by hand): write the study questions yourself. Cover every fact, definition, date, name, place, cause and consequence on the page. Each filled-in blank becomes a question whose answer is what is written in that blank. There is no fixed number of questions: write as many as the material supports, and don't ask about the same fact twice.
+2. Material that teaches rather than asks (class notes, textbook pages, fill-in-the-blank handouts, including blanks the student has already filled in by hand): write the study questions yourself, on the most important facts, definitions, dates, names, causes and consequences. A filled-in blank becomes a question whose answer is what is written in that blank. Don't ask about the same fact twice.
 
-Never return an empty "questions" array when the pages contain readable subject content.
+If there is more material than ${questionCap} questions can cover, prioritize what a student is most likely to be tested on. Never return an empty "questions" array when the pages contain readable subject content.
+
+Every "explanation" is ONE short sentence.
 
 If a question is not multiple-choice, leave "options" as an empty array and put the full answer in "correct_answer" — don't invent options for a printed question that has none.
 
@@ -93,17 +113,25 @@ function toContentBlocks(files) {
   )
 }
 
-async function extractBatch(files, documentTypePhrase, batch) {
-  return generateJson({
-    system: buildSystemPrompt(documentTypePhrase, files.length, batch),
+async function extractBatch(files, documentTypePhrase, batch, totalPages) {
+  const questionCap = batchQuestionCap(files.length, totalPages)
+  const result = await generateJson({
+    system: buildSystemPrompt(documentTypePhrase, files.length, batch, questionCap),
     schema: UPLOAD_DOCUMENT_SCHEMA,
-    maxTokens: MAX_TOKENS_PER_BATCH,
+    maxTokens: BASE_TOKENS + questionCap * TOKENS_PER_QUESTION,
     // Same pages should give the same result — at the default temperature
     // the same notes could come back with 50 questions one time and none
     // the next.
     temperature: 0,
     content: [...toContentBlocks(files), { type: 'text', text: 'Read these pages and return the JSON now.' }],
+    feature: 'upload-extract',
   })
+  // The prompt sets the limit; this enforces it if the model overshoots.
+  return {
+    ...result,
+    questions: (result.questions || []).slice(0, questionCap),
+    key_concepts: (result.key_concepts || []).slice(0, MAX_KEY_CONCEPTS),
+  }
 }
 
 // ---------- Merging batches ----------
@@ -185,6 +213,7 @@ async function combineOverview(batchResults) {
     maxTokens: 1000,
     temperature: 0,
     content: sections,
+    feature: 'upload-overview',
   })
 }
 
@@ -194,8 +223,8 @@ export async function extractDocument({ files, uploadType }) {
   const documentTypePhrase = uploadType === 'test' ? 'test' : 'study material'
 
   if (files.length <= PAGES_PER_BATCH) {
-    const result = await extractBatch(files, documentTypePhrase, null)
-    return { ...result, questions: dedupeQuestions(result.questions || []) }
+    const result = await extractBatch(files, documentTypePhrase, null, files.length)
+    return { ...result, questions: dedupeQuestions(result.questions).slice(0, MAX_QUESTIONS_PER_UPLOAD) }
   }
 
   const batches = []
@@ -203,7 +232,7 @@ export async function extractDocument({ files, uploadType }) {
     const slice = files.slice(start, start + PAGES_PER_BATCH)
     batches.push({ files: slice, info: { first: start + 1, last: start + slice.length, totalPages: files.length } })
   }
-  const results = await Promise.all(batches.map((b) => extractBatch(b.files, documentTypePhrase, b.info)))
+  const results = await Promise.all(batches.map((b) => extractBatch(b.files, documentTypePhrase, b.info, files.length)))
   const overview = await combineOverview(results)
 
   return {
@@ -211,8 +240,8 @@ export async function extractDocument({ files, uploadType }) {
     topic: overview.topic,
     grade_level: mostCommon(results.map((r) => r.grade_level)),
     document_type: mostCommon(results.map((r) => r.document_type)),
-    questions: dedupeQuestions(results.flatMap((r) => r.questions || [])),
-    key_concepts: dedupeStrings(results.flatMap((r) => r.key_concepts || [])),
+    questions: dedupeQuestions(results.flatMap((r) => r.questions)).slice(0, MAX_QUESTIONS_PER_UPLOAD),
+    key_concepts: dedupeStrings(results.flatMap((r) => r.key_concepts)).slice(0, MAX_KEY_CONCEPTS * 2),
     summary: overview.summary,
   }
 }

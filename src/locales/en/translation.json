@@ -853,6 +853,8 @@
     "COURSE_NOT_AT_SCHOOL": "Your school doesn't offer that course.",
     "NO_SCHOOL": "Set your school in Settings first.",
     "AI_RESPONSE_CUT_OFF": "The AI response was cut off before it finished. Please try again.",
+    "AI_UNAVAILABLE": "AI features are temporarily unavailable, please try again later.",
+    "GENERATION_IN_PROGRESS": "This upload is already being processed. Please wait a moment.",
     "NO_QUIZ_CONTENT": "This upload doesn't have enough content to build a quiz from.",
     "STUDY_QUIZ_EMAIL_LIMIT": "You can email up to 5 quizzes per hour. Please try again later.",
     "EMAIL_SEND_FAILED": "We couldn't send that email. Please try again.",

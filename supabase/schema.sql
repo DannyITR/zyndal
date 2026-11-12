@@ -907,3 +907,50 @@ alter table message_reports enable row level security;
 --   unique (user_id, class_type, class_id)
 -- );
 -- ALTER TABLE class_leaves ENABLE ROW LEVEL SECURITY;
+--
+-- One row per Claude call, from response.usage (see api/_lib/usageLog.js),
+-- for the admin panel's AI usage section (api/admin/get-ai-usage.js).
+-- input_tokens includes cache read/creation tokens. user_id is null for
+-- calls with no signed-in caller (e.g. generate-curriculum.js).
+-- admin_api_usage_summary groups it by UTC day/feature/model in Postgres;
+-- only the service role may call it.
+--
+-- CREATE TABLE IF NOT EXISTS api_usage_log (
+--   id uuid primary key default gen_random_uuid(),
+--   user_id uuid references users(id) on delete set null,
+--   feature text not null,
+--   model text not null,
+--   input_tokens integer not null default 0,
+--   output_tokens integer not null default 0,
+--   created_at timestamptz not null default now()
+-- );
+-- CREATE INDEX IF NOT EXISTS api_usage_log_created_at_idx ON api_usage_log(created_at);
+-- CREATE INDEX IF NOT EXISTS api_usage_log_user_id_idx ON api_usage_log(user_id, created_at);
+-- ALTER TABLE api_usage_log ENABLE ROW LEVEL SECURITY;
+--
+-- CREATE OR REPLACE FUNCTION admin_api_usage_summary(since timestamptz)
+-- RETURNS TABLE (day date, feature text, model text, calls bigint, input_tokens bigint, output_tokens bigint)
+-- LANGUAGE sql STABLE AS $$
+--   SELECT (l.created_at AT TIME ZONE 'UTC')::date, l.feature, l.model, count(*), sum(l.input_tokens), sum(l.output_tokens)
+--   FROM api_usage_log l
+--   WHERE l.created_at >= since
+--   GROUP BY 1, 2, 3
+--   ORDER BY 1 DESC, 2
+-- $$;
+-- REVOKE EXECUTE ON FUNCTION admin_api_usage_summary(timestamptz) FROM PUBLIC, anon, authenticated;
+--
+-- Stops the same input being sent to Claude twice (see
+-- api/_lib/generationCache.js): keyed per user on a hash of the request.
+-- status 'pending' while the first request runs, 'done' with its result
+-- after. Rows older than the 7-day TTL are ignored and replaced on use.
+--
+-- CREATE TABLE IF NOT EXISTS ai_generation_cache (
+--   id uuid primary key default gen_random_uuid(),
+--   user_id uuid not null references users(id) on delete cascade,
+--   cache_key text not null,
+--   status text not null default 'pending' check (status in ('pending', 'done')),
+--   result jsonb,
+--   created_at timestamptz not null default now(),
+--   unique (user_id, cache_key)
+-- );
+-- ALTER TABLE ai_generation_cache ENABLE ROW LEVEL SECURITY;

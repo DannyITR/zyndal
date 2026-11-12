@@ -49,5 +49,6 @@ export async function screenUploadImages(files) {
     schema: UPLOAD_SAFETY_SCHEMA,
     maxTokens: 300,
     content: [...documentBlocks, { type: 'text', text: 'Screen this content now.' }],
+    feature: 'upload-safety-scan',
   })
 }

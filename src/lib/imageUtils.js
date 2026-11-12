@@ -30,7 +30,7 @@ export async function fileToBase64(file) {
 }
 
 const MAX_DIMENSION = 1568 // Claude's useful resolution ceiling for a single image tile
-const JPEG_QUALITY = 0.85
+const JPEG_QUALITY = 0.8
 
 // Downscales an image file to at most MAX_DIMENSION on its long edge and
 // re-encodes as JPEG. Images already under the limit pass through as-is.
@@ -76,11 +76,13 @@ export async function resizeImageToBase64(file, maxDimension = MAX_DIMENSION, qu
 const TOTAL_BASE64_BUDGET = 4_000_000
 
 // Tried in order, only as far as needed: the first step is the normal
-// single-photo encode, so a small upload is untouched; a 10-page set of
+// single-photo encode (1568px long edge, JPEG 0.8); a 10-page set of
 // phone photos typically settles one or two steps down, still comfortably
 // legible for handwriting.
 const ENCODE_STEPS = [
-  { maxDimension: MAX_DIMENSION, quality: JPEG_QUALITY, alwaysReencode: false },
+  // Always re-encoded, even when already small enough: a PNG/WEBP
+  // screenshot goes in as a much smaller JPEG with the same legibility.
+  { maxDimension: MAX_DIMENSION, quality: JPEG_QUALITY, alwaysReencode: true },
   { maxDimension: MAX_DIMENSION, quality: 0.7, alwaysReencode: true },
   { maxDimension: 1280, quality: 0.7, alwaysReencode: true },
   { maxDimension: 1100, quality: 0.65, alwaysReencode: true },

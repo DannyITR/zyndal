@@ -1,4 +1,5 @@
 import { applyCors } from './cors.js'
+import { runWithUsageContext } from './usageLog.js'
 import { isRateLimited } from './rateLimit.js'
 
 // Wraps a POST-only generate-* handler with CORS, method checking, rate
@@ -31,7 +32,7 @@ export function createGenerateHandler({ validate, handle }) {
         return
       }
 
-      const result = await handle(body)
+      const result = await runWithUsageContext(req, null, () => handle(body))
       res.status(200).json(result)
     } catch (err) {
       console.error('[api] generation failed:', err)

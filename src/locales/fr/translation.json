@@ -853,6 +853,8 @@
     "COURSE_NOT_AT_SCHOOL": "Ton école n'offre pas ce cours.",
     "NO_SCHOOL": "Choisis d'abord ton école dans les Paramètres.",
     "AI_RESPONSE_CUT_OFF": "La réponse de l'IA a été coupée avant la fin. Veuillez réessayer.",
+    "AI_UNAVAILABLE": "Les fonctionnalités d'IA sont temporairement indisponibles, veuillez réessayer plus tard.",
+    "GENERATION_IN_PROGRESS": "Ce téléversement est déjà en cours de traitement. Veuillez patienter un instant.",
     "NO_QUIZ_CONTENT": "Ce téléversement n'a pas assez de contenu pour créer un quiz.",
     "STUDY_QUIZ_EMAIL_LIMIT": "Tu peux envoyer jusqu'à 5 quiz par heure. Réessaie plus tard.",
     "EMAIL_SEND_FAILED": "Nous n'avons pas pu envoyer ce courriel. Veuillez réessayer.",

@@ -68,6 +68,14 @@ export default function UploadCaptureScreen({
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
 
+  // Set synchronously, unlike `processing`, so a double tap can't start a
+  // second (billed) extraction before React re-renders the disabled button.
+  const submittingRef = useRef(false)
+  // { pagesKey, aiResult, sharedAiResult } from the last successful AI pass
+  // over exactly these pages. If the save after it fails, submitting again
+  // retries only the save instead of paying to read the same pages twice.
+  const extractedRef = useRef(null)
+
   const cameraInputRef = useRef(null)
   const libraryInputRef = useRef(null)
 
@@ -132,19 +140,27 @@ export default function UploadCaptureScreen({
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!canSubmit) return
+    if (!canSubmit || submittingRef.current) return
+    submittingRef.current = true
     setProcessing(true)
     setError('')
     try {
       const files = pages.map((p) => p.file)
-      const aiResult = await processUploadedDocument({ files, uploadType })
+      const pagesKey = `${uploadType}:${pages.map((p) => p.id).join('|')}`
+      if (extractedRef.current?.pagesKey !== pagesKey) {
+        extractedRef.current = { pagesKey, aiResult: await processUploadedDocument({ files, uploadType }) }
+      }
+      const { aiResult } = extractedRef.current
 
       if (isAddingPages) {
         await addPagesToUpload({ uploadId: existingUpload.id, questions: aiResult.questions, pagesAdded: files.length })
         const refreshed = await getUploadDetail(existingUpload.id)
         onSaved(refreshed)
       } else if (canShareWithClass && shareWithClass) {
-        const sharedAiResult = await ensurePracticeQuestions(aiResult, { subjectName: getSubject(subjectId)?.name || subjectId, grade: user.grade })
+        if (!extractedRef.current.sharedAiResult) {
+          extractedRef.current.sharedAiResult = await ensurePracticeQuestions(aiResult, { subjectName: getSubject(subjectId)?.name || subjectId, grade: user.grade })
+        }
+        const { sharedAiResult } = extractedRef.current
         const saved = await saveSharedUpload({
           classType: classContext.classType,
           classId: classContext.classId,
@@ -176,6 +192,7 @@ export default function UploadCaptureScreen({
     } catch (err) {
       console.error('[Uploads] processing failed:', err)
       setError(getErrorMessage(err, t))
+      submittingRef.current = false
       setProcessing(false)
     }
   }
