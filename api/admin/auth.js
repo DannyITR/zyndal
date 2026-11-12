@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 import { createPublicHandler } from '../_lib/publicHandler.js'
-import { createAdminToken } from '../_lib/adminAuth.js'
+import { createAdminToken, getAdminSecret } from '../_lib/adminAuth.js'
 import { supabase } from '../_lib/auth.js'
 import { hashPassword, comparePassword } from '../../src/lib/password.js'
 import { sanitizeUsername } from '../_lib/sanitize.js'
@@ -33,8 +33,34 @@ function validate(body) {
   return null
 }
 
+function invalidCredentials() {
+  const err = new Error('Invalid admin credentials.')
+  err.status = 401
+  err.code = 'INVALID_CREDENTIALS'
+  return err
+}
+
+// A bcrypt hash can't be trimmed, so the typed password is tried as typed
+// first (an admin whose real password has edge whitespace still works),
+// then trimmed (a stray space from a paste or autofill doesn't lock anyone
+// out).
+async function matchesStoredHash(password, hash) {
+  if (await comparePassword(password, hash)) return true
+  const trimmed = password.trim()
+  return trimmed !== password && comparePassword(trimmed, hash)
+}
+
 async function handle({ body }) {
-  const { password } = body
+  const password = body.password
+  const trimmedPassword = password.trim()
+  // Trimmed so a trailing space or newline pasted into the Vercel env var
+  // doesn't make it impossible to match. Unset (or blank) means the
+  // ADMIN_PASSWORD paths below are simply unavailable, never an empty
+  // string that an empty password could match.
+  const envSecret = getAdminSecret()
+  if (!envSecret) console.error('[admin auth] ADMIN_PASSWORD is not set; only per-admin passwords can log in.')
+  const matchesEnvSecret = Boolean(envSecret) && timingSafeStringEqual(trimmedPassword, envSecret)
+
   // sanitizeUsername lowercases/validates — admin usernames follow the
   // same ^[a-z0-9_]{3,20}$ shape as regular ones, no separate rule needed.
   // An invalid shape can never match a real row anyway, so this just skips
@@ -52,14 +78,21 @@ async function handle({ body }) {
   if (error) throw error
 
   if (admin) {
-    const valid = await comparePassword(password, admin.password)
-    if (!valid) {
-      const err = new Error('Invalid admin credentials.')
-      err.status = 401
-      err.code = 'INVALID_CREDENTIALS'
-      throw err
+    if (await matchesStoredHash(password, admin.password)) return createAdminToken(admin.id)
+
+    // The legacy "admin" account also accepts the current ADMIN_PASSWORD.
+    // Before this, ADMIN_PASSWORD was only read once, to create that row;
+    // rotating it in Vercel afterwards changed nothing about the login, and
+    // the row kept whatever password it was first created with. Not a new
+    // way in: ADMIN_PASSWORD is already the key every admin token is signed
+    // with (see adminAuth.js), so anyone holding it can mint tokens anyway.
+    // The row's hash is re-synced to it so the two stop drifting apart.
+    if (username === 'admin' && matchesEnvSecret) {
+      const { error: syncError } = await supabase.from('users').update({ password: await hashPassword(trimmedPassword) }).eq('id', admin.id)
+      if (syncError) console.error('[admin auth] could not re-sync the admin password hash:', syncError.message)
+      return createAdminToken(admin.id)
     }
-    return createAdminToken(admin.id)
+    throw invalidCredentials()
   }
 
   // No admin-type row exists for this username yet. One-time migration
@@ -73,14 +106,13 @@ async function handle({ body }) {
   // changes; every login after this one goes through the real per-admin
   // check above. This can only ever fire once, for whoever logs in first
   // after this migration ships.
-  const legacySecret = process.env.ADMIN_PASSWORD
-  if (username === 'admin' && legacySecret && timingSafeStringEqual(password, legacySecret)) {
+  if (username === 'admin' && matchesEnvSecret) {
     const { count, error: countError } = await supabase.from('users').select('id', { count: 'exact', head: true }).eq('account_type', 'admin')
     if (countError) throw countError
     if (!count) {
       const { data: created, error: insertError } = await supabase
         .from('users')
-        .insert({ username: 'admin', password: await hashPassword(password), account_type: 'admin', display_name: 'Admin' })
+        .insert({ username: 'admin', password: await hashPassword(trimmedPassword), account_type: 'admin', display_name: 'Admin' })
         .select('id')
         .single()
       if (insertError) throw insertError
@@ -88,10 +120,7 @@ async function handle({ body }) {
     }
   }
 
-  const err = new Error('Invalid admin credentials.')
-  err.status = 401
-  err.code = 'INVALID_CREDENTIALS'
-  throw err
+  throw invalidCredentials()
 }
 
 export default createPublicHandler({ method: 'POST', validate, handle })

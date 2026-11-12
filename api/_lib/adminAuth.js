@@ -14,8 +14,14 @@ import crypto from 'crypto'
 // hash) — so it never needs to be exposed or compared again after login.
 const SESSION_MS = 8 * 60 * 60 * 1000 // 8 hours
 
+// Trimmed, so a stray space or newline pasted into the Vercel env var
+// doesn't matter; blank or unset returns '' (treated as not configured).
+export function getAdminSecret() {
+  return (process.env.ADMIN_PASSWORD || '').trim()
+}
+
 function sign(adminId, expiresAt) {
-  const secret = process.env.ADMIN_PASSWORD
+  const secret = getAdminSecret()
   if (!secret) throw new Error('ADMIN_PASSWORD is not configured.')
   return crypto.createHmac('sha256', secret).update(`${adminId}.${expiresAt}`).digest('hex')
 }
