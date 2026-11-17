@@ -83,7 +83,7 @@ async function handle({ userId, body }) {
         feature: 'upload-questions-from-summary',
       })
       const questions = (result.questions || []).slice(0, MAX_QUESTIONS)
-      return { ...result, questions: await balanceIndexedQuestions(questions, { source: 'upload-questions-from-summary' }) }
+      return { ...result, questions: await balanceIndexedQuestions(questions, { source: 'upload-summary' }) }
     },
   })
 }

@@ -372,7 +372,7 @@ async function writeQuestionsFromSummary(upload, user, { multipleChoiceOnly = fa
   )
   // Short-answer questions (no options) pass through the balance check
   // untouched; see optionBalance.js.
-  const balanced = await balanceAnswerQuestions(dedupeQuestions(batches.flat()), { source: 'study-quiz' })
+  const balanced = await balanceAnswerQuestions(dedupeQuestions(batches.flat()), { source: 'upload-study-quiz' })
   return toWorksheetQuestions(balanced).map((q) => ({
     upload_id: upload.id,
     question: q.question,
@@ -520,7 +520,7 @@ async function ensureMultipleChoice(rows) {
     try {
       repaired = await repairOptions(
         flagged.map((c) => ({ question: c.row.question, options: c.options, correctIndex: c.correctIndex })),
-        { feature: 'option-balance-repair:study-guide-distractors' }
+        { feature: 'option-balance-repair:upload-study-guide-distractors' }
       )
     } catch (err) {
       console.error('[studyQuiz] option repair call failed:', err.message)

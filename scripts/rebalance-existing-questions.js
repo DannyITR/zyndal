@@ -1,3 +1,7 @@
+// NOT RUN, AND NOT TO BE RUN AS IS: option balancing was scoped to
+// upload-based questions only (2026-11-16), so the curriculum bank keeps
+// its original options. Kept for reference.
+//
 // One-off cleanup for the "longest answer is always correct" tell in the
 // generated_questions bank (every language). Finds questions whose correct
 // option is the longest by more than 25% (see checkOptionBalance in

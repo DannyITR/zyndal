@@ -10,8 +10,11 @@
 //    balanced. Anything still unbalanced after the repair is dropped
 //    rather than shown.
 //
-// Used by every generator that writes options (see balanceIndexedQuestions
-// / balanceAnswerQuestions) and by scripts/rebalance-existing-questions.js.
+// Applied only to questions generated from student/teacher uploads:
+// generate-from-upload.js, generate-from-document.js (via
+// documentExtraction.js; printed questions are skipped) and studyQuiz.js.
+// Curriculum pools, the daily Study Guide and Test Prep don't use it.
+// Also used by scripts/rebalance-todays-uploads.js.
 import { generateJson } from './anthropic.js'
 
 export const OPTION_RULES = `Rules for multiple-choice options:
