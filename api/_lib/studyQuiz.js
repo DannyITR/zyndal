@@ -404,9 +404,15 @@ async function generateAndSaveQuestions(upload, user) {
 // goes through generateAndSaveQuestions. Uploads are combined oldest first,
 // in the order they were taken, with duplicates across them removed.
 // uploads: from loadAccessibleUploads.
+//
+// Each question's options are shuffled (stored order put the correct answer
+// in A or B far more often than chance), seeded by the row id so the
+// preview and the emailed copy, built by separate requests, show the same
+// order and answer key.
 export async function getPackageQuiz({ uploads, user }) {
   const { ordered, rows } = await loadPackagePool(uploads, user, { generateMissing: true })
-  const questions = toWorksheetQuestions(rows)
+  const shuffled = rows.map((r) => (Array.isArray(r.options) && r.options.length > 1 ? { ...r, options: shuffle(r.options, seededRandom(r.id || r.question)) } : r))
+  const questions = toWorksheetQuestions(shuffled)
   if (questions.length === 0) throw noContentError()
 
   return { title: packageTitle(ordered), subject: packageSubject(ordered), questions }
@@ -444,10 +450,27 @@ function isFourOptionChoice(row) {
   return options.length === 4 && new Set(options).size === 4 && options.includes(row.correct_answer)
 }
 
-function shuffle(items) {
+// Deterministic random numbers in [0, 1) from a string seed: FNV-1a hash of
+// the seed feeding mulberry32.
+function seededRandom(seed) {
+  let h = 2166136261
+  for (const ch of String(seed)) h = Math.imul(h ^ ch.codePointAt(0), 16777619)
+  let state = h >>> 0
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0
+    let t = state
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+// random: Math.random, or seededRandom(...) for an order that has to come
+// out the same on every call.
+function shuffle(items, random = Math.random) {
   const out = [...items]
   for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
+    const j = Math.floor(random() * (i + 1))
     ;[out[i], out[j]] = [out[j], out[i]]
   }
   return out
@@ -559,6 +582,9 @@ export async function countStudyGuideQuestions({ uploads }) {
 // A Study Guide session: `count` questions (or every one, for 'all') from
 // the uploads' saved pool, picked at random but kept in upload order, each
 // as 4-option multiple choice: [{ question, options, correct, explanation }].
+// Options are shuffled every session: they're stored in whatever order the
+// model wrote them, which put the correct answer in A or B far more often
+// than chance (every question of some uploads at B).
 export async function getStudyGuideQuestions({ uploads, user, count }) {
   const { rows } = await loadPackagePool(uploads, user, { generateMissing: true })
   if (rows.length === 0) throw noContentError()
@@ -570,12 +596,15 @@ export async function getStudyGuideQuestions({ uploads, user, count }) {
   }
 
   const ready = await ensureMultipleChoice(picked)
-  return ready.map((r) => ({
-    question: r.question,
-    options: r.options,
-    correct: r.options.indexOf(r.correct_answer),
-    explanation: r.explanation || '',
-  }))
+  return ready.map((r) => {
+    const options = shuffle(r.options)
+    return {
+      question: r.question,
+      options,
+      correct: options.indexOf(r.correct_answer),
+      explanation: r.explanation || '',
+    }
+  })
 }
 
 // The Study Guide's "Write new practice questions": a fresh set of 4-option

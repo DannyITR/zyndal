@@ -76,6 +76,20 @@ export function resolveGenerationLanguage(user) {
   return user.language_preference || 'English'
 }
 
+// Fresh random order for a { question, options, correct, explanation }
+// question's options, with `correct` moved to follow its answer. Upload
+// questions are stored in whatever order the model wrote them, which put
+// the correct answer in A or B far more often than chance, so every
+// session reshuffles (the stored row is never changed).
+function shuffleChoices(q) {
+  const order = q.options.map((_, i) => i)
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[order[i], order[j]] = [order[j], order[i]]
+  }
+  return { ...q, options: order.map((i) => q.options[i]), correct: order.indexOf(q.correct) }
+}
+
 // ---------- Resolving an upload's questions ----------
 // For each of the student's uploads for this subject, in order: use its
 // pre-extracted multiple-choice questions if it has any; otherwise generate
@@ -99,7 +113,7 @@ export async function resolveUploadQuestionPool(userId, subject, subjectName, gr
 
   for (const upload of content) {
     if (upload.usableQuestions.length > 0) {
-      pool.push(...upload.usableQuestions)
+      pool.push(...upload.usableQuestions.map(shuffleChoices))
       continue
     }
     if (upload.summary) {
@@ -112,7 +126,7 @@ export async function resolveUploadQuestionPool(userId, subject, subjectName, gr
         language,
       })
       await cacheGeneratedUploadQuestions(upload.uploadId, generated.questions)
-      pool.push(...generated.questions)
+      pool.push(...generated.questions.map(shuffleChoices))
       continue
     }
     // Insufficient content (no extracted questions, no summary) — skip this upload.
