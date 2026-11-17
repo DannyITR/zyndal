@@ -4,13 +4,15 @@ import { createStudentHandler } from './_lib/studentHandler.js'
 // import { assertPremium } from './_lib/subscription.js'
 import { generateJson, QUESTION_SCHEMA, languageInstruction, gradeToSecondary } from './_lib/anthropic.js'
 import { withGenerationCache, hashKey } from './_lib/generationCache.js'
+import { OPTION_RULES, balanceIndexedQuestions } from './_lib/optionBalance.js'
 
 // The source here is only a 2-3 sentence summary plus key concepts, so a
 // small set covers it. Was "as many as the material supports" with an 8k
 // budget. ~200 tokens per question (see documentExtraction.js).
 const MAX_QUESTIONS = 15
 const MAX_TOKENS = 1000 + MAX_QUESTIONS * 200
-const CACHE_VERSION = 'from-upload-v2'
+// v3: options balanced by length (cached v2 sets weren't).
+const CACHE_VERSION = 'from-upload-v3'
 
 // Mirrors generateQuestionsFromUploadContent in src/lib/ai.js — used by
 // questionSource.js's fallback chain for an upload that has a
@@ -47,6 +49,8 @@ Return only JSON:
   ]
 }
 
+${OPTION_RULES}
+
 ${languageInstruction(language)}`
 }
 
@@ -78,7 +82,8 @@ async function handle({ userId, body }) {
         content: 'Generate the questions now.',
         feature: 'upload-questions-from-summary',
       })
-      return { ...result, questions: (result.questions || []).slice(0, MAX_QUESTIONS) }
+      const questions = (result.questions || []).slice(0, MAX_QUESTIONS)
+      return { ...result, questions: await balanceIndexedQuestions(questions, { source: 'upload-questions-from-summary' }) }
     },
   })
 }

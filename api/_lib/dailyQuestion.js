@@ -99,7 +99,7 @@ async function getPool(subject, grade, scheduledUnits, language) {
 
 // Fire-and-forget: every topic in the scheduled unit(s) gets a generation
 // attempt via waitUntil. generateQuestionPoolIfMissing's own idempotency
-// check (skip once 20 rows exist) makes this safe to call unconditionally
+// check (skip once the pool has any rows) makes this safe to call unconditionally
 // rather than pre-checking counts here too.
 function triggerBackgroundGeneration(subject, grade, scheduledUnits) {
   for (const unit of scheduledUnits) {

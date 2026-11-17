@@ -1,6 +1,7 @@
 import { supabase } from '../_lib/auth.js'
 import { generateJson, gradeToSecondary, languageInstruction } from '../_lib/anthropic.js'
 import { SUBJECTS } from '../../src/lib/questions.js'
+import { OPTION_RULES, balanceIndexedQuestions } from '../_lib/optionBalance.js'
 
 // language is the short DB code ('en'/'fr'/'es' — see generated_questions.
 // language); LANGUAGE_NAME maps it to the full word languageInstruction()
@@ -21,9 +22,7 @@ export const config = { maxDuration: 60 }
 // question, 20 questions per pool) can't be enforced via the schema itself.
 // The system prompt asks for them explicitly instead, and the code below
 // validates the actual counts after generation, throwing (caught by the
-// waitUntil/HTTP caller either way) rather than silently saving a
-// short/malformed pool that would then never re-trigger generation once
-// the idempotency check's `>= 20` gate is (wrongly) satisfied.
+// waitUntil/HTTP caller either way) rather than saving a malformed pool.
 const QUESTION_ITEM_SCHEMA = {
   type: 'object',
   additionalProperties: false,
@@ -49,14 +48,18 @@ const QUESTION_POOL_SCHEMA = {
 function buildSystemPrompt({ subject, grade, unit_number, unit_title, topic_title, language }) {
   const secondary = gradeToSecondary(grade)
   const languageName = LANGUAGE_NAME[language] || 'English'
-  return `You are a Quebec high school curriculum expert generating a permanent multiple-choice question bank for the Quebec Education Program (QEP). Generate EXACTLY 20 multiple choice questions (no more, no fewer) for Quebec Secondary ${secondary} students studying ${subject}, Unit ${unit_number}: ${unit_title}, Topic: ${topic_title}. Make questions varied in difficulty (a mix of easy, medium and hard). Each question must test a different aspect of the topic — no two questions should test the same fact or skill. Each question needs EXACTLY 4 options and a 0-based index for the correct one. Return the 20 questions in the "questions" array. ${languageInstruction(languageName)}`
+  return `You are a Quebec high school curriculum expert generating a permanent multiple-choice question bank for the Quebec Education Program (QEP). Generate EXACTLY 20 multiple choice questions (no more, no fewer) for Quebec Secondary ${secondary} students studying ${subject}, Unit ${unit_number}: ${unit_title}, Topic: ${topic_title}. Make questions varied in difficulty (a mix of easy, medium and hard). Each question must test a different aspect of the topic — no two questions should test the same fact or skill. Each question needs EXACTLY 4 options and a 0-based index for the correct one. Return the 20 questions in the "questions" array.
+
+${OPTION_RULES}
+
+${languageInstruction(languageName)}`
 }
 
 // Exported separately from the default HTTP handler so
 // resolveDailyQuestion (api/_lib/dailyQuestion.js) can call this in-process
 // via waitUntil, with no HTTP round trip — mirrors generate-curriculum.js's
 // generateCurriculumOutlineData split. Idempotent: skips generation
-// entirely once 20 questions already exist for this exact combination, so
+// entirely once any questions exist for this exact combination, so
 // it's safe to call repeatedly (e.g. once per student request that lands
 // on a still-empty pool) without risking duplicate Claude calls or rows.
 //
@@ -81,13 +84,16 @@ export async function generateQuestionPoolIfMissing({ subject, grade, unit_numbe
     .eq('topic_title', topic_title)
     .eq('language', language)
   if (countError) throw countError
-  if ((count || 0) >= 20) return { generated: 0, skipped: true }
+  // Any rows at all means this pool was generated: it can legitimately
+  // hold fewer than 20 once unbalanced questions are dropped (see
+  // optionBalance.js), and a ">= 20" gate would then regenerate, and
+  // duplicate, the pool on every trigger. The insert below is a single
+  // statement, so a pool is never left half-written.
+  if ((count || 0) > 0) return { generated: 0, skipped: true }
 
   // The model occasionally miscounts by one or two despite an explicit
   // "exactly 20" instruction (observed empirically) — retry once before
-  // giving up, rather than either saving a wrong-sized pool (which would
-  // never satisfy the >= 20 idempotency check above and keep re-generating
-  // — and duplicating — content on every future trigger) or permanently
+  // giving up, rather than either saving a malformed pool or permanently
   // failing on a single bad count.
   let questions = null
   for (let attempt = 0; attempt < 2 && !questions; attempt++) {
@@ -103,6 +109,11 @@ export async function generateQuestionPoolIfMissing({ subject, grade, unit_numbe
     if (validCount && validOptions) questions = candidate
   }
   if (!questions) throw new Error('Could not generate a valid 20-question pool after retrying.')
+
+  // Unbalanced options get one repair call; any that still fail are left
+  // out and the rest of the pool is saved.
+  questions = await balanceIndexedQuestions(questions, { source: 'question-pool' })
+  if (questions.length === 0) throw new Error('Every question in the pool failed the option balance check.')
 
   const rows = questions.map((q) => ({
     subject,

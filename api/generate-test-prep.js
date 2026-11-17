@@ -1,6 +1,7 @@
 import { createStudentHandler } from './_lib/studentHandler.js'
 import { assertPremium } from './_lib/subscription.js'
 import { generateJson, QUESTION_SCHEMA, languageInstruction, gradeToSecondary } from './_lib/anthropic.js'
+import { OPTION_RULES, balanceIndexedQuestions } from './_lib/optionBalance.js'
 
 // Mirrors generateStudyPlan in src/lib/ai.js — the Test Prep feature's
 // multi-day plan building up to a specific test date.
@@ -40,6 +41,8 @@ IMPORTANT DAY LOGIC:
 
 Every question must have exactly 4 options, and "correct" is the 0-based index of the right option.
 
+${OPTION_RULES}
+
 ${languageInstruction(language)}`
 }
 
@@ -56,12 +59,24 @@ function validate(body) {
 async function handle({ userId, body }) {
   await assertPremium(userId)
   const { subject, grade, topic, days_available, language = 'English' } = body
-  return generateJson({
+  const plan = await generateJson({
     system: buildSystemPrompt(grade, subject, topic, days_available, language),
     schema: STUDY_PLAN_SCHEMA,
     maxTokens: 64000,
     content: 'Generate the study plan now.',
   })
+  // Balanced as one flat list (one repair call for the whole plan, not one
+  // per day), then put back under their days.
+  const days = plan.days || []
+  const tagged = days.flatMap((day, d) => (day.questions || []).map((q) => ({ ...q, _day: d })))
+  const balanced = await balanceIndexedQuestions(tagged, { source: 'test-prep' })
+  return {
+    ...plan,
+    days: days.map((day, d) => ({
+      ...day,
+      questions: balanced.filter((q) => q._day === d).map(({ _day, ...q }) => q),
+    })),
+  }
 }
 
 export default createStudentHandler({ method: 'POST', validate, handle })

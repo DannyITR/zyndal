@@ -9,6 +9,7 @@
 // response a predictable size. generateJson still throws AI_RESPONSE_CUT_OFF
 // if a single batch somehow runs past it.
 import { generateJson } from './anthropic.js'
+import { OPTION_RULES, balanceAnswerQuestions } from './optionBalance.js'
 
 export const PAGES_PER_BATCH = 8
 
@@ -40,8 +41,13 @@ const UPLOAD_QUESTION_SCHEMA = {
     options: { type: 'array', items: { type: 'string' } },
     explanation: { type: 'string' },
     difficulty: { type: 'string', enum: ['easy', 'medium', 'hard'] },
+    // 'printed': the question (and its options) are on the page; 'written':
+    // the model wrote it from the material. Only written questions get their
+    // options balanced (balanceExtracted below); printed ones must match
+    // the student's paper.
+    source: { type: 'string', enum: ['printed', 'written'] },
   },
-  required: ['question', 'correct_answer', 'options', 'explanation', 'difficulty'],
+  required: ['question', 'correct_answer', 'options', 'explanation', 'difficulty', 'source'],
 }
 
 const UPLOAD_DOCUMENT_SCHEMA = {
@@ -81,7 +87,8 @@ function buildSystemPrompt(documentTypePhrase, pageCount, batch, questionCap) {
       correct_answer: string,
       options: [string, string, string, string],
       explanation: string (one short sentence),
-      difficulty: 'easy' | 'medium' | 'hard'
+      difficulty: 'easy' | 'medium' | 'hard',
+      source: 'printed' | 'written'
     }
   ],
   key_concepts: [string] (at most ${MAX_KEY_CONCEPTS}),
@@ -97,6 +104,9 @@ function buildSystemPrompt(documentTypePhrase, pageCount, batch, questionCap) {
 If there is more material than ${questionCap} questions can cover, prioritize what a student is most likely to be tested on. Never return an empty "questions" array when the pages contain readable subject content.
 
 Every "explanation" is ONE short sentence.
+
+"source" is "printed" for a question printed on the page (copy its options exactly as printed) and "written" for one you wrote yourself. When you write options for a "written" question, follow these rules:
+${OPTION_RULES}
 
 If a question is not multiple-choice, leave "options" as an empty array and put the full answer in "correct_answer" — don't invent options for a printed question that has none.
 
@@ -217,6 +227,12 @@ async function combineOverview(batchResults) {
   })
 }
 
+// Balances the options of questions the model wrote (see optionBalance.js);
+// questions printed on the page are left exactly as printed.
+function balanceExtracted(questions) {
+  return balanceAnswerQuestions(questions, { source: 'upload-extract', skip: (q) => q.source === 'printed' })
+}
+
 // files: [{ base64, mediaType }] — every page of one upload, in order.
 // uploadType: 'test' | 'study_material' (only phrases the prompt).
 export async function extractDocument({ files, uploadType }) {
@@ -224,7 +240,7 @@ export async function extractDocument({ files, uploadType }) {
 
   if (files.length <= PAGES_PER_BATCH) {
     const result = await extractBatch(files, documentTypePhrase, null, files.length)
-    return { ...result, questions: dedupeQuestions(result.questions).slice(0, MAX_QUESTIONS_PER_UPLOAD) }
+    return { ...result, questions: await balanceExtracted(dedupeQuestions(result.questions).slice(0, MAX_QUESTIONS_PER_UPLOAD)) }
   }
 
   const batches = []
@@ -240,7 +256,7 @@ export async function extractDocument({ files, uploadType }) {
     topic: overview.topic,
     grade_level: mostCommon(results.map((r) => r.grade_level)),
     document_type: mostCommon(results.map((r) => r.document_type)),
-    questions: dedupeQuestions(results.flatMap((r) => r.questions)).slice(0, MAX_QUESTIONS_PER_UPLOAD),
+    questions: await balanceExtracted(dedupeQuestions(results.flatMap((r) => r.questions)).slice(0, MAX_QUESTIONS_PER_UPLOAD)),
     key_concepts: dedupeStrings(results.flatMap((r) => r.key_concepts)).slice(0, MAX_KEY_CONCEPTS * 2),
     summary: overview.summary,
   }

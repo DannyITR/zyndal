@@ -7,7 +7,7 @@ import { withGenerationCache, hashKey } from './_lib/generationCache.js'
 
 // Bump when the extraction prompt/caps change, so cached results from the
 // old prompt aren't served for re-sent pages.
-const EXTRACTION_CACHE_VERSION = 'extract-v2'
+const EXTRACTION_CACHE_VERSION = 'extract-v3'
 
 // Mirrors processUploadedDocument in src/lib/ai.js — NOT one of the four
 // endpoints originally requested, but added to close the same gap: this is

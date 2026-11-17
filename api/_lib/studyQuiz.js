@@ -19,6 +19,7 @@
 // cached it there. The table is left in place.
 import { supabase } from './auth.js'
 import { generateJson, gradeToSecondary } from './anthropic.js'
+import { OPTION_RULES, balanceAnswerQuestions, checkOptionBalance, repairOptions } from './optionBalance.js'
 import { sanitizeUuid } from './sanitize.js'
 import { dedupeQuestions, PAGES_PER_BATCH } from './documentExtraction.js'
 import { downloadSharedNoteFiles } from './sharedNotesStorage.js'
@@ -271,6 +272,8 @@ Write questions that cover EVERY concept below and every fact listed under it â€
 
 ${typeRules}
 
+${OPTION_RULES}
+
 Every question needs a one-sentence "explanation" of why the answer is correct.
 
 Write every question, option, answer, and explanation in ${language}, regardless of the language of the summary.`,
@@ -367,7 +370,10 @@ async function writeQuestionsFromSummary(upload, user, { multipleChoiceOnly = fa
       generateQuizBatchWithRetry(chunk, { grade: user?.grade, language, multipleChoiceOnly, part: chunks.length > 1 ? { index: i + 1, total: chunks.length } : null })
     )
   )
-  return toWorksheetQuestions(dedupeQuestions(batches.flat())).map((q) => ({
+  // Short-answer questions (no options) pass through the balance check
+  // untouched; see optionBalance.js.
+  const balanced = await balanceAnswerQuestions(dedupeQuestions(batches.flat()), { source: 'study-quiz' })
+  return toWorksheetQuestions(balanced).map((q) => ({
     upload_id: upload.id,
     question: q.question,
     correct_answer: q.answer,
@@ -473,7 +479,7 @@ const DISTRACTOR_SCHEMA = {
 async function generateDistractors(rows) {
   const list = rows.map((r, i) => `${i + 1}. Question: ${r.question}\n   Correct answer: ${r.correct_answer}`).join('\n\n')
   const { items } = await generateJson({
-    system: `You write multiple-choice options for a high school student's study quiz. For each numbered question below, write exactly 3 plausible but clearly wrong answers. Make each wrong answer the same kind of thing as the correct answer (a year for a year, a person for a person) and about the same length and style, so the correct one doesn't stand out. Never repeat or paraphrase the correct answer. Write in the same language as the question. Return JSON: { items: [ { number, wrong_answers: [3 strings] } ] }, one item per question.`,
+    system: `You write multiple-choice options for a high school student's study quiz. For each numbered question below, write exactly 3 plausible but clearly wrong answers. Make each wrong answer the same kind of thing as the correct answer (a year for a year, a person for a person), in the same grammatical form, and within about 20% of the correct answer's length in characters, so the correct one doesn't stand out â€” it must not be the longest or most detailed option. Base the wrong answers on common student mistakes, just as specific as the correct one. Don't put qualifiers like "always", "never" or "only" in the wrong answers alone. Never repeat or paraphrase the correct answer. Write in the same language as the question. Return JSON: { items: [ { number, wrong_answers: [3 strings] } ] }, one item per question.`,
     schema: DISTRACTOR_SCHEMA,
     maxTokens: 8000,
     content: list,
@@ -488,8 +494,11 @@ async function generateDistractors(rows) {
 }
 
 // Gives every row 4 options (keeping existing valid ones), saving newly
-// written options onto upload_questions. Returns the rows that ended up
-// with 4 options, in their original order.
+// written options onto upload_questions. New options that give the answer
+// away by length get one repair call (see optionBalance.js); any still
+// unbalanced aren't saved, so that row stays out of this session and gets
+// another try next time. Returns the rows that ended up with 4 options, in
+// their original order.
 async function ensureMultipleChoice(rows) {
   const needing = rows.filter((r) => !isFourOptionChoice(r))
   if (needing.length === 0) return rows
@@ -499,21 +508,44 @@ async function ensureMultipleChoice(rows) {
   const results = await Promise.all(batches.map(generateDistractors))
   const distractors = new Map(results.flatMap((m) => [...m]))
 
+  const candidates = needing
+    .filter((row) => distractors.has(row.id))
+    .map((row) => {
+      const options = shuffle([row.correct_answer, ...distractors.get(row.id)])
+      return { row, options, correctIndex: options.indexOf(row.correct_answer) }
+    })
+  const flagged = candidates.filter((c) => !checkOptionBalance(c.options, c.correctIndex).ok)
+  if (flagged.length > 0) {
+    let repaired = new Map()
+    try {
+      repaired = await repairOptions(
+        flagged.map((c) => ({ question: c.row.question, options: c.options, correctIndex: c.correctIndex })),
+        { feature: 'option-balance-repair:study-guide-distractors' }
+      )
+    } catch (err) {
+      console.error('[studyQuiz] option repair call failed:', err.message)
+    }
+    flagged.forEach((c, i) => {
+      c.options = repaired.get(i) || null
+    })
+  }
+  const balanced = candidates.filter((c) => c.options)
+
+  // A repair may condense the correct answer's wording (same meaning, see
+  // optionBalance.js), so correct_answer is saved alongside the options.
   const updated = new Map()
   await Promise.all(
-    needing.map(async (row) => {
-      const wrong = distractors.get(row.id)
-      if (!wrong) return
-      const options = shuffle([row.correct_answer, ...wrong])
-      const { error } = await supabase.from('upload_questions').update({ options }).eq('id', row.id)
+    balanced.map(async ({ row, options, correctIndex }) => {
+      const change = { options, correct_answer: options[correctIndex] }
+      const { error } = await supabase.from('upload_questions').update(change).eq('id', row.id)
       if (error) throw error
-      updated.set(row.id, options)
+      updated.set(row.id, change)
     })
   )
-  if (updated.size < needing.length) console.warn(`[studyQuiz] no wrong answers written for ${needing.length - updated.size} question(s); left out of this session`)
+  if (updated.size < needing.length) console.warn(`[studyQuiz] no usable wrong answers for ${needing.length - updated.size} question(s); left out of this session`)
 
   return rows
-    .map((r) => (updated.has(r.id) ? { ...r, options: updated.get(r.id) } : r))
+    .map((r) => (updated.has(r.id) ? { ...r, ...updated.get(r.id) } : r))
     .filter(isFourOptionChoice)
 }
 
